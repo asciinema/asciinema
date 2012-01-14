@@ -32,7 +32,7 @@ class AsciiCast(object):
 
     def create(self):
         self._record()
-        self._upload()
+        return self._upload()
 
     def _record(self):
         os.makedirs(self.path)
@@ -66,6 +66,9 @@ class AsciiCast(object):
         url = Uploader(self.path).upload()
         if url:
             print url
+            return True
+        else:
+            return False
 
 
 class TimedFile(object):
@@ -232,41 +235,36 @@ class Uploader(object):
     Uploads recorded script to website using HTTP based API.
     '''
 
+    API_URL = os.environ.get('ASCII_IO_API_URL', 'http://ascii.io/api/asciicasts')
+
     def __init__(self, path):
-        self.api_host = os.environ.get('ASCIIIO_API_HOST', 'ascii.io')
-        self.api_path = '/scripts'
         self.path = path
 
     def upload(self):
-        params = self._build_params()
-        url = self._make_request(params)
+        files = {
+                     'meta': 'meta.json',
+              'stdout_data': 'stdout',
+            'stdout_timing': 'stdout.time'
+        }
 
-        return url
+        if os.path.exists(self.path + '/stdin'):
+            files['stdin_data']   = 'stdin'
+            files['stdin_timing'] = 'stdin.time'
 
-    def _build_params(self):
-        params = urllib.urlencode({
-            'metadata': 'lolza'
-            })
+        fields = ["-F %s=@%s/%s" % (f, self.path, files[f]) for f in files]
 
-        return params
+        cmd = "curl -sS -f -o - %s %s" % (' '.join(fields), Uploader.API_URL)
 
-    def _make_request(self, params):
-        headers = { "Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain" }
-        conn = httplib.HTTPConnection(self.api_host)
-        try:
-            conn.request("POST", self.api_path, params, headers)
-        except socket.error:
-            print "Oops, couldn't connect to ..."
-            return
+        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
 
-        response = conn.getresponse()
+        if stderr:
+            os.write(2, stderr)
 
-        if response.status == 201:
-            return response.read()
+        if stdout:
+            return stdout
         else:
-            # TODO stderr
-            print 'Oops, something is not right. (%d: %s)' % (response.status,
-                    response.read())
             return None
 
 
@@ -351,7 +349,8 @@ def main():
 
     if action == 'rec':
         check_pending()
-        AsciiCast(command, title, record_input).create()
+        if not AsciiCast(command, title, record_input).create():
+            sys.exit(1)
     elif action == 'upload':
         upload_pending()
     else:
