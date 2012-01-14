@@ -15,6 +15,58 @@ import getopt
 import subprocess
 import httplib, urllib
 import socket
+import glob
+
+SCRIPT_NAME = os.path.basename(sys.argv[0])
+
+
+class AsciiCast(object):
+    BASE_DIR = os.path.expanduser("~/.ascii.io")
+    QUEUE_DIR = BASE_DIR + "/queue"
+
+    def __init__(self, command, title, record_input):
+        self.path = AsciiCast.QUEUE_DIR + "/%i" % int(time.time())
+        self.command = command
+        self.title = title
+        self.record_input = record_input
+
+    def create(self):
+        self._record()
+        self._upload()
+
+    def _record(self):
+        os.makedirs(self.path)
+        self._save_metadata()
+        PtyRecorder(self.path, self.command, self.record_input).run()
+
+    def _save_metadata(self):
+        info_file = open(self.path + '/meta.json', 'wb')
+
+        json_data = {
+                'title': self.title,
+                'command': ' '.join(self.command),
+                'term': {
+                    'type': os.environ['TERM'],
+                    'lines': int(self._get_cmd_output(['tput', 'lines'])),
+                    'columns': int(self._get_cmd_output(['tput', 'cols'])),
+                    },
+                'shell': os.environ['SHELL'],
+                'uname': self._get_cmd_output(['uname', '-osrvp'])
+                }
+
+        json_string = json.dumps(json_data, sort_keys=True, indent=4)
+        info_file.write(json_string + '\n')
+        info_file.close()
+
+    def _get_cmd_output(self, args):
+        process = subprocess.Popen(args, stdout=subprocess.PIPE)
+        return process.communicate()[0].strip()
+
+    def _upload(self):
+        url = Uploader(self.path).upload()
+        if url:
+            print url
+
 
 class TimedFile(object):
     '''File wrapper that records write times in separate file.'''
@@ -25,16 +77,16 @@ class TimedFile(object):
         self.time_file = open(filename + '.time', mode)
         self.old_time = time.time()
 
-    def close(self):
-        self.data_file.close()
-        self.time_file.close()
-
     def write(self, data):
         self.data_file.write(data)
         now = time.time()
         delta = now - self.old_time
         self.time_file.write("%f %d\n" % (delta, len(data)))
         self.old_time = now
+
+    def close(self):
+        self.data_file.close()
+        self.time_file.close()
 
 
 class PtyRecorder(object):
@@ -44,31 +96,31 @@ class PtyRecorder(object):
     and saves stdin/stderr (and timing) to files.
     '''
 
-    def __init__(self, base_filename, command, record_input):
+    def __init__(self, path, command, record_input):
         self.master_fd = None
-        self.base_filename = base_filename
+        self.path = path
         self.command = command
         self.record_input = record_input
 
     def run(self):
-        self.open_files()
-        self.write_stdout('\n~ Asciicast recording started.\n')
-        success = self.spawn()
-        self.write_stdout('\n~ Asciicast recording finished.\n')
-        self.close_files()
+        self._open_files()
+        self._write_stdout('\n~ Asciicast recording started.\n')
+        success = self._spawn()
+        self._write_stdout('\n~ Asciicast recording finished.\n')
+        self._close_files()
         return success
 
-    def open_files(self):
-        self.stdout_file = TimedFile(self.base_filename + '.stdout')
+    def _open_files(self):
+        self.stdout_file = TimedFile(self.path + '/stdout')
         if self.record_input:
-            self.stdin_file = TimedFile(self.base_filename + '.stdin')
+            self.stdin_file = TimedFile(self.path + '/stdin')
 
-    def close_files(self):
+    def _close_files(self):
         self.stdout_file.close()
         if self.record_input:
             self.stdin_file.close()
 
-    def spawn(self):
+    def _spawn(self):
         '''Create a spawned process.
 
         Based on pty.spawn() from standard library.
@@ -76,8 +128,7 @@ class PtyRecorder(object):
 
         assert self.master_fd is None
 
-        pid, master_fd = pty.fork()
-        self.master_fd = master_fd
+        pid, self.master_fd = pty.fork()
 
         if pid == pty.CHILD:
             os.execlp(self.command[0], *self.command)
@@ -99,7 +150,7 @@ class PtyRecorder(object):
             if restore:
                 tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
 
-        os.close(master_fd)
+        os.close(self.master_fd)
         self.master_fd = None
         signal.signal(signal.SIGWINCH, old_handler)
 
@@ -126,104 +177,53 @@ class PtyRecorder(object):
     def _copy(self):
         '''Main select loop.
 
-        Passes control to self.master_read() or self.stdin_read()
+        Passes control to self._master_read() or self._stdin_read()
         when new data arrives.
         '''
 
         assert self.master_fd is not None
-        master_fd = self.master_fd
 
         while 1:
             try:
-                rfds, wfds, xfds = select.select([master_fd, pty.STDIN_FILENO], [], [])
+                rfds, wfds, xfds = select.select([self.master_fd, pty.STDIN_FILENO], [], [])
             except select.error, e:
                 if e[0] == 4:   # Interrupted system call.
                     continue
 
-            if master_fd in rfds:
+            if self.master_fd in rfds:
                 data = os.read(self.master_fd, 1024)
-                self.handle_master_read(data)
+                self._handle_master_read(data)
 
             if pty.STDIN_FILENO in rfds:
                 data = os.read(pty.STDIN_FILENO, 1024)
-                self.handle_stdin_read(data)
+                self._handle_stdin_read(data)
 
-    def handle_master_read(self, data):
+    def _handle_master_read(self, data):
         '''Handles new data on child process stdout.'''
 
-        self.write_stdout(data)
+        self._write_stdout(data)
         self.stdout_file.write(data)
 
-    def handle_stdin_read(self, data):
+    def _handle_stdin_read(self, data):
         '''Handles new data on child process stdin.'''
 
-        self.write_master(data)
+        self._write_master(data)
         if self.record_input:
             self.stdin_file.write(data)
 
-    def write_stdout(self, data):
+    def _write_stdout(self, data):
         '''Writes to stdout as if the child process had written the data.'''
 
         os.write(pty.STDOUT_FILENO, data)
 
-    def write_master(self, data):
+    def _write_master(self, data):
         '''Writes to the child process from its controlling terminal.'''
 
-        master_fd = self.master_fd
-        assert master_fd is not None
+        assert self.master_fd is not None
+
         while data != '':
-            n = os.write(master_fd, data)
+            n = os.write(self.master_fd, data)
             data = data[n:]
-
-
-class AsciiCast(object):
-    '''Asciicast model.
-
-    Manages recording and uploading of asciicast.
-    '''
-
-    def __init__(self, command, title=None, record_input=False):
-        self.base_filename = str(int(time.time()))
-        self.command = command
-        self.title = title
-        self.record_input = record_input
-
-    def create(self):
-        ret = self.record()
-        if ret:
-            self.write_metadata()
-            self.upload()
-
-    def record(self):
-        rec = PtyRecorder(self.base_filename, self.command, self.record_input)
-        return rec.run()
-
-    def write_metadata(self):
-        info_file = open(self.base_filename + '.json', 'wb')
-
-        json_data = {
-                'title': self.title,
-                'command': ' '.join(self.command),
-                'term': {
-                    'type': os.environ['TERM'],
-                    'lines': int(self.get_output(['tput', 'lines'])),
-                    'columns': int(self.get_output(['tput', 'cols'])),
-                    },
-                'shell': os.environ['SHELL'],
-                'uname': self.get_output(['uname', '-osrvp'])
-                }
-
-        json_string = json.dumps(json_data, sort_keys=True, indent=2)
-        info_file.write(json_string + '\n')
-        info_file.close()
-
-    def get_output(self, args):
-        process = subprocess.Popen(args, stdout=subprocess.PIPE)
-        return process.communicate()[0].strip()
-
-    def upload(self):
-        up = Uploader(self.base_filename)
-        up.upload()
 
 
 class Uploader(object):
@@ -232,17 +232,26 @@ class Uploader(object):
     Uploads recorded script to website using HTTP based API.
     '''
 
-    def __init__(self, base_filename):
-        self.api_host = os.environ.get('TTV_API_HOST', 'localhost:3000')
+    def __init__(self, path):
+        self.api_host = os.environ.get('ASCIIIO_API_HOST', 'ascii.io')
         self.api_path = '/scripts'
-        self.base_filename = base_filename
+        self.path = path
 
     def upload(self):
-        params = self.build_params()
-        self.make_request(params)
+        params = self._build_params()
+        url = self._make_request(params)
 
-    def make_request(self, params):
-        headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+        return url
+
+    def _build_params(self):
+        params = urllib.urlencode({
+            'metadata': 'lolza'
+            })
+
+        return params
+
+    def _make_request(self, params):
+        headers = { "Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain" }
         conn = httplib.HTTPConnection(self.api_host)
         try:
             conn.request("POST", self.api_path, params, headers)
@@ -253,28 +262,74 @@ class Uploader(object):
         response = conn.getresponse()
 
         if response.status == 201:
-            print response.read()
+            return response.read()
         else:
+            # TODO stderr
             print 'Oops, something is not right. (%d: %s)' % (response.status,
                     response.read())
+            return None
 
-    def build_params(self):
-        params = urllib.urlencode({
-            'metadata': 'lolza'
-            })
 
-        return params
+def check_pending():
+    num = len(pending_list())
+    if num > 0:
+        print 'Warning: %i recorded asciicasts weren\'t uploaded. ' \
+              'Run "%s -u" to upload them or delete them with "rm -rf %s/*".' \
+              % (num, SCRIPT_NAME, AsciiCast.QUEUE_DIR)
+
+
+def upload_pending():
+    print 'Uploading pending asciicasts...'
+    for path in pending_list():
+        url = Uploader(path).upload()
+        if url:
+            print url
+
+
+def pending_list():
+    return glob.glob(AsciiCast.QUEUE_DIR + '/*/*.time')
+
+
+def usage():
+    text = '''usage: %s [-h] [-i] [-c <command>] [-t <title>] [action]
+
+Asciicast recorder+uploader.
+
+Actions:
+ rec           record asciicast (this is the default when no action given)
+ upload        upload recorded (but not uploaded) asciicasts
+
+Optional arguments:
+ -i            record stdin (keystrokes will be shown during replay)
+ -c command    run specified command instead of shell ($SHELL)
+ -t title      specify title of recorded asciicast
+ -h, --help    show this help message and exit
+ --version     show version information''' % SCRIPT_NAME
+    print text
+
+
+def print_version():
+    print 'ascii.io-clio v0.x'
 
 
 def main():
     '''Parses command-line options and creates asciicast.'''
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'c:t:ih', ['help'])
+        opts, args = getopt.getopt(sys.argv[1:], 'c:t:ih', ['help', 'version'])
     except getopt.error as msg:
         print('%s: %s' % (sys.argv[0], msg))
         print('Run "%s --help" for list of available options' % sys.argv[0])
         sys.exit(2)
+
+    action = 'rec'
+
+    if len(args) > 1:
+        print('Too many arguments')
+        print('Run "%s --help" for list of available options' % sys.argv[0])
+        sys.exit(2)
+    elif len(args) == 1:
+        action = args[0]
 
     command = os.environ['SHELL'].split()
     title = None
@@ -284,6 +339,9 @@ def main():
         if opt in ('-h', '--help'):
             usage()
             sys.exit(0)
+        elif opt == '--version':
+            print_version()
+            sys.exit(0)
         elif opt == '-c':
             command = arg.split()
         elif opt == '-t':
@@ -291,21 +349,15 @@ def main():
         elif opt == '-i':
             record_input = True
 
-    ac = AsciiCast(command, title, record_input)
-    ac.create()
+    if action == 'rec':
+        check_pending()
+        AsciiCast(command, title, record_input).create()
+    elif action == 'upload':
+        upload_pending()
+    else:
+        print('Unknown action: %s' % action)
+        print('Run "%s --help" for list of available options' % sys.argv[0])
 
-
-def usage():
-    text = '''usage: %s [-h] [-i] [-c <command>] [-t <title>]
-
-Asciicast recorder+uploader.
-
-optional arguments:
- -h, --help    show this help message and exit
- -i            record stdin (keystrokes will be shown during replay)
- -c command    run specified command instead of shell ($SHELL)
- -t title      specify title of recorded asciicast''' % sys.argv[0]
-    print text
 
 if __name__ == '__main__':
     main()
