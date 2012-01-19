@@ -16,6 +16,7 @@ import subprocess
 import httplib, urllib
 import socket
 import glob
+import bz2
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 
@@ -75,9 +76,9 @@ class TimedFile(object):
     '''File wrapper that records write times in separate file.'''
 
     def __init__(self, filename):
-        mode = 'wb'
-        self.data_file = open(filename, mode)
-        self.time_file = open(filename + '.time', mode)
+        mode = 'w'
+        self.data_file = bz2.BZ2File(filename, mode)
+        self.time_file = bz2.BZ2File(filename + '.time', mode)
         self.old_time = time.time()
 
     def write(self, data):
