@@ -30,6 +30,7 @@ class AsciiCast(object):
         self.command = command
         self.title = title
         self.record_input = record_input
+        self.duration = None
 
     def create(self):
         self._record()
@@ -37,25 +38,40 @@ class AsciiCast(object):
 
     def _record(self):
         os.makedirs(self.path)
-        self._save_metadata()
+        self.recording_start = time.time()
         PtyRecorder(self.path, self.command, self.record_input).run()
+        self.duration = time.time() - self.recording_start
+        self._save_metadata()
 
     def _save_metadata(self):
         info_file = open(self.path + '/meta.json', 'wb')
 
-        json_data = {
-                'title': self.title,
-                'command': ' '.join(self.command),
-                'term': {
-                    'type': os.environ['TERM'],
-                    'lines': int(self._get_cmd_output(['tput', 'lines'])),
-                    'columns': int(self._get_cmd_output(['tput', 'cols'])),
-                    },
-                'shell': os.environ['SHELL'],
-                'uname': self._get_cmd_output(['uname', '-osrvp'])
-                }
+        # RFC 2822
+        recorded_at = time.strftime("%a, %d %b %Y %H:%M:%S +0000",
+                                    time.gmtime(self.recording_start))
 
-        json_string = json.dumps(json_data, sort_keys=True, indent=4)
+        command = ' '.join(self.command)
+        uname = self._get_cmd_output(['uname', '-osrvp'])
+        shell = os.environ['SHELL']
+        term = os.environ['TERM']
+        lines = int(self._get_cmd_output(['tput', 'lines']))
+        columns = int(self._get_cmd_output(['tput', 'cols']))
+
+        data = {
+            'duration'   : self.duration,
+            'recorded_at': recorded_at,
+            'title'      : self.title,
+            'command'    : command,
+            'shell'      : shell,
+            'uname'      : uname,
+            'term'       : {
+                'type'   : term,
+                'lines'  : lines,
+                'columns': columns
+            }
+        }
+
+        json_string = json.dumps(data, sort_keys=True, indent=4)
         info_file.write(json_string + '\n')
         info_file.close()
 
@@ -244,23 +260,25 @@ class Uploader(object):
     def upload(self):
         files = {
                      'meta': 'meta.json',
-              'stdout_data': 'stdout',
+                   'stdout': 'stdout',
             'stdout_timing': 'stdout.time'
         }
 
         if os.path.exists(self.path + '/stdin'):
-            files['stdin_data']   = 'stdin'
+            files['stdin']        = 'stdin'
             files['stdin_timing'] = 'stdin.time'
 
-        fields = ["-F %s=@%s/%s" % (f, self.path, files[f]) for f in files]
+        fields = ["-F asciicast[%s]=@%s/%s" % (f, self.path, files[f]) for f in files]
 
-        cmd = "curl -sS -f -o - %s %s" % (' '.join(fields), Uploader.API_URL)
+        cmd = "curl -sS -o - %s %s" % (' '.join(fields), Uploader.API_URL)
 
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
 
         if stderr:
+            # print >> sys.stderr, stderr
+            # sys.stderr.write(stderr)
             os.write(2, stderr)
 
         if stdout:
