@@ -304,7 +304,7 @@ def upload_pending():
 
 
 def pending_list():
-    return glob.glob(AsciiCast.QUEUE_DIR + '/*/*.time')
+    return [os.path.dirname(p) for p in glob.glob(AsciiCast.QUEUE_DIR + '/*/*.time')]
 
 
 def usage():
