@@ -212,6 +212,10 @@ class PtyRecorder(object):
 
             if self.master_fd in rfds:
                 data = os.read(self.master_fd, 1024)
+
+                if len(data) == 0:
+                  break
+
                 self._handle_master_read(data)
 
             if pty.STDIN_FILENO in rfds:
