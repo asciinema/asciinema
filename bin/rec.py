@@ -51,7 +51,7 @@ class AsciiCast(object):
                                     time.gmtime(self.recording_start))
 
         command = ' '.join(self.command)
-        uname = self._get_cmd_output(['uname', '-osrvp'])
+        uname = self._get_cmd_output(['uname', '-srvp'])
         shell = os.environ['SHELL']
         term = os.environ['TERM']
         lines = int(self._get_cmd_output(['tput', 'lines']))
