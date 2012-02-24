@@ -17,6 +17,7 @@ import httplib, urllib
 import socket
 import glob
 import bz2
+import ConfigParser
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 
@@ -25,7 +26,8 @@ class AsciiCast(object):
     BASE_DIR = os.path.expanduser("~/.ascii.io")
     QUEUE_DIR = BASE_DIR + "/queue"
 
-    def __init__(self, command, title, record_input):
+    def __init__(self, api_url, command, title, record_input):
+        self.api_url = api_url
         self.path = AsciiCast.QUEUE_DIR + "/%i" % int(time.time())
         self.command = command
         self.title = title
@@ -80,7 +82,7 @@ class AsciiCast(object):
         return process.communicate()[0].strip()
 
     def _upload(self):
-        url = Uploader(self.path).upload()
+        url = Uploader(self.api_url, self.path).upload()
         if url:
             print url
             return True
@@ -256,9 +258,8 @@ class Uploader(object):
     Uploads recorded script to website using HTTP based API.
     '''
 
-    API_URL = os.environ.get('ASCII_IO_API_URL', 'http://ascii.io/api/asciicasts')
-
-    def __init__(self, path):
+    def __init__(self, api_url, path):
+        self.api_url = api_url
         self.path = path
 
     def upload(self):
@@ -274,7 +275,7 @@ class Uploader(object):
 
         fields = ["-F asciicast[%s]=@%s/%s" % (f, self.path, files[f]) for f in files]
 
-        cmd = "curl -sS -o - %s %s" % (' '.join(fields), Uploader.API_URL)
+        cmd = "curl -sS -o - %s %s" % (' '.join(fields), '%s/asciicasts' % self.api_url)
 
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
@@ -354,7 +355,26 @@ def main():
 
     command = os.environ['SHELL'].split()
     title = None
-    record_input = False
+
+    config = ConfigParser.RawConfigParser()
+    cfg_file = os.path.expanduser('~/.ascii.io/config')
+    try:
+        config.read(cfg_file)
+    except ConfigParser.ParsingError:
+        print('Config file %s contains syntax errors' % cfg_file)
+        sys.exit(2)
+
+    try:
+        record_input = config.getboolean('record', 'input')
+    except ConfigParser.NoSectionError:
+        record_input = False
+
+    try:
+        api_url = config.get('api', 'url')
+    except ConfigParser.NoSectionError:
+        api_url = 'http://ascii.io/api'
+
+    api_url = os.environ.get('ASCII_IO_API_URL', api_url)
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -372,7 +392,7 @@ def main():
 
     if action == 'rec':
         check_pending()
-        if not AsciiCast(command, title, record_input).create():
+        if not AsciiCast(api_url, command, title, record_input).create():
             sys.exit(1)
     elif action == 'upload':
         upload_pending()
