@@ -41,7 +41,8 @@ class AsciiCast(object):
     def _record(self):
         os.makedirs(self.path)
         self.recording_start = time.time()
-        PtyRecorder(self.path, self.command, self.record_input).run()
+        command = self.command or os.environ['SHELL'].split()
+        PtyRecorder(self.path, command, self.record_input).run()
         self.duration = time.time() - self.recording_start
         self._save_metadata()
 
@@ -52,7 +53,7 @@ class AsciiCast(object):
         recorded_at = time.strftime("%a, %d %b %Y %H:%M:%S +0000",
                                     time.gmtime(self.recording_start))
 
-        command = ' '.join(self.command)
+        command = self.command and ' '.join(self.command)
         uname = self._get_cmd_output(['uname', '-srvp'])
         shell = os.environ['SHELL']
         term = os.environ['TERM']
@@ -353,9 +354,6 @@ def main():
     elif len(args) == 1:
         action = args[0]
 
-    command = os.environ['SHELL'].split()
-    title = None
-
     config = ConfigParser.RawConfigParser()
     cfg_file = os.path.expanduser('~/.ascii.io/config')
     try:
@@ -375,6 +373,9 @@ def main():
         api_url = 'http://ascii.io/api'
 
     api_url = os.environ.get('ASCII_IO_API_URL', api_url)
+
+    command = None
+    title = None
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
