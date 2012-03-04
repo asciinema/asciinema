@@ -279,7 +279,7 @@ class Uploader(object):
 
         fields = ["-F asciicast[%s]=@%s/%s" % (f, self.path, files[f]) for f in files]
 
-        cmd = "curl -sS -o - %s %s" % (' '.join(fields), '%s/asciicasts' % self.api_url)
+        cmd = "curl -sS -o - %s %s" % (' '.join(fields), '%s/api/asciicasts' % self.api_url)
 
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
@@ -312,6 +312,12 @@ def upload_pending():
             print url
 
 
+def auth(api_url, user_token):
+    url = '%s/connect/%s' % (api_url, user_token)
+    print 'Open following URL in your browser to authenticate and/or claim ' \
+          'recorded asciicasts:\n\n%s' % url
+
+
 def pending_list():
     return [os.path.dirname(p) for p in glob.glob(AsciiCast.QUEUE_DIR + '/*/*.time')]
 
@@ -324,6 +330,7 @@ Asciicast recorder+uploader.
 Actions:
  rec           record asciicast (this is the default when no action given)
  upload        upload recorded (but not uploaded) asciicasts
+ auth          authenticate and/or claim recorded asciicasts
 
 Optional arguments:
  -i            record stdin (keystrokes will be shown during replay)
@@ -335,7 +342,7 @@ Optional arguments:
 
 
 def print_version():
-    print 'ascii.io-clio v0.x'
+    print 'ascii.io-cli v0.x'
 
 
 def main():
@@ -383,7 +390,7 @@ def main():
     try:
         api_url = config.get('api', 'url')
     except ConfigParser.NoOptionError:
-        api_url = 'http://ascii.io/api'
+        api_url = 'http://ascii.io'
 
     with open(cfg_file, 'wb') as configfile:
         config.write(configfile)
@@ -413,6 +420,8 @@ def main():
             sys.exit(1)
     elif action == 'upload':
         upload_pending()
+    elif action == 'auth':
+        auth(api_url, user_token)
     else:
         print('Unknown action: %s' % action)
         print('Run "%s --help" for list of available options' % sys.argv[0])
