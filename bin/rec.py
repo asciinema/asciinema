@@ -18,6 +18,7 @@ import socket
 import glob
 import bz2
 import ConfigParser
+import uuid
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 
@@ -26,8 +27,9 @@ class AsciiCast(object):
     BASE_DIR = os.path.expanduser("~/.ascii.io")
     QUEUE_DIR = BASE_DIR + "/queue"
 
-    def __init__(self, api_url, command, title, record_input):
+    def __init__(self, api_url, user_token, command, title, record_input):
         self.api_url = api_url
+        self.user_token = user_token
         self.path = AsciiCast.QUEUE_DIR + "/%i" % int(time.time())
         self.command = command
         self.title = title
@@ -61,6 +63,7 @@ class AsciiCast(object):
         columns = int(self._get_cmd_output(['tput', 'cols']))
 
         data = {
+            'user_token' : self.user_token,
             'duration'   : self.duration,
             'recorded_at': recorded_at,
             'title'      : self.title,
@@ -355,6 +358,10 @@ def main():
         action = args[0]
 
     config = ConfigParser.RawConfigParser()
+    config.add_section('user')
+    config.add_section('api')
+    config.add_section('record')
+
     cfg_file = os.path.expanduser('~/.ascii.io/config')
     try:
         config.read(cfg_file)
@@ -363,14 +370,23 @@ def main():
         sys.exit(2)
 
     try:
+        user_token = config.get('user', 'token')
+    except ConfigParser.NoOptionError:
+        user_token = str(uuid.uuid1())
+        config.set('user', 'token', user_token)
+
+    try:
         record_input = config.getboolean('record', 'input')
-    except ConfigParser.NoSectionError:
+    except ConfigParser.NoOptionError:
         record_input = False
 
     try:
         api_url = config.get('api', 'url')
-    except ConfigParser.NoSectionError:
+    except ConfigParser.NoOptionError:
         api_url = 'http://ascii.io/api'
+
+    with open(cfg_file, 'wb') as configfile:
+        config.write(configfile)
 
     api_url = os.environ.get('ASCII_IO_API_URL', api_url)
 
@@ -393,7 +409,7 @@ def main():
 
     if action == 'rec':
         check_pending()
-        if not AsciiCast(api_url, command, title, record_input).create():
+        if not AsciiCast(api_url, user_token, command, title, record_input).create():
             sys.exit(1)
     elif action == 'upload':
         upload_pending()
