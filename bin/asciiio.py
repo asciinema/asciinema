@@ -19,6 +19,7 @@ import glob
 import bz2
 import ConfigParser
 import uuid
+import shutil
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 BASE_DIR = os.path.expanduser("~/.ascii.io")
@@ -296,11 +297,16 @@ class Uploader(object):
             # print >> sys.stderr, stderr
             # sys.stderr.write(stderr)
             os.write(2, stderr)
+        else:
+            self._remove_files()
 
         if stdout:
             return stdout
         else:
             return None
+
+    def _remove_files(self):
+        shutil.rmtree(self.path)
 
 
 def check_pending():
