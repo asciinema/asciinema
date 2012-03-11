@@ -21,10 +21,10 @@ import ConfigParser
 import uuid
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
+BASE_DIR = os.path.expanduser("~/.ascii.io")
 
 
 class AsciiCast(object):
-    BASE_DIR = os.path.expanduser("~/.ascii.io")
     QUEUE_DIR = BASE_DIR + "/queue"
 
     def __init__(self, api_url, user_token, command, title, record_input):
@@ -391,6 +391,9 @@ def main():
         api_url = config.get('api', 'url')
     except ConfigParser.NoOptionError:
         api_url = 'http://ascii.io'
+
+    if not os.path.isdir(BASE_DIR):
+        os.mkdir(BASE_DIR)
 
     with open(cfg_file, 'wb') as configfile:
         config.write(configfile)
