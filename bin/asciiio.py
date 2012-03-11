@@ -130,11 +130,16 @@ class PtyRecorder(object):
 
     def run(self):
         self._open_files()
-        self._write_stdout('\n~ Asciicast recording started.\n')
+        self.reset_terminal()
+        self._write_stdout('~ Asciicast recording started. Hit ^D (that\'s Ctrl+D) or type "exit" to finish.\n\n')
         success = self._spawn()
-        self._write_stdout('\n~ Asciicast recording finished.\n')
+        self.reset_terminal()
+        self._write_stdout('~ Asciicast recording finished.\n')
         self._close_files()
         return success
+
+    def reset_terminal(self):
+        subprocess.call(["reset"])
 
     def _open_files(self):
         self.stdout_file = TimedFile(self.path + '/stdout')
@@ -267,6 +272,8 @@ class Uploader(object):
         self.path = path
 
     def upload(self):
+        print '~ Uploading...'
+
         files = {
                      'meta': 'meta.json',
                    'stdout': 'stdout',
