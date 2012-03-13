@@ -317,10 +317,10 @@ def check_pending():
               % (num, SCRIPT_NAME, AsciiCast.QUEUE_DIR)
 
 
-def upload_pending():
+def upload_pending(api_url):
     print 'Uploading pending asciicasts...'
     for path in pending_list():
-        url = Uploader(path).upload()
+        url = Uploader(api_url, path).upload()
         if url:
             print url
 
@@ -435,7 +435,7 @@ def main():
         if not AsciiCast(api_url, user_token, command, title, record_input).create():
             sys.exit(1)
     elif action == 'upload':
-        upload_pending()
+        upload_pending(api_url)
     elif action == 'auth':
         auth(api_url, user_token)
     else:
