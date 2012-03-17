@@ -408,8 +408,9 @@ def main():
     if not os.path.isdir(BASE_DIR):
         os.mkdir(BASE_DIR)
 
-    with open(cfg_file, 'wb') as configfile:
-        config.write(configfile)
+    if not os.path.exists(cfg_file):
+        with open(cfg_file, 'wb') as configfile:
+            config.write(configfile)
 
     api_url = os.environ.get('ASCII_IO_API_URL', api_url)
 
