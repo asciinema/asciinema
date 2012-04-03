@@ -58,12 +58,14 @@ class AsciiCast(object):
 
         command = self.command and ' '.join(self.command)
         uname = self._get_cmd_output(['uname', '-srvp'])
+        username = os.environ['USER']
         shell = os.environ['SHELL']
         term = os.environ['TERM']
         lines = int(self._get_cmd_output(['tput', 'lines']))
         columns = int(self._get_cmd_output(['tput', 'cols']))
 
         data = {
+            'username'   : username,
             'user_token' : self.user_token,
             'duration'   : self.duration,
             'recorded_at': recorded_at,
