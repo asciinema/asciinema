@@ -348,7 +348,6 @@ Actions:
  auth          authenticate and/or claim recorded asciicasts
 
 Optional arguments:
- -i            record stdin (keystrokes will be shown during replay)
  -c command    run specified command instead of shell ($SHELL)
  -t title      specify title of recorded asciicast
  -h, --help    show this help message and exit
