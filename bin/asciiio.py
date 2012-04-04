@@ -39,7 +39,15 @@ class AsciiCast(object):
 
     def create(self):
         self._record()
-        return self._upload()
+        if self.confirm_upload():
+            return self._upload()
+        else:
+            self._delete()
+
+    def confirm_upload(self):
+        sys.stdout.write("~ Do you want to upload it? [Y/n] ")
+        answer = sys.stdin.readline().strip()
+        return answer == 'y' or answer == 'Y' or answer == ''
 
     def _record(self):
         os.makedirs(self.path)
@@ -95,6 +103,9 @@ class AsciiCast(object):
             return True
         else:
             return False
+
+    def _delete(self):
+        shutil.rmtree(self.path)
 
 
 class TimedFile(object):
