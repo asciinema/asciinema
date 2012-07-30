@@ -300,7 +300,7 @@ class Uploader(object):
 
         fields = ["-F asciicast[%s]=@%s/%s" % (f, self.path, files[f]) for f in files]
 
-        cmd = "curl -sS -o - %s %s" % (' '.join(fields), '%s/api/asciicasts' % self.api_url)
+        cmd = "curl -sSf -o - %s %s" % (' '.join(fields), '%s/api/asciicasts' % self.api_url)
 
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
