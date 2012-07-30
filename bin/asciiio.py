@@ -326,7 +326,7 @@ def check_pending():
     num = len(pending_list())
     if num > 0:
         print 'Warning: %i recorded asciicasts weren\'t uploaded. ' \
-              'Run "%s -u" to upload them or delete them with "rm -rf %s/*".' \
+              'Run "%s upload" to upload them or delete them with "rm -rf %s/*".' \
               % (num, SCRIPT_NAME, AsciiCast.QUEUE_DIR)
 
 
