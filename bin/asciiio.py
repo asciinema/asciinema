@@ -20,6 +20,7 @@ import bz2
 import ConfigParser
 import uuid
 import shutil
+import StringIO
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 BASE_DIR = os.path.expanduser("~/.ascii.io")
@@ -112,9 +113,11 @@ class TimedFile(object):
     '''File wrapper that records write times in separate file.'''
 
     def __init__(self, filename):
-        mode = 'w'
-        self.data_file = bz2.BZ2File(filename, mode)
-        self.time_file = bz2.BZ2File(filename + '.time', mode)
+        self.filename = filename
+
+        self.data_file = StringIO.StringIO()
+        self.time_file = StringIO.StringIO()
+
         self.old_time = time.time()
 
     def write(self, data):
@@ -125,9 +128,18 @@ class TimedFile(object):
         self.old_time = now
 
     def close(self):
+        mode = 'w'
+
+        bz2_data_file = bz2.BZ2File(self.filename, mode)
+        bz2_data_file.write(self.data_file.getvalue())
+        bz2_data_file.close()
+
+        bz2_time_file = bz2.BZ2File(self.filename + '.time', mode)
+        bz2_time_file.write(self.time_file.getvalue())
+        bz2_time_file.close()
+
         self.data_file.close()
         self.time_file.close()
-
 
 class PtyRecorder(object):
     '''Pseudo-terminal recorder.
