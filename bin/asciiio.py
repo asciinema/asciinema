@@ -29,7 +29,7 @@ BASE_DIR = os.path.expanduser("~/.ascii.io")
 class AsciiCast(object):
     QUEUE_DIR = BASE_DIR + "/queue"
 
-    def __init__(self, api_url, user_token, command, title, record_input):
+    def __init__(self, api_url, user_token, command, title, record_input, always_yes):
         self.api_url = api_url
         self.user_token = user_token
         self.path = AsciiCast.QUEUE_DIR + "/%i" % int(time.time())
@@ -37,6 +37,7 @@ class AsciiCast(object):
         self.title = title
         self.record_input = record_input
         self.duration = None
+        self.always_yes = always_yes
 
     def create(self):
         self._record()
@@ -46,6 +47,9 @@ class AsciiCast(object):
             self._delete()
 
     def confirm_upload(self):
+        if self.always_yes:
+            return True
+
         sys.stdout.write("~ Do you want to upload it? [Y/n] ")
         answer = sys.stdin.readline().strip()
         return answer == 'y' or answer == 'Y' or answer == ''
@@ -361,7 +365,7 @@ def pending_list():
 
 
 def usage():
-    text = '''usage: %s [-h] [-i] [-c <command>] [-t <title>] [action]
+    text = '''usage: %s [-h] [-i] [-y] [-c <command>] [-t <title>] [action]
 
 Asciicast recorder+uploader.
 
@@ -373,6 +377,7 @@ Actions:
 Optional arguments:
  -c command    run specified command instead of shell ($SHELL)
  -t title      specify title of recorded asciicast
+ -y            don't prompt for confirmation
  -h, --help    show this help message and exit
  --version     show version information''' % SCRIPT_NAME
     print text
@@ -386,7 +391,7 @@ def main():
     '''Parses command-line options and creates asciicast.'''
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'c:t:ih', ['help', 'version'])
+        opts, args = getopt.getopt(sys.argv[1:], 'c:t:ihy', ['help', 'version'])
     except getopt.error as msg:
         print('%s: %s' % (sys.argv[0], msg))
         print('Run "%s --help" for list of available options' % sys.argv[0])
@@ -440,6 +445,7 @@ def main():
 
     command = None
     title = None
+    always_yes = False
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -454,10 +460,12 @@ def main():
             title = arg
         elif opt == '-i':
             record_input = True
+        elif opt == '-y':
+            always_yes = True
 
     if action == 'rec':
         check_pending()
-        if not AsciiCast(api_url, user_token, command, title, record_input).create():
+        if not AsciiCast(api_url, user_token, command, title, record_input, always_yes).create():
             sys.exit(1)
     elif action == 'upload':
         upload_pending(api_url)
