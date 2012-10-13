@@ -384,7 +384,7 @@ Optional arguments:
 
 
 def print_version():
-    print 'ascii.io-cli v0.x'
+    print 'asciiio 1.0'
 
 
 def main():
