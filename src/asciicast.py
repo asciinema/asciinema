@@ -5,22 +5,23 @@ import subprocess
 import json
 import shutil
 
-from constants import SCRIPT_NAME, BASE_DIR
+from constants import BASE_DIR
 from pty_recorder import PtyRecorder
 from uploader import Uploader
 
 class AsciiCast(object):
     QUEUE_DIR = BASE_DIR + "/queue"
 
-    def __init__(self, api_url, user_token, command, title, record_input, always_yes):
-        self.api_url = api_url
-        self.user_token = user_token
+    def __init__(self, config, options):
+        self.config = config
+        self.api_url = config.api_url()
+        self.user_token = config.user_token()
         self.path = AsciiCast.QUEUE_DIR + "/%i" % int(time.time())
-        self.command = command
-        self.title = title
-        self.record_input = record_input
+        self.command = options.command
+        self.title = options.title
+        self.record_input = options.record_input
+        self.always_yes = options.always_yes
         self.duration = None
-        self.always_yes = always_yes
 
     def create(self):
         self._record()
@@ -85,7 +86,7 @@ class AsciiCast(object):
         return process.communicate()[0].strip()
 
     def _upload(self):
-        url = Uploader(self.api_url, self.path).upload()
+        url = Uploader(self.config, self.path).upload()
         if url:
             print url
             return True

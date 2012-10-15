@@ -8,8 +8,8 @@ class Uploader(object):
     Uploads recorded script to website using HTTP based API.
     '''
 
-    def __init__(self, api_url, path):
-        self.api_url = api_url
+    def __init__(self, config, path):
+        self.api_url = config.api_url()
         self.path = path
 
     def upload(self):
