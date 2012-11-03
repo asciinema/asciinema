@@ -26,9 +26,9 @@ class CLI:
         elif action == 'auth':
             self.auth()
         elif action == 'help':
-            self.usage()
+            self.help()
         elif action == 'version':
-            self.print_version()
+            self.version()
         else:
             print('Unknown action: %s' % action)
             print('Run "%s --help" for list of available options' % sys.argv[0])
@@ -59,8 +59,8 @@ class CLI:
     def pending_list(self):
         return [os.path.dirname(p) for p in glob.glob(AsciiCast.QUEUE_DIR + '/*/*.time')]
 
-    def print_version(self):
-        print 'asciiio 1.0'
+    def version(self):
+        print 'asciiio 1.0.1'
 
-    def usage(self):
+    def help(self):
         print help_text.TEXT
