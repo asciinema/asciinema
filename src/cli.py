@@ -31,7 +31,7 @@ class CLI:
             self.version()
         else:
             print('Unknown action: %s' % action)
-            print('Run "%s --help" for list of available options' % sys.argv[0])
+            print('Run "%s --help" for list of available options' % SCRIPT_NAME)
 
     def record(self):
         if not AsciiCast(self.config, self.options).create():
