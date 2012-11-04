@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from cli import CLI
+import cli
 
 def main():
-    CLI().run()
+    cli.run()
 
 if __name__ == '__main__':
     main()

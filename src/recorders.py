@@ -1,3 +1,5 @@
+# TODO REFA
+
 import os
 import pty
 import subprocess
@@ -8,43 +10,69 @@ import fcntl
 import termios
 import select
 
-from timed_file import TimedFile
 
-class PtyRecorder(object):
+import time
+import select
+
+
+class StdinRecorder(object):
+
+    def __init__(self, stdout_file):
+        self.stdout_file = stdout_file
+
+    def run(self):
+        while 1:
+            line = sys.stdin.readline()
+
+            if len(line) == 0:
+                break
+
+            self.stdout_file.write(data)
+
+        # descriptor = 0
+
+        # while 1:
+        #     try:
+        #         rfds, wfds, xfds = select.select([descriptor], [], [])
+        #     except select.error, e:
+        #         if e[0] == 4:   # Interrupted system call.
+        #             continue
+
+        #     if descriptor in rfds:
+        #         data = os.read(descriptor, 1024)
+
+        #         if len(data) == 0:
+        #             break
+
+        #         # self._write_stdout(data)
+        #         self.stdout_file.write(data)
+        #         # print time.time()
+        #         # print len(data)
+
+
+class ProcessRecorder(object):
     '''Pseudo-terminal recorder.
 
     Creates new pseudo-terminal for spawned process
     and saves stdin/stderr (and timing) to files.
     '''
 
-    def __init__(self, path, command, record_input):
-        self.master_fd = None
-        self.path = path
+    def __init__(self, command, stdout_file, stdin_file=None):
         self.command = command
-        self.record_input = record_input
+        self.stdout_file = stdout_file
+        self.stdin_file = stdin_file
+        self.master_fd = None
 
     def run(self):
-        self._open_files()
         self.reset_terminal()
         self._write_stdout('~ Asciicast recording started. Hit ^D (that\'s Ctrl+D) or type "exit" to finish.\n\n')
         success = self._spawn()
         self.reset_terminal()
         self._write_stdout('~ Asciicast recording finished.\n')
-        self._close_files()
         return success
 
     def reset_terminal(self):
         subprocess.call(["reset"])
-
-    def _open_files(self):
-        self.stdout_file = TimedFile(self.path + '/stdout')
-        if self.record_input:
-            self.stdin_file = TimedFile(self.path + '/stdin')
-
-    def _close_files(self):
-        self.stdout_file.close()
-        if self.record_input:
-            self.stdin_file.close()
 
     def _spawn(self):
         '''Create a spawned process.
@@ -138,7 +166,7 @@ class PtyRecorder(object):
         '''Handles new data on child process stdin.'''
 
         self._write_master(data)
-        if self.record_input:
+        if self.stdin_file:
             self.stdin_file.write(data)
 
     def _write_stdout(self, data):

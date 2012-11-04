@@ -1,6 +1,22 @@
 import os
 import subprocess
-import shutil
+
+
+class CurlFormData(object):
+
+    def __init__(self, namespace=None):
+        self.namespace = namespace
+        self.files = {}
+
+    def add_file(self, name, filename):
+        if self.namespace:
+            name = '%s[%s]' % (self.namespace, name)
+
+        self.files[name] = '@' + filename
+
+    def form_file_args(self):
+        return ' '.join(['-F %s="%s"' % (k, v) for k, v in self.files.iteritems()])
+
 
 class Uploader(object):
     '''Asciicast uploader.
@@ -8,26 +24,22 @@ class Uploader(object):
     Uploads recorded script to website using HTTP based API.
     '''
 
-    def __init__(self, config, path):
-        self.api_url = config.api_url()
-        self.path = path
+    def __init__(self, api_url):
+        self.upload_url = '%s/api/asciicasts' % api_url
 
-    def upload(self):
-        print '~ Uploading...'
+    def upload(self, asciicast):
+        form_data = CurlFormData('asciicast')
 
-        files = {
-                     'meta': 'meta.json',
-                   'stdout': 'stdout',
-            'stdout_timing': 'stdout.time'
-        }
+        form_data.add_file('meta', asciicast.metadata_filename)
 
-        if os.path.exists(self.path + '/stdin'):
-            files['stdin']        = 'stdin'
-            files['stdin_timing'] = 'stdin.time'
+        form_data.add_file('stdout', asciicast.stdout_data_filename)
+        form_data.add_file('stdout_timing', asciicast.stdout_timing_filename)
 
-        fields = ["-F asciicast[%s]=@%s/%s" % (f, self.path, files[f]) for f in files]
+        if os.path.exists(asciicast.stdin_data_filename):
+            form_data.add_file('stdin', asciicast.stdin_data_filename)
+            form_data.add_file('stdin_timing', asciicast.stdin_timing_filename)
 
-        cmd = "curl -sSf -o - %s %s" % (' '.join(fields), '%s/api/asciicasts' % self.api_url)
+        cmd = "curl -sSf -o - %s %s" % (form_data.form_file_args(), self.upload_url)
 
         process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
@@ -37,13 +49,5 @@ class Uploader(object):
             # print >> sys.stderr, stderr
             # sys.stderr.write(stderr)
             os.write(2, stderr)
-        else:
-            self._remove_files()
 
-        if stdout:
-            return stdout
-        else:
-            return None
-
-    def _remove_files(self):
-        shutil.rmtree(self.path)
+        return stdout

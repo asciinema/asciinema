@@ -1,66 +1,144 @@
 import os
 import sys
-import glob
 
-import help_text
+import asciicasts
 from config import Config
 from options import Options
-from constants import SCRIPT_NAME
-from asciicast import AsciiCast
 from uploader import Uploader
+import asciicast_recorder
 
-class CLI:
-    '''Parses command-line options and xxxxxxxxxxxxxxxxx.'''
 
-    def run(self):
-        self.config = Config()
-        self.options = Options(sys.argv)
+SCRIPT_NAME = os.path.basename(sys.argv[0])
 
-        action = self.options.action
+config = Config()
+options = Options(sys.argv)
 
-        if action == 'rec':
-            self.check_pending()
-            self.record()
-        elif action == 'upload':
-            self.upload_pending()
-        elif action == 'auth':
-            self.auth()
-        elif action == 'help':
-            self.help()
-        elif action == 'version':
-            self.version()
-        else:
-            print('Unknown action: %s' % action)
-            print('Run "%s --help" for list of available options' % SCRIPT_NAME)
 
-    def record(self):
-        if not AsciiCast(self.config, self.options).create():
-            sys.exit(1)
+def run():
+    action = options.action
 
-    def auth(self):
-        url = '%s/connect/%s' % (self.config.api_url(), self.config.user_token())
-        print 'Open following URL in your browser to authenticate and/or claim ' \
-            'recorded asciicasts:\n\n%s' % url
+    if action == 'rec':
+        record()
+    elif action == 'upload':
+        upload_all_pending()
+    elif action == 'auth':
+        authenticate()
+    elif action == 'help':
+        print_help()
+    elif action == 'version':
+        print_version()
+    else:
+        handle_unknown_action(action)
 
-    def check_pending(self):
-        num = len(self.pending_list())
-        if num > 0:
-            print 'Warning: %i recorded asciicasts weren\'t uploaded. ' \
-                'Run "%s upload" to upload them or delete them with "rm -rf %s/*".' \
-                % (num, SCRIPT_NAME, AsciiCast.QUEUE_DIR)
 
-    def upload_pending(self):
-        print 'Uploading pending asciicasts...'
-        for path in self.pending_list():
-            url = Uploader(self.config, path).upload()
-            if url:
-                print url
+# Actions
 
-    def pending_list(self):
-        return [os.path.dirname(p) for p in glob.glob(AsciiCast.QUEUE_DIR + '/*/*.time')]
+def record():
+    # check_pending()
 
-    def version(self):
-        print 'asciiio 1.0.1'
+    # id = int(time.time())
+    # path = "%s/%i" % (queue_dir_path, id)
+    # asciicast = Asciicast(path)
 
-    def help(self):
-        print help_text.TEXT
+    asciicast = Asciicast()
+    asciicast.command = options.command
+    asciicast.title = options.title
+
+    start_time = time.time()
+
+    if sys.stdin.isatty():
+        record_process(command, asciicast.stdout_file)
+    else:
+        record_stdin(asciicast.stdout_file)
+
+    end_time = time.time()
+
+    asciicast.recorded_at = start_time
+    asciicast.duration = end_time - start_time
+
+    asciicast.save()
+
+    # asciicast = asciicast_recorder.record(
+    #         config.queue_dir_path, config.user_token, options
+    #         )
+    # asciicast = recorder.record()
+
+    if is_upload_requested():
+        print '~ Uploading...'
+        upload_asciicast(asciicast)
+
+
+def upload_all_pending():
+    print 'Uploading pending asciicasts...'
+    for asciicast in pending_asciicasts():
+        upload_asciicast(asciicast)
+
+
+def authenticate():
+    url = '%s/connect/%s' % (config.api_url, config.user_token)
+    print 'Open following URL in your browser to authenticate and/or ' \
+        'claim recorded asciicasts:\n\n%s' % url
+
+
+def print_help():
+    print HELP_TEXT
+
+
+def print_version():
+    print 'asciiio 1.0.1'
+
+
+def handle_unknown_action(action):
+    print('Unknown action: %s' % action)
+    print('Run "%s --help" for list of available options' % SCRIPT_NAME)
+    sys.exit(1)
+
+
+# Helpers
+
+def check_pending():
+    num = len(pending_asciicasts())
+    if num > 0:
+        print "Warning: %i recorded asciicasts weren't uploaded. " \
+                'Run "%s upload" to upload them or delete them with ' \
+                '"rm -rf %s/*".' \
+                % (num, SCRIPT_NAME, config.queue_dir_path)
+
+
+def pending_asciicasts():
+    return asciicasts.pending(config.queue_dir_path)
+
+
+def upload_asciicast(asciicast):
+    uploader = Uploader(config.api_url)
+    url = uploader.upload(asciicast)
+
+    if url:
+        print url
+        asciicast.destroy()
+
+
+def is_upload_requested():
+    if options.always_yes:
+        return True
+
+    sys.stdout.write("~ Do you want to upload it? [Y/n] ")
+    answer = sys.stdin.readline().strip()
+    return answer == 'y' or answer == 'Y' or answer == ''
+
+
+HELP_TEXT = '''usage: %s [-h] [-i] [-y] [-c <command>] [-t <title>] [action]
+
+Asciicast recorder+uploader.
+
+Actions:
+ rec           record asciicast (this is the default when no action given)
+ upload        upload recorded (but not uploaded) asciicasts
+ auth          authenticate and/or claim recorded asciicasts
+
+Optional arguments:
+ -c command    run specified command instead of shell ($SHELL)
+ -t title      specify title of recorded asciicast
+ -y            don't prompt for confirmation
+ -h, --help    show this help message and exit
+ --version     show version information''' % SCRIPT_NAME

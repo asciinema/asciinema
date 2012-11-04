@@ -6,7 +6,7 @@ class Config:
 
     def __init__(self):
         self.base_dir_path = os.path.expanduser("~/.ascii.io")
-        self.config_file_path = '%s/config' % self.base_dir_path
+        self.config_filename = '%s/config' % self.base_dir_path
         self.queue_dir_path = '%s/queue' % self.base_dir_path
 
         self.create_base_dir()
@@ -23,14 +23,15 @@ class Config:
         config.add_section('record')
 
         try:
-            config.read(self.config_file_path)
+            config.read(self.config_filename)
         except ConfigParser.ParsingError:
             print('Config file %s contains syntax errors' %
-                    self.config_file_path)
+                    self.config_filename)
             sys.exit(2)
 
         self.config = config
 
+    @property
     def api_url(self):
         try:
             api_url = self.config.get('api', 'url')
@@ -41,6 +42,7 @@ class Config:
 
         return api_url
 
+    @property
     def user_token(self):
         try:
             user_token = self.config.get('user', 'token')
@@ -48,7 +50,7 @@ class Config:
             user_token = str(uuid.uuid1())
             self.config.set('user', 'token', user_token)
 
-            with open(self.config_file_path, 'wb') as configfile:
-                self.config.write(configfile)
+            with open(self.config_filename, 'wb') as f:
+                self.config.write(f)
 
         return user_token
