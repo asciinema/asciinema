@@ -1,53 +1,48 @@
-# TODO REFA
-
-import os
-import pty
-import subprocess
-import signal
-import tty
 import array
 import fcntl
+import os
+import pty
+import select
+import select
+import signal
+import subprocess
+import sys
 import termios
-import select
-
-
 import time
-import select
+import tty
 
 
-class StdinRecorder(object):
+def record_stream(stream, stdout_file):
+    recorder = StreamRecorder(stream, stdout_file)
+    start_time = time.time()
+    recorder.run()
+    end_time = time.time()
+    return end_time - start_time
 
-    def __init__(self, stdout_file):
+
+class StreamRecorder(object):
+
+    def __init__(self, stream, stdout_file):
+        self.stream = stream
         self.stdout_file = stdout_file
 
     def run(self):
         while 1:
-            line = sys.stdin.readline()
+            line = self.stream.readline()
 
             if len(line) == 0:
                 break
 
-            self.stdout_file.write(data)
+            self.stdout_file.write(line)
+            print line,
 
-        # descriptor = 0
 
-        # while 1:
-        #     try:
-        #         rfds, wfds, xfds = select.select([descriptor], [], [])
-        #     except select.error, e:
-        #         if e[0] == 4:   # Interrupted system call.
-        #             continue
-
-        #     if descriptor in rfds:
-        #         data = os.read(descriptor, 1024)
-
-        #         if len(data) == 0:
-        #             break
-
-        #         # self._write_stdout(data)
-        #         self.stdout_file.write(data)
-        #         # print time.time()
-        #         # print len(data)
+def record_process(command, is_shell, stdout_file, stdin_file=None):
+    recorder = ProcessRecorder(command, is_shell, stdout_file, stdin_file)
+    start_time = time.time()
+    recorder.run()
+    end_time = time.time()
+    return end_time - start_time
 
 
 class ProcessRecorder(object):
@@ -57,22 +52,28 @@ class ProcessRecorder(object):
     and saves stdin/stderr (and timing) to files.
     '''
 
-    def __init__(self, command, stdout_file, stdin_file=None):
-        self.command = command
+    def __init__(self, command, is_shell, stdout_file, stdin_file=None):
+        self.command = command.split(' ')
+        self.is_shell = is_shell
         self.stdout_file = stdout_file
         self.stdin_file = stdin_file
         self.master_fd = None
 
     def run(self):
         self.reset_terminal()
-        self._write_stdout('~ Asciicast recording started. Hit ^D (that\'s Ctrl+D) or type "exit" to finish.\n\n')
+
+        if self.is_shell:
+            self._write_stdout('~ Asciicast recording started. Hit ^D (that\'s Ctrl+D) or type "exit" to finish.\n\n')
+
         success = self._spawn()
         self.reset_terminal()
         self._write_stdout('~ Asciicast recording finished.\n')
+
         return success
 
     def reset_terminal(self):
-        subprocess.call(["reset"])
+        pass
+        # subprocess.call(["reset"])
 
     def _spawn(self):
         '''Create a spawned process.

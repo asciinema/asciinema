@@ -7,7 +7,6 @@ class Config:
     def __init__(self):
         self.base_dir_path = os.path.expanduser("~/.ascii.io")
         self.config_filename = '%s/config' % self.base_dir_path
-        self.queue_dir_path = '%s/queue' % self.base_dir_path
 
         self.create_base_dir()
         self.parse_config_file()

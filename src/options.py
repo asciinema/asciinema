@@ -32,7 +32,7 @@ class Options:
             elif opt == '--version':
                 self.action = 'version'
             elif opt == '-c':
-                self.command = arg.split()
+                self.command = arg
             elif opt == '-t':
                 self.title = arg
             elif opt == '-i':
