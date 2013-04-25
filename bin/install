@@ -10,7 +10,7 @@
 # ascii.io recorder installation script
 
 BIN_NAME="asciiio"
-BIN_URL="https://raw.github.com/sickill/ascii.io-cli/master/bin/asciiio"
+BIN_URL="https://raw.github.com/MatthR3D/ascii.io-cli/dev/bin/asciiio"
 SUDO=""
 
 if [ -d "$HOME/bin" ] && [[ ":$PATH:" == *":~/bin:"* || ":$PATH:" == *":$HOME/bin:"* ]]; then
