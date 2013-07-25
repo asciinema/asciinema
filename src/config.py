@@ -4,18 +4,18 @@ import uuid
 
 class Config:
 
-    def __init__(self):
-        self.base_dir_path = os.path.expanduser("~/.ascii.io")
-        self.config_filename = '%s/config' % self.base_dir_path
+    def __init__(self, base_path="~/.ascii.io"):
+        self.base_path = os.path.expanduser(base_path)
+        self.config_filename = '%s/config' % self.base_path
 
-        self.create_base_dir()
-        self.parse_config_file()
+        self._create_base_dir()
+        self._parse_config_file()
 
-    def create_base_dir(self):
-        if not os.path.isdir(self.base_dir_path):
-            os.mkdir(self.base_dir_path)
+    def _create_base_dir(self):
+        if not os.path.isdir(self.base_path):
+            os.mkdir(self.base_path)
 
-    def parse_config_file(self):
+    def _parse_config_file(self):
         config = ConfigParser.RawConfigParser()
         config.add_section('user')
         config.add_section('api')

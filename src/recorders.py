@@ -14,6 +14,15 @@ import tty
 
 def record_stream(stream, stdout_file):
     recorder = StreamRecorder(stream, stdout_file)
+    return record(recorder)
+
+
+def record_process(command, is_shell, stdout_file, stdin_file=None):
+    recorder = ProcessRecorder(command, is_shell, stdout_file, stdin_file)
+    return record(recorder)
+
+
+def record(recorder):
     start_time = time.time()
     recorder.run()
     end_time = time.time()
@@ -35,14 +44,6 @@ class StreamRecorder(object):
 
             self.stdout_file.write(line)
             print line,
-
-
-def record_process(command, is_shell, stdout_file, stdin_file=None):
-    recorder = ProcessRecorder(command, is_shell, stdout_file, stdin_file)
-    start_time = time.time()
-    recorder.run()
-    end_time = time.time()
-    return end_time - start_time
 
 
 class ProcessRecorder(object):
