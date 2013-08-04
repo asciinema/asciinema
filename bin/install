@@ -29,7 +29,13 @@ else
   echo "Couldn't find ~/bin or /usr/local/bin in your \$PATH, saving in current dir..."
 fi
 
-$SUDO curl -skL $BIN_URL -o $TARGET
+asciiio=$(curl -skL $BIN_URL)
+[[ $(python -V 2>&1 >/dev/null) =~ [^0-9]*([0-9]+)\.[0-9]+ ]]
+if [[ ${BASH_REMATCH[1]} > 2 ]]; then
+  asciiio=${asciiio/python/python2}
+fi
+
+echo "$asciiio" | $SUDO tee $TARGET 2>&1 > /dev/null
 
 if [ ! $(which python2 2>/dev/null) ]; then
   $SUDO sed -i '1 s/python2/python/' $TARGET
