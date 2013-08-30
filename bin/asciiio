@@ -25,6 +25,35 @@ import StringIO
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 BASE_DIR = os.path.expanduser("~/.ascii.io")
 
+import ctypes
+
+CLOCK_MONOTONIC = 1
+
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_nsec', ctypes.c_long)
+    ]
+
+try:
+    librt = ctypes.CDLL('librt.so.1', use_errno=True)
+    clock_gettime = librt.clock_gettime
+    clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+except OSError:
+    clock_gettime = None
+
+def monotonic_time():
+    # Attempt to use a high-resolution monotonic clock. Failing that, fall back
+    # to Python's time.time().
+    if clock_gettime:
+        t = timespec()
+        if clock_gettime(CLOCK_MONOTONIC, ctypes.pointer(t)) != 0:
+            errno_ = ctypes.get_errno()
+            raise OSError(errno_, os.strerror(errno_))
+        return t.tv_sec + t.tv_nsec * 1e-9
+
+    else:
+        return time.time()
 
 class AsciiCast(object):
     QUEUE_DIR = BASE_DIR + "/queue"
@@ -56,10 +85,10 @@ class AsciiCast(object):
 
     def _record(self):
         os.makedirs(self.path)
-        self.recording_start = time.time()
+        self.recording_start = monotonic_time()
         command = self.command or os.environ['SHELL'].split()
         PtyRecorder(self.path, command, self.record_input).run()
-        self.duration = time.time() - self.recording_start
+        self.duration = monotonic_time() - self.recording_start
         self._save_metadata()
 
     def _save_metadata(self):
@@ -122,11 +151,11 @@ class TimedFile(object):
         self.data_file = StringIO.StringIO()
         self.time_file = StringIO.StringIO()
 
-        self.old_time = time.time()
+        self.old_time = monotonic_time()
 
     def write(self, data):
         self.data_file.write(data)
-        now = time.time()
+        now = monotonic_time()
         delta = now - self.old_time
         self.time_file.write("%f %d\n" % (delta, len(data)))
         self.old_time = now
