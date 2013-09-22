@@ -32,7 +32,7 @@ fi
 $SUDO curl -skL $BIN_URL -o $TARGET
 
 if [ ! $(which python2 2>/dev/null) ]; then
-  $SUDO sed -i '1 s/python2/python/' $TARGET
+  $SUDO sed -i '.orig' '1 s/python2/python/' $TARGET
 fi
 
 if [[ $? == 0 ]]; then
