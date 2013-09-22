@@ -432,7 +432,7 @@ def main():
     try:
         api_url = config.get('api', 'url')
     except ConfigParser.NoOptionError:
-        api_url = 'http://ascii.io'
+        api_url = 'http://asciinema.org'
 
     if not os.path.isdir(BASE_DIR):
         os.mkdir(BASE_DIR)
