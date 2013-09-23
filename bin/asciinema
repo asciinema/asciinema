@@ -23,7 +23,7 @@ import shutil
 import StringIO
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
-BASE_DIR = os.path.expanduser("~/.ascii.io")
+BASE_DIR = os.path.expanduser("~/.asciinema")
 
 
 class AsciiCast(object):
@@ -384,7 +384,7 @@ Optional arguments:
 
 
 def print_version():
-    print 'asciiio 1.0'
+    print 'asciinema 1.0'
 
 
 def main():
@@ -411,7 +411,7 @@ def main():
     config.add_section('api')
     config.add_section('record')
 
-    cfg_file = os.path.expanduser('~/.ascii.io/config')
+    cfg_file = os.path.expanduser('~/.asciinema/config')
     try:
         config.read(cfg_file)
     except ConfigParser.ParsingError:
