@@ -7,7 +7,7 @@
 # | (_| \__ \ (__| | |_| | (_) |
 #  \__,_|___/\___|_|_(_)_|\___/
 #
-# ascii.io recorder installation script
+# asciinema recorder installation script
 
 BIN_NAME="asciinema"
 BIN_URL="https://raw.github.com/sickill/asciinema/master/bin/asciinema"

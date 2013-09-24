@@ -1,11 +1,11 @@
-all: bin/asciiio
+all: bin/asciinema
 
-bin/asciiio: tmp/asciiio.zip
-	echo '#!/usr/bin/env python' > bin/asciiio
-	cat tmp/asciiio.zip >> bin/asciiio
-	chmod +x bin/asciiio
+bin/asciinema: tmp/asciinema.zip
+	echo '#!/usr/bin/env python' > bin/asciinema
+	cat tmp/asciinema.zip >> bin/asciinema
+	chmod +x bin/asciinema
 
-tmp/asciiio.zip: src/__main__.py src/asciicast.py src/recorders.py src/timed_file.py src/uploader.py src/config.py src/options.py src/cli.py
+tmp/asciinema.zip: src/__main__.py src/asciicast.py src/recorders.py src/timed_file.py src/uploader.py src/config.py src/options.py src/cli.py
 	mkdir -p tmp
-	rm -rf tmp/asciiio.zip
-	cd src && zip ../tmp/asciiio.zip *.py
+	rm -rf tmp/asciinema.zip
+	cd src && zip ../tmp/asciinema.zip *.py

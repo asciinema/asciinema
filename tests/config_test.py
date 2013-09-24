@@ -23,9 +23,9 @@ def create_config(config_file_content=None):
 class TestConfig(object):
 
     def test_api_url(self):
-        # defaults to http://ascii.io
+        # defaults to http://asciinema.org
         config = create_config()
-        assert_equal('http://ascii.io', config.api_url)
+        assert_equal('http://asciinema.org', config.api_url)
 
         # uses api.url from config file
         config = create_config("[api]\nurl = bar")

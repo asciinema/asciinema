@@ -52,7 +52,7 @@ def print_help():
 
 
 def print_version():
-    print 'asciiio 1.0.1'
+    print 'asciinema 0.9.1'
 
 
 def handle_unknown_action(action):

@@ -4,7 +4,7 @@ import uuid
 
 class Config:
 
-    def __init__(self, base_path="~/.ascii.io"):
+    def __init__(self, base_path="~/.asciinema"):
         self.base_path = os.path.expanduser(base_path)
         self.config_filename = '%s/config' % self.base_path
 
@@ -35,7 +35,7 @@ class Config:
         try:
             api_url = self.config.get('api', 'url')
         except ConfigParser.NoOptionError:
-            api_url = 'http://ascii.io'
+            api_url = 'http://asciinema.org'
 
         api_url = os.environ.get('ASCII_IO_API_URL', api_url)
 
