@@ -384,7 +384,7 @@ Optional arguments:
 
 
 def print_version():
-    print 'asciinema 1.0'
+    print 'asciinema 0.9.0'
 
 
 def main():
