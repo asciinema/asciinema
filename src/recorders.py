@@ -12,11 +12,6 @@ import time
 import tty
 
 
-def record_stream(stream, stdout_file):
-    recorder = StreamRecorder(stream, stdout_file)
-    return record(recorder)
-
-
 def record_process(command, is_shell, stdout_file, stdin_file=None):
     recorder = ProcessRecorder(command, is_shell, stdout_file, stdin_file)
     return record(recorder)
@@ -27,23 +22,6 @@ def record(recorder):
     recorder.run()
     end_time = time.time()
     return end_time - start_time
-
-
-class StreamRecorder(object):
-
-    def __init__(self, stream, stdout_file):
-        self.stream = stream
-        self.stdout_file = stdout_file
-
-    def run(self):
-        while 1:
-            line = self.stream.readline()
-
-            if len(line) == 0:
-                break
-
-            self.stdout_file.write(line)
-            print line,
 
 
 class ProcessRecorder(object):

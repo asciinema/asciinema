@@ -66,19 +66,16 @@ def handle_unknown_action(action):
 def record_asciicast():
     asciicast = Asciicast()
 
-    if sys.stdin.isatty():
-        if options.command:
-            command = options.command
-            is_shell = False
-        else:
-            command = os.environ['SHELL']
-            is_shell = True
-
-        stdin_file = asciicast.stdin_file if options.record_input else None
-        duration = recorders.record_process(command, is_shell,
-                                            asciicast.stdout_file, stdin_file)
+    if options.command:
+        command = options.command
+        is_shell = False
     else:
-        duration = recorders.record_stream(sys.stdin, asciicast.stdout_file)
+        command = os.environ['SHELL']
+        is_shell = True
+
+    stdin_file = asciicast.stdin_file if options.record_input else None
+    duration = recorders.record_process(command, is_shell,
+                                        asciicast.stdout_file, stdin_file)
 
     asciicast.user_token = config.user_token
     asciicast.command = options.command
