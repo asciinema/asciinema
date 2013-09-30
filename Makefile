@@ -7,7 +7,12 @@ bin/asciinema: tmp/asciinema.zip
 	cat tmp/asciinema.zip >> bin/asciinema
 	chmod +x bin/asciinema
 
-tmp/asciinema.zip: src/__main__.py src/asciicast.py src/recorders.py src/timed_file.py src/uploader.py src/config.py src/options.py src/cli.py
+tmp/asciinema.zip: src/* src/commands/*
 	mkdir -p tmp
-	rm -rf tmp/asciinema.zip
-	cd src && zip ../tmp/asciinema.zip *.py
+	rm -f tmp/asciinema.zip
+	cd src && zip -r ../tmp/asciinema.zip `find . -name \*.py`
+
+test:
+	PYTHONPATH=tests nosetests `find tests -name "*_test.py"`
+
+.PHONY: test
