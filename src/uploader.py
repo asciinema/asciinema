@@ -1,53 +1,48 @@
-import os
-import subprocess
+import json
+import bz2
+
+from urllib_http_adapter import UrllibHttpAdapter
 
 
-class CurlFormData(object):
+class File(object):
 
-    def __init__(self, namespace=None):
-        self.namespace = namespace
-        self.files = {}
-
-    def add_file(self, name, filename):
-        if self.namespace:
-            name = '%s[%s]' % (self.namespace, name)
-
-        self.files[name] = '@' + filename
-
-    def form_file_args(self):
-        return ' '.join(['-F %s="%s"' % (k, v) for k, v in self.files.iteritems()])
+    def __init__(self, name, content):
+        self.name = name
+        self.content = content
 
 
 class Uploader(object):
-    '''Asciicast uploader.
 
-    Uploads recorded script to website using HTTP based API.
-    '''
+    def __init__(self, http_adapter=UrllibHttpAdapter()):
+        self.http_adapter = http_adapter
 
-    def __init__(self, api_url):
-        self.upload_url = '%s/api/asciicasts' % api_url
+    def upload(self, api_url, user_token, asciicast):
+        url = '%s/api/asciicasts' % api_url
+        files  = self._asciicast_files(asciicast, user_token)
 
-    def upload(self, asciicast):
-        form_data = CurlFormData('asciicast')
+        status, headers, body = self.http_adapter.post(url, files=files)
 
-        form_data.add_file('meta', asciicast.metadata_filename)
+        return body
 
-        form_data.add_file('stdout', asciicast.stdout_data_filename)
-        form_data.add_file('stdout_timing', asciicast.stdout_timing_filename)
+    def _asciicast_files(self, asciicast, user_token):
+        return {
+            'asciicast[stdout]': self._stdout_data_file(asciicast.stdout),
+            'asciicast[stdout_timing]': self._stdout_timing_file(asciicast.stdout),
+            'asciicast[meta]': self._meta_file(asciicast, user_token)
+        }
 
-        if os.path.exists(asciicast.stdin_data_filename):
-            form_data.add_file('stdin', asciicast.stdin_data_filename)
-            form_data.add_file('stdin_timing', asciicast.stdin_timing_filename)
+    def _stdout_data_file(self, stdout):
+        return File('stdout', bz2.compress(stdout.data))
 
-        cmd = "curl -sSf -o - %s %s" % (form_data.form_file_args(), self.upload_url)
+    def _stdout_timing_file(self, stdout):
+        return File('stdout.time', bz2.compress(str(stdout.timing)))
 
-        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+    def _meta_file(self, asciicast, user_token):
+        return File('meta.json', self._meta_json(asciicast, user_token))
 
-        if stderr:
-            # print >> sys.stderr, stderr
-            # sys.stderr.write(stderr)
-            os.write(2, stderr)
+    def _meta_json(self, asciicast, user_token):
+        meta_data = asciicast.meta_data()
+        auth_data = { 'user_token': user_token }
+        data = dict(meta_data.items() + auth_data.items())
 
-        return stdout
+        return json.dumps(data)
