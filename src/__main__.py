@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+import sys
 
-import cli
+from config import Config
+from commands.builder import get_command
 
 def main():
-    cli.run()
+    get_command(sys.argv[1:], Config()).execute()
 
 if __name__ == '__main__':
     main()
