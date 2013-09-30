@@ -3,7 +3,7 @@ all: build
 build: bin/asciinema
 
 bin/asciinema: tmp/asciinema.zip
-	echo '#!/usr/bin/env python' > bin/asciinema
+	echo '#!/usr/bin/env python2' > bin/asciinema
 	cat tmp/asciinema.zip >> bin/asciinema
 	chmod +x bin/asciinema
 
