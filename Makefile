@@ -1,4 +1,6 @@
-all: bin/asciinema
+all: build
+
+build: bin/asciinema
 
 bin/asciinema: tmp/asciinema.zip
 	echo '#!/usr/bin/env python' > bin/asciinema
