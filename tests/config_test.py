@@ -1,7 +1,4 @@
 from nose.tools import assert_equal
-from nose.tools import assert_not_equal
-from nose.tools import assert_raises
-from nose.tools import raises
 
 import os
 import tempfile
@@ -10,40 +7,55 @@ import re
 from config import Config
 
 
-def create_config(config_file_content=None):
-    base_path = tempfile.mkdtemp()
+def create_config(content=None, overrides={}):
+    dir = tempfile.mkdtemp()
+    path = dir + '/config'
 
-    if config_file_content:
-        with open(base_path + '/config', 'w') as f:
-            f.write(config_file_content)
+    if content:
+        with open(path, 'w') as f:
+            f.write(content)
 
-    return Config(base_path)
+    return Config(path, overrides)
 
 
 class TestConfig(object):
 
-    def test_api_url(self):
-        # defaults to http://asciinema.org
+    def test_api_url_when_no_file_and_no_override_set(self):
         config = create_config()
         assert_equal('http://asciinema.org', config.api_url)
 
-        # uses api.url from config file
-        config = create_config("[api]\nurl = bar")
-        assert_equal('bar', config.api_url)
+    def test_api_url_when_no_url_set_and_no_override_set(self):
+        config = create_config('')
+        assert_equal('http://asciinema.org', config.api_url)
 
-        # can be overriden by ASCII_IO_API_URL env var
-        os.environ['ASCII_IO_API_URL'] = 'foo'
-        assert_equal('foo', config.api_url)
-        del os.environ['ASCII_IO_API_URL']
+    def test_api_url_when_url_set_and_no_override_set(self):
+        config = create_config("[api]\nurl = http://the/url")
+        assert_equal('http://the/url', config.api_url)
 
-    def test_user_token(self):
-        # generates and saves new token in config file
+    def test_api_url_when_url_set_and_override_set(self):
+        config = create_config("[api]\nurl = http://the/url", {
+            'ASCIINEMA_API_URL': 'http://the/url2' })
+        assert_equal('http://the/url2', config.api_url)
+
+    def test_user_token_when_no_file(self):
         config = create_config()
-        user_token = config.user_token
-        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', user_token)
-        assert os.path.isfile(config.base_path + '/config')
 
-        # reads existing token from config file
+        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.user_token)
+        assert os.path.isfile(config.path)
+
+    def test_user_token_when_no_dir(self):
+        config = create_config()
+        dir = os.path.dirname(config.path)
+        os.rmdir(dir)
+
+        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.user_token)
+        assert os.path.isfile(config.path)
+
+    def test_user_token_when_no_token_set(self):
+        config = create_config('')
+        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.user_token)
+
+    def test_user_token_when_token_set(self):
         token = 'foo-bar-baz'
         config = create_config("[user]\ntoken = %s" % token)
-        assert_equal(token, config.user_token)
+        assert re.match(token, config.user_token)

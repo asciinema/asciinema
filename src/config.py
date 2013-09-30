@@ -2,30 +2,27 @@ import os
 import ConfigParser
 import uuid
 
+
+DEFAULT_CONFIG_FILE_PATH = "~/.asciinema/config"
+DEFAULT_API_URL = 'http://asciinema.org'
+
 class Config:
 
-    def __init__(self, base_path="~/.asciinema"):
-        self.base_path = os.path.expanduser(base_path)
-        self.config_filename = '%s/config' % self.base_path
+    def __init__(self, path=DEFAULT_CONFIG_FILE_PATH, overrides=os.environ):
+        self.path = os.path.expanduser(path)
+        self.overrides = overrides
 
-        self._create_base_dir()
         self._parse_config_file()
-
-    def _create_base_dir(self):
-        if not os.path.isdir(self.base_path):
-            os.mkdir(self.base_path)
 
     def _parse_config_file(self):
         config = ConfigParser.RawConfigParser()
         config.add_section('user')
         config.add_section('api')
-        config.add_section('record')
 
         try:
-            config.read(self.config_filename)
+            config.read(self.path)
         except ConfigParser.ParsingError:
-            print('Config file %s contains syntax errors' %
-                    self.config_filename)
+            print('Config file %s contains syntax errors' % self.path)
             sys.exit(2)
 
         self.config = config
@@ -35,9 +32,9 @@ class Config:
         try:
             api_url = self.config.get('api', 'url')
         except ConfigParser.NoOptionError:
-            api_url = 'http://asciinema.org'
+            api_url = DEFAULT_API_URL
 
-        api_url = os.environ.get('ASCII_IO_API_URL', api_url)
+        api_url = self.overrides.get('ASCIINEMA_API_URL', api_url)
 
         return api_url
 
@@ -49,7 +46,14 @@ class Config:
             user_token = str(uuid.uuid1())
             self.config.set('user', 'token', user_token)
 
-            with open(self.config_filename, 'wb') as f:
+            self._ensure_base_dir()
+            with open(self.path, 'wb') as f:
                 self.config.write(f)
 
         return user_token
+
+    def _ensure_base_dir(self):
+        dir = os.path.dirname(self.path)
+
+        if not os.path.isdir(dir):
+            os.mkdir(dir)
