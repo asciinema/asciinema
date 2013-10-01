@@ -15,11 +15,7 @@ def run_test(file)
 end
 
 guard 'shell' do
-  watch('Makefile') { |m| `make` }
-
   watch(%r{src/(.+)\.py$}) do |m|
-    `make`
-
     test_filename = "tests/#{m[1]}_test.py"
 
     if File.exists?(test_filename)
