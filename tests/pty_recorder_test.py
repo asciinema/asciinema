@@ -42,7 +42,7 @@ class TestPtyRecorder(Test):
         pty_recorder = PtyRecorder()
         output = FakeStdout()
 
-        command = 'python -c "import sys; sys.stdout.write(\'foo\\n\'); ' \
+        command = 'python2 -c "import sys; sys.stdout.write(\'foo\\n\'); ' \
                   'sys.stdout.flush(); sys.stdout.write(\'bar\')"'
         pty_recorder.record_command(command, output)
 
