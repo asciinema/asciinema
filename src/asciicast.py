@@ -11,7 +11,8 @@ class Asciicast(object):
         self.shell = env['SHELL']
         self.term = env['TERM']
         self.username = env['USER']
-        self.uname = get_command_output(['uname', '-srvp'])
+        unametemp = os.uname()
+        self.uname = "%s %s %s %s" % (unametemp[0], unametemp[2], unametemp[3], unametemp[4])
 
     def meta_data(self):
         lines = int(get_command_output(['tput', 'lines']))
