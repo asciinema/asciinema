@@ -4,7 +4,7 @@ class HelpCommand(object):
         print HELP_TEXT
 
 
-HELP_TEXT = '''usage: asciinema [-h] [-i] [-y] [-c <command>] [-t <title>] [action]
+HELP_TEXT = '''usage: asciinema [-h] [-y] [-c <command>] [-t <title>] [action]
 
 Asciicast recorder+uploader.
 
