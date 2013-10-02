@@ -42,8 +42,8 @@ class TestPtyRecorder(Test):
         pty_recorder = PtyRecorder()
         output = FakeStdout()
 
-        command = 'python2 -c "import sys; sys.stdout.write(\'foo\\n\'); ' \
-                  'sys.stdout.flush(); sys.stdout.write(\'bar\')"'
+        command = 'python2 -c "import sys, time; sys.stdout.write(\'foo\'); ' \
+                  'sys.stdout.flush(); time.sleep(0.01); sys.stdout.write(\'bar\')"'
         pty_recorder.record_command(command, output)
 
-        assert_equal(['foo\r\n', 'bar'], output.data)
+        assert_equal(['foo', 'bar'], output.data)
