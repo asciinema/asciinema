@@ -1,0 +1,22 @@
+# Maintainer: Marcin Kulik <m@ku1ik.com>
+pkgname=asciinema
+pkgver=0.9.2
+pkgrel=1
+pkgdesc="Asciinema.org terminal recorder"
+arch=(any)
+url="https://github.com/sickill/asciinema"
+license=('MIT')
+depends=('python2')
+source=(https://github.com/sickill/${pkgname}/archive/v${pkgver}.tar.gz)
+sha256sums=('5542174f262661b4fe7983ab7b90c7f7ba25111c5241c30441b1dab87a73e6de')
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+
+  make PREFIX="${pkgdir}/usr" install >/dev/null
+
+  install -d ${pkgdir}/usr/share/licenses/${pkgname}
+  ln -s /usr/share/doc/${pkgname}-${pkgver}/LICENSE.txt ${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.txt
+}
+
+# vim:set ts=2 sw=2 et:
