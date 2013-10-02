@@ -13,7 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "arch" do |c|
     c.vm.box = "arch64"
     c.vm.box_url = "https://googledrive.com/host/0B_BLFE4aPn5zUVpyaHdLanVnMTg/vagrant-archlinux-2013-8.box"
-    c.vm.provision "shell", inline: "pacman -Sy && pacman -S --noconfirm make python2-pip && pip2 install nose"
+    c.vm.provision "shell", inline: "pacman -Sy && pacman -S --noconfirm make python2-pip fakeroot binutils && pip2 install nose"
   end
 
   config.vm.define "ubuntu-raring" do |c|
