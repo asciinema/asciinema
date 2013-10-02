@@ -6,6 +6,7 @@ URL=https://github.com/$(AUTHOR)/$(NAME)
 DIRS=bin
 INSTALL_DIRS=`find $(DIRS) -type d 2>/dev/null`
 INSTALL_FILES=`find $(DIRS) -type f 2>/dev/null`
+DOC_FILES=*.md *.txt
 
 PKG_DIR=pkg
 PKG_NAME=$(NAME)-$(VERSION)
@@ -13,6 +14,7 @@ PKG=$(PKG_DIR)/$(PKG_NAME).tar.gz
 SIG=$(PKG).asc
 
 PREFIX?=/usr/local
+DOC_DIR=$(PREFIX)/share/doc/$(PKG_NAME)
 
 pkg:
 	mkdir $(PKG_DIR)
@@ -50,9 +52,12 @@ release: update-bin tag download sign
 install:
 	for dir in $(INSTALL_DIRS); do mkdir -p $(PREFIX)/$$dir; done
 	for file in $(INSTALL_FILES); do cp $$file $(PREFIX)/$$file; done
+	mkdir -p $(DOC_DIR)
+	cp -r $(DOC_FILES) $(DOC_DIR)/
 
 uninstall:
 	for file in $(INSTALL_FILES); do rm -f $(PREFIX)/$$file; done
+	rm -rf $(DOC_DIR)
 
 bin/asciinema: tmp/asciinema.zip
 	echo '#!/usr/bin/env python2' > bin/asciinema
