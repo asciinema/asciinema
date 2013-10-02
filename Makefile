@@ -64,7 +64,12 @@ tmp/asciinema.zip: src/* src/commands/*
 	rm -f tmp/asciinema.zip
 	cd src && zip -r - `find . -name \*.py` >../tmp/asciinema.zip
 
-test:
+test: test-unit test-integration
+
+test-unit:
 	PYTHONPATH=tests nosetests `find tests -name "*_test.py"`
+
+test-integration:
+	tests/integration.sh
 
 .PHONY: download sign verify clean test tag release install uninstall all
