@@ -16,7 +16,7 @@ package() {
   make PREFIX="${pkgdir}/usr" install >/dev/null
 
   install -d ${pkgdir}/usr/share/licenses/${pkgname}
-  ln -s /usr/share/doc/${pkgname}-${pkgver}/LICENSE.txt ${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.txt
+  ln -s /usr/share/doc/${pkgname}/LICENSE.txt ${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.txt
 }
 
 # vim:set ts=2 sw=2 et:
