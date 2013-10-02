@@ -14,7 +14,7 @@ PKG=$(PKG_DIR)/$(PKG_NAME).tar.gz
 SIG=$(PKG).asc
 
 PREFIX?=/usr/local
-DOC_DIR=$(PREFIX)/share/doc/$(PKG_NAME)
+DOC_DIR=$(PREFIX)/share/doc/$(NAME)
 
 pkg:
 	mkdir $(PKG_DIR)
