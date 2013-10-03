@@ -8,9 +8,9 @@ Command line client for [asciinema.org](http://asciinema.org) service.
 
 Download the tarball and install it with:
 
-    wget -O asciinema-0.9.3.tar.gz https://github.com/sickill/asciinema/archive/v0.9.3.tar.gz
-    tar -xzvf asciinema-0.9.3.tar.gz
-    cd asciinema-0.9.3/
+    wget -O asciinema-0.9.4.tar.gz https://github.com/sickill/asciinema/archive/v0.9.4.tar.gz
+    tar -xzvf asciinema-0.9.4.tar.gz
+    cd asciinema-0.9.4/
     sudo make install
 
 ## Usage
