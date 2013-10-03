@@ -60,7 +60,7 @@ uninstall:
 	rm -rf $(DOC_DIR)
 
 bin/asciinema: tmp/asciinema.zip
-	echo '#!/usr/bin/env python2' > bin/asciinema
+	echo '#!/usr/bin/env python2.7' > bin/asciinema
 	cat tmp/asciinema.zip >> bin/asciinema
 	chmod +x bin/asciinema
 
