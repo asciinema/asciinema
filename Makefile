@@ -1,5 +1,5 @@
 NAME=asciinema
-VERSION=0.9.2
+VERSION=0.9.3
 AUTHOR=sickill
 URL=https://github.com/$(AUTHOR)/$(NAME)
 
