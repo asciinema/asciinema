@@ -55,5 +55,5 @@ class RecordCommand(object):
         return self.confirmator.confirm("~ Do you want to upload it? [Y/n] ")
 
     def _reset_terminal(self):
-        # subprocess.call(["reset"])
+        subprocess.call(["reset"])
         pass

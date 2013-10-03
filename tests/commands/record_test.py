@@ -1,4 +1,5 @@
 import sys
+import subprocess
 
 from nose.tools import assert_equal
 from commands.record import RecordCommand
@@ -50,6 +51,11 @@ class TestRecordCommand(Test):
         self.recorder = FakeRecorder()
         self.uploader = FakeUploader()
         self.confirmator = FakeConfirmator()
+        self.real_subprocess_call = subprocess.call
+        subprocess.call = lambda *args: None
+
+    def tearDown(self):
+        subprocess.call = self.real_subprocess_call
 
     def create_command(self, skip_confirmation):
         return RecordCommand('http://the/url', 'a1b2c3', 'ls -l', 'the title',
