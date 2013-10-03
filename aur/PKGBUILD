@@ -1,14 +1,14 @@
 # Maintainer: Marcin Kulik <m@ku1ik.com>
 pkgname=asciinema
-pkgver=0.9.2
+pkgver=0.9.4
 pkgrel=1
-pkgdesc="Asciinema.org terminal recorder"
+pkgdesc="Command line client for asciinema.org service"
 arch=(any)
 url="https://github.com/sickill/asciinema"
 license=('MIT')
 depends=('python2')
 source=(https://github.com/sickill/${pkgname}/archive/v${pkgver}.tar.gz)
-sha256sums=('5542174f262661b4fe7983ab7b90c7f7ba25111c5241c30441b1dab87a73e6de')
+sha1sums=('bf9292a133ca6bf37238110762bee60e99882c85')
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"
