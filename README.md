@@ -16,9 +16,9 @@ asciinema is included in the [AUR](https://aur.archlinux.org/packages/asciinema/
 
 Download the tarball and install it with:
 
-    wget -O asciinema-0.9.4.tar.gz https://github.com/sickill/asciinema/archive/v0.9.4.tar.gz
-    tar -xzvf asciinema-0.9.4.tar.gz
-    cd asciinema-0.9.4/
+    wget -O asciinema-0.9.5.tar.gz https://github.com/sickill/asciinema/archive/v0.9.5.tar.gz
+    tar -xzvf asciinema-0.9.5.tar.gz
+    cd asciinema-0.9.5/
     sudo make install
 
 ## Usage
