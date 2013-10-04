@@ -1,6 +1,6 @@
 # Maintainer: Marcin Kulik <m@ku1ik.com>
 pkgname=asciinema
-pkgver=0.9.4
+pkgver=0.9.5
 pkgrel=1
 pkgdesc="Command line client for asciinema.org service"
 arch=(any)
@@ -8,7 +8,7 @@ url="https://github.com/sickill/asciinema"
 license=('MIT')
 depends=('python2')
 source=(https://github.com/sickill/${pkgname}/archive/v${pkgver}.tar.gz)
-sha1sums=('bf9292a133ca6bf37238110762bee60e99882c85')
+sha1sums=('902893a524eaab7794eb04b5092b4b78c3c4c622')
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"
