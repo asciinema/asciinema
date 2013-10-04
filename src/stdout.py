@@ -17,9 +17,9 @@ class StdoutTiming(object):
 
 class Stdout(object):
 
-    def __init__(self, timing=StdoutTiming()):
+    def __init__(self, timing=None):
         self._data = StringIO.StringIO()
-        self._timing = timing
+        self._timing = timing if timing is not None else StdoutTiming()
 
         self._start_timing()
 

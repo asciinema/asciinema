@@ -13,8 +13,8 @@ class File(object):
 
 class Uploader(object):
 
-    def __init__(self, http_adapter=UrllibHttpAdapter()):
-        self.http_adapter = http_adapter
+    def __init__(self, http_adapter=None):
+        self.http_adapter = http_adapter if http_adapter is not None else UrllibHttpAdapter()
 
     def upload(self, api_url, user_token, asciicast):
         url = '%s/api/asciicasts' % api_url

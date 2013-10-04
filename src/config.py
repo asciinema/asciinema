@@ -8,9 +8,9 @@ DEFAULT_API_URL = 'http://asciinema.org'
 
 class Config:
 
-    def __init__(self, path=DEFAULT_CONFIG_FILE_PATH, overrides=os.environ):
+    def __init__(self, path=DEFAULT_CONFIG_FILE_PATH, overrides=None):
         self.path = os.path.expanduser(path)
-        self.overrides = overrides
+        self.overrides = overrides if overrides is not None else os.environ
 
         self._parse_config_file()
 

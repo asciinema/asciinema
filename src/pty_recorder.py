@@ -14,8 +14,9 @@ from stdout import Stdout
 
 class PtyRecorder(object):
 
-    def record_command(self, command, output=Stdout()):
+    def record_command(self, command, output=None):
         command = shlex.split(command)
+        output = output if output is not None else Stdout()
         master_fd = None
 
         def _set_pty_size():

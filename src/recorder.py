@@ -7,9 +7,9 @@ from pty_recorder import PtyRecorder
 
 class Recorder(object):
 
-    def __init__(self, pty_recorder=PtyRecorder(), env=os.environ):
-        self.pty_recorder = pty_recorder
-        self.env = env
+    def __init__(self, pty_recorder=None, env=None):
+        self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
+        self.env = env if env is not None else os.environ
 
     def record(self, cmd, title):
         duration, stdout = timer.timeit(self.pty_recorder.record_command,

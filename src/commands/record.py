@@ -8,16 +8,15 @@ from confirmator import Confirmator
 class RecordCommand(object):
 
     def __init__(self, api_url, user_token, cmd, title, skip_confirmation,
-                 recorder=Recorder(), uploader=Uploader(),
-                 confirmator=Confirmator()):
+                 recorder=None, uploader=None, confirmator=None):
         self.api_url = api_url
         self.user_token = user_token
         self.cmd = cmd
         self.title = title
         self.skip_confirmation = skip_confirmation
-        self.recorder = recorder
-        self.uploader = uploader
-        self.confirmator = confirmator
+        self.recorder = recorder if recorder is not None else Recorder()
+        self.uploader = uploader if uploader is not None else Uploader()
+        self.confirmator = confirmator if confirmator is not None else Confirmator()
 
     def execute(self):
         asciicast = self._record_asciicast()
