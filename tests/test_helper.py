@@ -1,17 +1,16 @@
 import sys
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 
 stdout = None
 
 
 def assert_printed(expected):
-    if isinstance(expected, basestring):
-        success = expected in stdout.getvalue()
-        assert success, 'expected text "%s" not printed' % expected
-    else:
-        success = expected.match(stdout.getvalue())
-        assert success, 'expected pattern "%s" not printed' % expected.pattern
+    success = expected in stdout.getvalue()
+    assert success, 'expected text "%s" not printed' % expected
 
 
 def assert_not_printed(expected):

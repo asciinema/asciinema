@@ -1,6 +1,6 @@
 from asciinema.commands.version import VersionCommand
 from asciinema.common import VERSION
-from test_helper import assert_printed, Test
+from .test_helper import assert_printed, Test
 
 
 class TestVersionCommand(Test):
