@@ -1,5 +1,5 @@
 from asciinema.commands.version import VersionCommand
-from asciinema.common import VERSION
+from asciinema import __version__
 from .test_helper import assert_printed, Test
 
 
@@ -10,4 +10,4 @@ class TestVersionCommand(Test):
 
         command.execute()
 
-        assert_printed('asciinema %s' % VERSION)
+        assert_printed('asciinema %s' % __version__)
