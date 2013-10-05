@@ -6,6 +6,8 @@ except ImportError:
 import asciinema
 
 
+url_template = 'https://github.com/sickill/asciinema/archive/v%s.tar.gz'
+
 requirements = [
     'requests>=2.0.0'
 ]
@@ -19,7 +21,7 @@ setup(
     author=asciinema.__author__,
     author_email='m@ku1ik.com',
     url='http://asciinema.org',
-    download_url='https://github.com/sickill/asciinema/archive/v0.9.5.tar.gz',
+    download_url=(url_template % asciinema.__version__),
     entry_points={
         'console_scripts': [
             'asciinema = asciinema.__main__:main',
