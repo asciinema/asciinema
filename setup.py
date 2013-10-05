@@ -19,6 +19,20 @@ config = {
             'asciinema = asciinema.__main__:main',
         ],
     },
+    'classifiers': [
+        'Development Status :: 4 - Beta',
+        'Environment :: Console',
+        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2 :: Only',
+        'Topic :: System :: Shells',
+        'Topic :: Terminals',
+        'Topic :: Utilities'
+    ]
 }
 
 setup(**config)
