@@ -1,7 +1,7 @@
 import time
 
 from nose.tools import assert_equal, assert_raises
-from test_helper import Test, FakeClock
+from .test_helper import Test, FakeClock
 from asciinema.stdout import Stdout, StdoutTiming
 
 
@@ -30,10 +30,10 @@ class TestStdout(Test):
         timing = []
         stdout = Stdout(timing)
 
-        stdout.write('foo')
-        stdout.write('barbaz')
+        stdout.write(b'foo')
+        stdout.write(b'barbaz')
 
-        assert_equal('foobarbaz', stdout.data)
+        assert_equal(b'foobarbaz', stdout.data)
         assert_equal([[2, 3], [7, 6]], timing)
 
     def test_close(self):

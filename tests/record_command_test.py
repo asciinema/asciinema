@@ -3,7 +3,7 @@ import subprocess
 
 from nose.tools import assert_equal
 from asciinema.commands.record import RecordCommand
-from test_helper import assert_printed, assert_not_printed, Test
+from .test_helper import assert_printed, assert_not_printed, Test
 
 
 class FakeAsciicast(object):

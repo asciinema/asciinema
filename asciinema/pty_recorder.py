@@ -6,10 +6,10 @@ import array
 import fcntl
 import termios
 import select
-import StringIO
+import io
 import shlex
 
-from stdout import Stdout
+from .stdout import Stdout
 
 
 class PtyRecorder(object):
@@ -49,7 +49,7 @@ class PtyRecorder(object):
         def _write_master(data):
             '''Writes to the child process from its controlling terminal.'''
 
-            while data != '':
+            while data:
                 n = os.write(master_fd, data)
                 data = data[n:]
 
@@ -68,7 +68,7 @@ class PtyRecorder(object):
             while 1:
                 try:
                     rfds, wfds, xfds = select.select([master_fd, pty.STDIN_FILENO], [], [])
-                except select.error, e:
+                except select.error as e:
                     if e[0] == 4:   # Interrupted system call.
                         continue
 

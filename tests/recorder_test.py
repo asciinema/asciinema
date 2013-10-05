@@ -1,6 +1,6 @@
 from nose.tools import assert_equal
 
-from test_helper import Test
+from .test_helper import Test
 from asciinema.recorder import Recorder
 import asciinema.timer
 

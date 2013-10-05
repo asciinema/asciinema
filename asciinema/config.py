@@ -1,5 +1,11 @@
 import os
-import ConfigParser
+import sys
+
+try:
+    from ConfigParser import RawConfigParser, ParsingError, NoOptionError
+except ImportError:
+    from configparser import RawConfigParser, ParsingError, NoOptionError
+
 import uuid
 
 
@@ -15,13 +21,13 @@ class Config:
         self._parse_config_file()
 
     def _parse_config_file(self):
-        config = ConfigParser.RawConfigParser()
+        config = RawConfigParser()
         config.add_section('user')
         config.add_section('api')
 
         try:
             config.read(self.path)
-        except ConfigParser.ParsingError:
+        except ParsingError:
             print('Config file %s contains syntax errors' % self.path)
             sys.exit(2)
 
@@ -31,7 +37,7 @@ class Config:
     def api_url(self):
         try:
             api_url = self.config.get('api', 'url')
-        except ConfigParser.NoOptionError:
+        except NoOptionError:
             api_url = DEFAULT_API_URL
 
         api_url = self.overrides.get('ASCIINEMA_API_URL', api_url)
@@ -42,12 +48,12 @@ class Config:
     def user_token(self):
         try:
             user_token = self.config.get('user', 'token')
-        except ConfigParser.NoOptionError:
+        except NoOptionError:
             user_token = str(uuid.uuid1())
             self.config.set('user', 'token', user_token)
 
             self._ensure_base_dir()
-            with open(self.path, 'wb') as f:
+            with open(self.path, 'w') as f:
                 self.config.write(f)
 
         return user_token

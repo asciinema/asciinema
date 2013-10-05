@@ -1,7 +1,7 @@
 import re
 
 from asciinema.commands.auth import AuthCommand
-from test_helper import assert_printed, Test
+from .test_helper import assert_printed, Test
 
 
 class TestAuthCommand(Test):

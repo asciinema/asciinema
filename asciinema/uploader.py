@@ -1,20 +1,13 @@
 import json
 import bz2
 
-from urllib_http_adapter import UrllibHttpAdapter
-
-
-class File(object):
-
-    def __init__(self, name, content):
-        self.name = name
-        self.content = content
+from .requests_http_adapter import RequestsHttpAdapter
 
 
 class Uploader(object):
 
     def __init__(self, http_adapter=None):
-        self.http_adapter = http_adapter if http_adapter is not None else UrllibHttpAdapter()
+        self.http_adapter = http_adapter if http_adapter is not None else RequestsHttpAdapter()
 
     def upload(self, api_url, user_token, asciicast):
         url = '%s/api/asciicasts' % api_url
@@ -32,17 +25,17 @@ class Uploader(object):
         }
 
     def _stdout_data_file(self, stdout):
-        return File('stdout', bz2.compress(stdout.data))
+        return ('stdout', bz2.compress(stdout.data))
 
     def _stdout_timing_file(self, stdout):
-        return File('stdout.time', bz2.compress(str(stdout.timing)))
+        return ('stdout.time', bz2.compress(stdout.timing))
 
     def _meta_file(self, asciicast, user_token):
-        return File('meta.json', self._meta_json(asciicast, user_token))
+        return ('meta.json', self._meta_json(asciicast, user_token))
 
     def _meta_json(self, asciicast, user_token):
         meta_data = asciicast.meta_data()
         auth_data = { 'user_token': user_token }
-        data = dict(meta_data.items() + auth_data.items())
+        data = dict(list(meta_data.items()) + list(auth_data.items()))
 
         return json.dumps(data)

@@ -1,5 +1,5 @@
 import time
-import StringIO
+import io
 
 
 class StdoutTiming(object):
@@ -18,7 +18,7 @@ class StdoutTiming(object):
 class Stdout(object):
 
     def __init__(self, timing=None):
-        self._data = StringIO.StringIO()
+        self._data = io.BytesIO()
         self._timing = timing if timing is not None else StdoutTiming()
 
         self._start_timing()
@@ -29,7 +29,7 @@ class Stdout(object):
 
     @property
     def timing(self):
-        return self._timing
+        return str(self._timing).encode()
 
     def write(self, data):
         now = time.time()

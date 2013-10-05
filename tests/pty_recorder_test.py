@@ -2,7 +2,7 @@ import os
 import pty
 
 from nose.tools import assert_equal
-from test_helper import Test
+from .test_helper import Test
 
 from asciinema.stdout import Stdout
 from asciinema.pty_recorder import PtyRecorder
@@ -42,8 +42,8 @@ class TestPtyRecorder(Test):
         pty_recorder = PtyRecorder()
         output = FakeStdout()
 
-        command = 'python2 -c "import sys, time; sys.stdout.write(\'foo\'); ' \
+        command = 'python -c "import sys, time; sys.stdout.write(\'foo\'); ' \
                   'sys.stdout.flush(); time.sleep(0.01); sys.stdout.write(\'bar\')"'
         pty_recorder.record_command(command, output)
 
-        assert_equal(['foo', 'bar'], output.data)
+        assert_equal([b'foo', b'bar'], output.data)

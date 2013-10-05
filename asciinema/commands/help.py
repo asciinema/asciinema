@@ -1,7 +1,7 @@
 class HelpCommand(object):
 
     def execute(self):
-        print HELP_TEXT
+        print(HELP_TEXT)
 
 
 HELP_TEXT = '''usage: asciinema [-h] [-y] [-c <command>] [-t <title>] [action]

@@ -7,5 +7,5 @@ class ErrorCommand(object):
         self.message = message
 
     def execute(self):
-        print "asciinema: %s. See 'asciinema --help'." % self.message
+        print("asciinema: %s. See 'asciinema --help'." % self.message)
         sys.exit(1)

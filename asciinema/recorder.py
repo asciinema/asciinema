@@ -1,8 +1,8 @@
 import os
-import timer
+from . import timer
 
-from asciicast import Asciicast
-from pty_recorder import PtyRecorder
+from .asciicast import Asciicast
+from .pty_recorder import PtyRecorder
 
 
 class Recorder(object):

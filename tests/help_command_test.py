@@ -1,5 +1,5 @@
 from asciinema.commands.help import HelpCommand
-from test_helper import assert_printed, Test
+from .test_helper import assert_printed, Test
 
 
 class TestHelpCommand(Test):

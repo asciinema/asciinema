@@ -1,7 +1,7 @@
 import sys
 
 from asciinema.confirmator import Confirmator
-from test_helper import assert_printed, assert_not_printed, Test
+from .test_helper import assert_printed, assert_not_printed, Test
 
 
 class FakeStdin(object):

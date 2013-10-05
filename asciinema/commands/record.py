@@ -24,28 +24,28 @@ class RecordCommand(object):
 
     def _record_asciicast(self):
         self._reset_terminal()
-        print '~ Asciicast recording started.'
+        print('~ Asciicast recording started.')
 
         if not self.cmd:
-            print '~ Hit ctrl+d or type "exit" to finish.'
+            print('~ Hit ctrl+d or type "exit" to finish.')
 
-        print ''
+        print('')
 
         asciicast = self.recorder.record(self.cmd, self.title)
 
         self._reset_terminal()
-        print '~ Asciicast recording finished.'
+        print('~ Asciicast recording finished.')
 
         return asciicast
 
     def _upload_asciicast(self, asciicast):
         if self._upload_confirmed():
-            print '~ Uploading...'
+            print('~ Uploading...')
             try:
                 url = self.uploader.upload(self.api_url, self.user_token, asciicast)
-                print url
+                print(url)
             except SystemExit:
-                print '~ Error during upload. Try again in a minute.'
+                print('~ Error during upload. Try again in a minute.')
 
     def _upload_confirmed(self):
         if self.skip_confirmation:
