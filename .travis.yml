@@ -5,3 +5,5 @@ python:
   - "3.2"
   - "3.3"
 script: make test
+install:
+  - pip install . --use-mirrors
