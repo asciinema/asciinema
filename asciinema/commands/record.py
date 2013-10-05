@@ -1,8 +1,8 @@
 import subprocess
 
-from recorder import Recorder
-from uploader import Uploader
-from confirmator import Confirmator
+from asciinema.recorder import Recorder
+from asciinema.uploader import Uploader
+from asciinema.confirmator import Confirmator
 
 
 class RecordCommand(object):

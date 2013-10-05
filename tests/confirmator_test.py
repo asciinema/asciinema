@@ -1,6 +1,6 @@
 import sys
 
-from confirmator import Confirmator
+from asciinema.confirmator import Confirmator
 from test_helper import assert_printed, assert_not_printed, Test
 
 

@@ -4,7 +4,7 @@ import os
 import tempfile
 import re
 
-from config import Config
+from asciinema.config import Config
 
 
 def create_config(content=None, overrides={}):

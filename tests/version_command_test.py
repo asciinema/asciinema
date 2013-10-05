@@ -1,5 +1,5 @@
-from commands.version import VersionCommand
-from common import VERSION
+from asciinema.commands.version import VersionCommand
+from asciinema.common import VERSION
 from test_helper import assert_printed, Test
 
 

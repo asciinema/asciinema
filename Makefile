@@ -72,7 +72,7 @@ tmp/asciinema.zip: src/* src/commands/*
 test: test-unit test-integration
 
 test-unit:
-	PYTHONPATH=tests nosetests `find tests -name "*_test.py"`
+	nosetests
 
 test-integration:
 	tests/integration.sh

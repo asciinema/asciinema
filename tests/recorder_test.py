@@ -1,8 +1,8 @@
 from nose.tools import assert_equal
 
 from test_helper import Test
-from recorder import Recorder
-import timer
+from asciinema.recorder import Recorder
+import asciinema.timer
 
 
 class FakePtyRecorder(object):
@@ -28,11 +28,11 @@ class TestRecorder(Test):
     def setUp(self):
         Test.setUp(self)
         self.pty_recorder = FakePtyRecorder()
-        self.real_timeit = timer.timeit
-        timer.timeit = lambda c, *args: (123.45, c(*args))
+        self.real_timeit = asciinema.timer.timeit
+        asciinema.timer.timeit = lambda c, *args: (123.45, c(*args))
 
     def tearDown(self):
-        timer.timeit = self.real_timeit
+        asciinema.timer.timeit = self.real_timeit
 
     def test_record_when_title_and_command_given(self):
         recorder = Recorder(self.pty_recorder)

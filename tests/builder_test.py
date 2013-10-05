@@ -1,11 +1,11 @@
 from nose.tools import assert_equal
 
-from commands.builder import get_command
-from commands.error import ErrorCommand
-from commands.record import RecordCommand
-from commands.auth import AuthCommand
-from commands.help import HelpCommand
-from commands.version import VersionCommand
+from asciinema.commands.builder import get_command
+from asciinema.commands.error import ErrorCommand
+from asciinema.commands.record import RecordCommand
+from asciinema.commands.auth import AuthCommand
+from asciinema.commands.help import HelpCommand
+from asciinema.commands.version import VersionCommand
 
 
 class Config(object):

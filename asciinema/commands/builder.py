@@ -1,10 +1,10 @@
 import getopt
 
-from commands.error import ErrorCommand
-from commands.record import RecordCommand
-from commands.auth import AuthCommand
-from commands.help import HelpCommand
-from commands.version import VersionCommand
+from .error import ErrorCommand
+from .record import RecordCommand
+from .auth import AuthCommand
+from .help import HelpCommand
+from .version import VersionCommand
 
 
 def get_command(argv, config):

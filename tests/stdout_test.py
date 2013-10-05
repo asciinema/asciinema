@@ -2,7 +2,7 @@ import time
 
 from nose.tools import assert_equal, assert_raises
 from test_helper import Test, FakeClock
-from stdout import Stdout, StdoutTiming
+from asciinema.stdout import Stdout, StdoutTiming
 
 
 class TestStdoutTiming(Test):

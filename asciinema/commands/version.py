@@ -1,4 +1,4 @@
-from common import VERSION
+from asciinema.common import VERSION
 
 
 class VersionCommand(object):

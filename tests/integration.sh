@@ -4,7 +4,7 @@ set -e
 
 test() {
   echo "Test: $1"
-  eval "python2 src $2 >/dev/null || (echo 'failed' && exit 1)"
+  eval "PYTHONPATH=. python2 -m asciinema $2 >/dev/null || (echo 'failed' && exit 1)"
 }
 
 test "help" "-h"

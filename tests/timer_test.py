@@ -2,7 +2,7 @@ import time
 
 from nose.tools import assert_equal
 from test_helper import Test, FakeClock
-from timer import timeit
+from asciinema.timer import timeit
 
 
 class TestTimer(Test):

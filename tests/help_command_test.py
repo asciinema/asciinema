@@ -1,4 +1,4 @@
-from commands.help import HelpCommand
+from asciinema.commands.help import HelpCommand
 from test_helper import assert_printed, Test
 
 

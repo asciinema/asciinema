@@ -1,6 +1,6 @@
 import re
 
-from commands.auth import AuthCommand
+from asciinema.commands.auth import AuthCommand
 from test_helper import assert_printed, Test
 
 

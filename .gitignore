@@ -3,3 +3,5 @@ tmp
 pkg/*.tar.gz
 pkg/*.tar.bz2
 pkg/*.zip
+*.egg-info
+/build

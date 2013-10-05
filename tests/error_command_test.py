@@ -1,6 +1,6 @@
 from nose.tools import assert_raises
 
-from commands.error import ErrorCommand
+from asciinema.commands.error import ErrorCommand
 from test_helper import assert_printed, Test
 
 
