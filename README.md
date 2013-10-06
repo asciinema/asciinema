@@ -27,6 +27,11 @@ Check the available commands and options with:
 
     asciinema -h
 
-## License
+## Authors
 
-This project is released under MIT license. See [LICENSE.txt](LICENSE.txt).
+Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
+source [contributors](https://github.com/sickill/asciinema/contributors)
+
+## Copyright
+
+Copyright &copy; 2011-2013 Marcin Kulik. See LICENSE.txt for details.
