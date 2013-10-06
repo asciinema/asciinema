@@ -1,7 +1,8 @@
 tmp
 *.pyc
-pkg/*.tar.gz
-pkg/*.tar.bz2
-pkg/*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.zip
 *.egg-info
 /build
