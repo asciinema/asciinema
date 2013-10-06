@@ -6,20 +6,24 @@ Command line client for [asciinema.org](http://asciinema.org) service.
 
 ## Installation
 
-### Arch Linux
+The latest __stable version__ of asciinema can always be installed or updated
+to via [pip](http://www.pip-installer.org/en/latest/index.html) (prefered) or
+easy\_install:
 
-asciinema is included in the [AUR](https://aur.archlinux.org/packages/asciinema/):
+    sudo pip install --upgrade asciinema
+
+Alternatively:
+
+    sudo easy_install asciinema
+
+Or, you can install the __development version__ directly from GitHub:
+
+    sudo pip install --upgrade https://github.com/sickill/asciinema/tarball/master
+
+Arch Linux users can install the
+[AUR](https://aur.archlinux.org/packages/asciinema/) package:
 
     yaourt -S asciinema
-
-### From tarball
-
-Download the tarball and install it with:
-
-    wget -O asciinema-0.9.5.tar.gz https://github.com/sickill/asciinema/archive/v0.9.5.tar.gz
-    tar -xzvf asciinema-0.9.5.tar.gz
-    cd asciinema-0.9.5/
-    sudo make install
 
 ## Usage
 
