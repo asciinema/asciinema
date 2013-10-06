@@ -1,22 +1,19 @@
 # Maintainer: Marcin Kulik <m@ku1ik.com>
 pkgname=asciinema
-pkgver=0.9.5
+pkgver=0.9.6
 pkgrel=1
 pkgdesc="Command line client for asciinema.org service"
 arch=(any)
 url="https://github.com/sickill/asciinema"
 license=('MIT')
-depends=('python2')
-source=(https://github.com/sickill/${pkgname}/archive/v${pkgver}.tar.gz)
-sha1sums=('902893a524eaab7794eb04b5092b4b78c3c4c622')
+depends=('python-requests>=2.0.0')
+makedepends=('python-distribute')
+source=(https://pypi.python.org/packages/source/a/asciinema/asciinema-${pkgver}.tar.gz)
+md5sums=('1ec3cfda51dcbe09bb3096666e527d5d')
 
 package() {
-  cd "$srcdir/$pkgname-$pkgver"
-
-  make PREFIX="${pkgdir}/usr" install >/dev/null
-
-  install -d ${pkgdir}/usr/share/licenses/${pkgname}
-  ln -s /usr/share/doc/${pkgname}/LICENSE.txt ${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.txt
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  python setup.py install --root="${pkgdir}" --optimize=1
 }
 
 # vim:set ts=2 sw=2 et:
