@@ -7,10 +7,10 @@ from asciinema.confirmator import Confirmator
 
 class RecordCommand(object):
 
-    def __init__(self, api_url, user_token, cmd, title, skip_confirmation,
+    def __init__(self, api_url, api_token, cmd, title, skip_confirmation,
                  recorder=None, uploader=None, confirmator=None):
         self.api_url = api_url
-        self.user_token = user_token
+        self.api_token = api_token
         self.cmd = cmd
         self.title = title
         self.skip_confirmation = skip_confirmation
@@ -42,7 +42,7 @@ class RecordCommand(object):
         if self._upload_confirmed():
             print('~ Uploading...')
             try:
-                url = self.uploader.upload(self.api_url, self.user_token, asciicast)
+                url = self.uploader.upload(self.api_url, self.api_token, asciicast)
                 print(url)
             except SystemExit:
                 print('~ Error during upload. Try again in a minute.')

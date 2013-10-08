@@ -28,8 +28,8 @@ class FakeUploader(object):
     def __init__(self):
         self.uploaded = None
 
-    def upload(self, api_url, user_token, asciicast):
-        self.uploaded = [api_url, user_token, asciicast]
+    def upload(self, api_url, api_token, asciicast):
+        self.uploaded = [api_url, api_token, asciicast]
         return 'http://asciicast/url'
 
 

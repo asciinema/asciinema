@@ -37,25 +37,25 @@ class TestConfig(object):
             'ASCIINEMA_API_URL': 'http://the/url2' })
         assert_equal('http://the/url2', config.api_url)
 
-    def test_user_token_when_no_file(self):
+    def test_api_token_when_no_file(self):
         config = create_config()
 
-        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.user_token)
+        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.api_token)
         assert os.path.isfile(config.path)
 
-    def test_user_token_when_no_dir(self):
+    def test_api_token_when_no_dir(self):
         config = create_config()
         dir = os.path.dirname(config.path)
         os.rmdir(dir)
 
-        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.user_token)
+        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.api_token)
         assert os.path.isfile(config.path)
 
-    def test_user_token_when_no_token_set(self):
+    def test_api_token_when_no_token_set(self):
         config = create_config('')
-        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.user_token)
+        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.api_token)
 
-    def test_user_token_when_token_set(self):
+    def test_api_token_when_token_set(self):
         token = 'foo-bar-baz'
         config = create_config("[user]\ntoken = %s" % token)
-        assert re.match(token, config.user_token)
+        assert re.match(token, config.api_token)

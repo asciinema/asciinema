@@ -45,18 +45,18 @@ class Config:
         return api_url
 
     @property
-    def user_token(self):
+    def api_token(self):
         try:
-            user_token = self.config.get('user', 'token')
+            api_token = self.config.get('user', 'token')
         except NoOptionError:
-            user_token = str(uuid.uuid1())
-            self.config.set('user', 'token', user_token)
+            api_token = str(uuid.uuid1())
+            self.config.set('user', 'token', api_token)
 
             self._ensure_base_dir()
             with open(self.path, 'w') as f:
                 self.config.write(f)
 
-        return user_token
+        return api_token
 
     def _ensure_base_dir(self):
         dir = os.path.dirname(self.path)

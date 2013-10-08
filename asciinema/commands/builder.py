@@ -38,9 +38,9 @@ def get_command(argv, config):
             skip_confirmation = True
 
     if command == 'rec':
-        return RecordCommand(config.api_url, config.user_token, cmd, title,
+        return RecordCommand(config.api_url, config.api_token, cmd, title,
                              skip_confirmation)
     elif command == 'auth':
-        return AuthCommand(config.api_url, config.user_token)
+        return AuthCommand(config.api_url, config.api_token)
 
     return ErrorCommand("'%s' is not an asciinema command" % command)

@@ -13,7 +13,7 @@ class Config(object):
     def api_url(self):
         return 'http://api/url'
 
-    def user_token(self):
+    def api_token(self):
         return 'a-toh-can'
 
 
@@ -32,7 +32,7 @@ class TestGetCommand(object):
 
         assert_equal(RecordCommand, type(command))
         assert_equal(self.config.api_url, command.api_url)
-        assert_equal(self.config.user_token, command.user_token)
+        assert_equal(self.config.api_token, command.api_token)
         assert_equal(None, command.cmd)
         assert_equal(None, command.title)
         assert_equal(False, command.skip_confirmation)
@@ -43,7 +43,7 @@ class TestGetCommand(object):
 
         assert_equal(RecordCommand, type(command))
         assert_equal(self.config.api_url, command.api_url)
-        assert_equal(self.config.user_token, command.user_token)
+        assert_equal(self.config.api_token, command.api_token)
         assert_equal('/bin/bash -l', command.cmd)
         assert_equal("O'HAI LOL", command.title)
         assert_equal(True, command.skip_confirmation)
@@ -53,7 +53,7 @@ class TestGetCommand(object):
 
         assert_equal(AuthCommand, type(command))
         assert_equal(self.config.api_url, command.api_url)
-        assert_equal(self.config.user_token, command.user_token)
+        assert_equal(self.config.api_token, command.api_token)
 
     def test_get_command_when_options_include_h(self):
         command = get_command(['-h'], self.config)
