@@ -51,11 +51,23 @@ class TestConfig(object):
         assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.api_token)
         assert os.path.isfile(config.path)
 
-    def test_api_token_when_no_token_set(self):
+    def test_api_token_when_no_api_token_set(self):
         config = create_config('')
         assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.api_token)
 
-    def test_api_token_when_token_set(self):
+    def test_api_token_when_api_token_set(self):
+        token = 'foo-bar-baz'
+        config = create_config("[api]\ntoken = %s" % token)
+        assert re.match(token, config.api_token)
+
+    def test_api_token_when_api_token_set_as_user_token(self):
         token = 'foo-bar-baz'
         config = create_config("[user]\ntoken = %s" % token)
         assert re.match(token, config.api_token)
+
+    def test_api_token_when_api_token_set_and_user_token_set(self):
+        user_token = 'foo'
+        api_token = 'bar'
+        config = create_config("[user]\ntoken = %s\n[api]\ntoken = %s" %
+                               (user_token, api_token))
+        assert re.match(api_token, config.api_token)

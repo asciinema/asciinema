@@ -47,19 +47,31 @@ class Config:
     @property
     def api_token(self):
         try:
-            api_token = self.config.get('user', 'token')
+            return self._get_api_token()
         except NoOptionError:
-            api_token = str(uuid.uuid1())
-            self.config.set('user', 'token', api_token)
-
-            self._ensure_base_dir()
-            with open(self.path, 'w') as f:
-                self.config.write(f)
-
-        return api_token
+            try:
+                return self._get_user_token()
+            except NoOptionError:
+                return self._create_api_token()
 
     def _ensure_base_dir(self):
         dir = os.path.dirname(self.path)
 
         if not os.path.isdir(dir):
             os.mkdir(dir)
+
+    def _get_api_token(self):
+        return self.config.get('api', 'token')
+
+    def _get_user_token(self):
+        return self.config.get('user', 'token')
+
+    def _create_api_token(self):
+        api_token = str(uuid.uuid1())
+        self.config.set('api', 'token', api_token)
+
+        self._ensure_base_dir()
+        with open(self.path, 'w') as f:
+            self.config.write(f)
+
+        return api_token
