@@ -40,3 +40,11 @@ class FakeClock(object):
         self.n += 1
 
         return value
+
+
+class FakeAsciicast(object):
+
+    def __init__(self, cmd=None, title=None, stdout=None):
+        self.cmd = cmd
+        self.title = title
+        self.stdout = stdout
