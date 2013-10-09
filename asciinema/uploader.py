@@ -11,7 +11,7 @@ class Uploader(object):
 
     def upload(self, api_url, api_token, asciicast):
         url = '%s/api/asciicasts' % api_url
-        files  = self._asciicast_files(asciicast, api_token)
+        files = self._asciicast_files(asciicast, api_token)
 
         status, headers, body = self.http_adapter.post(url, files=files)
 
@@ -34,7 +34,7 @@ class Uploader(object):
         return ('meta.json', self._meta_json(asciicast, api_token))
 
     def _meta_json(self, asciicast, api_token):
-        meta_data = asciicast.meta_data()
+        meta_data = asciicast.meta_data
         auth_data = { 'user_token': api_token }
         data = dict(list(meta_data.items()) + list(auth_data.items()))
 

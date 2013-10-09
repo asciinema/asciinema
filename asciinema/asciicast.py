@@ -14,6 +14,7 @@ class Asciicast(object):
         unametemp = os.uname()
         self.uname = "%s %s %s %s" % (unametemp[0], unametemp[2], unametemp[3], unametemp[4])
 
+    @property
     def meta_data(self):
         lines = int(get_command_output(['tput', 'lines']))
         columns = int(get_command_output(['tput', 'cols']))
