@@ -2,6 +2,7 @@ import json
 import bz2
 from nose.tools import assert_equal
 from .test_helper import Test, FakeAsciicast
+from asciinema import __version__
 from asciinema.uploader import Uploader
 
 
@@ -10,10 +11,12 @@ class FakeHttpAdapter(object):
     def __init__(self):
         self.url = None
         self.files = None
+        self.headers = None
 
-    def post(self, url, files):
+    def post(self, url, files, headers):
         self.url = url
         self.files = files
+        self.headers = headers
 
         return (200, { 'Content-type': 'text/plain' }, b'success!')
 
@@ -42,6 +45,8 @@ class TestUploader(Test):
         assert_equal(b'success!', response_body)
         assert_equal('http://api/url/api/asciicasts', self.http_adapter.url)
         assert_equal(self._expected_files(), self.http_adapter.files)
+        assert_equal({ 'User-Agent': 'asciinema/%s' % __version__ },
+                     self.http_adapter.headers)
 
     def _expected_files(self):
         return {

@@ -1,6 +1,7 @@
 import json
 import bz2
 
+from asciinema import __version__
 from .requests_http_adapter import RequestsHttpAdapter
 
 
@@ -12,8 +13,10 @@ class Uploader(object):
     def upload(self, api_url, api_token, asciicast):
         url = '%s/api/asciicasts' % api_url
         files = self._asciicast_files(asciicast, api_token)
+        headers = self._headers()
 
-        status, headers, body = self.http_adapter.post(url, files=files)
+        status, headers, body = self.http_adapter.post(url, files=files,
+                                                            headers=headers)
 
         return body
 
@@ -23,6 +26,9 @@ class Uploader(object):
             'asciicast[stdout_timing]': self._stdout_timing_file(asciicast.stdout),
             'asciicast[meta]': self._meta_file(asciicast, api_token)
         }
+
+    def _headers(self):
+        return { 'User-Agent': 'asciinema/%s' % __version__ }
 
     def _stdout_data_file(self, stdout):
         return ('stdout', bz2.compress(stdout.data))
