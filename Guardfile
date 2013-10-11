@@ -15,7 +15,7 @@ def run_test(file)
 end
 
 guard 'shell' do
-  watch(%r{src/(.+)\.py$}) do |m|
+  watch(%r{asciinema/(.+)\.py$}) do |m|
     test_filename = "tests/#{m[1]}_test.py"
 
     if File.exists?(test_filename)
