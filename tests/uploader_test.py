@@ -1,5 +1,6 @@
 import json
 import bz2
+import platform
 from nose.tools import assert_equal
 from .test_helper import Test, FakeAsciicast
 from asciinema import __version__
@@ -45,8 +46,7 @@ class TestUploader(Test):
         assert_equal(b'success!', response_body)
         assert_equal('http://api/url/api/asciicasts', self.http_adapter.url)
         assert_equal(self._expected_files(), self.http_adapter.files)
-        assert_equal({ 'User-Agent': 'asciinema/%s' % __version__ },
-                     self.http_adapter.headers)
+        assert_equal(self._expected_headers(), self.http_adapter.headers)
 
     def _expected_files(self):
         return {
@@ -58,3 +58,7 @@ class TestUploader(Test):
             'asciicast[stdout_timing]':
                 ('stdout.time', bz2.compress(b'timing456'))
         }
+
+    def _expected_headers(self):
+        return { 'User-Agent': 'asciinema/%s (%s) python/%s' %
+               (__version__, platform.platform(), platform.python_version()) }

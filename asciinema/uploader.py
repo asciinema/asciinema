@@ -1,5 +1,6 @@
 import json
 import bz2
+import platform
 
 from asciinema import __version__
 from .requests_http_adapter import RequestsHttpAdapter
@@ -28,7 +29,7 @@ class Uploader(object):
         }
 
     def _headers(self):
-        return { 'User-Agent': 'asciinema/%s' % __version__ }
+        return { 'User-Agent': self._user_agent() }
 
     def _stdout_data_file(self, stdout):
         return ('stdout', bz2.compress(stdout.data))
@@ -45,3 +46,7 @@ class Uploader(object):
         data = dict(list(meta_data.items()) + list(auth_data.items()))
 
         return json.dumps(data)
+
+    def _user_agent(self):
+        return 'asciinema/%s (%s) python/%s' % \
+               (__version__, platform.platform(), platform.python_version())

@@ -11,8 +11,6 @@ class Asciicast(object):
         self.shell = env['SHELL']
         self.term = env['TERM']
         self.username = env['USER']
-        unametemp = os.uname()
-        self.uname = "%s %s %s %s" % (unametemp[0], unametemp[2], unametemp[3], unametemp[4])
 
     @property
     def meta_data(self):
@@ -25,7 +23,6 @@ class Asciicast(object):
             'title'      : self.title,
             'command'    : self.command,
             'shell'      : self.shell,
-            'uname'      : self.uname,
             'term'       : {
                 'type'   : self.term,
                 'lines'  : lines,
