@@ -7,6 +7,10 @@ from asciinema import __version__
 from .requests_http_adapter import RequestsHttpAdapter
 
 
+class ServerMaintenanceError(Exception):
+    pass
+
+
 class Uploader(object):
 
     def __init__(self, http_adapter=None):
@@ -19,6 +23,8 @@ class Uploader(object):
 
         status, headers, body = self.http_adapter.post(url, files=files,
                                                             headers=headers)
+        if status == 503:
+            raise ServerMaintenanceError()
 
         return body
 

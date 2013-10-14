@@ -1,7 +1,8 @@
+import sys
 import subprocess
 
 from asciinema.recorder import Recorder
-from asciinema.uploader import Uploader
+from asciinema.uploader import Uploader, ServerMaintenanceError
 from asciinema.confirmator import Confirmator
 
 
@@ -44,8 +45,9 @@ class RecordCommand(object):
             try:
                 url = self.uploader.upload(self.api_url, self.api_token, asciicast)
                 print(url)
-            except SystemExit:
-                print('~ Error during upload. Try again in a minute.')
+            except ServerMaintenanceError:
+                print('~ Upload failed: The server is down for maintenance. Try again in a minute.')
+                sys.exit(1)
 
     def _upload_confirmed(self):
         if self.skip_confirmation:

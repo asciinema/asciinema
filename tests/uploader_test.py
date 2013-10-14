@@ -1,15 +1,16 @@
 import json
 import bz2
 import platform
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 from .test_helper import Test, FakeAsciicast
 from asciinema import __version__
-from asciinema.uploader import Uploader
+from asciinema.uploader import Uploader, ServerMaintenanceError
 
 
 class FakeHttpAdapter(object):
 
-    def __init__(self):
+    def __init__(self, status):
+        self.status = status
         self.url = None
         self.files = None
         self.headers = None
@@ -19,7 +20,7 @@ class FakeHttpAdapter(object):
         self.files = files
         self.headers = headers
 
-        return (200, { 'Content-type': 'text/plain' }, b'success!')
+        return (self.status, { 'Content-type': 'text/plain' }, b'success!')
 
 
 class FakeStdout(object):
@@ -33,7 +34,6 @@ class TestUploader(Test):
 
     def setUp(self):
         Test.setUp(self)
-        self.http_adapter = FakeHttpAdapter()
         self.stdout = FakeStdout(b'data123', b'timing456')
         self.asciicast = FakeAsciicast(cmd='ls -l', title='tit',
                 stdout=self.stdout, meta_data={ 'shell': '/bin/sh' })
@@ -44,15 +44,23 @@ class TestUploader(Test):
         Test.tearDown(self)
         platform.platform = self.real_platform
 
-    def test_upload(self):
-        uploader = Uploader(self.http_adapter)
+    def test_upload_when_status_201_returned(self):
+        http_adapter = FakeHttpAdapter(201)
+        uploader = Uploader(http_adapter)
 
         response_body = uploader.upload('http://api/url', 'a1b2c3', self.asciicast)
 
         assert_equal(b'success!', response_body)
-        assert_equal('http://api/url/api/asciicasts', self.http_adapter.url)
-        assert_equal(self._expected_files(), self.http_adapter.files)
-        assert_equal(self._expected_headers(), self.http_adapter.headers)
+        assert_equal('http://api/url/api/asciicasts', http_adapter.url)
+        assert_equal(self._expected_files(), http_adapter.files)
+        assert_equal(self._expected_headers(), http_adapter.headers)
+
+    def test_upload_when_status_503_returned(self):
+        http_adapter = FakeHttpAdapter(503)
+        uploader = Uploader(http_adapter)
+
+        assert_raises(ServerMaintenanceError, uploader.upload,
+                      'http://api/url', 'a1b2c3', self.asciicast)
 
     def _expected_files(self):
         return {

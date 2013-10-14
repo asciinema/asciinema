@@ -1,8 +1,9 @@
 import sys
 import subprocess
 
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 from asciinema.commands.record import RecordCommand
+from asciinema.uploader import ServerMaintenanceError
 from .test_helper import assert_printed, assert_not_printed, Test, FakeAsciicast
 
 
@@ -18,10 +19,14 @@ class FakeRecorder(object):
 
 class FakeUploader(object):
 
-    def __init__(self):
+    def __init__(self, raises=False):
         self.uploaded = None
+        self.raises = raises
 
     def upload(self, api_url, api_token, asciicast):
+        if self.raises:
+            raise ServerMaintenanceError()
+
         self.uploaded = [api_url, api_token, asciicast]
         return 'http://asciicast/url'
 
@@ -81,6 +86,13 @@ class TestRecordCommand(Test):
 
         assert 'Do you want to upload' in self.confirmator.text
         self.assert_recorded_but_not_uploaded()
+
+    def test_execute_when_server_in_maintenance_mode(self):
+        self.uploader = FakeUploader(True)
+        command = self.create_command(True)
+
+        assert_raises(SystemExit, command.execute)
+        assert_printed('maintenance')
 
     def assert_recorded_but_not_uploaded(self):
         asciicast = self.recorder.asciicast
