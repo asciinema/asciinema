@@ -1,6 +1,7 @@
 import json
 import bz2
 import platform
+import re
 
 from asciinema import __version__
 from .requests_http_adapter import RequestsHttpAdapter
@@ -48,5 +49,7 @@ class Uploader(object):
         return json.dumps(data)
 
     def _user_agent(self):
-        return 'asciinema/%s (%s) python/%s' % \
-               (__version__, platform.platform(), platform.python_version())
+        os = re.sub('([^-]+)-(.*)', '\\1/\\2', platform.platform())
+
+        return 'asciinema/%s %s/%s %s' % (__version__,
+            platform.python_implementation(), platform.python_version(), os)

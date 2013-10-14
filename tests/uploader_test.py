@@ -37,6 +37,12 @@ class TestUploader(Test):
         self.stdout = FakeStdout(b'data123', b'timing456')
         self.asciicast = FakeAsciicast(cmd='ls -l', title='tit',
                 stdout=self.stdout, meta_data={ 'shell': '/bin/sh' })
+        self.real_platform = platform.platform
+        platform.platform = lambda: 'foo-bar-baz-qux-quux'
+
+    def tearDown(self):
+        Test.tearDown(self)
+        platform.platform = self.real_platform
 
     def test_upload(self):
         uploader = Uploader(self.http_adapter)
@@ -60,5 +66,6 @@ class TestUploader(Test):
         }
 
     def _expected_headers(self):
-        return { 'User-Agent': 'asciinema/%s (%s) python/%s' %
-               (__version__, platform.platform(), platform.python_version()) }
+        return { 'User-Agent': 'asciinema/%s %s/%s %s' %
+               (__version__, platform.python_implementation(),
+                   platform.python_version(), 'foo/bar-baz-qux-quux') }
