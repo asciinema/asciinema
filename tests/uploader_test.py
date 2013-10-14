@@ -4,7 +4,7 @@ import platform
 from nose.tools import assert_equal, assert_raises
 from .test_helper import Test, FakeAsciicast
 from asciinema import __version__
-from asciinema.uploader import Uploader, ServerMaintenanceError
+from asciinema.uploader import Uploader, ServerMaintenanceError, ResourceNotFoundError
 
 
 class FakeHttpAdapter(object):
@@ -60,6 +60,13 @@ class TestUploader(Test):
         uploader = Uploader(http_adapter)
 
         assert_raises(ServerMaintenanceError, uploader.upload,
+                      'http://api/url', 'a1b2c3', self.asciicast)
+
+    def test_upload_when_status_404_returned(self):
+        http_adapter = FakeHttpAdapter(404)
+        uploader = Uploader(http_adapter)
+
+        assert_raises(ResourceNotFoundError, uploader.upload,
                       'http://api/url', 'a1b2c3', self.asciicast)
 
     def _expected_files(self):

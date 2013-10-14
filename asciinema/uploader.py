@@ -7,6 +7,10 @@ from asciinema import __version__
 from .requests_http_adapter import RequestsHttpAdapter
 
 
+class ResourceNotFoundError(Exception):
+    pass
+
+
 class ServerMaintenanceError(Exception):
     pass
 
@@ -23,8 +27,12 @@ class Uploader(object):
 
         status, headers, body = self.http_adapter.post(url, files=files,
                                                             headers=headers)
+
         if status == 503:
             raise ServerMaintenanceError()
+
+        if status == 404:
+            raise ResourceNotFoundError()
 
         return body
 

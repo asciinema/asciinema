@@ -2,7 +2,7 @@ import sys
 import subprocess
 
 from asciinema.recorder import Recorder
-from asciinema.uploader import Uploader, ServerMaintenanceError
+from asciinema.uploader import Uploader, ServerMaintenanceError, ResourceNotFoundError
 from asciinema.confirmator import Confirmator
 
 
@@ -47,6 +47,9 @@ class RecordCommand(object):
                 print(url)
             except ServerMaintenanceError:
                 print('~ Upload failed: The server is down for maintenance. Try again in a minute.')
+                sys.exit(1)
+            except ResourceNotFoundError:
+                print('~ Upload failed: Your client version is no longer supported. Please upgrade to the latest version.')
                 sys.exit(1)
 
     def _upload_confirmed(self):
