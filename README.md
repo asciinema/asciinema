@@ -27,9 +27,22 @@ Arch Linux users can install the
 
 ## Usage
 
-Check the available commands and options with:
+Record:
 
-    asciinema -h
+    $ asciinema rec
+    d734ae3
+
+Replay:
+
+    $ asciinema play d734ae3
+
+Edit:
+
+    $ asciinema edit d734ae3
+
+Publish:
+
+    $ asciinema push d734ae3
 
 ## Authors
 
