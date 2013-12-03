@@ -31,6 +31,11 @@ Check the available commands and options with:
 
     asciinema -h
 
+## Contributing
+
+If you want to contribute to this project check out
+[Contributing](http://asciinema.org/contributing) page.
+
 ## Authors
 
 Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
