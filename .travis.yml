@@ -7,3 +7,5 @@ python:
 script: make test
 install:
   - pip install . --use-mirrors
+notifications:
+  irc: "chat.freenode.net#asciinema"
