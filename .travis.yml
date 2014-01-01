@@ -8,4 +8,8 @@ script: make test
 install:
   - pip install . --use-mirrors
 notifications:
-  irc: "chat.freenode.net#asciinema"
+  irc:
+    channels:
+      - "chat.freenode.net#asciinema"
+    use_notice: true
+    skip_join: true
