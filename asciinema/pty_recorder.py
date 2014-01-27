@@ -26,9 +26,13 @@ class PtyRecorder(object):
             '''
 
             # Get the terminal size of the real terminal, set it on the pseudoterminal.
-            buf = array.array('h', [0, 0, 0, 0])
-            fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
-            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
+            if os.isatty(pty.STDOUT_FILENO):
+                buf = array.array('h', [0, 0, 0, 0])
+                fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
+                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
+            else:
+                buf = array.array('h', [24, 80, 0, 0])
+                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
         def _signal_winch(signal, frame):
             '''Signal handler for SIGWINCH - window size has changed.'''
