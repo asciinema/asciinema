@@ -20,10 +20,8 @@ Or, you can install the __development version__ directly from GitHub:
 
     sudo pip install --upgrade https://github.com/sickill/asciinema/tarball/master
 
-Arch Linux users can install the
-[AUR](https://aur.archlinux.org/packages/asciinema/) package:
-
-    yaourt -S asciinema
+See [installation docs](https://asciinema.org/docs/installation) for more
+options (Ubuntu, Fedora, Arch, Gentoo etc).
 
 ## Usage
 
