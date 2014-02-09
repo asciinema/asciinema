@@ -1,6 +1,6 @@
 # Maintainer: Marcin Kulik <m@ku1ik.com>
 pkgname=asciinema
-pkgver=0.9.7
+pkgver=0.9.8
 pkgrel=1
 pkgdesc="Command line recorder for asciinema.org service"
 arch=(any)
@@ -9,7 +9,7 @@ license=('MIT')
 depends=('python-requests>=1.1.0')
 makedepends=('python-distribute')
 source=(https://pypi.python.org/packages/source/a/asciinema/asciinema-${pkgver}.tar.gz)
-md5sums=('df9cde430210db8f054e78e163914ca5')
+md5sums=('ae8662d033af0e973d5864a247117e7f')
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
