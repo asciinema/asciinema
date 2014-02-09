@@ -20,7 +20,7 @@ setup(
     description='Command line recorder for asciinema.org service',
     author=asciinema.__author__,
     author_email='m@ku1ik.com',
-    url='http://asciinema.org',
+    url='https://asciinema.org',
     download_url=(url_template % asciinema.__version__),
     entry_points={
         'console_scripts': [

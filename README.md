@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/sickill/asciinema.png?branch=master)](https://travis-ci.org/sickill/asciinema)
 
-Command line client for [asciinema.org](http://asciinema.org) service.
+Command line client for [asciinema.org](https://asciinema.org) service.
 
 ## Installation
 
@@ -32,7 +32,7 @@ Check the available commands and options with:
 ## Contributing
 
 If you want to contribute to this project check out
-[Contributing](http://asciinema.org/contributing) page.
+[Contributing](https://asciinema.org/contributing) page.
 
 ## Authors
 

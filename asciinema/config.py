@@ -10,7 +10,7 @@ import uuid
 
 
 DEFAULT_CONFIG_FILE_PATH = "~/.asciinema/config"
-DEFAULT_API_URL = 'http://asciinema.org'
+DEFAULT_API_URL = 'https://asciinema.org'
 
 class Config:
 

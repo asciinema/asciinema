@@ -22,11 +22,11 @@ class TestConfig(object):
 
     def test_api_url_when_no_file_and_no_override_set(self):
         config = create_config()
-        assert_equal('http://asciinema.org', config.api_url)
+        assert_equal('https://asciinema.org', config.api_url)
 
     def test_api_url_when_no_url_set_and_no_override_set(self):
         config = create_config('')
-        assert_equal('http://asciinema.org', config.api_url)
+        assert_equal('https://asciinema.org', config.api_url)
 
     def test_api_url_when_url_set_and_no_override_set(self):
         config = create_config("[api]\nurl = http://the/url")
