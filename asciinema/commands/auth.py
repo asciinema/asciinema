@@ -6,5 +6,6 @@ class AuthCommand(object):
 
     def execute(self):
         url = '%s/connect/%s' % (self.api_url, self.api_token)
-        print('Open following URL in your browser to authenticate and/or ' \
-            'claim recorded asciicasts:\n%s' % url)
+        print('Open the following URL in your browser to register your API ' \
+                'token and assign any recorded asciicasts to your profile:\n' \
+                '%s' % url)
