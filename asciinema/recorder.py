@@ -13,7 +13,7 @@ class Recorder(object):
 
     def record(self, cmd, title):
         duration, stdout = timer.timeit(self.pty_recorder.record_command,
-                                        cmd or self.env['SHELL'])
+                                        cmd or self.env.get('SHELL', '/bin/sh'))
 
         asciicast = Asciicast()
         asciicast.title = title
