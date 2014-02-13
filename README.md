@@ -1,6 +1,8 @@
 # Asciinema
 
+[![PyPI version](https://badge.fury.io/py/asciinema.png)](http://badge.fury.io/py/asciinema)
 [![Build Status](https://travis-ci.org/sickill/asciinema.png?branch=master)](https://travis-ci.org/sickill/asciinema)
+[![Downloads](https://pypip.in/d/asciinema/badge.png)](https://crate.io/packages/requests/)
 
 Command line client for [asciinema.org](https://asciinema.org) service.
 
