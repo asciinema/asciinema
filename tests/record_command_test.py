@@ -57,7 +57,7 @@ class TestRecordCommand(Test):
 
     def create_command(self, skip_confirmation):
         return RecordCommand('http://the/url', 'a1b2c3', 'ls -l', 'the title',
-                             skip_confirmation, self.recorder, self.uploader,
+                             skip_confirmation, False, self.recorder, self.uploader,
                              self.confirmator)
 
     def test_execute_when_upload_confirmation_skipped(self):

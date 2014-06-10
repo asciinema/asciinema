@@ -15,6 +15,7 @@ Actions:
 Optional arguments:
  -c command       run specified command instead of shell ($SHELL)
  -t title         specify title of recorded asciicast
- -y               don't prompt for confirmation
+ -y               don't prompt for confirmation and upload
+ -n               don't prompt for confirmation and don't upload
  -h, --help       show this help message and exit
  -v, --version    show version information'''
