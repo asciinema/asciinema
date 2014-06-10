@@ -9,12 +9,13 @@ from asciinema.confirmator import Confirmator
 class RecordCommand(object):
 
     def __init__(self, api_url, api_token, cmd, title, skip_confirmation,
-                 recorder=None, uploader=None, confirmator=None):
+                 do_not_upload, recorder=None, uploader=None, confirmator=None):
         self.api_url = api_url
         self.api_token = api_token
         self.cmd = cmd
         self.title = title
         self.skip_confirmation = skip_confirmation
+        self.do_not_upload = do_not_upload
         self.recorder = recorder if recorder is not None else Recorder()
         self.uploader = uploader if uploader is not None else Uploader()
         self.confirmator = confirmator if confirmator is not None else Confirmator()
@@ -53,6 +54,8 @@ class RecordCommand(object):
                 sys.exit(1)
 
     def _upload_confirmed(self):
+        if self.do_not_upload:
+            return False
         if self.skip_confirmation:
             return True
 

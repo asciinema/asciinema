@@ -9,7 +9,7 @@ from .version import VersionCommand
 
 def get_command(argv, config):
     try:
-        opts, commands = getopt.getopt(argv, 'c:t:ihvy', ['help', 'version'])
+        opts, commands = getopt.getopt(argv, 'c:t:ihvyn', ['help', 'version'])
     except getopt.error as msg:
         return ErrorCommand(msg)
 
@@ -24,6 +24,7 @@ def get_command(argv, config):
     cmd = None
     title = None
     skip_confirmation = False
+    do_not_upload = False
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -36,10 +37,12 @@ def get_command(argv, config):
             title = arg
         elif opt == '-y':
             skip_confirmation = True
+        elif opt == '-n':
+            do_not_upload = True
 
     if command == 'rec':
         return RecordCommand(config.api_url, config.api_token, cmd, title,
-                             skip_confirmation)
+                             skip_confirmation, do_not_upload)
     elif command == 'auth':
         return AuthCommand(config.api_url, config.api_token)
 

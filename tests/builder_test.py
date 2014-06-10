@@ -36,6 +36,7 @@ class TestGetCommand(object):
         assert_equal(None, command.cmd)
         assert_equal(None, command.title)
         assert_equal(False, command.skip_confirmation)
+        assert_equal(False, command.do_not_upload)
 
     def test_get_command_when_cmd_is_rec_and_options_given(self):
         argv = ['-c', '/bin/bash -l', '-t', "O'HAI LOL", '-y', 'rec']
@@ -47,6 +48,15 @@ class TestGetCommand(object):
         assert_equal('/bin/bash -l', command.cmd)
         assert_equal("O'HAI LOL", command.title)
         assert_equal(True, command.skip_confirmation)
+        assert_equal(False, command.do_not_upload)
+
+    def test_get_command_when_cmd_is_do_not_upload(self):
+        argv = ['-n', 'rec']
+        command = get_command(argv, self.config)
+
+        assert_equal(RecordCommand, type(command))
+        assert_equal(False, command.skip_confirmation)
+        assert_equal(True, command.do_not_upload)
 
     def test_get_command_when_cmd_is_auth(self):
         command = get_command(['auth'], self.config)
