@@ -1,3 +1,4 @@
+import errno
 import os
 import pty
 import signal
@@ -73,7 +74,7 @@ class PtyRecorder(object):
                 try:
                     rfds, wfds, xfds = select.select([master_fd, pty.STDIN_FILENO], [], [])
                 except select.error as e:
-                    if e[0] == 4:   # Interrupted system call.
+                    if e[0] == errno.EINTR:   # Interrupted system call.
                         continue
 
                 if master_fd in rfds:
