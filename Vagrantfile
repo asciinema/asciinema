@@ -21,8 +21,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "ubuntu-raring" do |c|
-    c.vm.box = "raring64"
-    c.vm.box_url = "http://bit.ly/vagrant-lxc-raring64-2013-09-28-"
+    c.vm.box = "ubuntu/raring64"
     c.vm.provision "shell", inline: "apt-get install python-pip make -y && pip install nose"
   end
 
