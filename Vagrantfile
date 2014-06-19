@@ -12,7 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "arch" do |c|
     c.vm.box = "cameronmalek/arch1403"
-    c.vm.provision "shell", inline: "pacman -Sy && pacman -S --noconfirm make python2-pip fakeroot binutils && pip2 install nose"
+    c.vm.provision "shell", inline: "pacman -Sy && pacman -S --noconfirm make python2-pip fakeroot binutils pkgbuild-introspection && pip2 install nose"
   end
 
   config.vm.define "ubuntu-trusty" do |c|
