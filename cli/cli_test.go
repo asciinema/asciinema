@@ -42,7 +42,7 @@ func (l *testConfigLoader) LoadConfig() (*util.Config, error) {
 	return &util.Config{}, nil
 }
 
-func TestCLI(t *testing.T) {
+func TestCLI_Run(t *testing.T) {
 	commands := map[string]cli.CommandBuilderFunc{
 		"version": versionCmdBuilder,
 		"foo":     fooCmdBuilder,
