@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
@@ -58,7 +57,7 @@ func (c *RecordCommand) Execute(args []string) error {
 		util.Warningf("Current terminal size is %vx%v.", cols, rows)
 		util.Warningf("It may be too big to be properly replayed on smaller screens.")
 		util.Warningf("You can now resize it. Press <Enter> to start recording.")
-		bufio.NewReader(os.Stdin).ReadString('\n')
+		util.ReadLine()
 	}
 
 	util.Printf("Asciicast recording started.")
