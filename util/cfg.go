@@ -55,23 +55,24 @@ func (l *FileConfigLoader) LoadConfig() (*Config, error) {
 	return cfg, nil
 }
 
-func loadConfigFile(path string) (*Config, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err = createConfigFile(path); err != nil {
+func loadConfigFile(cfgPath string) (*Config, error) {
+	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+		if err = createConfigFile(cfgPath); err != nil {
 			return nil, err
 		}
 	}
 
 	var cfg Config
-	if err := gcfg.ReadFileInto(&cfg, path); err != nil {
+	if err := gcfg.ReadFileInto(&cfg, cfgPath); err != nil {
 		return nil, err
 	}
 
 	return &cfg, nil
 }
 
-func createConfigFile(path string) error {
+func createConfigFile(cfgPath string) error {
 	apiToken := NewUUID().String()
 	contents := fmt.Sprintf("[api]\ntoken = %v\n", apiToken)
-	return ioutil.WriteFile(path, []byte(contents), 0644)
+	os.MkdirAll(path.Dir(cfgPath), 0755)
+	return ioutil.WriteFile(cfgPath, []byte(contents), 0644)
 }
