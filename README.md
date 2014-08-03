@@ -1,7 +1,6 @@
-# Asciinema
+# Asciinema CLI
 
-[![PyPI version](https://badge.fury.io/py/asciinema.png)](http://badge.fury.io/py/asciinema) 
-[![Build Status](https://travis-ci.org/asciinema/asciinema-cli.svg?branch=master)](https://travis-ci.org/asciinema/asciinema-cli) [![Downloads](https://pypip.in/d/asciinema/badge.png)](https://pypi.python.org/pypi/asciinema)
+[![Build Status](https://travis-ci.org/asciinema/asciinema-cli.svg?branch=go)](https://travis-ci.org/asciinema/asciinema-cli)
 
 Command line client for [asciinema.org](https://asciinema.org) service.
 
