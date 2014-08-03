@@ -15,7 +15,10 @@ import (
 )
 
 func Record(flags *flag.FlagSet, cfg *util.Config) cli.Command {
-	command := RecordCommand{}
+	command := RecordCommand{
+		Terminal: terminal.New(),
+		Api:      api.New(cfg.Api.Url, cfg.Api.Token),
+	}
 
 	flags.StringVar(
 		&command.Command,

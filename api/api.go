@@ -9,6 +9,22 @@ type Api interface {
 	CreateAsciicast(*Asciicast) (string, error)
 }
 
+func New(url, token string) *AsciinemaApi {
+	return &AsciinemaApi{
+		url:   url,
+		token: token,
+	}
+}
+
+type AsciinemaApi struct {
+	url   string
+	token string
+}
+
+func (a *AsciinemaApi) CreateAsciicast(asciicast *Asciicast) (string, error) {
+	return "/foo", nil
+}
+
 type Asciicast struct {
 	Command  string
 	Title    string
