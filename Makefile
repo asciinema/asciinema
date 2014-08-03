@@ -1,5 +1,8 @@
 all: build
 
+deps:
+	go get -d -v ./...
+
 build: test
 	go build
 
