@@ -17,11 +17,11 @@ func (w *testWriter) Write(p []byte) (int, error) {
 
 func TestRecord(t *testing.T) {
 	command := `python -c "
-import sys, time
+import sys, time, os
 sys.stdout.write('foo')
 sys.stdout.flush()
 time.sleep(0.01)
-sys.stdout.write('bar')
+sys.stdout.write(os.environ['ASCIINEMA_REC'])
 "`
 	stdoutCopy := &testWriter{}
 
@@ -38,9 +38,7 @@ sys.stdout.write('bar')
 	}
 
 	chunk = stdoutCopy.chunks[1]
-	if chunk != "bar" {
-		t.Errorf("expected \"bar\", got \"%v\"", chunk)
+	if chunk != "1" {
+		t.Errorf("expected \"1\", got \"%v\"", chunk)
 	}
-
-	// TODO: check if ASCIINEMA_REC env var was set
 }
