@@ -1,10 +1,12 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
+	"path"
+	"path/filepath"
 
 	"code.google.com/p/gcfg"
 )
@@ -30,10 +32,14 @@ type ConfigLoader interface {
 type FileConfigLoader struct{}
 
 func (l *FileConfigLoader) LoadConfig() (*Config, error) {
-	usr, _ := user.Current()
-	path := usr.HomeDir + "/.asciinema/config"
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		return nil, errors.New("Need $HOME")
+	}
 
-	cfg, err := loadConfigFile(path)
+	cfgPath := filepath.Join(homeDir, ".asciinema", "config")
+
+	cfg, err := loadConfigFile(cfgPath)
 	if err != nil {
 		return nil, err
 	}
