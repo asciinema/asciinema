@@ -1,4 +1,10 @@
 language: go
+
+go:
+  - 1.2
+  - 1.3
+  - tip
+
 notifications:
   irc:
     channels:
