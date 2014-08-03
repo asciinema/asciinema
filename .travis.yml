@@ -5,6 +5,8 @@ go:
   - 1.3
   - tip
 
+script: make travis
+
 notifications:
   irc:
     channels:
