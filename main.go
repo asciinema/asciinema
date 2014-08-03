@@ -11,6 +11,7 @@ import (
 func main() {
 	cli := &cli.CLI{
 		Commands: map[string]cli.CommandBuilderFunc{
+			"rec":     commands.Record,
 			"auth":    commands.Auth,
 			"version": commands.Version,
 		},
