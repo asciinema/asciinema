@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.9 (to be released)
+
+* Rewritten in Go
+* No more screen clearing before and after recording
+* Recorded process has ASCIINEMA_REC env variable set (useful for "rec"
+  indicator in shell's $PROMPT/$RPROMPT)
+
 ## 0.9.8 (2014-02-09)
 
 * Rename user_token to api_token
