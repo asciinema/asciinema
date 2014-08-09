@@ -10,6 +10,7 @@ import (
 	"code.google.com/p/go.crypto/ssh/terminal"
 
 	"github.com/asciinema/asciinema-cli/ptyx"
+	"github.com/asciinema/asciinema-cli/util"
 	"github.com/kr/pty"
 )
 
@@ -32,7 +33,7 @@ func (p *Pty) Size() (int, int, error) {
 }
 
 func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
-	// 1. start command in pty
+	// start command in pty
 	cmd := exec.Command("/bin/sh", "-c", command)
 	cmd.Env = append(os.Environ(), "ASCIINEMA_REC=1")
 	master, err := pty.Start(cmd)
@@ -41,7 +42,7 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 	}
 	defer master.Close()
 
-	// 2. install WINCH signal handler
+	// install WINCH signal handler
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGWINCH)
 	defer signal.Stop(signals)
@@ -52,7 +53,7 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 	}()
 	defer close(signals)
 
-	// 3. put stdin into raw mode (if it's a tty)
+	// put stdin into raw mode (if it's a tty)
 	fd := int(p.Stdin.Fd())
 	if terminal.IsTerminal(fd) {
 		oldState, err := terminal.MakeRaw(fd)
@@ -62,15 +63,18 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 		defer terminal.Restore(fd, oldState)
 	}
 
-	// 4. do initial resize
+	// do initial resize
 	p.resize(master)
 
-	// 5. copy stdin -> pty master, pty master -> stdout
-	go func() {
-		io.Copy(master, p.Stdin)
-	}()
+	// start stdin -> master copying
+	stop := util.Copy(master, p.Stdin)
+
+	// copy pty master -> p.stdout & stdoutCopy
 	stdout := io.MultiWriter(p.Stdout, stdoutCopy)
 	io.Copy(stdout, master)
+
+	// stop stdin -> master copying
+	stop()
 
 	return nil
 }
