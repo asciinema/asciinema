@@ -19,14 +19,7 @@ func (c *testCommand) Execute(args []string) error {
 	return c.err
 }
 
-var verCmd = &testCommand{}
-var fooCmd = &testCommand{}
-var barCmd = &testCommand{err: errors.New("oops")}
-var helpCmd = &testCommand{}
-
-func versionCmdBuilder(*flag.FlagSet, *util.Config) cli.Command {
-	return verCmd
-}
+var helpCmd, verCmd, fooCmd, barCmd *testCommand
 
 func fooCmdBuilder(*flag.FlagSet, *util.Config) cli.Command {
 	return fooCmd
@@ -44,32 +37,34 @@ func (l *testConfigLoader) LoadConfig() (*util.Config, error) {
 
 func TestCLI_Run(t *testing.T) {
 	commands := map[string]cli.CommandBuilderFunc{
-		"version": versionCmdBuilder,
-		"foo":     fooCmdBuilder,
-		"bar":     barCmdBuilder,
+		"foo": fooCmdBuilder,
+		"bar": barCmdBuilder,
 	}
 
 	var tests = []struct {
 		args             []string
 		expectedExitCode int
-		expectedCommand  cli.Command
+		expectedCommand  **testCommand
 	}{
-		{[]string{}, 1, helpCmd},
-		{[]string{"-h"}, 0, helpCmd},
-		{[]string{"wow", "-v"}, 0, verCmd},
-		{[]string{"version"}, 0, verCmd},
-		{[]string{"foo"}, 0, fooCmd},
-		{[]string{"bar"}, 2, barCmd},
-		{[]string{"nope"}, 1, helpCmd},
+		{[]string{}, 1, &helpCmd},
+		{[]string{"-h"}, 0, &helpCmd},
+		{[]string{"wow", "-v"}, 0, &verCmd},
+		{[]string{"version"}, 0, &verCmd},
+		{[]string{"foo"}, 0, &fooCmd},
+		{[]string{"bar"}, 2, &barCmd},
+		{[]string{"nope"}, 1, &helpCmd},
 	}
 
 	for _, test := range tests {
-		cmd := test.expectedCommand.(*testCommand)
-		cmd.called = false
+		helpCmd = &testCommand{}
+		verCmd = &testCommand{}
+		fooCmd = &testCommand{}
+		barCmd = &testCommand{err: errors.New("oops")}
 
 		cli := &cli.CLI{
 			Commands:     commands,
-			HelpCommand:  helpCmd,
+			HelpFunc:     func() { helpCmd.Execute(nil) },
+			VersionFunc:  func() { verCmd.Execute(nil) },
 			ConfigLoader: &testConfigLoader{},
 		}
 
@@ -79,7 +74,7 @@ func TestCLI_Run(t *testing.T) {
 			t.Errorf("expected exit code %v for %v, got %v", test.expectedExitCode, test, exitCode)
 		}
 
-		if !cmd.called {
+		if !(*test.expectedCommand).called {
 			t.Errorf("expected command %v to be called", test.expectedCommand)
 		}
 	}

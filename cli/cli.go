@@ -9,7 +9,8 @@ import (
 
 type CLI struct {
 	Commands     map[string]CommandBuilderFunc
-	HelpCommand  Command
+	HelpFunc     func()
+	VersionFunc  func()
 	ConfigLoader util.ConfigLoader
 }
 
@@ -17,13 +18,18 @@ func (c *CLI) Run(args []string) int {
 	commandName, args := parseArgs(args)
 
 	if commandName == "help" {
-		c.HelpCommand.Execute(nil)
+		c.HelpFunc()
+		return 0
+	}
+
+	if commandName == "version" {
+		c.VersionFunc()
 		return 0
 	}
 
 	commandBuilder := c.Commands[commandName]
 	if commandBuilder == nil {
-		c.HelpCommand.Execute(nil)
+		c.HelpFunc()
 		return 1
 	}
 
