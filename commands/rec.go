@@ -72,7 +72,10 @@ func (c *RecordCommand) Execute(args []string) error {
 
 	util.Printf("Asciicast recording finished.")
 
-	// TODO: ask for upload confirmation
+	if !c.NoConfirm {
+		util.Printf("Press <Enter> to upload, <Ctrl-C> to cancel.")
+		util.ReadLine()
+	}
 
 	rows, cols, _ = c.Terminal.Size()
 	asciicast := api.NewAsciicast(c.Command, c.Title, rows, cols, stdout.Reader())
