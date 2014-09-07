@@ -37,7 +37,7 @@ func Record(flags *flag.FlagSet, cfg *util.Config) cli.Command {
 		&command.NoConfirm,
 		"y",
 		false,
-		"don't ask for upload confirmation",
+		"upload without asking for confirmation",
 	)
 
 	return &command
