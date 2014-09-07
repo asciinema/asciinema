@@ -27,7 +27,7 @@ func version() {
 	var commitInfo string
 
 	if GitCommit != "" {
-		commitInfo = fmt.Sprintf(" (%v)", GitCommit)
+		commitInfo = fmt.Sprintf("-%v", GitCommit)
 	}
 
 	fmt.Printf("asciinema %v%v\n", Version, commitInfo)
