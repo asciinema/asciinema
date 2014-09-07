@@ -9,11 +9,6 @@ import (
 	"github.com/asciinema/asciinema-cli/util"
 )
 
-var (
-	Version string
-	Commit  string
-)
-
 func main() {
 	cli := &cli.CLI{
 		Commands: map[string]cli.CommandBuilderFunc{
@@ -29,7 +24,13 @@ func main() {
 }
 
 func version() {
-	fmt.Printf("asciinema %v (%v)\n", Version, Commit)
+	var commitInfo string
+
+	if GitCommit != "" {
+		commitInfo = fmt.Sprintf(" (%v)", GitCommit)
+	}
+
+	fmt.Printf("asciinema %v%v\n", Version, commitInfo)
 }
 
 func help() {
