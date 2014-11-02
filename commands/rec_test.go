@@ -1,10 +1,10 @@
 package commands_test
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/asciinema/asciinema-cli/api"
 	"github.com/asciinema/asciinema-cli/commands"
@@ -24,6 +24,8 @@ func (t *testTerminal) Record(command string, stdoutCopy io.Writer) error {
 	}
 
 	stdoutCopy.Write([]byte("hello"))
+	stdoutCopy.Write([]byte("world"))
+
 	return nil
 }
 
@@ -32,28 +34,31 @@ type testApi struct {
 	t   *testing.T
 }
 
-func (a *testApi) CreateAsciicast(asciicast *api.Asciicast) (string, error) {
-	if asciicast.Command != "ls" {
+func (a *testApi) CreateAsciicast(frames []api.Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
+	if command != "ls" {
 		a.t.Errorf("expected command to be set on asciicast")
 	}
 
-	if asciicast.Title != "listing" {
+	if title != "listing" {
 		a.t.Errorf("expected title to be set on asciicast")
 	}
 
-	if asciicast.Rows != 15 {
+	if rows != 15 {
 		a.t.Errorf("expected rows to be set on asciicast")
 	}
 
-	if asciicast.Cols != 40 {
+	if cols != 40 {
 		a.t.Errorf("expected cols to be set on asciicast")
 	}
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(asciicast.Stdout)
-	stdout := buf.String()
+	stdout := string(frames[0].Data)
 	if stdout != "hello" {
-		a.t.Errorf("expected recorded stdout to be set on asciicast")
+		a.t.Errorf(`expected frame data "%v", got "%v"`, "hello", stdout)
+	}
+
+	stdout = string(frames[1].Data)
+	if stdout != "world" {
+		a.t.Errorf(`expected frame data "%v", got "%v"`, "world", stdout)
 	}
 
 	if a.err != nil {

@@ -1,11 +1,10 @@
 package commands
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"os"
+	"time"
 
 	"github.com/asciinema/asciinema-cli/api"
 	"github.com/asciinema/asciinema-cli/cli"
@@ -61,14 +60,16 @@ func (c *RecordCommand) Execute(args []string) error {
 	}
 
 	util.Printf("Asciicast recording started.")
-	util.Printf("Hit ctrl-d or type \"exit\" to finish.")
+	util.Printf(`Hit ctrl-d or type "exit" to finish.`)
 
-	stdout := &StdoutStream{}
+	stdout := NewStream()
 
 	err := c.Terminal.Record(c.Command, stdout)
 	if err != nil {
 		return err
 	}
+
+	stdout.Close()
 
 	util.Printf("Asciicast recording finished.")
 
@@ -78,9 +79,8 @@ func (c *RecordCommand) Execute(args []string) error {
 	}
 
 	rows, cols, _ = c.Terminal.Size()
-	asciicast := api.NewAsciicast(c.Command, c.Title, rows, cols, stdout.Reader())
 
-	url, err := c.Api.CreateAsciicast(asciicast)
+	url, err := c.Api.CreateAsciicast(stdout.Frames, stdout.Duration(), cols, rows, c.Command, c.Title)
 	if err != nil {
 		return err
 	}
@@ -102,15 +102,36 @@ func defaultRecCommand(recCommand string) string {
 	return recCommand
 }
 
-type StdoutStream struct {
-	data []byte
+type Stream struct {
+	Frames        []api.Frame
+	startTime     time.Time
+	lastWriteTime time.Time
 }
 
-func (s *StdoutStream) Write(p []byte) (int, error) {
-	s.data = append(s.data, p...)
+func NewStream() *Stream {
+	now := time.Now()
+
+	return &Stream{
+		startTime:     now,
+		lastWriteTime: now,
+	}
+}
+
+func (s *Stream) Write(p []byte) (int, error) {
+	now := time.Now()
+	frame := api.Frame{}
+	frame.Delay = now.Sub(s.lastWriteTime).Seconds()
+	frame.Data = make([]byte, len(p))
+	copy(frame.Data, p)
+	s.Frames = append(s.Frames, frame)
+	s.lastWriteTime = now
 	return len(p), nil
 }
 
-func (s *StdoutStream) Reader() io.Reader {
-	return bytes.NewReader(s.data)
+func (s *Stream) Close() {
+	s.lastWriteTime = time.Now()
+}
+
+func (s *Stream) Duration() time.Duration {
+	return s.lastWriteTime.Sub(s.startTime)
 }
