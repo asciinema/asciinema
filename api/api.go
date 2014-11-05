@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -34,14 +35,14 @@ type AsciinemaApi struct {
 }
 
 func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
-	files := map[string]io.Reader{
-		"asciicast[stdout]:stdout":             gzippedDataReader(frames),
-		"asciicast[stdout_timing]:stdout.time": gzippedTimingReader(frames),
-		"asciicast[meta]:meta.json":            metadataReader(duration, cols, rows, command, title),
-	}
-	// TODO: set proper user agent
+	response, err := a.http.PostForm(
+		a.createUrl(),
+		a.user(),
+		a.token,
+		a.createHeaders(),
+		a.createFiles(frames, duration, cols, rows, command, title),
+	)
 
-	response, err := a.http.PostForm(a.url+"/api/asciicasts", os.Getenv("USER"), a.token, files)
 	if err != nil {
 		return "", err
 	}
@@ -56,6 +57,28 @@ func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, c
 	// TODO: handle non-200 statuses
 
 	return body.String(), nil
+}
+
+func (a *AsciinemaApi) createUrl() string {
+	return a.url + "/api/asciicasts"
+}
+
+func (a *AsciinemaApi) user() string {
+	return os.Getenv("USER")
+}
+
+func (a *AsciinemaApi) createHeaders() map[string]string {
+	return map[string]string{
+		"User-Agent": fmt.Sprintf("asciinema/%s %s/%s %s-%s", "0.9.9", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
+	}
+}
+
+func (a *AsciinemaApi) createFiles(frames []Frame, duration time.Duration, cols, rows int, command, title string) map[string]io.Reader {
+	return map[string]io.Reader{
+		"asciicast[stdout]:stdout":             gzippedDataReader(frames),
+		"asciicast[stdout_timing]:stdout.time": gzippedTimingReader(frames),
+		"asciicast[meta]:meta.json":            metadataReader(duration, cols, rows, command, title),
+	}
 }
 
 func gzippedDataReader(frames []Frame) io.Reader {
@@ -85,7 +108,15 @@ func gzippedTimingReader(frames []Frame) io.Reader {
 }
 
 func metadataReader(duration time.Duration, cols, rows int, command, title string) io.Reader {
-	metadata := map[string]interface{}{
+	buf := &bytes.Buffer{}
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(metadata(duration, cols, rows, command, title))
+
+	return buf
+}
+
+func metadata(duration time.Duration, cols, rows int, command, title string) map[string]interface{} {
+	return map[string]interface{}{
 		"duration": duration.Seconds(),
 		"title":    title,
 		"command":  command,
@@ -96,10 +127,4 @@ func metadataReader(duration time.Duration, cols, rows int, command, title strin
 			"lines":   rows,
 		},
 	}
-
-	buf := &bytes.Buffer{}
-	encoder := json.NewEncoder(buf)
-	encoder.Encode(metadata)
-
-	return buf
 }
