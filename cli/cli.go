@@ -3,15 +3,11 @@ package cli
 import (
 	"flag"
 	"fmt"
-
-	"github.com/asciinema/asciinema-cli/util"
 )
 
 type CLI struct {
-	Commands     map[string]CommandBuilderFunc
-	HelpFunc     func()
-	VersionFunc  func()
-	ConfigLoader util.ConfigLoader
+	Commands map[string]Command
+	HelpFunc func()
 }
 
 func (c *CLI) Run(args []string) int {
@@ -22,29 +18,18 @@ func (c *CLI) Run(args []string) int {
 		return 0
 	}
 
-	if commandName == "version" {
-		c.VersionFunc()
-		return 0
-	}
-
-	commandBuilder := c.Commands[commandName]
-	if commandBuilder == nil {
+	command := c.Commands[commandName]
+	if command == nil {
 		c.HelpFunc()
 		return 1
 	}
 
 	flags := flag.NewFlagSet(commandName, flag.ExitOnError)
 
-	config, err := c.ConfigLoader.LoadConfig()
-	if err != nil {
-		fmt.Println(err)
-		return 1
-	}
-
-	command := commandBuilder(flags, config)
+	command.RegisterFlags(flags)
 	flags.Parse(args)
 
-	err = command.Execute(flags.Args())
+	err := command.Execute(flags.Args())
 	if err != nil {
 		fmt.Println(err)
 		return 2

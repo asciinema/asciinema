@@ -4,33 +4,33 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/asciinema/asciinema-cli/api"
 	"github.com/asciinema/asciinema-cli/cli"
 	"github.com/asciinema/asciinema-cli/commands"
 	"github.com/asciinema/asciinema-cli/util"
 )
 
 func main() {
+	cl := &util.FileConfigLoader{}
+
+	cfg, err := cl.LoadConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	api := api.New(cfg.Api.Url, cfg.Api.Token)
+
 	cli := &cli.CLI{
-		Commands: map[string]cli.CommandBuilderFunc{
-			"rec":  commands.Record,
-			"auth": commands.Auth,
+		Commands: map[string]cli.Command{
+			"rec":     commands.NewRecordCommand(api, cfg),
+			"auth":    commands.NewAuthCommand(cfg),
+			"version": commands.NewVersionCommand(Version, GitCommit),
 		},
-		HelpFunc:     help,
-		VersionFunc:  version,
-		ConfigLoader: &util.FileConfigLoader{},
+		HelpFunc: help,
 	}
 
 	os.Exit(cli.Run(os.Args[1:]))
-}
-
-func version() {
-	var commitInfo string
-
-	if GitCommit != "" {
-		commitInfo = fmt.Sprintf("-%v", GitCommit)
-	}
-
-	fmt.Printf("asciinema %v%v\n", Version, commitInfo)
 }
 
 func help() {

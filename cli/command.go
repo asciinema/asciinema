@@ -1,13 +1,8 @@
 package cli
 
-import (
-	"flag"
-
-	"github.com/asciinema/asciinema-cli/util"
-)
-
-type CommandBuilderFunc func(*flag.FlagSet, *util.Config) Command
+import "flag"
 
 type Command interface {
 	Execute([]string) error
+	RegisterFlags(*flag.FlagSet)
 }

@@ -12,42 +12,44 @@ import (
 	"github.com/asciinema/asciinema-cli/util"
 )
 
-func Record(flags *flag.FlagSet, cfg *util.Config) cli.Command {
-	command := RecordCommand{
-		Terminal: terminal.New(),
-		Api:      api.New(cfg.Api.Url, cfg.Api.Token),
-	}
+type RecordCommand struct {
+	Cfg       *util.Config
+	Api       api.Api
+	Terminal  terminal.Terminal
+	Command   string
+	Title     string
+	NoConfirm bool
+}
 
+func NewRecordCommand(api api.Api, cfg *util.Config) cli.Command {
+	return &RecordCommand{
+		Api:      api,
+		Cfg:      cfg,
+		Terminal: terminal.New(),
+	}
+}
+
+func (c *RecordCommand) RegisterFlags(flags *flag.FlagSet) {
 	flags.StringVar(
-		&command.Command,
+		&c.Command,
 		"c",
-		defaultRecCommand(cfg.Record.Command),
+		defaultRecCommand(c.Cfg.Record.Command),
 		"command to record, defaults to $SHELL",
 	)
 
 	flags.StringVar(
-		&command.Title,
+		&c.Title,
 		"t",
 		"",
 		"set title of the asciicast",
 	)
 
 	flags.BoolVar(
-		&command.NoConfirm,
+		&c.NoConfirm,
 		"y",
 		false,
 		"upload without asking for confirmation",
 	)
-
-	return &command
-}
-
-type RecordCommand struct {
-	Command   string
-	Title     string
-	NoConfirm bool
-	Terminal  terminal.Terminal
-	Api       api.Api
 }
 
 func (c *RecordCommand) Execute(args []string) error {

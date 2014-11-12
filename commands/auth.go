@@ -8,16 +8,19 @@ import (
 	"github.com/asciinema/asciinema-cli/util"
 )
 
-func Auth(flags *flag.FlagSet, cfg *util.Config) cli.Command {
+type AuthCommand struct {
+	apiUrl   string
+	apiToken string
+}
+
+func NewAuthCommand(cfg *util.Config) cli.Command {
 	return &AuthCommand{
 		apiUrl:   cfg.Api.Url,
 		apiToken: cfg.Api.Token,
 	}
 }
 
-type AuthCommand struct {
-	apiUrl   string
-	apiToken string
+func (c *AuthCommand) RegisterFlags(flags *flag.FlagSet) {
 }
 
 func (c *AuthCommand) Execute(args []string) error {
