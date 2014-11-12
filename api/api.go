@@ -20,18 +20,20 @@ type Api interface {
 	CreateAsciicast([]Frame, time.Duration, int, int, string, string) (string, error)
 }
 
-func New(url, token string) *AsciinemaApi {
-	return &AsciinemaApi{
-		url:   url,
-		token: token,
-		http:  &HttpClient{},
-	}
+type AsciinemaApi struct {
+	url     string
+	token   string
+	version string
+	http    HTTP
 }
 
-type AsciinemaApi struct {
-	url   string
-	token string
-	http  HTTP
+func New(url, token, version string) *AsciinemaApi {
+	return &AsciinemaApi{
+		url:     url,
+		token:   token,
+		version: version,
+		http:    &HttpClient{},
+	}
 }
 
 func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
@@ -69,7 +71,7 @@ func (a *AsciinemaApi) user() string {
 
 func (a *AsciinemaApi) createHeaders() map[string]string {
 	return map[string]string{
-		"User-Agent": fmt.Sprintf("asciinema/%s %s/%s %s-%s", "0.9.9", runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
+		"User-Agent": fmt.Sprintf("asciinema/%s %s/%s %s-%s", a.version, runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
 	}
 }
 
