@@ -25,13 +25,7 @@ type Config struct {
 	}
 }
 
-type ConfigLoader interface {
-	LoadConfig() (*Config, error)
-}
-
-type FileConfigLoader struct{}
-
-func (l *FileConfigLoader) LoadConfig() (*Config, error) {
+func LoadConfig() (*Config, error) {
 	homeDir := os.Getenv("HOME")
 	if homeDir == "" {
 		return nil, errors.New("Need $HOME")

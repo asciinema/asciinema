@@ -11,9 +11,7 @@ import (
 )
 
 func main() {
-	cl := &util.FileConfigLoader{}
-
-	cfg, err := cl.LoadConfig()
+	cfg, err := util.LoadConfig()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
