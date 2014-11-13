@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -46,17 +47,26 @@ func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, c
 	)
 
 	if err != nil {
-		return "", err
+		return "", errors.New(fmt.Sprintf("Connection failed (%v)", err.Error()))
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode != 200 && response.StatusCode != 201 {
+		if response.StatusCode == 404 {
+			return "", errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
+		}
+		if response.StatusCode == 503 {
+			return "", errors.New("The server is down for maintenance. Try again in a minute.")
+		}
+
+		return "", errors.New("HTTP status: " + response.Status)
+	}
 
 	body := &bytes.Buffer{}
 	_, err = body.ReadFrom(response.Body)
 	if err != nil {
 		return "", err
 	}
-
-	// TODO: handle non-200 statuses
 
 	return body.String(), nil
 }
