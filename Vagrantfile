@@ -10,25 +10,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     vb.customize ["modifyvm", :id, "--memory", "1024"]
   end
 
-  config.vm.define "arch" do |c|
-    c.vm.box = "cameronmalek/arch1403"
-    c.vm.provision "shell", inline: "pacman -Sy && pacman -S --noconfirm make python2-pip fakeroot binutils pkgbuild-introspection && pip2 install nose"
+  config.vm.define "archlinux" do |c|
+    c.vm.box = "terrywang/archlinux"
   end
 
-  config.vm.define "ubuntu-trusty" do |c|
+  config.vm.define "ubuntu" do |c|
     c.vm.box = "ubuntu/trusty64"
-    c.vm.provision "shell", inline: "apt-get update && apt-get install python-pip make -y && pip install nose"
-  end
-
-  config.vm.define "ubuntu-raring" do |c|
-    c.vm.box = "ubuntu/raring64"
-    c.vm.provision "shell", inline: "apt-get install python-pip make -y && pip install nose"
-  end
-
-  config.vm.define "fedora-19" do |c|
-    c.vm.box = "fedora-19"
-    c.vm.box_url = "https://dl.dropboxusercontent.com/u/86066173/fedora-19.box"
-    c.vm.provision "shell", inline: "yum install python-pip make -y && pip install nose"
   end
 
 end
