@@ -1,33 +1,13 @@
 # Asciinema CLI
 
-[![Build Status](https://travis-ci.org/asciinema/asciinema-cli.svg?branch=go)](https://travis-ci.org/asciinema/asciinema-cli)
+[![Build Status](https://travis-ci.org/asciinema/asciinema-cli.svg?branch=master)](https://travis-ci.org/asciinema/asciinema-cli)
 
-Command line client for [asciinema.org](https://asciinema.org) service.
+Command line client (recorder) for [asciinema.org](https://asciinema.org) service.
 
 ## Installation
 
-The latest __stable version__ of asciinema can always be installed or updated
-to via [pip](http://www.pip-installer.org/en/latest/index.html) (prefered) or
-easy\_install:
-
-```bash
-$ sudo pip install --upgrade asciinema
-````
-
-Alternatively:
-
-```bash
-$ sudo easy_install asciinema
-```
-
-Or, you can install the __development version__ directly from GitHub:
-
-```bash
-$ sudo pip install --upgrade https://github.com/sickill/asciinema/tarball/master
-```
-
-See [installation docs](https://asciinema.org/docs/installation) for more
-options (Ubuntu, Fedora, Arch, Gentoo etc).
+See [installation docs](https://asciinema.org/docs/installation) for
+operating system specific instructions (Ubuntu, Fedora, Arch, Gentoo etc).
 
 ## Usage
 
@@ -45,8 +25,8 @@ If you want to contribute to this project check out
 ## Authors
 
 Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
-source [contributors](https://github.com/sickill/asciinema/contributors)
+source [contributors](https://github.com/asciinema/asciinema-cli/contributors)
 
 ## Copyright
 
-Copyright &copy; 2011-2013 Marcin Kulik. See LICENSE.txt for details.
+Copyright &copy; 2011-2014 Marcin Kulik. See LICENSE.txt for details.
