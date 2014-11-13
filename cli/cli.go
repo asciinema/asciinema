@@ -31,7 +31,7 @@ func (c *CLI) Run(args []string) int {
 
 	err := command.Execute(flags.Args())
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Error: %v\n", err)
 		return 2
 	}
 
