@@ -1,7 +1,18 @@
-VERSION = $(shell grep Version version.go | awk -F '"' '{print $$2}')
-COMMIT = $(shell git rev-parse --short HEAD)
+NAME=asciinema
+VERSION=$(shell grep Version version.go | awk -F '"' '{print $$2}')
+COMMIT=$(shell git rev-parse --short HEAD)
+
+DIRS=bin
+INSTALL_DIRS=`find $(DIRS) -type d 2>/dev/null`
+INSTALL_FILES=`find $(DIRS) -type f 2>/dev/null`
+DOC_FILES=*.md *.txt
+
+PREFIX?=/usr/local
+DOC_DIR=$(PREFIX)/share/doc/$(NAME)
 
 .PHONY: build test deps fmt fmtdiff travis gox tag push release
+
+all: build
 
 build: test
 	go build -o bin/asciinema -ldflags "-X main.GitCommit $(COMMIT)"
@@ -32,3 +43,13 @@ push:
 	echo "TODO: uploading binaries to github release"
 
 release: test tag push
+
+install:
+	for dir in $(INSTALL_DIRS); do mkdir -p $(PREFIX)/$$dir; done
+	for file in $(INSTALL_FILES); do cp $$file $(PREFIX)/$$file; done
+	mkdir -p $(DOC_DIR)
+	cp -r $(DOC_FILES) $(DOC_DIR)/
+
+uninstall:
+	for file in $(INSTALL_FILES); do rm -f $(PREFIX)/$$file; done
+	rm -rf $(DOC_DIR)
