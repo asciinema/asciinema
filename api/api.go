@@ -39,7 +39,7 @@ func New(url, token, version string) *AsciinemaApi {
 func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
 	response, err := a.http.PostForm(
 		a.createUrl(),
-		a.user(),
+		a.username(),
 		a.token,
 		a.createHeaders(),
 		a.createFiles(frames, duration, cols, rows, command, title),
@@ -65,7 +65,7 @@ func (a *AsciinemaApi) createUrl() string {
 	return a.url + "/api/asciicasts"
 }
 
-func (a *AsciinemaApi) user() string {
+func (a *AsciinemaApi) username() string {
 	return os.Getenv("USER")
 }
 
