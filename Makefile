@@ -5,7 +5,7 @@ COMMIT=$(shell git rev-parse --short HEAD)
 DIRS=bin
 INSTALL_DIRS=`find $(DIRS) -type d 2>/dev/null`
 INSTALL_FILES=`find $(DIRS) -type f 2>/dev/null`
-DOC_FILES=*.md *.txt
+DOC_FILES=*.md LICENSE
 
 PREFIX?=/usr/local
 DOC_DIR=$(PREFIX)/share/doc/$(NAME)

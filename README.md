@@ -27,6 +27,8 @@ If you want to contribute to this project check out
 Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
 source [contributors](https://github.com/asciinema/asciinema-cli/contributors)
 
-## Copyright
+## License
 
-Copyright &copy; 2011-2014 Marcin Kulik. See LICENSE.txt for details.
+Copyright &copy; 2011-2014 Marcin Kulik.
+
+All code is licensed under the GPL, v3 or later. See LICENSE file for details.
