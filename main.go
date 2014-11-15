@@ -17,7 +17,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	api := api.New(cfg.Api.Url, cfg.Api.Token, Version)
+	api := api.New(cfg.API.URL, cfg.API.Token, Version)
 
 	cli := &cli.CLI{
 		Commands: map[string]cli.Command{

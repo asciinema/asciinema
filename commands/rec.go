@@ -14,16 +14,16 @@ import (
 
 type RecordCommand struct {
 	Cfg       *util.Config
-	Api       api.Api
+	API       api.API
 	Terminal  terminal.Terminal
 	Command   string
 	Title     string
 	NoConfirm bool
 }
 
-func NewRecordCommand(api api.Api, cfg *util.Config) cli.Command {
+func NewRecordCommand(api api.API, cfg *util.Config) cli.Command {
 	return &RecordCommand{
-		Api:      api,
+		API:      api,
 		Cfg:      cfg,
 		Terminal: terminal.New(),
 	}
@@ -82,7 +82,7 @@ func (c *RecordCommand) Execute(args []string) error {
 
 	rows, cols, _ = c.Terminal.Size()
 
-	url, err := c.Api.CreateAsciicast(stdout.Frames, stdout.Duration(), cols, rows, c.Command, c.Title)
+	url, err := c.API.CreateAsciicast(stdout.Frames, stdout.Duration(), cols, rows, c.Command, c.Title)
 	if err != nil {
 		return err
 	}

@@ -9,14 +9,14 @@ import (
 )
 
 type AuthCommand struct {
-	apiUrl   string
+	apiURL   string
 	apiToken string
 }
 
 func NewAuthCommand(cfg *util.Config) cli.Command {
 	return &AuthCommand{
-		apiUrl:   cfg.Api.Url,
-		apiToken: cfg.Api.Token,
+		apiURL:   cfg.API.URL,
+		apiToken: cfg.API.Token,
 	}
 }
 
@@ -25,7 +25,7 @@ func (c *AuthCommand) RegisterFlags(flags *flag.FlagSet) {
 
 func (c *AuthCommand) Execute(args []string) error {
 	fmt.Println("Open the following URL in your browser to register your API token and assign any recorded asciicasts to your profile:")
-	fmt.Printf("%v/connect/%v\n", c.apiUrl, c.apiToken)
+	fmt.Printf("%v/connect/%v\n", c.apiURL, c.apiToken)
 
 	return nil
 }

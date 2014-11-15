@@ -29,12 +29,12 @@ func (t *testTerminal) Record(command string, stdoutCopy io.Writer) error {
 	return nil
 }
 
-type testApi struct {
+type testAPI struct {
 	err error
 	t   *testing.T
 }
 
-func (a *testApi) CreateAsciicast(frames []api.Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
+func (a *testAPI) CreateAsciicast(frames []api.Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
 	if command != "ls" {
 		a.t.Errorf("expected command to be set on asciicast")
 	}
@@ -84,13 +84,13 @@ func TestRecordCommand_Execute(t *testing.T) {
 
 	for _, test := range tests {
 		terminal := &testTerminal{err: test.recordError}
-		api := &testApi{err: test.apiError, t: t}
+		api := &testAPI{err: test.apiError, t: t}
 
 		command := &commands.RecordCommand{
 			Command:  "ls",
 			Title:    "listing",
 			Terminal: terminal,
-			Api:      api,
+			API:      api,
 		}
 
 		err := command.Execute(nil)

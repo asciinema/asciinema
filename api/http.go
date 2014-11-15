@@ -12,9 +12,9 @@ type HTTP interface {
 	PostForm(string, string, string, map[string]string, map[string]io.Reader) (*http.Response, error)
 }
 
-type HttpClient struct{}
+type HTTPClient struct{}
 
-func (c *HttpClient) PostForm(url, username, password string, headers map[string]string, files map[string]io.Reader) (*http.Response, error) {
+func (c *HTTPClient) PostForm(url, username, password string, headers map[string]string, files map[string]io.Reader) (*http.Response, error) {
 	req, err := createPostRequest(url, username, password, headers, files)
 	if err != nil {
 		return nil, err

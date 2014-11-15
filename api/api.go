@@ -17,29 +17,29 @@ type Frame struct {
 	Data  []byte
 }
 
-type Api interface {
+type API interface {
 	CreateAsciicast([]Frame, time.Duration, int, int, string, string) (string, error)
 }
 
-type AsciinemaApi struct {
+type AsciinemaAPI struct {
 	url     string
 	token   string
 	version string
 	http    HTTP
 }
 
-func New(url, token, version string) *AsciinemaApi {
-	return &AsciinemaApi{
+func New(url, token, version string) *AsciinemaAPI {
+	return &AsciinemaAPI{
 		url:     url,
 		token:   token,
 		version: version,
-		http:    &HttpClient{},
+		http:    &HTTPClient{},
 	}
 }
 
-func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
+func (a *AsciinemaAPI) CreateAsciicast(frames []Frame, duration time.Duration, cols, rows int, command, title string) (string, error) {
 	response, err := a.http.PostForm(
-		a.createUrl(),
+		a.createURL(),
 		a.username(),
 		a.token,
 		a.createHeaders(),
@@ -47,7 +47,7 @@ func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, c
 	)
 
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("Connection failed (%v)", err.Error()))
+		return "", fmt.Errorf("Connection failed (%v)", err.Error())
 	}
 	defer response.Body.Close()
 
@@ -71,21 +71,21 @@ func (a *AsciinemaApi) CreateAsciicast(frames []Frame, duration time.Duration, c
 	return body.String(), nil
 }
 
-func (a *AsciinemaApi) createUrl() string {
+func (a *AsciinemaAPI) createURL() string {
 	return a.url + "/api/asciicasts"
 }
 
-func (a *AsciinemaApi) username() string {
+func (a *AsciinemaAPI) username() string {
 	return os.Getenv("USER")
 }
 
-func (a *AsciinemaApi) createHeaders() map[string]string {
+func (a *AsciinemaAPI) createHeaders() map[string]string {
 	return map[string]string{
 		"User-Agent": fmt.Sprintf("asciinema/%s %s/%s %s-%s", a.version, runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
 	}
 }
 
-func (a *AsciinemaApi) createFiles(frames []Frame, duration time.Duration, cols, rows int, command, title string) map[string]io.Reader {
+func (a *AsciinemaAPI) createFiles(frames []Frame, duration time.Duration, cols, rows int, command, title string) map[string]io.Reader {
 	return map[string]io.Reader{
 		"asciicast[stdout]:stdout":             gzippedDataReader(frames),
 		"asciicast[stdout_timing]:stdout.time": gzippedTimingReader(frames),
