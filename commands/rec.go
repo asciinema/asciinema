@@ -70,7 +70,7 @@ func (c *RecordCommand) Execute(args []string) error {
 	}
 
 	util.Printf("Asciicast recording started.")
-	util.Printf(`Hit ctrl-d or type "exit" to finish.`)
+	util.Printf(`Hit Ctrl-D or type "exit" to finish.`)
 
 	stdout := NewStream(c.MaxWait)
 
