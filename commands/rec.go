@@ -19,6 +19,7 @@ type RecordCommand struct {
 	Command   string
 	Title     string
 	NoConfirm bool
+	MaxWait   uint
 }
 
 func NewRecordCommand(api api.API, cfg *util.Config) cli.Command {
@@ -50,6 +51,13 @@ func (c *RecordCommand) RegisterFlags(flags *flag.FlagSet) {
 		false,
 		"upload without asking for confirmation",
 	)
+
+	flags.UintVar(
+		&c.MaxWait,
+		"max-wait",
+		0,
+		"...",
+	)
 }
 
 func (c *RecordCommand) Execute(args []string) error {
@@ -64,7 +72,7 @@ func (c *RecordCommand) Execute(args []string) error {
 	util.Printf("Asciicast recording started.")
 	util.Printf(`Hit ctrl-d or type "exit" to finish.`)
 
-	stdout := NewStream()
+	stdout := NewStream(c.MaxWait)
 
 	err := c.Terminal.Record(c.Command, stdout)
 	if err != nil {
@@ -106,34 +114,48 @@ func defaultRecCommand(recCommand string) string {
 
 type Stream struct {
 	Frames        []api.Frame
-	startTime     time.Time
+	elapsedTime   time.Duration
 	lastWriteTime time.Time
+	maxWait       time.Duration
 }
 
-func NewStream() *Stream {
+func NewStream(maxWait uint) *Stream {
 	now := time.Now()
 
 	return &Stream{
-		startTime:     now,
 		lastWriteTime: now,
+		maxWait:       time.Duration(maxWait) * time.Second,
 	}
 }
 
 func (s *Stream) Write(p []byte) (int, error) {
-	now := time.Now()
 	frame := api.Frame{}
-	frame.Delay = now.Sub(s.lastWriteTime).Seconds()
+	frame.Delay = s.incrementElapsedTime().Seconds()
 	frame.Data = make([]byte, len(p))
 	copy(frame.Data, p)
 	s.Frames = append(s.Frames, frame)
-	s.lastWriteTime = now
+
 	return len(p), nil
 }
 
 func (s *Stream) Close() {
-	s.lastWriteTime = time.Now()
+	s.incrementElapsedTime()
 }
 
 func (s *Stream) Duration() time.Duration {
-	return s.lastWriteTime.Sub(s.startTime)
+	return s.elapsedTime
+}
+
+func (s *Stream) incrementElapsedTime() time.Duration {
+	now := time.Now()
+	d := now.Sub(s.lastWriteTime)
+
+	if s.maxWait > 0 && d > s.maxWait {
+		d = s.maxWait
+	}
+
+	s.elapsedTime += d
+	s.lastWriteTime = now
+
+	return d
 }
