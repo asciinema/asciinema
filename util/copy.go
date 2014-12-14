@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"syscall"
@@ -12,7 +11,6 @@ func Copy(dst io.Writer, src *os.File) func() {
 
 	go func() {
 		copy(dst, src, r)
-		fmt.Println("finished copying")
 	}()
 
 	return func() {
