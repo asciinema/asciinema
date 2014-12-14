@@ -35,14 +35,14 @@ func (c *RecordCommand) RegisterFlags(flags *flag.FlagSet) {
 		&c.Command,
 		"c",
 		defaultRecCommand(c.Cfg.Record.Command),
-		"command to record, defaults to $SHELL",
+		"command to record",
 	)
 
 	flags.StringVar(
 		&c.Title,
 		"t",
 		"",
-		"set title of the asciicast",
+		"set asciicast title",
 	)
 
 	flags.BoolVar(
@@ -56,7 +56,7 @@ func (c *RecordCommand) RegisterFlags(flags *flag.FlagSet) {
 		&c.MaxWait,
 		"max-wait",
 		0,
-		"...",
+		"reduce recorded terminal inactivity to maximum of <max-wait> seconds (0 turns off)",
 	)
 }
 
