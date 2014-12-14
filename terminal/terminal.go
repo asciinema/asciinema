@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"code.google.com/p/go.crypto/ssh/terminal"
 
@@ -53,7 +54,7 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 	}()
 	defer close(signals)
 
-	// put stdin into raw mode (if it's a tty)
+	// put stdin in raw mode (if it's a tty)
 	fd := int(p.Stdin.Fd())
 	if terminal.IsTerminal(fd) {
 		oldState, err := terminal.MakeRaw(fd)
@@ -71,7 +72,23 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 
 	// copy pty master -> p.stdout & stdoutCopy
 	stdout := io.MultiWriter(p.Stdout, stdoutCopy)
-	io.Copy(stdout, master)
+	stdoutWaitChan := make(chan struct{})
+	go func() {
+		io.Copy(stdout, master)
+		stdoutWaitChan <- struct{}{}
+	}()
+
+	// wait for the process to exit and reap it
+	cmd.Wait()
+
+	// wait for master -> stdout copying to finish
+	//
+	// sometimes after process exits reading from master blocks forever (race condition?)
+	// we're using timeout here to overcome this problem
+	select {
+	case <-stdoutWaitChan:
+	case <-time.After(200 * time.Millisecond):
+	}
 
 	// stop stdin -> master copying
 	stop()
