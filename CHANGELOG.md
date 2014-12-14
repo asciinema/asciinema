@@ -1,4 +1,4 @@
-# Changelog
+# asciinema cli changelog
 
 ## 0.9.9 (to be released)
 
