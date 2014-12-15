@@ -34,7 +34,7 @@ func main() {
 func help() {
 	fmt.Println(`usage: asciinema <command> [options]
 
-Asciinema terminal recorder.
+Record and share your terminal sessions, the right way.
 
 Commands:
    rec       Record asciicast
