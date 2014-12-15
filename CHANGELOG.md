@@ -3,9 +3,13 @@
 ## 0.9.9 (to be released)
 
 * Rewritten in Go
-* No more screen clearing before and after recording
-* Recorded process has ASCIINEMA_REC env variable set (useful for "rec"
-  indicator in shell's $PROMPT/$RPROMPT)
+* License changed to GPLv3
+* `--max-wait` option added to `rec` command
+* Recorded process has `ASCIINEMA_REC` env variable set (useful for "rec"
+  indicator in shell's `$PROMPT/$RPROMPT`)
+* No more terminal resetting (via `reset` command) before and after recording
+* Informative messages are coloured to be distinguishable from normal output
+* Improved error messages
 
 ## 0.9.8 (2014-02-09)
 
