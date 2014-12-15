@@ -1,4 +1,4 @@
-# Asciinema CLI
+# asciinema CLI
 
 [![Build Status](https://travis-ci.org/asciinema/asciinema-cli.svg?branch=master)](https://travis-ci.org/asciinema/asciinema-cli)
 
@@ -11,11 +11,11 @@ operating system specific instructions (Ubuntu, Fedora, Arch, Gentoo etc).
 
 ## Usage
 
-Check the available commands and options with:
+To start recording your terminal run `asciinema rec`. To finish recording hit
+`Ctrl-D` or type `exit`.
 
-```bash
-$ asciinema -h
-```
+Check other available commands and their options with `asciinema -h` and
+`asciinema <command> -h`.
 
 ## Contributing
 
