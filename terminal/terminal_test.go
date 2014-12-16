@@ -1,3 +1,5 @@
+// +build !race
+
 package terminal_test
 
 import (
