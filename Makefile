@@ -59,6 +59,7 @@ binary-tarballs:
 	GOOS=darwin GOARCH=amd64 $(MAKE) os-arch-tgz
 	GOOS=linux GOARCH=386 $(MAKE) os-arch-tgz
 	GOOS=linux GOARCH=amd64 $(MAKE) os-arch-tgz
+	GOOS=linux GOARCH=arm $(MAKE) os-arch-tgz
 	cd dist/$(VERSION) && sha1sum *.tar.gz >sha1sum.txt
 
 TGZ_TMP_DIR=$(VERSION)/asciinema-$(VERSION)-$(GOOS)-$(GOARCH)
