@@ -10,7 +10,7 @@ DOC_FILES=*.md LICENSE
 PREFIX?=/usr/local
 DOC_DIR=$(PREFIX)/share/doc/$(NAME)
 
-.PHONY: build test deps fmt fmtdiff travis gox tag push release
+.PHONY: build test deps fmt fmtdiff travis gox tag push release binary-tarballs os-arch-tgz
 
 all: build
 
@@ -53,3 +53,18 @@ install:
 uninstall:
 	for file in $(INSTALL_FILES); do rm -f $(PREFIX)/$$file; done
 	rm -rf $(DOC_DIR)
+
+binary-tarballs:
+	GOOS=darwin GOARCH=386 $(MAKE) os-arch-tgz
+	GOOS=darwin GOARCH=amd64 $(MAKE) os-arch-tgz
+	GOOS=linux GOARCH=386 $(MAKE) os-arch-tgz
+	GOOS=linux GOARCH=amd64 $(MAKE) os-arch-tgz
+	cd dist/$(VERSION) && sha1sum *.tar.gz >sha1sum.txt
+
+TGZ_TMP_DIR=$(VERSION)/asciinema-$(VERSION)-$(GOOS)-$(GOARCH)
+
+os-arch-tgz:
+	mkdir -p dist/$(TGZ_TMP_DIR)
+	go build -o dist/$(TGZ_TMP_DIR)/asciinema -ldflags "-X main.GitCommit $(COMMIT)"
+	cp README.md CHANGELOG.md LICENSE dist/$(TGZ_TMP_DIR)
+	cd dist && tar czf $(TGZ_TMP_DIR).tar.gz $(TGZ_TMP_DIR)
