@@ -17,7 +17,7 @@ func (w *testWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func TestPty_Record(t *testing.T) {
+func TestTerminal_Record(t *testing.T) {
 	command := `python -c "
 import sys, time, os
 sys.stdout.write('foo')
