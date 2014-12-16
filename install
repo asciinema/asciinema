@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# This script installs asciinema cli on your system by downloading a binary
+# compatible with your platform and putting it in your $PATH.
+
+{ # Prevent execution if this script was only partially downloaded
+
+set -e
+
+case "$(uname -s).$(uname -m)" in
+    Linux.x86_64) system=linux-amd64;;
+    Linux.i?86) system=linux-386;;
+    Darwin.x86_64) system=darwin-amd64;;
+    Darwin.i?86) system=darwin-386;;
+    *) echo "Sorry, there is no asciinema binary available for your platform. Try building from source." >&2; exit 1;;
+esac
+
+version=0.9.9
+url="https://github.com/asciinema/asciinema-cli/releases/download/v${version}/asciinema-${version}-${platform}.tar.gz"
+bin_name="asciinema"
+sudo=""
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf $tmpdir' EXIT
+
+echo "Downloading asciinema v${version} for $system..."
+curl -L --progress-bar "$url" | tar xz -C $tmpdir
+printf "\x1b[F\x1b[2K"
+
+if [ -d "$HOME/bin" ] && [[ ":$PATH:" == *":~/bin:"* || ":$PATH:" == *":$HOME/bin:"* ]]; then
+    target="$HOME/bin/$bin_name"
+elif [ -d "/usr/local/bin" ] && [[ ":$PATH:" == *":/usr/local/bin:"* ]]; then
+    target="/usr/local/bin/$bin_name"
+    if [ ! -w /usr/local/bin ]; then
+        sudo=sudo
+        echo "Warning: you may be asked for administrator password to save the file in /usr/local/bin directory"
+    fi
+else
+    target="$PWD/$bin_name"
+    echo "Warning: couldn't find ~/bin or /usr/local/bin in your \$PATH"
+fi
+
+echo "Installing to $target..."
+if cp $tmpdir/asciinema*/asciinema $target; then
+    $sudo chmod a+x $target
+    echo "Success."
+    echo
+    echo "Start recording your terminal by running: asciinema rec"
+else
+    echo "Error: couldn't copy $bin_name to $target"
+fi
+
+} # End of wrapping
