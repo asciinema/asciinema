@@ -10,7 +10,7 @@ Command line client (terminal recorder) for
 On Linux and Mac OS X, __the easiest way to install asciinema__ recorder is to
 run the following shell command:
 
-    curl https://asciinema.org/install | sh
+    curl -sL https://asciinema.org/install | sh
 
 [This script](https://asciinema.org/install) will download the latest asciinema
 recorder binary for your platform, and install it in your `$PATH`.
