@@ -25,7 +25,6 @@ trap 'rm -rf $tmpdir' EXIT
 
 echo "Downloading asciinema v${version} for $platform..."
 curl -L --progress-bar "$url" | tar xz -C $tmpdir
-printf "\x1b[F\x1b[2K"
 
 if [ -d "$HOME/bin" ]; then
     if echo ":$PATH:" | grep -q ":~/bin:" || echo ":$PATH:" | grep -q ":$HOME/bin:"; then
