@@ -44,6 +44,7 @@ func TestCLI_Run(t *testing.T) {
 	}{
 		{[]string{}, 1, helpCmd},
 		{[]string{"-h"}, 0, helpCmd},
+		{[]string{"--help"}, 0, helpCmd},
 		{[]string{"wow", "-v"}, 0, verCmd},
 		{[]string{"version"}, 0, verCmd},
 		{[]string{"foo"}, 0, fooCmd},

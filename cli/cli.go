@@ -52,7 +52,7 @@ func parseArgs(args []string) (string, []string) {
 		command = args[0]
 		args = args[1:]
 
-		if command == "-h" {
+		if command == "-h" || command == "--help" {
 			command = "help"
 		}
 	}
