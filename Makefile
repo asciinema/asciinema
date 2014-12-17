@@ -62,10 +62,10 @@ binary-tarballs:
 	GOOS=linux GOARCH=arm $(MAKE) os-arch-tgz
 	cd dist/$(VERSION) && sha1sum *.tar.gz >sha1sum.txt
 
-TGZ_TMP_DIR=$(VERSION)/asciinema-$(VERSION)-$(GOOS)-$(GOARCH)
+RELEASE=asciinema-$(VERSION)-$(GOOS)-$(GOARCH)
 
 os-arch-tgz:
-	mkdir -p dist/$(TGZ_TMP_DIR)
-	go build -o dist/$(TGZ_TMP_DIR)/asciinema -ldflags "-X main.GitCommit $(COMMIT)"
-	cp README.md CHANGELOG.md LICENSE dist/$(TGZ_TMP_DIR)
-	cd dist && tar czf $(TGZ_TMP_DIR).tar.gz $(TGZ_TMP_DIR)
+	mkdir -p dist/$(VERSION)/$(RELEASE)
+	go build -o dist/$(VERSION)/$(RELEASE)/asciinema -ldflags "-X main.GitCommit $(COMMIT)"
+	cp README.md CHANGELOG.md LICENSE dist/$(VERSION)/$(RELEASE)
+	cd dist/$(VERSION) && tar czf $(RELEASE).tar.gz $(RELEASE)
