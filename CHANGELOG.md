@@ -1,6 +1,6 @@
 # asciinema cli changelog
 
-## 0.9.9 (to be released)
+## 0.9.9 (2014-12-17)
 
 * Rewritten in Go
 * License changed to GPLv3
