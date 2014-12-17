@@ -27,15 +27,21 @@ echo "Downloading asciinema v${version} for $platform..."
 curl -L --progress-bar "$url" | tar xz -C $tmpdir
 printf "\x1b[F\x1b[2K"
 
-if [ -d "$HOME/bin" ] && [[ ":$PATH:" == *":~/bin:"* || ":$PATH:" == *":$HOME/bin:"* ]]; then
-    target="$HOME/bin/$bin_name"
-elif [ -d "/usr/local/bin" ] && [[ ":$PATH:" == *":/usr/local/bin:"* ]]; then
-    target="/usr/local/bin/$bin_name"
-    if [ ! -w /usr/local/bin ]; then
-        sudo=sudo
-        echo "Warning: you may be asked for administrator password to save the file in /usr/local/bin directory"
+if [ -d "$HOME/bin" ]; then
+    if echo ":$PATH:" | grep -q ":~/bin:" || echo ":$PATH:" | grep -q ":$HOME/bin:"; then
+        target="$HOME/bin/$bin_name"
     fi
-else
+elif [ -d "/usr/local/bin" ]; then
+    if echo ":$PATH:" | grep -q ":/usr/local/bin:"; then
+        target="/usr/local/bin/$bin_name"
+        if [ ! -w /usr/local/bin ]; then
+            sudo=sudo
+            echo "Warning: you may be asked for administrator password to save the file in /usr/local/bin directory"
+        fi
+    fi
+fi
+
+if [ -z "$target" ]; then
     target="$PWD/$bin_name"
     echo "Warning: couldn't find ~/bin or /usr/local/bin in your \$PATH"
 fi
