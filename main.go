@@ -37,7 +37,7 @@ func help() {
 Record and share your terminal sessions, the right way.
 
 Commands:
-   rec            Record asciicast
+   rec            Record terminal session
    auth           Assign local API token to asciinema.org account
 
 Options:
