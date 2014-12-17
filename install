@@ -47,7 +47,7 @@ if [ -z "$target" ]; then
 fi
 
 echo "Installing to $target..."
-if cp $tmpdir/asciinema*/asciinema $target; then
+if $sudo cp $tmpdir/asciinema*/asciinema $target; then
     $sudo chmod a+x $target
     echo "Success."
     echo
