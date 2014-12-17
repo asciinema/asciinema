@@ -32,13 +32,17 @@ func main() {
 }
 
 func help() {
-	fmt.Println(`usage: asciinema <command> [options]
+	fmt.Println(`usage: asciinema [-h] [-v] <command> [command-options]
 
 Record and share your terminal sessions, the right way.
 
 Commands:
-   rec       Record asciicast
-   auth      Assign local API token to asciinema.org account
+   rec            Record asciicast
+   auth           Assign local API token to asciinema.org account
 
-Run "asciinema <command> -h" to see the options available for the given command.`)
+Options:
+   -h, --help     Display help message
+   -v, --version  Display version information
+
+   Run "asciinema <command> -h" to see the options available for the given command.`)
 }
