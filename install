@@ -8,10 +8,10 @@
 set -e
 
 case "$(uname -s).$(uname -m)" in
-    Linux.x86_64) system=linux-amd64;;
-    Linux.i?86) system=linux-386;;
-    Darwin.x86_64) system=darwin-amd64;;
-    Darwin.i?86) system=darwin-386;;
+    Linux.x86_64) platform=linux-amd64;;
+    Linux.i?86) platform=linux-386;;
+    Darwin.x86_64) platform=darwin-amd64;;
+    Darwin.i?86) platform=darwin-386;;
     *) echo "Sorry, there is no asciinema binary available for your platform. Try building from source." >&2; exit 1;;
 esac
 
@@ -23,7 +23,7 @@ sudo=""
 tmpdir=$(mktemp -d)
 trap 'rm -rf $tmpdir' EXIT
 
-echo "Downloading asciinema v${version} for $system..."
+echo "Downloading asciinema v${version} for $platform..."
 curl -L --progress-bar "$url" | tar xz -C $tmpdir
 printf "\x1b[F\x1b[2K"
 
