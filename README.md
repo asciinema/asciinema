@@ -34,6 +34,14 @@ statically linked binary:
 
 This will produce asciinema binary at `bin/asciinema`.
 
+To install it system wide (to `/usr/local`):
+
+    sudo make install
+
+If you want to install it in other location:
+
+    PREFIX=/the/prefix make install
+
 ## Usage
 
 asciinema cli is composed of multiple (sub)commands, similar to `git`,
