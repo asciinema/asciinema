@@ -15,8 +15,8 @@ run the following shell command:
 [This script](https://asciinema.org/install) will download the latest asciinema
 recorder binary for your platform, and install it in your `$PATH`.
 
-Other installation options, including distro specific packages (Ubuntu, Fedora,
-Arch Linux, Gentoo), are [also
+Other installation options, including Homebrew and distro packages (Ubuntu,
+Fedora, Arch Linux, Gentoo), are [also
 available](https://asciinema.org/docs/installation).
 
 ### Building from source
