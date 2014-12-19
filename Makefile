@@ -45,14 +45,14 @@ push:
 release: test tag push
 
 install:
-	for dir in $(INSTALL_DIRS); do mkdir -p $(PREFIX)/$$dir; done
-	for file in $(INSTALL_FILES); do cp $$file $(PREFIX)/$$file; done
-	mkdir -p $(DOC_DIR)
-	cp -r $(DOC_FILES) $(DOC_DIR)/
+	for dir in $(INSTALL_DIRS); do mkdir -p $(DESTDIR)$(PREFIX)/$$dir; done
+	for file in $(INSTALL_FILES); do cp $$file $(DESTDIR)$(PREFIX)/$$file; done
+	mkdir -p $(DESTDIR)$(DOC_DIR)
+	cp -r $(DOC_FILES) $(DESTDIR)$(DOC_DIR)/
 
 uninstall:
-	for file in $(INSTALL_FILES); do rm -f $(PREFIX)/$$file; done
-	rm -rf $(DOC_DIR)
+	for file in $(INSTALL_FILES); do rm -f $(DESTDIR)$(PREFIX)/$$file; done
+	rm -rf $(DESTDIR)$(DOC_DIR)
 
 binary-tarballs:
 	GOOS=darwin GOARCH=386 $(MAKE) os-arch-tgz
