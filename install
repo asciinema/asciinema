@@ -10,6 +10,8 @@ set -e
 case "$(uname -s).$(uname -m)" in
     Linux.x86_64) platform=linux-amd64;;
     Linux.i?86) platform=linux-386;;
+    Linux.armv6l) platform=linux-arm;;
+    Linux.armv7l) platform=linux-arm;;
     Darwin.x86_64) platform=darwin-amd64;;
     Darwin.i?86) platform=darwin-386;;
     *) echo "Sorry, there is no asciinema binary available for your platform. Try building from source." >&2; exit 1;;
