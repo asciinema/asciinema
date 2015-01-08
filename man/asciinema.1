@@ -1,0 +1,79 @@
+.TH "ASCIINEMA" "1" "December 17, 2014" "asciinema 0.9.9"
+.SH "NAME"
+asciinema \- Terminal recorder for asciinema.org service
+.SH "SYNOPSIS"
+.I asciinema
+[\-h] [\-v] command [<args>]
+.SH "DESCRIPTION"
+Command line client (terminal recorder) for asciinema.org service.
+.PP
+If you run
+.I asciinema
+with no arguments, help will be displayed showing all available commands.
+.PP
+In addition to this, you can run any asciinema command with the
+.B -h
+switch to display help about that specific command. For example, try running \fBasciinema rec -h\fP. This will display a list of all of the options \fBrec\fP command accepts, with their defaults.
+.PP
+.SH "OPTIONS"
+.TP
+\-h, \-\-help
+Display help message
+.TP
+\-v, \-\-version
+Display version information
+.SH "COMMANDS"
+.B rec
+.RS 4
+Record terminal session and upload it to asciinema.org site.
+.PP
+This is the single most important command in \fIasciinema\fP, since it is how you utilize this tool's main job.
+.PP
+By running \fIasciinema\fP rec you start a new recording session. The command (process) that is recorded can be specified with \fI-c\fP option (see below), and defaults to \fB$SHELL\fP which is what you want in most cases.
+.PP
+Recording finishes when you exit the shell (hit \fBCtrl+D\fP or type \fIexit\fP). If the recorded process is not a shell than recording finishes when the process exits.
+.PP
+\fBASCIINEMA_REC=1\fP is added to recorded process environment variables. This can be used by your shell's config file (\fI.bashrc\fP, \fI.zshrc\fP) to alter the prompt or play a sound when shell is being recorded.
+.RS 4
+.TP
+\-c
+command to record (if none given a new shell instance is recorded)
+.TP
+\-h, \-\-help
+Display help message
+.TP
+\-\-max\-wait
+reduce recorded terminal inactivity to maximum of seconds (0 turns off)
+.TP
+\-t
+set asciicast title (can be also set later, on the site)
+.TP
+\-y
+upload immediately after shell exits, without asking for confirmation
+.RE
+.RE
+.PP
+.B auth
+.RS 4
+Assign local API token to asciinema.org account.
+.TP
+\-h, \-\-help
+Display help message
+.RE
+.SH "CONTRIBUTING"
+If you want to contribute to this project check out Contributing page: \fIhttps://asciinema.org/contributing\fP
+.SH "BUGS"
+All your bug reports and feature ideas are highly appreciated as they help to improve the quality and functionality of asciinema for everyone.
+.PP
+As the service is built of several parts there are separate bug trackers:
+.TP
+https://github.com/asciinema/asciinema-cli/issues
+issues and ideas for the command line recorder
+.TP
+https://github.com/asciinema/asciinema.org/issues
+issues and ideas for the website
+.TP
+https://github.com/asciinema/asciinema-player/issues
+issues and ideas for the javascript player
+.SH "AUTHORS"
+Developed with passion by \fBMarcin Kulik\fP and great open source contributors.
