@@ -11,6 +11,11 @@ import (
 )
 
 func main() {
+	if !util.IsUtf8Locale() {
+		fmt.Println("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
+		os.Exit(1)
+	}
+
 	cfg, err := util.LoadConfig()
 	if err != nil {
 		fmt.Println(err)

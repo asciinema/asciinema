@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -62,10 +61,6 @@ func (c *RecordCommand) RegisterFlags(flags *flag.FlagSet) {
 }
 
 func (c *RecordCommand) Execute(args []string) error {
-	if !util.IsUtf8Locale() {
-		return errors.New("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
-	}
-
 	rows, cols, _ := c.Terminal.Size()
 	if rows > 30 || cols > 120 {
 		util.Warningf("Current terminal size is %vx%v.", cols, rows)
