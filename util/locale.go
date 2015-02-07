@@ -2,26 +2,29 @@ package util
 
 import (
 	"os"
-	"regexp"
+	"strings"
 )
 
-var charsetRegexp = regexp.MustCompile("(?i)\\.UTF-8$")
+var usAscii = "US-ASCII"
+
+func GetLocaleCharset() string {
+	for _, key := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		value := os.Getenv(key)
+		if value != "" {
+			parts := strings.Split(value, ".")
+
+			if len(parts) == 2 {
+				return parts[1]
+			} else {
+				return usAscii
+			}
+		}
+	}
+
+	return usAscii
+}
 
 func IsUtf8Locale() bool {
-	all := os.Getenv("LC_ALL")
-	if charsetRegexp.FindStringSubmatch(all) != nil {
-		return true
-	}
-
-	ctype := os.Getenv("LC_CTYPE")
-	if charsetRegexp.FindStringSubmatch(ctype) != nil {
-		return true
-	}
-
-	lang := os.Getenv("LANG")
-	if charsetRegexp.FindStringSubmatch(lang) != nil {
-		return true
-	}
-
-	return false
+	charset := GetLocaleCharset()
+	return charset == "utf-8" || charset == "UTF-8"
 }
