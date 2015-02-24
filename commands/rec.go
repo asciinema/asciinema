@@ -90,6 +90,7 @@ func (c *RecordCommand) Execute(args []string) error {
 		url, err := c.API.UploadAsciicast(path)
 		if err != nil {
 			util.Warningf("Upload failed, asciicast saved at %v", path)
+			util.Warningf("Retry later by executing: asciinema upload %v", path)
 			return err
 		}
 
