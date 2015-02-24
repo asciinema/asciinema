@@ -114,7 +114,7 @@ func defaultRecCommand(recCommand string) string {
 }
 
 func tmpPath() (string, error) {
-	file, err := ioutil.TempFile("", "asciicast")
+	file, err := ioutil.TempFile("", "asciicast-")
 	if err != nil {
 		return "", err
 	}
