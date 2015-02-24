@@ -55,20 +55,27 @@ to display help about that specific command. For example, try running
 `asciinema rec -h`. This will display a list of all of the options `rec`
 command accepts, with their defaults.
 
-### `rec`
+### `rec [filename]`
 
-__Record terminal session and upload it to asciinema.org site.__
+__Record terminal session.__
 
 This is the single most important command in asciinema, since it is how you
 utilize this tool's main job.
 
-By running `asciinema rec` you start a new recording session. The command
-(process) that is recorded can be specified with `-c` option (see below), and
-defaults to `$SHELL` which is what you want in most cases.
+By running `asciinema rec [filename]` you start a new recording session. The
+command (process) that is recorded can be specified with `-c` option (see
+below), and defaults to `$SHELL` which is what you want in most cases.
 
 Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
-`exit`). If the recorded process is not a shell than recording finishes when
+`exit`). If the recorded process is not a shell then recording finishes when
 the process exits.
+
+If the `filename` argument is given then the resulting recording (called
+*asciicast*) is saved to a local file. It can later be replayed with `asciinema
+play <filename>` and/or uploaded to asciinema.org with `asciinema upload
+<filename>`. If the `filename` argument is omitted then (after asking for
+confirmation) the resulting asciicast is uploaded to asciinema.org for further
+playback in the browser.
 
 `ASCIINEMA_REC=1` is added to recorded process environment variables. This
 can be used by your shell's config file (`.bashrc`, `.zshrc`) to alter the
@@ -80,6 +87,27 @@ Available options:
 * `--max-wait` - reduce recorded terminal inactivity to maximum of <max-wait> seconds (0 turns off)
 * `-t` - set asciicast title (can be also set later, on the site)
 * `-y` - upload immediately after shell exits, without asking for confirmation
+
+### `play <filename>`
+
+__Replay recorded asciicast in a terminal.__
+
+This command replays given asciicast (as recorded by `rec` command) directly in
+your terminal.
+
+NOTE: it is recommended to run it in a terminal of dimensions not smaller than
+the one used for recording as there's no "transcoding" of control sequences for
+new terminal size.
+
+### `upload <filename>`
+
+__Upload recorded asciicast to asciinema.org site.__
+
+This command uploads given asciicast (as recorded by `rec` command) to
+asciinema.org for further playback in the browser.
+
+`rec + play + upload` is a nice combo for when you want to review an
+asciicast before publishing it on asciinema.org.
 
 ### `auth`
 
@@ -112,6 +140,6 @@ source [contributors](https://github.com/asciinema/asciinema-cli/contributors)
 
 ## License
 
-Copyright &copy; 2011-2014 Marcin Kulik.
+Copyright &copy; 2011-2015 Marcin Kulik.
 
 All code is licensed under the GPL, v3 or later. See LICENSE file for details.

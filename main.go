@@ -44,10 +44,10 @@ func help() {
 Record and share your terminal sessions, the right way.
 
 Commands:
-   rec            Record terminal session
-   play           Replay terminal session
-   upload         Upload locally saved terminal session
-   auth           Assign local API token to asciinema.org account
+   rec [filename]         Record terminal session
+   play <filename>        Replay terminal session
+   upload <filename>      Upload locally saved terminal session
+   auth                   Assign local API token to asciinema.org account
 
 Options:
    -h, --help     Display help message
