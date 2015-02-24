@@ -27,6 +27,7 @@ func main() {
 	cli := &cli.CLI{
 		Commands: map[string]cli.Command{
 			"rec":     commands.NewRecordCommand(api, cfg),
+			"play":    commands.NewPlayCommand(),
 			"auth":    commands.NewAuthCommand(cfg),
 			"version": commands.NewVersionCommand(Version, GitCommit),
 		},
@@ -43,6 +44,7 @@ Record and share your terminal sessions, the right way.
 
 Commands:
    rec            Record terminal session
+   play           Replay terminal session
    auth           Assign local API token to asciinema.org account
 
 Options:

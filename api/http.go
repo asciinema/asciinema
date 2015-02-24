@@ -9,12 +9,12 @@ import (
 )
 
 type HTTP interface {
-	PostForm(string, string, string, map[string]string, map[string]io.Reader) (*http.Response, error)
+	PostForm(string, string, string, map[string]string, map[string]io.ReadCloser) (*http.Response, error)
 }
 
 type HTTPClient struct{}
 
-func (c *HTTPClient) PostForm(url, username, password string, headers map[string]string, files map[string]io.Reader) (*http.Response, error) {
+func (c *HTTPClient) PostForm(url, username, password string, headers map[string]string, files map[string]io.ReadCloser) (*http.Response, error) {
 	req, err := createPostRequest(url, username, password, headers, files)
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (c *HTTPClient) PostForm(url, username, password string, headers map[string
 	return client.Do(req)
 }
 
-func createPostRequest(url, username, password string, headers map[string]string, files map[string]io.Reader) (*http.Request, error) {
+func createPostRequest(url, username, password string, headers map[string]string, files map[string]io.ReadCloser) (*http.Request, error) {
 	body, contentType, err := multiPartBody(url, files)
 	if err != nil {
 		return nil, err
@@ -51,16 +51,18 @@ func setHeaders(req *http.Request, contentType, username, password string, heade
 	}
 }
 
-func multiPartBody(url string, files map[string]io.Reader) (io.Reader, string, error) {
+func multiPartBody(url string, files map[string]io.ReadCloser) (io.Reader, string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
 	if files != nil {
-		for name, reader := range files {
-			err := addFormFile(writer, name, reader)
+		for name, file := range files {
+			err := addFormFile(writer, name, file)
 			if err != nil {
 				return nil, "", err
 			}
+
+			file.Close()
 		}
 	}
 

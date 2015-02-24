@@ -18,6 +18,7 @@ import (
 type Terminal interface {
 	Size() (int, int, error)
 	Record(string, io.Writer) error
+	Write([]byte) error
 }
 
 type Pty struct {
@@ -25,7 +26,7 @@ type Pty struct {
 	Stdout *os.File
 }
 
-func New() *Pty {
+func NewTerminal() Terminal {
 	return &Pty{Stdin: os.Stdin, Stdout: os.Stdout}
 }
 
@@ -92,6 +93,20 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 
 	// stop stdin -> master copying
 	stop()
+
+	return nil
+}
+
+func (p *Pty) Write(data []byte) error {
+	_, err := p.Stdout.Write(data)
+	if err != nil {
+		return err
+	}
+
+	err = p.Stdout.Sync()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
