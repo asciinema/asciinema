@@ -106,8 +106,9 @@ __Upload recorded asciicast to asciinema.org site.__
 This command uploads given asciicast (as recorded by `rec` command) to
 asciinema.org for further playback in the browser.
 
-`rec + play + upload` is a nice combo for when you want to review an
-asciicast before publishing it on asciinema.org.
+`asciinema rec demo.json` + `asciinema play demo.json` + `asciinema upload
+demo.json` is a nice combo for when you want to review an asciicast before
+publishing it on asciinema.org.
 
 ### `auth`
 
