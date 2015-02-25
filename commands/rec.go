@@ -118,7 +118,7 @@ func tmpPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(file.Name())
+	defer file.Close()
 
 	return file.Name(), nil
 }
