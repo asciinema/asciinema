@@ -47,8 +47,8 @@ If you want to install it in other location:
 asciinema cli is composed of multiple (sub)commands, similar to `git`,
 `rails` or `brew`.
 
-If you run `asciinema` with no arguments help message is displayed showing all
-available commands.
+When you run `asciinema` with no arguments help message is displayed showing
+all available commands.
 
 In addition to this, you can run any asciinema command with the `-h` switch
 to display help about that specific command. For example, try running
