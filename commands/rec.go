@@ -3,19 +3,19 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/asciinema/asciinema-cli/api"
+	"github.com/asciinema/asciinema-cli/asciicast"
 	"github.com/asciinema/asciinema-cli/cli"
-	"github.com/asciinema/asciinema-cli/terminal"
 	"github.com/asciinema/asciinema-cli/util"
 )
 
 type RecordCommand struct {
 	Cfg       *util.Config
 	API       api.API
-	Terminal  terminal.Terminal
+	Recorder  asciicast.Recorder
 	Command   string
 	Title     string
 	NoConfirm bool
@@ -26,7 +26,7 @@ func NewRecordCommand(api api.API, cfg *util.Config) cli.Command {
 	return &RecordCommand{
 		API:      api,
 		Cfg:      cfg,
-		Terminal: terminal.New(),
+		Recorder: asciicast.NewRecorder(),
 	}
 }
 
@@ -61,41 +61,42 @@ func (c *RecordCommand) RegisterFlags(flags *flag.FlagSet) {
 }
 
 func (c *RecordCommand) Execute(args []string) error {
-	rows, cols, _ := c.Terminal.Size()
-	if rows > 30 || cols > 120 {
-		util.Warningf("Current terminal size is %vx%v.", cols, rows)
-		util.Warningf("It may be too big to be properly replayed on smaller screens.")
-		util.Warningf("You can now resize it. Press <Enter> to start recording.")
-		util.ReadLine()
+	var path string
+	var upload bool
+	var err error
+
+	if len(args) > 0 {
+		path = args[0]
+		upload = false
+	} else {
+		path, err = tmpPath()
+		if err != nil {
+			return err
+		}
+		upload = true
 	}
 
-	util.Printf("Asciicast recording started.")
-	util.Printf(`Hit Ctrl-D or type "exit" to finish.`)
-
-	stdout := NewStream(c.MaxWait)
-
-	err := c.Terminal.Record(c.Command, stdout)
+	err = c.Recorder.Record(path, c.Command, c.Title, c.MaxWait)
 	if err != nil {
 		return err
 	}
 
-	stdout.Close()
+	if upload {
+		if !c.NoConfirm {
+			util.Printf("Press <Enter> to upload, <Ctrl-C> to cancel.")
+			util.ReadLine()
+		}
 
-	util.Printf("Asciicast recording finished.")
+		url, err := c.API.UploadAsciicast(path)
+		if err != nil {
+			util.Warningf("Upload failed, asciicast saved at %v", path)
+			util.Warningf("Retry later by executing: asciinema upload %v", path)
+			return err
+		}
 
-	if !c.NoConfirm {
-		util.Printf("Press <Enter> to upload, <Ctrl-C> to cancel.")
-		util.ReadLine()
+		os.Remove(path)
+		fmt.Println(url)
 	}
-
-	rows, cols, _ = c.Terminal.Size()
-
-	url, err := c.API.CreateAsciicast(stdout.Frames, stdout.Duration(), cols, rows, c.Command, c.Title)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(url)
 
 	return nil
 }
@@ -112,50 +113,12 @@ func defaultRecCommand(recCommand string) string {
 	return recCommand
 }
 
-type Stream struct {
-	Frames        []api.Frame
-	elapsedTime   time.Duration
-	lastWriteTime time.Time
-	maxWait       time.Duration
-}
-
-func NewStream(maxWait uint) *Stream {
-	now := time.Now()
-
-	return &Stream{
-		lastWriteTime: now,
-		maxWait:       time.Duration(maxWait) * time.Second,
+func tmpPath() (string, error) {
+	file, err := ioutil.TempFile("", "asciicast-")
+	if err != nil {
+		return "", err
 	}
-}
+	defer file.Close()
 
-func (s *Stream) Write(p []byte) (int, error) {
-	frame := api.Frame{}
-	frame.Delay = s.incrementElapsedTime().Seconds()
-	frame.Data = make([]byte, len(p))
-	copy(frame.Data, p)
-	s.Frames = append(s.Frames, frame)
-
-	return len(p), nil
-}
-
-func (s *Stream) Close() {
-	s.incrementElapsedTime()
-}
-
-func (s *Stream) Duration() time.Duration {
-	return s.elapsedTime
-}
-
-func (s *Stream) incrementElapsedTime() time.Duration {
-	now := time.Now()
-	d := now.Sub(s.lastWriteTime)
-
-	if s.maxWait > 0 && d > s.maxWait {
-		d = s.maxWait
-	}
-
-	s.elapsedTime += d
-	s.lastWriteTime = now
-
-	return d
+	return file.Name(), nil
 }

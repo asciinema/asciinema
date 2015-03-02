@@ -27,7 +27,7 @@ sys.stdout.write(os.environ['ASCIINEMA_REC'])
 "`
 	stdoutCopy := &testWriter{}
 
-	err := terminal.New().Record(command, stdoutCopy)
+	err := terminal.NewTerminal().Record(command, stdoutCopy)
 
 	if err != nil {
 		t.Errorf("got error: %v", err)
