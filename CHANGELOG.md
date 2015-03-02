@@ -1,5 +1,13 @@
 # asciinema cli changelog
 
+## 1.0.0.rc1 (2015-03-02)
+
+* New [asciicast file format](doc/asciicast-v1.md)
+* `rec` command can now record to file
+* New commands: `play <filename>` and `upload <filename>`
+* UTF-8 native locale is now required
+* Added handling of status 413 and 422 by printing user friendly message
+
 ## 0.9.9 (2014-12-17)
 
 * Rewritten in Go
