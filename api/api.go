@@ -48,23 +48,25 @@ func (a *AsciinemaAPI) UploadAsciicast(path string) (string, error) {
 	}
 	defer response.Body.Close()
 
+	body := &bytes.Buffer{}
+	_, err = body.ReadFrom(response.Body)
+	if err != nil {
+		return "", err
+	}
+
 	if response.StatusCode != 200 && response.StatusCode != 201 {
 		switch response.StatusCode {
 		case 404:
 			return "", errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
 		case 413:
 			return "", errors.New("Sorry, your asciicast is too big.")
+		case 422:
+			return "", fmt.Errorf("Invalid asciicast: %v", body.String())
 		case 504:
 			return "", errors.New("The server is down for maintenance. Try again in a minute.")
 		default:
 			return "", errors.New("HTTP status: " + response.Status)
 		}
-	}
-
-	body := &bytes.Buffer{}
-	_, err = body.ReadFrom(response.Body)
-	if err != nil {
-		return "", err
 	}
 
 	return body.String(), nil
