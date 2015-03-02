@@ -29,6 +29,19 @@ type Asciicast struct {
 	Stdout   []Frame  `json:"stdout"`
 }
 
+func NewAsciicast(width, height int, duration float64, command, title string, frames []Frame) *Asciicast {
+	return &Asciicast{
+		Version:  1,
+		Width:    width,
+		Height:   height,
+		Duration: Duration(duration),
+		Command:  command,
+		Title:    title,
+		Env:      &Env{Term: os.Getenv("TERM"), Shell: os.Getenv("SHELL")},
+		Stdout:   frames,
+	}
+}
+
 func Save(asciicast *Asciicast, path string) error {
 	bytes, err := json.MarshalIndent(asciicast, "", "  ")
 	if err != nil {

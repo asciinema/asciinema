@@ -1,8 +1,6 @@
 package asciicast
 
 import (
-	"os"
-
 	"github.com/asciinema/asciinema-cli/terminal"
 	"github.com/asciinema/asciinema-cli/util"
 )
@@ -46,16 +44,14 @@ func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint) er
 
 	rows, cols, _ = r.Terminal.Size()
 
-	asciicast := &Asciicast{
-		Version:  1,
-		Width:    cols,
-		Height:   rows,
-		Duration: Duration(stdout.Duration().Seconds()),
-		Command:  command,
-		Title:    title,
-		Env:      &Env{Term: os.Getenv("TERM"), Shell: os.Getenv("SHELL")},
-		Stdout:   stdout.Frames,
-	}
+	asciicast := NewAsciicast(
+		cols,
+		rows,
+		stdout.Duration().Seconds(),
+		command,
+		title,
+		stdout.Frames,
+	)
 
 	err = Save(asciicast, path)
 	if err != nil {
