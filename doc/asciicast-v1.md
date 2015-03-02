@@ -42,7 +42,7 @@ A very short asciicast may look like this:
       "version": 1,
       "width": 80,
       "height": 24,
-      "duration": 1.515658795,
+      "duration": 1.515658,
       "command": "/bin/zsh",
       "title": "",
       "env": {
