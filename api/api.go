@@ -49,14 +49,16 @@ func (a *AsciinemaAPI) UploadAsciicast(path string) (string, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 && response.StatusCode != 201 {
-		if response.StatusCode == 404 {
+		switch response.StatusCode {
+		case 404:
 			return "", errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
-		}
-		if response.StatusCode == 503 {
+		case 413:
+			return "", errors.New("Sorry, your asciicast is too big.")
+		case 504:
 			return "", errors.New("The server is down for maintenance. Try again in a minute.")
+		default:
+			return "", errors.New("HTTP status: " + response.Status)
 		}
-
-		return "", errors.New("HTTP status: " + response.Status)
 	}
 
 	body := &bytes.Buffer{}
