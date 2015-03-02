@@ -2,6 +2,7 @@ package asciicast
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 )
@@ -11,15 +12,21 @@ type Env struct {
 	Shell string `json:"SHELL"`
 }
 
+type Duration float64
+
+func (d Duration) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`%.6f`, d)), nil
+}
+
 type Asciicast struct {
-	Version  int     `json:"version"`
-	Width    int     `json:"width"`
-	Height   int     `json:"height"`
-	Duration float64 `json:"duration"`
-	Command  string  `json:"command"`
-	Title    string  `json:"title"`
-	Env      *Env    `json:"env"`
-	Stdout   []Frame `json:"stdout"`
+	Version  int      `json:"version"`
+	Width    int      `json:"width"`
+	Height   int      `json:"height"`
+	Duration Duration `json:"duration"`
+	Command  string   `json:"command"`
+	Title    string   `json:"title"`
+	Env      *Env     `json:"env"`
+	Stdout   []Frame  `json:"stdout"`
 }
 
 func Save(asciicast *Asciicast, path string) error {

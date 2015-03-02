@@ -50,7 +50,7 @@ func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint) er
 		Version:  1,
 		Width:    cols,
 		Height:   rows,
-		Duration: stdout.Duration().Seconds(),
+		Duration: Duration(stdout.Duration().Seconds()),
 		Command:  command,
 		Title:    title,
 		Env:      &Env{Term: os.Getenv("TERM"), Shell: os.Getenv("SHELL")},
