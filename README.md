@@ -30,7 +30,7 @@ statically linked binary:
     mkdir -p $GOPATH/src/github.com/asciinema
     git clone https://github.com/asciinema/asciinema-cli.git $GOPATH/src/github.com/asciinema/asciinema-cli
     cd $GOPATH/src/github.com/asciinema/asciinema-cli
-    make deps build
+    make build
 
 This will produce asciinema binary at `bin/asciinema`.
 

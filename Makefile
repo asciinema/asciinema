@@ -10,7 +10,7 @@ DOC_FILES=*.md LICENSE
 PREFIX?=/usr/local
 DOC_DIR=$(PREFIX)/share/doc/$(NAME)
 
-.PHONY: build test deps fmt fmtdiff travis gox tag push release install uninstall binary-tarballs os-arch-tgz
+.PHONY: build test fmt fmtdiff travis gox tag push release install uninstall binary-tarballs os-arch-tgz
 
 all: build
 
@@ -19,9 +19,6 @@ build: test
 
 test:
 	go test ./...
-
-deps:
-	go get -d -v ./...
 
 fmt:
 	go fmt ./...
