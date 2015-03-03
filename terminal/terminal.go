@@ -8,11 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"code.google.com/p/go.crypto/ssh/terminal"
-
+	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/code.google.com/p/go.crypto/ssh/terminal"
+	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/github.com/kr/pty"
 	"github.com/asciinema/asciinema-cli/ptyx"
 	"github.com/asciinema/asciinema-cli/util"
-	"github.com/kr/pty"
 )
 
 type Terminal interface {
