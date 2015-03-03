@@ -47,14 +47,11 @@ func TestRecordCommand_Execute(t *testing.T) {
 		api := &testAPI{err: test.apiError, t: t}
 
 		command := &commands.RecordCommand{
-			Command:  "ls",
-			Title:    "listing",
-			MaxWait:  5,
 			Recorder: recorder,
 			API:      api,
 		}
 
-		err := command.Execute(nil)
+		err := command.Execute("ls", "listing", false, 5, "")
 		if err != test.expectedError {
 			t.Errorf("expected error %v, got %v", test.expectedError, err)
 		}

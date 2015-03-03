@@ -1,33 +1,23 @@
 package commands
 
 import (
-	"errors"
-	"flag"
 	"fmt"
 
 	"github.com/asciinema/asciinema-cli/api"
-	"github.com/asciinema/asciinema-cli/cli"
 )
 
 type UploadCommand struct {
 	API api.API
 }
 
-func NewUploadCommand(api api.API) cli.Command {
+func NewUploadCommand(api api.API) *UploadCommand {
 	return &UploadCommand{
 		API: api,
 	}
 }
 
-func (c *UploadCommand) RegisterFlags(flags *flag.FlagSet) {
-}
-
-func (c *UploadCommand) Execute(args []string) error {
-	if len(args) == 0 {
-		return errors.New("filename required. Usage: asciinema upload <file>")
-	}
-
-	url, err := c.API.UploadAsciicast(args[0])
+func (c *UploadCommand) Execute(filename string) error {
+	url, err := c.API.UploadAsciicast(filename)
 	if err != nil {
 		return err
 	}

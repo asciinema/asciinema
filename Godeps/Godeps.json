@@ -1,9 +1,6 @@
 {
 	"ImportPath": "github.com/asciinema/asciinema-cli",
 	"GoVersion": "go1.4",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/gcfg",
@@ -13,6 +10,11 @@
 			"ImportPath": "code.google.com/p/go.crypto/ssh/terminal",
 			"Comment": "null-213",
 			"Rev": "aa2644fe4aa50e3b38d75187b4799b1f0c9ddcef"
+		},
+		{
+			"ImportPath": "github.com/docopt/docopt-go",
+			"Comment": "0.6.1-1-gc5dac53",
+			"Rev": "c5dac536301992c0371c6115d998fb62944bfad3"
 		},
 		{
 			"ImportPath": "github.com/kr/pty",

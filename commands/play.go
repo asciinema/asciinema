@@ -1,35 +1,17 @@
 package commands
 
-import (
-	"errors"
-	"flag"
-
-	"github.com/asciinema/asciinema-cli/asciicast"
-	"github.com/asciinema/asciinema-cli/cli"
-)
+import "github.com/asciinema/asciinema-cli/asciicast"
 
 type PlayCommand struct {
 	Player asciicast.Player
 }
 
-func NewPlayCommand() cli.Command {
+func NewPlayCommand() *PlayCommand {
 	return &PlayCommand{
 		Player: asciicast.NewPlayer(),
 	}
 }
 
-func (c *PlayCommand) RegisterFlags(flags *flag.FlagSet) {
-}
-
-func (c *PlayCommand) Execute(args []string) error {
-	if len(args) == 0 {
-		return errors.New("filename required. Usage: asciinema play <file>")
-	}
-
-	err := c.Player.Play(args[0])
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (c *PlayCommand) Execute(filename string) error {
+	return c.Player.Play(filename)
 }
