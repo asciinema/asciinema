@@ -1,5 +1,5 @@
 NAME=asciinema
-VERSION=$(shell grep Version version.go | awk -F '"' '{print $$2}')
+VERSION=$(shell grep 'const Version' main.go | awk -F '"' '{print $$2}')
 COMMIT=$(shell git rev-parse --short HEAD)
 
 DIRS=bin

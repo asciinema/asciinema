@@ -11,6 +11,10 @@ import (
 	"github.com/asciinema/asciinema-cli/util"
 )
 
+const Version = "1.0.0.rc1"
+
+var GitCommit string // populated during build
+
 var usage = `Record and share your terminal sessions, the right way.
 
 Usage:
