@@ -44,16 +44,11 @@ If you want to install it in other location:
 
 ## Usage
 
-asciinema cli is composed of multiple (sub)commands, similar to `git`,
-`rails` or `brew`.
+asciinema cli is composed of multiple commands, similar to `git`, `rails` or
+`brew`.
 
 When you run `asciinema` with no arguments help message is displayed showing
-all available commands.
-
-In addition to this, you can run any asciinema command with the `-h` switch
-to display help about that specific command. For example, try running
-`asciinema rec -h`. This will display a list of all of the options `rec`
-command accepts, with their defaults.
+all available commands with their options.
 
 ### `rec [filename]`
 
@@ -83,10 +78,10 @@ prompt or play a sound when shell is being recorded.
 
 Available options:
 
-* `-c` - command to record (if none given a new shell instance is recorded)
-* `--max-wait` - reduce recorded terminal inactivity to maximum of <max-wait> seconds (0 turns off)
-* `-t` - set asciicast title (can be also set later, on the site)
-* `-y` - upload immediately after shell exits, without asking for confirmation
+* `-c, --command=<command>` - Specify command to record, defaults to $SHELL
+* `-t, --title=<title>` - Specify title of the asciicast
+* `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max <sec> seconds
+* `-y, --yes` - Answer yes to all prompts (e.g. upload confirmation)
 
 ### `play <filename>`
 
