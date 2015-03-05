@@ -77,16 +77,6 @@ func uintArg(args map[string]interface{}, name string) uint {
 	return 0
 }
 
-func firstNonBlank(candidates ...string) string {
-	for _, candidate := range candidates {
-		if candidate != "" {
-			return candidate
-		}
-	}
-
-	return ""
-}
-
 func formatVersion() string {
 	var commitInfo string
 
@@ -114,7 +104,7 @@ func main() {
 
 	switch cmdName(args) {
 	case "rec":
-		command := firstNonBlank(stringArg(args, "--command"), cfg.Record.Command, os.Getenv("SHELL"), "/bin/sh")
+		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.Record.Command, os.Getenv("SHELL"), "/bin/sh")
 		title := stringArg(args, "--title")
 		assumeYes := boolArg(args, "--yes")
 		maxWait := uintArg(args, "--max-wait")

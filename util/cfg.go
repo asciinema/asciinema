@@ -38,13 +38,7 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.API.URL == "" {
-		cfg.API.URL = DefaultAPIURL
-	}
-
-	if envAPIURL := os.Getenv("ASCIINEMA_API_URL"); envAPIURL != "" {
-		cfg.API.URL = envAPIURL
-	}
+	cfg.API.URL = FirstNonBlank(os.Getenv("ASCIINEMA_API_URL"), cfg.API.URL, DefaultAPIURL)
 
 	return cfg, nil
 }
