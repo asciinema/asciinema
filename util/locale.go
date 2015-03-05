@@ -8,17 +8,13 @@ import (
 var usAscii = "US-ASCII"
 
 func GetLocaleCharset() string {
-	for _, key := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
-		value := os.Getenv(key)
-		if value != "" {
-			parts := strings.Split(value, ".")
+	locale := FirstNonBlank(os.Getenv("LC_ALL"), os.Getenv("LC_CTYPE"), os.Getenv("LANG"))
+	parts := strings.Split(locale, ".")
 
-			if len(parts) == 2 {
-				return parts[1]
-			} else {
-				return usAscii
-			}
-		}
+	if len(parts) == 2 {
+		return parts[1]
+	} else {
+		return usAscii
 	}
 
 	return usAscii
