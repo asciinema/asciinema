@@ -1,6 +1,6 @@
 # asciinema CLI
 
-[![Build Status](https://travis-ci.org/asciinema/asciinema-cli.svg?branch=master)](https://travis-ci.org/asciinema/asciinema-cli)
+[![Build Status](https://travis-ci.org/asciinema/asciinema.svg?branch=master)](https://travis-ci.org/asciinema/asciinema)
 
 Command line client (terminal recorder) for
 [asciinema.org](https://asciinema.org) service.
@@ -28,8 +28,8 @@ Following the steps below will get the source code and compile it into a single
 statically linked binary:
 
     mkdir -p $GOPATH/src/github.com/asciinema
-    git clone https://github.com/asciinema/asciinema-cli.git $GOPATH/src/github.com/asciinema/asciinema-cli
-    cd $GOPATH/src/github.com/asciinema/asciinema-cli
+    git clone https://github.com/asciinema/asciinema.git $GOPATH/src/github.com/asciinema/asciinema
+    cd $GOPATH/src/github.com/asciinema/asciinema
     make build
 
 This will produce asciinema binary at `bin/asciinema`.
@@ -132,7 +132,7 @@ If you want to contribute to this project check out
 ## Authors
 
 Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
-source [contributors](https://github.com/asciinema/asciinema-cli/contributors)
+source [contributors](https://github.com/asciinema/asciinema/contributors)
 
 ## License
 

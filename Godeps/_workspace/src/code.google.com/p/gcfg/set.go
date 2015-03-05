@@ -8,7 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/code.google.com/p/gcfg/types"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/gcfg/types"
 )
 
 type tag struct {

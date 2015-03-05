@@ -11,7 +11,7 @@ import (
 )
 
 import (
-	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/code.google.com/p/gcfg/token"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/gcfg/token"
 )
 
 var fset = token.NewFileSet()

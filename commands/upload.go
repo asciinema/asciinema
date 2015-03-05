@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/asciinema/asciinema-cli/api"
+	"github.com/asciinema/asciinema/api"
 )
 
 type UploadCommand struct {

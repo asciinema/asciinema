@@ -5,10 +5,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/github.com/docopt/docopt-go"
-	"github.com/asciinema/asciinema-cli/api"
-	"github.com/asciinema/asciinema-cli/commands"
-	"github.com/asciinema/asciinema-cli/util"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/docopt/docopt-go"
+	"github.com/asciinema/asciinema/api"
+	"github.com/asciinema/asciinema/commands"
+	"github.com/asciinema/asciinema/util"
 )
 
 const Version = "1.0.0.rc1"

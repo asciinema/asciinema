@@ -1,6 +1,6 @@
 package commands
 
-import "github.com/asciinema/asciinema-cli/asciicast"
+import "github.com/asciinema/asciinema/asciicast"
 
 type PlayCommand struct {
 	Player asciicast.Player

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/asciinema/asciinema-cli/asciicast"
+	"github.com/asciinema/asciinema/asciicast"
 )
 
 func TestFrame_MarshalJSON(t *testing.T) {

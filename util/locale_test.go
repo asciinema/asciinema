@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/asciinema/asciinema-cli/util"
+	"github.com/asciinema/asciinema/util"
 )
 
 func TestGetLocaleCharset(t *testing.T) {

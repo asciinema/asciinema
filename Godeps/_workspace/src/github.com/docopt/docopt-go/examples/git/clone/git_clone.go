@@ -2,7 +2,7 @@ package git
 
 import (
 	"fmt"
-	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/github.com/docopt/docopt-go"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/docopt/docopt-go"
 )
 
 func main() {

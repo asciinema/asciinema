@@ -9,8 +9,8 @@ import (
 )
 
 import (
-	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/code.google.com/p/gcfg/scanner"
-	"github.com/asciinema/asciinema-cli/Godeps/_workspace/src/code.google.com/p/gcfg/token"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/gcfg/scanner"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/gcfg/token"
 )
 
 var unescape = map[rune]rune{'\\': '\\', '"': '"', 'n': '\n', 't': '\t'}

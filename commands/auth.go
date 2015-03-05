@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 
-	"github.com/asciinema/asciinema-cli/util"
+	"github.com/asciinema/asciinema/util"
 )
 
 type AuthCommand struct {

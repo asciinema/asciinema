@@ -5,7 +5,7 @@ package terminal_test
 import (
 	"testing"
 
-	"github.com/asciinema/asciinema-cli/terminal"
+	"github.com/asciinema/asciinema/terminal"
 )
 
 type testWriter struct {
