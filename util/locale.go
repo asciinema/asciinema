@@ -13,8 +13,6 @@ func GetLocaleCharset() string {
 
 	if len(parts) == 2 {
 		return parts[1]
-	} else {
-		return usAscii
 	}
 
 	return usAscii
