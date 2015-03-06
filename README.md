@@ -1,9 +1,9 @@
-# asciinema CLI
+# asciinema
 
 [![Build Status](https://travis-ci.org/asciinema/asciinema.svg?branch=master)](https://travis-ci.org/asciinema/asciinema)
 
-Command line client (terminal recorder) for
-[asciinema.org](https://asciinema.org) service.
+Terminal session recorder and the best companion of
+[asciinema.org](https://asciinema.org).
 
 ## Installation
 
@@ -18,6 +18,10 @@ recorder binary for your platform, and install it in your `$PATH`.
 Other installation options, including Homebrew and distro packages (Ubuntu,
 Fedora, Arch Linux, Gentoo), are [also
 available](https://asciinema.org/docs/installation).
+
+If you have Go development environment set up you can `go get
+github.com/asciinema/asciinema` to build asciinema and put the binary
+in `$GOPATH/bin/asciinema`.
 
 ### Building from source
 
@@ -44,7 +48,7 @@ If you want to install it in other location:
 
 ## Usage
 
-asciinema cli is composed of multiple commands, similar to `git`, `rails` or
+asciinema is composed of multiple commands, similar to `git`, `rails` or
 `brew`.
 
 When you run `asciinema` with no arguments help message is displayed showing
