@@ -38,7 +38,7 @@ func (c *RecordCommand) Execute(command, title string, assumeYes bool, maxWait u
 		upload = true
 	}
 
-	err = c.Recorder.Record(filename, command, title, maxWait)
+	err = c.Recorder.Record(filename, command, title, maxWait, assumeYes)
 	if err != nil {
 		return err
 	}

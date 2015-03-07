@@ -6,7 +6,7 @@ import (
 )
 
 type Recorder interface {
-	Record(string, string, string, uint) error
+	Record(string, string, string, uint, bool) error
 }
 
 type AsciicastRecorder struct {
@@ -17,15 +17,18 @@ func NewRecorder() Recorder {
 	return &AsciicastRecorder{Terminal: terminal.NewTerminal()}
 }
 
-func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint) error {
+func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint, assumeYes bool) error {
 	// TODO: touch savePath to ensure writing is possible
 
 	rows, cols, _ := r.Terminal.Size()
 	if rows > 30 || cols > 120 {
 		util.Warningf("Current terminal size is %vx%v.", cols, rows)
 		util.Warningf("It may be too big to be properly replayed on smaller screens.")
-		util.Warningf("You can now resize it. Press <Enter> to start recording.")
-		util.ReadLine()
+
+		if !assumeYes {
+			util.Warningf("You can now resize it. Press <Enter> to start recording.")
+			util.ReadLine()
+		}
 	}
 
 	util.Printf("Asciicast recording started.")

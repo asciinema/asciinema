@@ -11,7 +11,7 @@ type testRecorder struct {
 	err error
 }
 
-func (r *testRecorder) Record(path, command, title string, maxWait uint) error {
+func (r *testRecorder) Record(path, command, title string, maxWait uint, assumeYes bool) error {
 	return r.err
 }
 
