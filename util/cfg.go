@@ -23,6 +23,9 @@ type Config struct {
 	Record struct {
 		Command string
 	}
+	User struct {
+		Token string // old location of token
+	}
 }
 
 func LoadConfig() (*Config, error) {
@@ -39,6 +42,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	cfg.API.URL = FirstNonBlank(os.Getenv("ASCIINEMA_API_URL"), cfg.API.URL, DefaultAPIURL)
+	cfg.API.Token = FirstNonBlank(cfg.API.Token, cfg.User.Token)
 
 	return cfg, nil
 }
