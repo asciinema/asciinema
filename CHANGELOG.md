@@ -1,5 +1,15 @@
 # asciinema cli changelog
 
+## 1.0.0.rc2 (2015-03-08)
+
+* All dependencies are vendored now in Godeps dir
+* Help message includes all commands with their possible options
+* `-y` and `-t` options have longer alternatives: `--yes`, `--title`
+* `--max-wait` option has shorter alternative: `-w`
+* Import paths changed to `github.com/asciinema/asciinema` due to repository
+  renaming
+* `-y` also suppresess "please resize terminal" prompt
+
 ## 1.0.0.rc1 (2015-03-02)
 
 * New [asciicast file format](doc/asciicast-v1.md)

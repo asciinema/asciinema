@@ -5,8 +5,8 @@
 Terminal session recorder and the best companion of
 [asciinema.org](https://asciinema.org).
 
-**This is README for 1.0.0.rc1 which can be downloaded
-[here](https://github.com/asciinema/asciinema/releases/tag/v1.0.0.rc1).**
+**This is README for 1.0.0.rc2 which can be downloaded
+[here](https://github.com/asciinema/asciinema/releases/tag/v1.0.0.rc2).**
 
 ## Installation
 
