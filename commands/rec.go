@@ -49,7 +49,12 @@ func (c *RecordCommand) Execute(command, title string, assumeYes bool, maxWait u
 			util.ReadLine()
 		}
 
-		url, err := c.API.UploadAsciicast(filename)
+		url, warn, err := c.API.UploadAsciicast(filename)
+
+		if warn != "" {
+			util.Warningf(warn)
+		}
+
 		if err != nil {
 			util.Warningf("Upload failed, asciicast saved at %v", filename)
 			util.Warningf("Retry later by executing: asciinema upload %v", filename)

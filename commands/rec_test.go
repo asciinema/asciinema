@@ -20,12 +20,12 @@ type testAPI struct {
 	t   *testing.T
 }
 
-func (a *testAPI) UploadAsciicast(path string) (string, error) {
+func (a *testAPI) UploadAsciicast(path string) (string, string, error) {
 	if a.err != nil {
-		return "", a.err
+		return "", "", a.err
 	}
 
-	return "http://the/url", nil
+	return "http://the/url", "", nil
 }
 
 func TestRecordCommand_Execute(t *testing.T) {

@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"runtime"
+	"strings"
 )
 
 type API interface {
-	UploadAsciicast(string) (string, error)
+	UploadAsciicast(string) (string, string, error)
 }
 
 type AsciinemaAPI struct {
@@ -29,10 +31,10 @@ func New(url, token, version string) *AsciinemaAPI {
 	}
 }
 
-func (a *AsciinemaAPI) UploadAsciicast(path string) (string, error) {
+func (a *AsciinemaAPI) UploadAsciicast(path string) (string, string, error) {
 	files, err := filesForUpload(path)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	response, err := a.http.PostForm(
@@ -44,32 +46,34 @@ func (a *AsciinemaAPI) UploadAsciicast(path string) (string, error) {
 	)
 
 	if err != nil {
-		return "", fmt.Errorf("Connection failed (%v)", err.Error())
+		return "", "", fmt.Errorf("Connection failed (%v)", err.Error())
 	}
 	defer response.Body.Close()
 
 	body := &bytes.Buffer{}
 	_, err = body.ReadFrom(response.Body)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
+
+	warn := extractWarningMessage(response)
 
 	if response.StatusCode != 200 && response.StatusCode != 201 {
 		switch response.StatusCode {
 		case 404:
-			return "", errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
+			return "", warn, errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
 		case 413:
-			return "", errors.New("Sorry, your asciicast is too big.")
+			return "", warn, errors.New("Sorry, your asciicast is too big.")
 		case 422:
-			return "", fmt.Errorf("Invalid asciicast: %v", body.String())
+			return "", warn, fmt.Errorf("Invalid asciicast: %v", body.String())
 		case 504:
-			return "", errors.New("The server is down for maintenance. Try again in a minute.")
+			return "", warn, errors.New("The server is down for maintenance. Try again in a minute.")
 		default:
-			return "", errors.New("HTTP status: " + response.Status)
+			return "", warn, errors.New("HTTP status: " + response.Status)
 		}
 	}
 
-	return body.String(), nil
+	return body.String(), warn, nil
 }
 
 func (a *AsciinemaAPI) urlForUpload() string {
@@ -93,4 +97,14 @@ func filesForUpload(path string) (map[string]io.ReadCloser, error) {
 	}
 
 	return map[string]io.ReadCloser{"asciicast:asciicast.json": file}, nil
+}
+
+func extractWarningMessage(response *http.Response) string {
+	parts := strings.SplitN(response.Header.Get("Warning"), " ", 2)
+
+	if len(parts) == 2 {
+		return parts[1]
+	}
+
+	return ""
 }
