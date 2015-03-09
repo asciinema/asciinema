@@ -22,6 +22,8 @@ type Config struct {
 	}
 	Record struct {
 		Command string
+		MaxWait uint
+		Yes     bool
 	}
 	User struct {
 		Token string // old location of token

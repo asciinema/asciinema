@@ -63,7 +63,7 @@ func boolArg(args map[string]interface{}, name string) bool {
 	return args[name].(bool)
 }
 
-func uintArg(args map[string]interface{}, name string) uint {
+func uintArg(args map[string]interface{}, name string, defaultValue uint) uint {
 	val := args[name]
 
 	if val != nil {
@@ -74,7 +74,7 @@ func uintArg(args map[string]interface{}, name string) uint {
 		}
 	}
 
-	return 0
+	return defaultValue
 }
 
 func formatVersion() string {
@@ -106,8 +106,8 @@ func main() {
 	case "rec":
 		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.Record.Command, os.Getenv("SHELL"), "/bin/sh")
 		title := stringArg(args, "--title")
-		assumeYes := boolArg(args, "--yes")
-		maxWait := uintArg(args, "--max-wait")
+		assumeYes := cfg.Record.Yes || boolArg(args, "--yes")
+		maxWait := uintArg(args, "--max-wait", cfg.Record.MaxWait)
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewRecordCommand(api, cfg)
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
