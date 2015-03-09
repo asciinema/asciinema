@@ -131,6 +131,31 @@ You can synchronize your `~/.asciinema/config` file (which keeps the API
 token) across the machines but that's not necessary. You can assign new
 tokens to your account from as many machines as you want.
 
+## Configuration file
+
+When you first run `asciinema`, local API token is generated and saved in
+the configuration file `~/.asciinema/config`. It looks like this:
+
+    [api]
+    token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
+
+There are several options you can set in this file which relate to recording
+behaviour. Here's a config with all available options set:
+
+    [api]
+    token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
+
+    [record]
+    command = /bin/bash -l
+    maxwait = 2
+    yes = true
+
+The options in `[record]` section have the same meaning as the options you pass
+to `asciinema rec` command.
+
+If you happen to often use either `-c`, `-w` or `-y` with `rec` command then
+consider saving it as a default in the config file.
+
 ## Contributing
 
 If you want to contribute to this project check out
