@@ -37,21 +37,13 @@ func (a *AsciinemaAPI) UploadAsciicast(path string) (string, string, error) {
 		return "", "", err
 	}
 
-	response, err := a.http.PostForm(
-		a.urlForUpload(),
-		a.username(),
-		a.token,
-		a.headersForUpload(),
-		files,
-	)
-
+	response, err := a.makeUploadRequest(files)
 	if err != nil {
 		return "", "", fmt.Errorf("Connection failed (%v)", err.Error())
 	}
 	defer response.Body.Close()
 
-	body := &bytes.Buffer{}
-	_, err = body.ReadFrom(response.Body)
+	body, err := extractBody(response)
 	if err != nil {
 		return "", "", err
 	}
@@ -59,21 +51,14 @@ func (a *AsciinemaAPI) UploadAsciicast(path string) (string, string, error) {
 	warn := extractWarningMessage(response)
 
 	if response.StatusCode != 200 && response.StatusCode != 201 {
-		switch response.StatusCode {
-		case 404:
-			return "", warn, errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
-		case 413:
-			return "", warn, errors.New("Sorry, your asciicast is too big.")
-		case 422:
-			return "", warn, fmt.Errorf("Invalid asciicast: %v", body.String())
-		case 504:
-			return "", warn, errors.New("The server is down for maintenance. Try again in a minute.")
-		default:
-			return "", warn, errors.New("HTTP status: " + response.Status)
-		}
+		return "", warn, handleError(response, body)
 	}
 
-	return body.String(), warn, nil
+	return body, warn, nil
+}
+
+func (a *AsciinemaAPI) makeUploadRequest(files map[string]io.ReadCloser) (*http.Response, error) {
+	return a.http.PostForm(a.urlForUpload(), a.username(), a.token, a.headersForUpload(), files)
 }
 
 func (a *AsciinemaAPI) urlForUpload() string {
@@ -107,4 +92,30 @@ func extractWarningMessage(response *http.Response) string {
 	}
 
 	return ""
+}
+
+func extractBody(response *http.Response) (string, error) {
+	body := &bytes.Buffer{}
+
+	_, err := body.ReadFrom(response.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return body.String(), nil
+}
+
+func handleError(response *http.Response, body string) error {
+	switch response.StatusCode {
+	case 404:
+		return errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
+	case 413:
+		return errors.New("Sorry, your asciicast is too big.")
+	case 422:
+		return fmt.Errorf("Invalid asciicast: %v", body)
+	case 504:
+		return errors.New("The server is down for maintenance. Try again in a minute.")
+	default:
+		return errors.New("HTTP status: " + response.Status)
+	}
 }
