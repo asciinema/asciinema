@@ -139,22 +139,27 @@ the configuration file `~/.asciinema/config`. It looks like this:
     [api]
     token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
 
-There are several options you can set in this file which relate to recording
-behaviour. Here's a config with all available options set:
+There are several options you can set in this file. Here's a config with all
+available options set:
 
     [api]
     token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
+    url = https://asciinema.example.com
 
     [record]
     command = /bin/bash -l
     maxwait = 2
     yes = true
 
-The options in `[record]` section have the same meaning as the options you pass
-to `asciinema rec` command.
+The options in `[api]` section are related to API location and authentication.
+To tell asciinema recorder to use your own asciinema site instance rather than
+the default one (asciinema.org), you can set `url` option. API URL can also be
+passed via `ASCIINEMA_API_URL` environment variable.
 
-If you happen to often use either `-c`, `-w` or `-y` with `rec` command then
-consider saving it as a default in the config file.
+The options in `[record]` section have the same meaning as the options you pass
+to `asciinema rec` command. If you happen to often use either `-c`, `-w` or
+`-y` with `rec` command then consider saving it as a default in the config
+file.
 
 ## Contributing
 
