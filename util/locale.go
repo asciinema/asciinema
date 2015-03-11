@@ -1,14 +1,11 @@
 package util
 
-import (
-	"os"
-	"strings"
-)
+import "strings"
 
 var usAscii = "US-ASCII"
 
-func GetLocaleCharset() string {
-	locale := FirstNonBlank(os.Getenv("LC_ALL"), os.Getenv("LC_CTYPE"), os.Getenv("LANG"))
+func GetLocaleCharset(env map[string]string) string {
+	locale := FirstNonBlank(env["LC_ALL"], env["LC_CTYPE"], env["LANG"])
 	parts := strings.Split(locale, ".")
 
 	if len(parts) == 2 {
@@ -18,7 +15,7 @@ func GetLocaleCharset() string {
 	return usAscii
 }
 
-func IsUtf8Locale() bool {
-	charset := GetLocaleCharset()
+func IsUtf8Locale(env map[string]string) bool {
+	charset := GetLocaleCharset(env)
 	return charset == "utf-8" || charset == "UTF-8"
 }

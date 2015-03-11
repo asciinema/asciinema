@@ -17,14 +17,16 @@ type API interface {
 
 type AsciinemaAPI struct {
 	url     string
+	user    string
 	token   string
 	version string
 	http    HTTP
 }
 
-func New(url, token, version string) *AsciinemaAPI {
+func New(url, user, token, version string) *AsciinemaAPI {
 	return &AsciinemaAPI{
 		url:     url,
+		user:    user,
 		token:   token,
 		version: version,
 		http:    &HTTPClient{},
@@ -58,15 +60,11 @@ func (a *AsciinemaAPI) UploadAsciicast(path string) (string, string, error) {
 }
 
 func (a *AsciinemaAPI) makeUploadRequest(files map[string]io.ReadCloser) (*http.Response, error) {
-	return a.http.PostForm(a.urlForUpload(), a.username(), a.token, a.headersForUpload(), files)
+	return a.http.PostForm(a.urlForUpload(), a.user, a.token, a.headersForUpload(), files)
 }
 
 func (a *AsciinemaAPI) urlForUpload() string {
 	return a.url + "/api/asciicasts"
-}
-
-func (a *AsciinemaAPI) username() string {
-	return os.Getenv("USER")
 }
 
 func (a *AsciinemaAPI) headersForUpload() map[string]string {

@@ -30,8 +30,8 @@ type Config struct {
 	}
 }
 
-func LoadConfig() (*Config, error) {
-	homeDir := os.Getenv("HOME")
+func LoadConfig(env map[string]string) (*Config, error) {
+	homeDir := env["HOME"]
 	if homeDir == "" {
 		return nil, errors.New("Need $HOME")
 	}
@@ -43,7 +43,7 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
-	cfg.API.URL = FirstNonBlank(os.Getenv("ASCIINEMA_API_URL"), cfg.API.URL, DefaultAPIURL)
+	cfg.API.URL = FirstNonBlank(env["ASCIINEMA_API_URL"], cfg.API.URL, DefaultAPIURL)
 	cfg.API.Token = FirstNonBlank(cfg.API.Token, cfg.User.Token)
 
 	return cfg, nil

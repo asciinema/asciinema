@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/docopt/docopt-go"
 	"github.com/asciinema/asciinema/api"
@@ -87,29 +88,42 @@ func formatVersion() string {
 	return fmt.Sprintf("asciinema %v%v\n", Version, commitInfo)
 }
 
+func environment() map[string]string {
+	env := map[string]string{}
+
+	for _, keyval := range os.Environ() {
+		pair := strings.SplitN(keyval, "=", 2)
+		env[pair[0]] = pair[1]
+	}
+
+	return env
+}
+
 func main() {
-	if !util.IsUtf8Locale() {
+	env := environment()
+
+	if !util.IsUtf8Locale(env) {
 		fmt.Println("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
 		os.Exit(1)
 	}
 
-	cfg, err := util.LoadConfig()
+	cfg, err := util.LoadConfig(env)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	api := api.New(cfg.API.URL, cfg.API.Token, Version)
+	api := api.New(cfg.API.URL, env["USER"], cfg.API.Token, Version)
 	args, _ := docopt.Parse(usage, nil, true, formatVersion(), false)
 
 	switch cmdName(args) {
 	case "rec":
-		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.Record.Command, os.Getenv("SHELL"), "/bin/sh")
+		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.Record.Command, env["SHELL"], "/bin/sh")
 		title := stringArg(args, "--title")
 		assumeYes := cfg.Record.Yes || boolArg(args, "--yes")
 		maxWait := uintArg(args, "--max-wait", cfg.Record.MaxWait)
 		filename := stringArg(args, "<filename>")
-		cmd := commands.NewRecordCommand(api, cfg)
+		cmd := commands.NewRecordCommand(api, cfg, env)
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
 
 	case "play":

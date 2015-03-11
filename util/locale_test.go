@@ -1,7 +1,6 @@
 package util_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/asciinema/asciinema/util"
@@ -24,11 +23,13 @@ func TestGetLocaleCharset(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		os.Setenv("LC_ALL", test.lcAll)
-		os.Setenv("LC_CTYPE", test.lcCtype)
-		os.Setenv("LANG", test.lang)
+		env := map[string]string{
+			"LC_ALL":   test.lcAll,
+			"LC_CTYPE": test.lcCtype,
+			"LANG":     test.lang,
+		}
 
-		if util.GetLocaleCharset() != test.expectedResult {
+		if util.GetLocaleCharset(env) != test.expectedResult {
 			t.Errorf("expected %v for %v", test.expectedResult, test)
 		}
 	}

@@ -29,7 +29,7 @@ type Asciicast struct {
 	Stdout   []Frame  `json:"stdout"`
 }
 
-func NewAsciicast(width, height int, duration float64, command, title string, frames []Frame) *Asciicast {
+func NewAsciicast(width, height int, duration float64, command, title string, frames []Frame, env map[string]string) *Asciicast {
 	return &Asciicast{
 		Version:  1,
 		Width:    width,
@@ -37,7 +37,7 @@ func NewAsciicast(width, height int, duration float64, command, title string, fr
 		Duration: Duration(duration),
 		Command:  command,
 		Title:    title,
-		Env:      &Env{Term: os.Getenv("TERM"), Shell: os.Getenv("SHELL")},
+		Env:      &Env{Term: env["TERM"], Shell: env["SHELL"]},
 		Stdout:   frames,
 	}
 }

@@ -13,13 +13,15 @@ import (
 type RecordCommand struct {
 	Cfg      *util.Config
 	API      api.API
+	Env      map[string]string
 	Recorder asciicast.Recorder
 }
 
-func NewRecordCommand(api api.API, cfg *util.Config) *RecordCommand {
+func NewRecordCommand(api api.API, cfg *util.Config, env map[string]string) *RecordCommand {
 	return &RecordCommand{
 		API:      api,
 		Cfg:      cfg,
+		Env:      env,
 		Recorder: asciicast.NewRecorder(),
 	}
 }
@@ -38,7 +40,7 @@ func (c *RecordCommand) Execute(command, title string, assumeYes bool, maxWait u
 		upload = true
 	}
 
-	err = c.Recorder.Record(filename, command, title, maxWait, assumeYes)
+	err = c.Recorder.Record(filename, command, title, maxWait, assumeYes, c.Env)
 	if err != nil {
 		return err
 	}
