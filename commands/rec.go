@@ -11,16 +11,14 @@ import (
 )
 
 type RecordCommand struct {
-	Cfg      *util.Config
 	API      api.API
 	Env      map[string]string
 	Recorder asciicast.Recorder
 }
 
-func NewRecordCommand(api api.API, cfg *util.Config, env map[string]string) *RecordCommand {
+func NewRecordCommand(api api.API, env map[string]string) *RecordCommand {
 	return &RecordCommand{
 		API:      api,
-		Cfg:      cfg,
 		Env:      env,
 		Recorder: asciicast.NewRecorder(),
 	}

@@ -123,7 +123,7 @@ func main() {
 		assumeYes := cfg.Record.Yes || boolArg(args, "--yes")
 		maxWait := uintArg(args, "--max-wait", cfg.Record.MaxWait)
 		filename := stringArg(args, "<filename>")
-		cmd := commands.NewRecordCommand(api, cfg, env)
+		cmd := commands.NewRecordCommand(api, env)
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
 
 	case "play":
