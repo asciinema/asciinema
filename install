@@ -17,7 +17,7 @@ case "$(uname -s).$(uname -m)" in
     *) echo "Sorry, there is no asciinema binary available for your platform. Try building from source." >&2; exit 1;;
 esac
 
-version=0.9.9
+version=1.0.0
 url="https://github.com/asciinema/asciinema/releases/download/v${version}/asciinema-${version}-${platform}.tar.gz"
 bin_name="asciinema"
 sudo=""
