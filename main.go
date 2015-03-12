@@ -14,7 +14,7 @@ import (
 
 const Version = "1.0.0.rc2"
 
-var GitCommit string // populated during build
+var GitCommit string // initialized during build
 
 var usage = `Record and share your terminal sessions, the right way.
 
