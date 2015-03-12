@@ -113,15 +113,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	api := api.New(cfg.API.URL, env["USER"], cfg.API.Token, Version)
+	api := api.New(cfg.ApiUrl(), env["USER"], cfg.ApiToken(), Version)
 	args, _ := docopt.Parse(usage, nil, true, formatVersion(), false)
 
 	switch cmdName(args) {
 	case "rec":
-		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.Record.Command, env["SHELL"], "/bin/sh")
+		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.RecordCommand())
 		title := stringArg(args, "--title")
-		assumeYes := cfg.Record.Yes || boolArg(args, "--yes")
-		maxWait := uintArg(args, "--max-wait", cfg.Record.MaxWait)
+		assumeYes := cfg.RecordYes() || boolArg(args, "--yes")
+		maxWait := uintArg(args, "--max-wait", cfg.RecordMaxWait())
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewRecordCommand(api, env)
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
