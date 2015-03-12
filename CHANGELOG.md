@@ -1,4 +1,10 @@
-# asciinema cli changelog
+# asciinema changelog
+
+## 1.0.0 (2015-03-12)
+
+* `--max-wait` and `--yes` options can be saved in config file
+* Support for displaying warning messages returned from API
+* Also, see changes for 1.0.0 release candidates below
 
 ## 1.0.0.rc2 (2015-03-08)
 
