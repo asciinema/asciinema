@@ -107,7 +107,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg, err := util.LoadConfig(env)
+	cfg, err := util.GetConfig(env)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
