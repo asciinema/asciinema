@@ -20,6 +20,10 @@ type testAPI struct {
 	t   *testing.T
 }
 
+func (a *testAPI) AuthUrl() string {
+	return ""
+}
+
 func (a *testAPI) UploadAsciicast(path string) (string, string, error) {
 	if a.err != nil {
 		return "", "", a.err

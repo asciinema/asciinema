@@ -137,7 +137,7 @@ func main() {
 		err = cmd.Execute(filename)
 
 	case "auth":
-		cmd := commands.NewAuthCommand(cfg)
+		cmd := commands.NewAuthCommand(api)
 		err = cmd.Execute()
 	}
 

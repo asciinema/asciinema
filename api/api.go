@@ -12,6 +12,7 @@ import (
 )
 
 type API interface {
+	AuthUrl() string
 	UploadAsciicast(string) (string, string, error)
 }
 
@@ -31,6 +32,10 @@ func New(url, user, token, version string) *AsciinemaAPI {
 		version: version,
 		http:    &HTTPClient{},
 	}
+}
+
+func (a *AsciinemaAPI) AuthUrl() string {
+	return fmt.Sprintf("%v/connect/%v", a.url, a.token)
 }
 
 func (a *AsciinemaAPI) UploadAsciicast(path string) (string, string, error) {

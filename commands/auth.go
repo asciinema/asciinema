@@ -3,20 +3,20 @@ package commands
 import (
 	"fmt"
 
-	"github.com/asciinema/asciinema/util"
+	"github.com/asciinema/asciinema/api"
 )
 
 type AuthCommand struct {
-	cfg *util.Config
+	api api.API
 }
 
-func NewAuthCommand(cfg *util.Config) *AuthCommand {
-	return &AuthCommand{cfg}
+func NewAuthCommand(api api.API) *AuthCommand {
+	return &AuthCommand{api}
 }
 
 func (c *AuthCommand) Execute() error {
-	fmt.Println("Open the following URL in your browser to register your API token and assign any recorded asciicasts to your profile:")
-	fmt.Printf("%v/connect/%v\n", c.cfg.ApiUrl(), c.cfg.ApiToken())
+	fmt.Println("Open the following URL in a browser to register your API token and assign any recorded asciicasts to your profile:")
+	fmt.Println(c.api.AuthUrl())
 
 	return nil
 }
