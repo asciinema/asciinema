@@ -5,9 +5,6 @@
 Terminal session recorder and the best companion of
 [asciinema.org](https://asciinema.org).
 
-**This is README for 1.0.0.rc2 which can be downloaded
-[here](https://github.com/asciinema/asciinema/releases/tag/v1.0.0.rc2).**
-
 ## Installation
 
 On Linux and Mac OS X, __the easiest way to install asciinema__ recorder is to
@@ -77,7 +74,7 @@ If the `filename` argument is given then the resulting recording (called
 replayed with `asciinema play <filename>` and/or uploaded to asciinema.org with
 `asciinema upload <filename>`. If the `filename` argument is omitted then
 (after asking for confirmation) the resulting asciicast is uploaded to
-asciinema.org for further playback in the browser.
+asciinema.org for further playback in a web browser.
 
 `ASCIINEMA_REC=1` is added to recorded process environment variables. This
 can be used by your shell's config file (`.bashrc`, `.zshrc`) to alter the
@@ -106,7 +103,7 @@ new terminal size.
 __Upload recorded asciicast to asciinema.org site.__
 
 This command uploads given asciicast (as recorded by `rec` command) to
-asciinema.org for further playback in the browser.
+asciinema.org for further playback in a web browser.
 
 `asciinema rec demo.json` + `asciinema play demo.json` + `asciinema upload
 demo.json` is a nice combo for when you want to review an asciicast before
@@ -116,13 +113,13 @@ publishing it on asciinema.org.
 
 __Assign local API token to asciinema.org account.__
 
-Every machine you install asciinema recorder on you get a new unique API
-token. This command is used to connect this local API token with your
-asciinema.org account.
+On every machine you install asciinema recorder, you get a new, unique API
+token. This command connects this local token with your asciinema.org account,
+and links all asciicasts recorded on this machine with the account.
 
-This command displays the URL you should open in your web browser. If you
-never logged in to asciinema.org then your account will be automatically
-created when opening the URL.
+This command displays the URL you should open in your web browser. If you never
+logged in to asciinema.org then your account will be created when opening the
+URL.
 
 NOTE: it is __necessary__ to do this if you want to __edit or delete__ your
 recordings on asciinema.org.
