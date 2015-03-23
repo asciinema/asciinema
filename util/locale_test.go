@@ -14,6 +14,7 @@ func TestGetLocaleCharset(t *testing.T) {
 		expectedResult string
 	}{
 		{"pl_PL.UTF-8", "pl_PL.ISO-8859-1", "pl_PL.ISO-8859-2", "UTF-8"},
+		{"cz_CS.utf8", "pl_PL.ISO-8859-1", "pl_PL.ISO-8859-2", "utf8"},
 		{"", "pl_PL.ISO-8859-1", "pl_PL.ISO-8859-2", "ISO-8859-1"},
 		{"", "", "pl_PL.ISO-8859-2", "ISO-8859-2"},
 		{"", "", "", "US-ASCII"},

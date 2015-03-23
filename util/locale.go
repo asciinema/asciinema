@@ -17,5 +17,5 @@ func GetLocaleCharset(env map[string]string) string {
 
 func IsUtf8Locale(env map[string]string) bool {
 	charset := GetLocaleCharset(env)
-	return charset == "utf-8" || charset == "UTF-8"
+	return charset == "utf-8" || charset == "UTF-8" || charset == "utf8"
 }
