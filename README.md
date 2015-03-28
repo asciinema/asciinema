@@ -5,6 +5,8 @@
 Terminal session recorder and the best companion of
 [asciinema.org](https://asciinema.org).
 
+[![demo](https://asciinema.org/a/17654.png)](https://asciinema.org/a/17654)
+
 ## Installation
 
 On Linux and Mac OS X, __the easiest way to install asciinema__ recorder is to
