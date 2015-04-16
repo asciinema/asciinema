@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/go.crypto/ssh/terminal"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/creack/termios/raw"
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/kr/pty"
 	"github.com/asciinema/asciinema/ptyx"
 	"github.com/asciinema/asciinema/util"
@@ -55,13 +56,13 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 	defer close(signals)
 
 	// put stdin in raw mode (if it's a tty)
-	fd := int(p.Stdin.Fd())
-	if terminal.IsTerminal(fd) {
-		oldState, err := terminal.MakeRaw(fd)
+	fd := p.Stdin.Fd()
+	if terminal.IsTerminal(int(fd)) {
+		oldState, err := raw.MakeRaw(fd)
 		if err != nil {
 			return err
 		}
-		defer terminal.Restore(fd, oldState)
+		defer raw.TcSetAttr(fd, oldState)
 	}
 
 	// do initial resize

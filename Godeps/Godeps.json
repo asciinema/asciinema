@@ -12,6 +12,10 @@
 			"Rev": "aa2644fe4aa50e3b38d75187b4799b1f0c9ddcef"
 		},
 		{
+			"ImportPath": "github.com/creack/termios/raw",
+			"Rev": "d60649a6c40aa68303e3d69e0423a1e7aedf4bbd"
+		},
+		{
 			"ImportPath": "github.com/docopt/docopt-go",
 			"Comment": "0.6.1-1-gc5dac53",
 			"Rev": "c5dac536301992c0371c6115d998fb62944bfad3"
