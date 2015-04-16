@@ -112,6 +112,8 @@ func handleError(response *http.Response, body string) error {
 	switch response.StatusCode {
 	case 400:
 		return fmt.Errorf("Invalid request: %v", body)
+	case 401:
+		return fmt.Errorf("Invalid token")
 	case 404:
 		return errors.New("Your client version is no longer supported. Please upgrade to the latest version.")
 	case 413:
