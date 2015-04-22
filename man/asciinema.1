@@ -3,7 +3,7 @@
 asciinema \- Terminal recorder for asciinema.org service
 .SH "SYNOPSIS"
 .I asciinema
-[\-h] [\-v] command [<args>]
+[\-h] [\-\-version] command [<args>]
 .SH "DESCRIPTION"
 Command line client (terminal recorder) for asciinema.org service.
 .PP
@@ -11,16 +11,12 @@ If you run
 .I asciinema
 with no arguments, help will be displayed showing all available commands.
 .PP
-In addition to this, you can run any asciinema command with the
-.B -h
-switch to display help about that specific command. For example, try running \fBasciinema rec -h\fP. This will display a list of all of the options \fBrec\fP command accepts, with their defaults.
-.PP
 .SH "OPTIONS"
 .TP
 \-h, \-\-help
 Display help message
 .TP
-\-v, \-\-version
+\-\-version
 Display version information
 .SH "COMMANDS"
 .B rec
@@ -36,21 +32,34 @@ Recording finishes when you exit the shell (hit \fBCtrl+D\fP or type \fIexit\fP)
 \fBASCIINEMA_REC=1\fP is added to recorded process environment variables. This can be used by your shell's config file (\fI.bashrc\fP, \fI.zshrc\fP) to alter the prompt or play a sound when shell is being recorded.
 .RS 4
 .TP
-\-c
+\-c, \-\-command
 command to record (if none given a new shell instance is recorded)
 .TP
-\-h, \-\-help
-Display help message
-.TP
-\-\-max\-wait
+\-w, \-\-max\-wait
 reduce recorded terminal inactivity to maximum of seconds (0 turns off)
 .TP
 \-t
-set asciicast title (can be also set later, on the site)
+specify title of the asciicast
 .TP
-\-y
+\-y, \-\-yes
 upload immediately after shell exits, without asking for confirmation
 .RE
+.RE
+.PP
+.B play <filename>
+.RS 4
+Replay recorded asciicast in a terminal.
+.PP
+This command replays given asciicast (as recorded by \fIrec\fP command) directly in your terminal.
+.PP
+NOTE: it is recommended to run it in a terminal of dimensions not smaller than the one used for recording as there's no "transcoding" of control sequences for new terminal size.
+.RE
+.PP
+.B upload <filename>
+.RS 4
+Upload recorded asciicast to asciinema.org site.
+.PP
+This command uploads given asciicast (as recorded by \fIrec\fP command) to asciinema.org for further playback in a web browser.
 .RE
 .PP
 .B auth
