@@ -26,7 +26,7 @@ func (c *HTTPClient) PostForm(url, username, password string, headers map[string
 }
 
 func createPostRequest(url, username, password string, headers map[string]string, files map[string]io.ReadCloser) (*http.Request, error) {
-	body, contentType, err := multiPartBody(url, files)
+	body, contentType, err := multiPartBody(files)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func setHeaders(req *http.Request, contentType, username, password string, heade
 	}
 }
 
-func multiPartBody(url string, files map[string]io.ReadCloser) (io.Reader, string, error) {
+func multiPartBody(files map[string]io.ReadCloser) (io.Reader, string, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
