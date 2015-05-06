@@ -36,10 +36,10 @@ type ConfigUser struct {
 }
 
 type ConfigFile struct {
-	API    ConfigAPI
-	Record ConfigRecord
+	API      ConfigAPI
+	Record   ConfigRecord
 	Playback ConfigPlayback
-	User   ConfigUser // old location of token
+	User     ConfigUser // old location of token
 }
 
 type Config struct {

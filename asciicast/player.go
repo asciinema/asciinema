@@ -31,7 +31,7 @@ func (r *AsciicastPlayer) Play(path string, maxWait uint) error {
 	if adjustedMaxWait <= 0 {
 		adjustedMaxWait = playbackDefaultMaxWait
 	}
-	
+
 	for _, frame := range asciicast.Stdout {
 		delay := time.Duration(float64(time.Second) * math.Min(adjustedMaxWait, frame.Delay))
 		time.Sleep(delay)
