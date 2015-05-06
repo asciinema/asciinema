@@ -20,7 +20,7 @@ var usage = `Record and share your terminal sessions, the right way.
 
 Usage:
   asciinema rec [-c <command>] [-t <title>] [-w <sec>] [-y] [<filename>]
-  asciinema play <filename>
+  asciinema play [-w <sec>] <filename>
   asciinema upload <filename>
   asciinema auth
   asciinema -h | --help
@@ -127,9 +127,10 @@ func main() {
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
 
 	case "play":
+		maxWait := uintArg(args, "--max-wait", cfg.RecordMaxWait())
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewPlayCommand()
-		err = cmd.Execute(filename)
+		err = cmd.Execute(filename, maxWait)
 
 	case "upload":
 		filename := stringArg(args, "<filename>")
