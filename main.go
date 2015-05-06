@@ -127,7 +127,7 @@ func main() {
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
 
 	case "play":
-		maxWait := uintArg(args, "--max-wait", cfg.RecordMaxWait())
+		maxWait := uintArg(args, "--max-wait", cfg.PlaybackMaxWait())
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewPlayCommand()
 		err = cmd.Execute(filename, maxWait)

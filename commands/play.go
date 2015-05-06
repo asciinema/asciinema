@@ -13,5 +13,5 @@ func NewPlayCommand() *PlayCommand {
 }
 
 func (c *PlayCommand) Execute(filename string, maxWait uint) error {
-	return c.Player.Play(filename, float64(maxWait))
+	return c.Player.Play(filename, maxWait)
 }
