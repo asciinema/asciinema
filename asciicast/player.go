@@ -1,7 +1,6 @@
 package asciicast
 
 import (
-	"math"
 	"time"
 
 	"github.com/asciinema/asciinema/terminal"
@@ -27,14 +26,12 @@ func (r *AsciicastPlayer) Play(path string, maxWait uint) error {
 		return err
 	}
 
-	adjustedMaxWait := float64(maxWait)
-	if adjustedMaxWait <= 0 {
-		adjustedMaxWait = playbackDefaultMaxWait
-	}
-
 	for _, frame := range asciicast.Stdout {
-		delay := time.Duration(float64(time.Second) * math.Min(adjustedMaxWait, frame.Delay))
-		time.Sleep(delay)
+		delay := frame.Delay
+		if maxWait > 0 && delay > float64(maxWait) {
+			delay = float64(maxWait)
+		}
+		time.Sleep(time.Duration(float64(time.Second) * delay))
 		r.Terminal.Write(frame.Data)
 	}
 
