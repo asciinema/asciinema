@@ -6,8 +6,6 @@ import (
 	"github.com/asciinema/asciinema/terminal"
 )
 
-const playbackDefaultMaxWait = 3600.0
-
 type Player interface {
 	Play(string, uint) error
 }
