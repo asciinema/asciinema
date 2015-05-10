@@ -100,6 +100,10 @@ NOTE: it is recommended to run it in a terminal of dimensions not smaller than
 the one used for recording as there's no "transcoding" of control sequences for
 new terminal size.
 
+Available options:
+
+* `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max <sec> seconds
+
 ### `upload <filename>`
 
 __Upload recorded asciicast to asciinema.org site.__
@@ -150,15 +154,18 @@ available options set:
     maxwait = 2
     yes = true
 
+    [play]
+    maxwait = 1
+
 The options in `[api]` section are related to API location and authentication.
 To tell asciinema recorder to use your own asciinema site instance rather than
 the default one (asciinema.org), you can set `url` option. API URL can also be
 passed via `ASCIINEMA_API_URL` environment variable.
 
-The options in `[record]` section have the same meaning as the options you pass
-to `asciinema rec` command. If you happen to often use either `-c`, `-w` or
-`-y` with `rec` command then consider saving it as a default in the config
-file.
+The options in `[record]` and `[play]` sections have the same meaning as the
+options you pass to `asciinema rec`/`asciinema play` command. If you happen to
+often use either `-c`, `-w` or `-y` with these commands then consider saving it
+as a default in the config file.
 
 ## Contributing
 

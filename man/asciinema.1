@@ -53,6 +53,10 @@ Replay recorded asciicast in a terminal.
 This command replays given asciicast (as recorded by \fIrec\fP command) directly in your terminal.
 .PP
 NOTE: it is recommended to run it in a terminal of dimensions not smaller than the one used for recording as there's no "transcoding" of control sequences for new terminal size.
+.RS 4
+.TP
+\-w, \-\-max\-wait
+reduce replayed terminal inactivity to maximum of seconds (0 turns off)
 .RE
 .PP
 .B upload <filename>
