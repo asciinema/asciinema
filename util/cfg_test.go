@@ -151,7 +151,7 @@ func TestConfig_RecordYes(t *testing.T) {
 	}
 }
 
-func TestConfig_PlaybackMaxWait(t *testing.T) {
+func TestConfig_PlayMaxWait(t *testing.T) {
 	var tests = []struct {
 		cfg      util.ConfigFile
 		expected uint
@@ -161,14 +161,14 @@ func TestConfig_PlaybackMaxWait(t *testing.T) {
 			0,
 		},
 		{
-			util.ConfigFile{Playback: util.ConfigPlayback{MaxWait: 1}},
+			util.ConfigFile{Play: util.ConfigPlay{MaxWait: 1}},
 			1,
 		},
 	}
 
 	for _, test := range tests {
 		cfg := util.Config{&test.cfg, nil}
-		actual := cfg.PlaybackMaxWait()
+		actual := cfg.PlayMaxWait()
 
 		if actual != test.expected {
 			t.Errorf(`expected "%v", got "%v"`, test.expected, actual)

@@ -27,7 +27,7 @@ type ConfigRecord struct {
 	Yes     bool
 }
 
-type ConfigPlayback struct {
+type ConfigPlay struct {
 	MaxWait uint
 }
 
@@ -36,10 +36,10 @@ type ConfigUser struct {
 }
 
 type ConfigFile struct {
-	API      ConfigAPI
-	Record   ConfigRecord
-	Playback ConfigPlayback
-	User     ConfigUser // old location of token
+	API    ConfigAPI
+	Record ConfigRecord
+	Play   ConfigPlay
+	User   ConfigUser // old location of token
 }
 
 type Config struct {
@@ -67,8 +67,8 @@ func (c *Config) RecordYes() bool {
 	return c.File.Record.Yes
 }
 
-func (c *Config) PlaybackMaxWait() uint {
-	return c.File.Playback.MaxWait
+func (c *Config) PlayMaxWait() uint {
+	return c.File.Play.MaxWait
 }
 
 func GetConfig(env map[string]string) (*Config, error) {
