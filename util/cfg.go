@@ -88,7 +88,7 @@ func loadConfigFile(env map[string]string) (*ConfigFile, error) {
 	}
 	if env["XDG_CONFIG_HOME"] != "" {
 		pathsToCheck = append(pathsToCheck,
-			filepath.Join(env["XDG_CONFIG_HOME"], ".asciinema", "config"))
+			filepath.Join(env["XDG_CONFIG_HOME"], "asciinema", "config"))
 	}
 	if env["HOME"] != "" {
 		pathsToCheck = append(pathsToCheck,
