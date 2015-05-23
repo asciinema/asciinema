@@ -81,15 +81,36 @@ func GetConfig(env map[string]string) (*Config, error) {
 }
 
 func loadConfigFile(env map[string]string) (*ConfigFile, error) {
-	homeDir := env["HOME"]
-	if homeDir == "" {
-		return nil, errors.New("Need $HOME")
+	pathsToCheck := make([]string, 0, 4)
+	if env["ASCIINEMA_CONFIG_HOME"] != "" {
+		pathsToCheck = append(pathsToCheck,
+			filepath.Join(env["ASCIINEMA_CONFIG_HOME"], "config"))
+	}
+	if env["XDG_CONFIG_HOME"] != "" {
+		pathsToCheck = append(pathsToCheck,
+			filepath.Join(env["XDG_CONFIG_HOME"], ".asciinema", "config"))
+	}
+	if env["HOME"] != "" {
+		pathsToCheck = append(pathsToCheck,
+			filepath.Join(env["HOME"], ".config", "asciinema", "config"))
+		pathsToCheck = append(pathsToCheck,
+			filepath.Join(env["HOME"], ".asciinema", "config"))
 	}
 
-	cfgPath := filepath.Join(homeDir, ".asciinema", "config")
+	cfgPath := ""
+	for _, pathToCheck := range pathsToCheck {
+		if _, err := os.Stat(pathToCheck); err == nil {
+			cfgPath = pathToCheck
+			break
+		}
+	}
 
-	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
-		if err = createConfigFile(cfgPath); err != nil {
+	if cfgPath == "" {
+		if len(pathsToCheck) == 0 {
+			return nil, errors.New("Need $HOME")
+		}
+		cfgPath = pathsToCheck[0]
+		if err := createConfigFile(cfgPath); err != nil {
 			return nil, err
 		}
 	}
