@@ -140,7 +140,7 @@ asciinema uses a config file to keep API token and user settings. In most cases
 the location of this file is `$HOME/.config/asciinema/config`.
 
 When you first run `asciinema`, local API token is generated and saved in the
-file. It looks like this:
+file (unless the file already exists). It looks like this:
 
     [api]
     token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
