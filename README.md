@@ -130,14 +130,17 @@ URL.
 NOTE: it is __necessary__ to do this if you want to __edit or delete__ your
 recordings on asciinema.org.
 
-You can synchronize your `~/.asciinema/config` file (which keeps the API
-token) across the machines but that's not necessary. You can assign new
-tokens to your account from as many machines as you want.
+You can synchronize your config file (which keeps the API token) across the
+machines but that's not necessary. You can assign new tokens to your account
+from as many machines as you want.
 
 ## Configuration file
 
-When you first run `asciinema`, local API token is generated and saved in
-the configuration file `~/.asciinema/config`. It looks like this:
+asciinema uses a config file to keep API token and user settings. In most cases
+the location of this file is `$HOME/.config/asciinema/config`.
+
+When you first run `asciinema`, local API token is generated and saved in the
+file. It looks like this:
 
     [api]
     token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
@@ -166,6 +169,18 @@ The options in `[record]` and `[play]` sections have the same meaning as the
 options you pass to `asciinema rec`/`asciinema play` command. If you happen to
 often use either `-c`, `-w` or `-y` with these commands then consider saving it
 as a default in the config file.
+
+### Configuration file locations
+
+In fact, the following locations are checked for the presence of the config
+file (in the given order):
+
+* `$ASCIINEMA_CONFIG_HOME/config` - if you have set `$ASCIINEMA_CONFIG_HOME`
+* `$XDG_CONFIG_HOME/asciinema/config` - on Linux, `$XDG_CONFIG_HOME` usually points to `$HOME/.config/`
+* `$HOME/.config/asciinema/config` - in most cases it's here
+* `$HOME/.asciinema/config` - created by asciinema versions prior to 1.1
+
+The first one which is found is used.
 
 ## Contributing
 
