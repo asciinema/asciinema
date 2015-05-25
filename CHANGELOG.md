@@ -1,5 +1,13 @@
 # asciinema changelog
 
+## 1.1.0 (2015-05-25)
+
+* `--max-wait` option is now also available for `play` command
+* Added support for compilation on FreeBSD
+* Improved locale/charset detection
+* Improved upload error messages
+* New config file location (with backwards compatibility)
+
 ## 1.0.0 (2015-03-12)
 
 * `--max-wait` and `--yes` options can be saved in config file
