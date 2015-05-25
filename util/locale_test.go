@@ -19,7 +19,7 @@ func TestGetLocaleCharset(t *testing.T) {
 		{"", "", "pl_PL.ISO-8859-2", "ISO-8859-2"},
 		{"", "", "", "US-ASCII"},
 		{"UTF-8", "pl_PL.ISO-8859-1", "pl_PL.ISO-8859-2", "US-ASCII"},
-		{"", "ISO-8859-1", "pl_PL.ISO-8859-2", "US-ASCII"},
+		{"", "ISO-8859-1", "pl_PL.ISO-8859-2", "ISO-8859-1"},
 		{"", "", "ISO-8859-2", "US-ASCII"},
 	}
 

@@ -4,12 +4,27 @@ import "strings"
 
 var usAscii = "US-ASCII"
 
-func GetLocaleCharset(env map[string]string) string {
-	locale := FirstNonBlank(env["LC_ALL"], env["LC_CTYPE"], env["LANG"])
+func extractCharset(locale, defaultCharset string) string {
 	parts := strings.Split(locale, ".")
 
 	if len(parts) == 2 {
 		return parts[1]
+	}
+
+	return defaultCharset
+}
+
+func GetLocaleCharset(env map[string]string) string {
+	if env["LC_ALL"] != "" {
+		return extractCharset(env["LC_ALL"], usAscii)
+	}
+
+	if env["LC_CTYPE"] != "" {
+		return extractCharset(env["LC_CTYPE"], env["LC_CTYPE"])
+	}
+
+	if env["LANG"] != "" {
+		return extractCharset(env["LANG"], usAscii)
 	}
 
 	return usAscii
