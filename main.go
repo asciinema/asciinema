@@ -12,7 +12,7 @@ import (
 	"github.com/asciinema/asciinema/util"
 )
 
-const Version = "1.0.0"
+const Version = "1.1.0"
 
 var GitCommit string // initialized during build
 
