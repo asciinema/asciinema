@@ -1,5 +1,9 @@
 # asciinema changelog
 
+## 1.1.1 (2015-06-21)
+
+* Fixed putting terminal in raw mode (fixes ctrl-o in nano)
+
 ## 1.1.0 (2015-05-25)
 
 * `--max-wait` option is now also available for `play` command
