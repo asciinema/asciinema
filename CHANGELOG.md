@@ -1,5 +1,9 @@
 # asciinema changelog
 
+## master
+
+* Added ability to replay asciicast from stdin by passing "-" as filename
+
 ## 1.1.1 (2015-06-21)
 
 * Fixed putting terminal in raw mode (fixes ctrl-o in nano)
