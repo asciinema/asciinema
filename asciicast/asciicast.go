@@ -57,16 +57,23 @@ func Save(asciicast *Asciicast, path string) error {
 }
 
 func Load(path string) (*Asciicast, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
+	var file *os.File
+
+	if path == "-" {
+		file = os.Stdin
+	} else {
+		var err error
+		file, err = os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
 	}
-	defer file.Close()
 
 	dec := json.NewDecoder(file)
 	asciicast := &Asciicast{}
 
-	err = dec.Decode(asciicast)
+	err := dec.Decode(asciicast)
 	if err != nil {
 		return nil, err
 	}
