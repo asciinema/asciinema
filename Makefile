@@ -29,7 +29,7 @@ fmtdiff:
 travis: build fmtdiff
 
 gox:
-	gox -os="darwin linux" -arch="386 amd64" -output="bin/asciinema_{{.OS}}_{{.Arch}}" -ldflags "-X main.GitCommit $(COMMIT)"
+	gox -os="darwin freebsd linux" -arch="386 amd64" -output="bin/asciinema_{{.OS}}_{{.Arch}}" -ldflags "-X main.GitCommit $(COMMIT)"
 
 tag:
 	git tag | grep "v$(VERSION)" && echo "Tag v$(VERSION) exists" && exit 1 || true
@@ -54,6 +54,8 @@ uninstall:
 binary-tarballs:
 	GOOS=darwin GOARCH=386 $(MAKE) os-arch-tgz
 	GOOS=darwin GOARCH=amd64 $(MAKE) os-arch-tgz
+	GOOS=freebsd GOARCH=386 $(MAKE) os-arch-tgz
+	GOOS=freebsd GOARCH=amd64 $(MAKE) os-arch-tgz
 	GOOS=linux GOARCH=386 $(MAKE) os-arch-tgz
 	GOOS=linux GOARCH=amd64 $(MAKE) os-arch-tgz
 	GOOS=linux GOARCH=arm $(MAKE) os-arch-tgz
