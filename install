@@ -12,6 +12,8 @@ case "$(uname -s).$(uname -m)" in
     Linux.i?86) platform=linux-386;;
     Linux.armv6l) platform=linux-arm;;
     Linux.armv7l) platform=linux-arm;;
+    FreeBSD.amd64) platform=freebsd-amd64;;
+    FreeBSD.i386) platform=freebsd-386;;
     Darwin.x86_64) platform=darwin-amd64;;
     Darwin.i?86) platform=darwin-386;;
     *) echo "Sorry, there is no asciinema binary available for your platform. Try building from source." >&2; exit 1;;
