@@ -9,36 +9,38 @@ Terminal session recorder and the best companion of
 
 ## Installation
 
-On Linux and Mac OS X, __the easiest way to install asciinema__ recorder is to
-run the following shell command:
+### Using package manager
 
-    curl -sL https://asciinema.org/install | sh
-
-[This script](https://asciinema.org/install) will download the latest asciinema
-recorder binary for your platform, and install it in your `$PATH`.
-
-Other installation options, including Homebrew and distro packages (Ubuntu,
-Fedora, Arch Linux, Gentoo), are [also
-available](https://asciinema.org/docs/installation).
-
-If you have Go development environment set up you can `go get
-github.com/asciinema/asciinema` to build asciinema and put the binary
-in `$GOPATH/bin/asciinema`.
+asciinema is available in repositories of most popular package managers on Mac
+OS X, Linux and FreeBSD. Look for package named `asciinema`. See the
+[list of available packages](https://asciinema.org/docs/installation).
 
 ### Building from source
 
 To build asciinema from source you need to have
-[Go development environment](http://golang.org/doc/install) set up.
+[Go development toolchain](http://golang.org/doc/install) installed.
 
-Following the steps below will get the source code and compile it into a single
-statically linked binary:
+#### With `go get`
+
+You can use `go get` to fetch the source, build and install asciinema at
+`$GOPATH/bin/asciinema` in one go:
+
+    go get github.com/asciinema/asciinema
+
+#### With `make`
+
+Download the source code into your `$GOPATH`:
 
     mkdir -p $GOPATH/src/github.com/asciinema
     git clone https://github.com/asciinema/asciinema.git $GOPATH/src/github.com/asciinema/asciinema
+
+Build the binary:
+
     cd $GOPATH/src/github.com/asciinema/asciinema
     make build
 
-This will produce asciinema binary at `bin/asciinema`.
+This will produce asciinema binary at
+`$GOPATH/src/github.com/asciinema/asciinema/bin/asciinema`.
 
 To install it system wide (to `/usr/local`):
 
