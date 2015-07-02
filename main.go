@@ -14,8 +14,6 @@ import (
 
 const Version = "1.1.1"
 
-var GitCommit string // initialized during build
-
 var usage = `Record and share your terminal sessions, the right way.
 
 Usage:
@@ -79,13 +77,7 @@ func uintArg(args map[string]interface{}, name string, defaultValue uint) uint {
 }
 
 func formatVersion() string {
-	var commitInfo string
-
-	if GitCommit != "" {
-		commitInfo = "-" + GitCommit
-	}
-
-	return fmt.Sprintf("asciinema %v%v\n", Version, commitInfo)
+	return fmt.Sprintf("asciinema %v", Version)
 }
 
 func environment() map[string]string {

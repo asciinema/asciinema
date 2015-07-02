@@ -1,6 +1,5 @@
 NAME=asciinema
 VERSION=$(shell grep 'const Version' main.go | awk -F '"' '{print $$2}')
-COMMIT=$(shell git rev-parse --short HEAD)
 
 DIRS=bin
 INSTALL_DIRS=`find $(DIRS) -type d 2>/dev/null`
@@ -15,7 +14,7 @@ DOC_DIR=$(PREFIX)/share/doc/$(NAME)
 all: build
 
 build: test
-	go build -o bin/asciinema -ldflags "-X main.GitCommit $(COMMIT)"
+	go build -o bin/asciinema
 
 test:
 	go test ./...
@@ -29,7 +28,7 @@ fmtdiff:
 travis: build fmtdiff
 
 gox:
-	gox -os="darwin freebsd linux" -arch="386 amd64" -output="bin/asciinema_{{.OS}}_{{.Arch}}" -ldflags "-X main.GitCommit $(COMMIT)"
+	gox -os="darwin freebsd linux" -arch="386 amd64" -output="bin/asciinema_{{.OS}}_{{.Arch}}"
 
 tag:
 	git tag | grep "v$(VERSION)" && echo "Tag v$(VERSION) exists" && exit 1 || true
@@ -65,6 +64,6 @@ RELEASE=asciinema-$(VERSION)-$(GOOS)-$(GOARCH)
 
 os-arch-tgz:
 	mkdir -p dist/$(VERSION)/$(RELEASE)
-	go build -o dist/$(VERSION)/$(RELEASE)/asciinema -ldflags "-X main.GitCommit $(COMMIT)"
+	go build -o dist/$(VERSION)/$(RELEASE)/asciinema
 	cp README.md CHANGELOG.md LICENSE dist/$(VERSION)/$(RELEASE)
 	cd dist/$(VERSION) && tar czf $(RELEASE).tar.gz $(RELEASE)
