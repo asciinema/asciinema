@@ -91,6 +91,7 @@ Available options:
 * `-t, --title=<title>` - Specify the title of the asciicast
 * `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max <sec> seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
+* `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
 
 ### `play <filename>`
 

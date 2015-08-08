@@ -17,7 +17,7 @@ const Version = "1.1.1"
 var usage = `Record and share your terminal sessions, the right way.
 
 Usage:
-  asciinema rec [-c <command>] [-t <title>] [-w <sec>] [-y] [<filename>]
+  asciinema rec [-c <command>] [-t <title>] [-w <sec>] [-y] [-q] [<filename>]
   asciinema play [-w <sec>] <filename>
   asciinema upload <filename>
   asciinema auth
@@ -34,7 +34,8 @@ Options:
   -c, --command=<command>  Specify command to record, defaults to $SHELL
   -t, --title=<title>      Specify title of the asciicast
   -w, --max-wait=<sec>     Reduce recorded terminal inactivity to max <sec> seconds
-  -y, --yes                Answer yes to all prompts (e.g. upload confirmation)
+  -y, --yes                Answer "yes" to all prompts (e.g. upload confirmation)
+  -q, --quiet              Be quiet, suppress all notices/warnings (implies -y)
   -h, --help               Show this message
   --version                Show version`
 
@@ -113,6 +114,12 @@ func main() {
 		command := util.FirstNonBlank(stringArg(args, "--command"), cfg.RecordCommand())
 		title := stringArg(args, "--title")
 		assumeYes := cfg.RecordYes() || boolArg(args, "--yes")
+
+		if boolArg(args, "--quiet") {
+			util.BeQuiet()
+			assumeYes = true
+		}
+
 		maxWait := uintArg(args, "--max-wait", cfg.RecordMaxWait())
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewRecordCommand(api, env)

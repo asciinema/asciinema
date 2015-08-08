@@ -3,6 +3,7 @@
 ## master
 
 * Added ability to replay asciicast from stdin by passing "-" as filename
+* `-q/--quiet` option added to `rec` command
 
 ## 1.1.1 (2015-06-21)
 
