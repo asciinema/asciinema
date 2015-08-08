@@ -1,16 +1,15 @@
-.TH "ASCIINEMA" "1" "December 17, 2014" "asciinema 0.9.9"
+.TH "asciinema" "1" "June 21, 2015" "asciinema 1.1.1"
 .SH "NAME"
-asciinema \- Terminal recorder for asciinema.org service
+asciinema \- terminal session recorder
 .SH "SYNOPSIS"
-.I asciinema
-[\-h] [\-\-version] command [<args>]
+.B asciinema
+.I [\-h] [\-\-version] command [<args>]
 .SH "DESCRIPTION"
-Command line client (terminal recorder) for asciinema.org service.
+Terminal session recorder and the best companion of asciinema.org service.
 .PP
-If you run
-.I asciinema
-with no arguments, help will be displayed showing all available commands.
+asciinema is composed of multiple commands, similar to git, apt-get or brew.
 .PP
+When you run asciinema with no arguments help messages is displayed, listing all available commands with their options.
 .SH "OPTIONS"
 .TP
 \-h, \-\-help
@@ -19,30 +18,34 @@ Display help message
 \-\-version
 Display version information
 .SH "COMMANDS"
-.B rec
+.B rec [<filename>]
 .RS 4
-Record terminal session and upload it to asciinema.org site.
+Record terminal session.
 .PP
-This is the single most important command in \fIasciinema\fP, since it is how you utilize this tool's main job.
+This is the single most important command in asciinema, since it is how you utilize this tool's main job.
 .PP
-By running \fIasciinema\fP rec you start a new recording session. The command (process) that is recorded can be specified with \fI-c\fP option (see below), and defaults to \fB$SHELL\fP which is what you want in most cases.
+By running \fBasciinema rec\fP \fI[filename]\fP you start a new recording session. The command (process) that is recorded can be specified with \fI-c\fP option (see below), and defaults to \fB$SHELL\fP which is what you want in most cases.
 .PP
 Recording finishes when you exit the shell (hit \fBCtrl+D\fP or type \fIexit\fP). If the recorded process is not a shell than recording finishes when the process exits.
 .PP
+If the \fIfilename\fP argument is given then the resulting recording is saved to a local file. It can later be replayed with \fBasciinema play\fP \fI<filename>\fP and/or uploaded to asciinema.org with \fBasciinema upload\fP \fI<filename>\fP. If the \fIfilename\fP argument is omitted then (after asking for confirmation) the resulting asciicast is uploaded to asciinema.org for further playback in a web browser.
+.PP
 \fBASCIINEMA_REC=1\fP is added to recorded process environment variables. This can be used by your shell's config file (\fI.bashrc\fP, \fI.zshrc\fP) to alter the prompt or play a sound when shell is being recorded.
+.TP
+Available options:
 .RS 4
 .TP
 \-c, \-\-command
-command to record (if none given a new shell instance is recorded)
-.TP
-\-w, \-\-max\-wait
-reduce recorded terminal inactivity to maximum of seconds (0 turns off)
+specify command to record, defaults to $SHELL
 .TP
 \-t
-specify title of the asciicast
+specify the title of the asciicast
+.TP
+\-w, \-\-max\-wait
+reduce recorded terminal inactivity to max <sec> seconds
 .TP
 \-y, \-\-yes
-upload immediately after shell exits, without asking for confirmation
+answer "yes" to all prompts (e.g. upload confirmation)
 .RE
 .RE
 .PP
@@ -52,11 +55,16 @@ Replay recorded asciicast in a terminal.
 .PP
 This command replays given asciicast (as recorded by \fIrec\fP command) directly in your terminal.
 .PP
+When "-" is passed as a filename the asciicast is read from stdin.
+.PP
 NOTE: it is recommended to run it in a terminal of dimensions not smaller than the one used for recording as there's no "transcoding" of control sequences for new terminal size.
+.TP
+Available options:
 .RS 4
 .TP
 \-w, \-\-max\-wait
-reduce replayed terminal inactivity to maximum of seconds (0 turns off)
+reduce replayed terminal inactivity to max \fIsec\fP seconds
+.RE
 .RE
 .PP
 .B upload <filename>
@@ -64,14 +72,28 @@ reduce replayed terminal inactivity to maximum of seconds (0 turns off)
 Upload recorded asciicast to asciinema.org site.
 .PP
 This command uploads given asciicast (as recorded by \fIrec\fP command) to asciinema.org for further playback in a web browser.
+.PP
+\fBasciinema rec\fP \fIdemo.json\fP + \fBasciinema play\fP \fIdemo.json\fP + \fBasciinema upload\fP \fIdemo.json\fP is a nice combo for when you want to review an asciicast before publishing it on asciinema.org.
 .RE
 .PP
 .B auth
 .RS 4
 Assign local API token to asciinema.org account.
-.TP
-\-h, \-\-help
-Display help message
+.PP
+On every machine you install asciinema recorder, you get a new, unique API
+token. This command connects this local token with your asciinema.org account,
+and links all asciicasts recorded on this machine with the account.
+.PP
+This command displays the URL you should open in your web browser. If you never
+logged in to asciinema.org then your account will be created when opening the
+URL.
+.PP
+NOTE: it is \fBnecessary\fP to do this if you want to edit or delete your
+recordings on asciinema.org.
+.PP
+You can synchronize your config file (which keeps the API token) across the
+machines but that's not necessary. You can assign new tokens to your account
+from as many machines as you want.
 .RE
 .SH "CONTRIBUTING"
 If you want to contribute to this project check out Contributing page: \fIhttps://asciinema.org/contributing\fP
