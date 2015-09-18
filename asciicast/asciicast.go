@@ -3,8 +3,11 @@ package asciicast
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"strings"
 )
 
 type Env struct {
@@ -56,25 +59,50 @@ func Save(asciicast *Asciicast, path string) error {
 	return nil
 }
 
-func Load(path string) (*Asciicast, error) {
-	var file *os.File
+// asciinema play file.json
+// asciinema play https://asciinema.org/a/123.json
+// asciinema play ipfs://QmbdpNCwqeZgnmAWBCQcs8u6Ts6P2ku97tfKAycE1XY88p
+// asciinema play -
 
-	if path == "-" {
-		file = os.Stdin
-	} else {
-		var err error
-		file, err = os.Open(path)
+func getSource(url string) (io.ReadCloser, error) {
+	if strings.HasPrefix(url, "ipfs://") {
+		hash := url[7:len(url)]
+		url = fmt.Sprintf("https://ipfs.io/ipfs/%v", hash)
+	}
+
+	if url == "-" {
+		return os.Stdin, nil
+	}
+
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		resp, err := http.Get(url)
+
 		if err != nil {
 			return nil, err
 		}
-		defer file.Close()
+
+		if resp.StatusCode != 200 {
+			resp.Body.Close()
+			return nil, fmt.Errorf("got status %v when requesting %v", resp.StatusCode, url)
+		}
+
+		return resp.Body, nil
 	}
 
-	dec := json.NewDecoder(file)
+	return os.Open(url)
+}
+
+func Load(url string) (*Asciicast, error) {
+	source, err := getSource(url)
+	if err != nil {
+		return nil, err
+	}
+	defer source.Close()
+
+	dec := json.NewDecoder(source)
 	asciicast := &Asciicast{}
 
-	err := dec.Decode(asciicast)
-	if err != nil {
+	if err = dec.Decode(asciicast); err != nil {
 		return nil, err
 	}
 
