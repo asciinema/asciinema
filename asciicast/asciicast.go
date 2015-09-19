@@ -61,13 +61,12 @@ func Save(asciicast *Asciicast, path string) error {
 
 // asciinema play file.json
 // asciinema play https://asciinema.org/a/123.json
-// asciinema play ipfs://QmbdpNCwqeZgnmAWBCQcs8u6Ts6P2ku97tfKAycE1XY88p
+// asciinema play ipfs://ipfs/QmbdpNCwqeZgnmAWBCQcs8u6Ts6P2ku97tfKAycE1XY88p
 // asciinema play -
 
 func getSource(url string) (io.ReadCloser, error) {
 	if strings.HasPrefix(url, "ipfs://") {
-		hash := url[7:len(url)]
-		url = fmt.Sprintf("https://ipfs.io/ipfs/%v", hash)
+		url = fmt.Sprintf("https://ipfs.io/%v", url[7:len(url)])
 	}
 
 	if url == "-" {
