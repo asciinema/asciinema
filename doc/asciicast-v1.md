@@ -46,17 +46,17 @@ A very short asciicast may look like this:
       "command": "/bin/zsh",
       "title": "",
       "env": {
-        "TERM": "screen-256color",
+        "TERM": "xterm-256color",
         "SHELL": "/bin/zsh"
       },
       "stdout": [
         [
           0.248848,
-          "\u001b[1m\u001b[3m%\u001b[23m\u001b[1m\u001b[0m"
+          "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"
         ],
         [
-          0.001376,
-          "\r\u001b[0m\u001b[23m\u001b[24m\u001b[J\u001b[34"
+          1.001376,
+          "I am \rThis is on the next line."
         ]
       ]
     }
