@@ -104,13 +104,13 @@ When "-" is passed as a filename the asciicast is read from stdin. For example:
 
     curl -sL https://asciinema.org/a/21310.json | asciinema play -
 
-NOTE: it is recommended to run it in a terminal of dimensions not smaller than
-the one used for recording as there's no "transcoding" of control sequences for
-new terminal size.
-
 Available options:
 
 * `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max <sec> seconds
+
+NOTE: it is recommended to run `asciinema play` in a terminal of dimensions not
+smaller than the one used for recording as there's no "transcoding" of control
+sequences for new terminal size.
 
 ### `upload <filename>`
 
