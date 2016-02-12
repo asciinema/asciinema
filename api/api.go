@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"errors"
 	"fmt"
 	"io"
@@ -74,7 +75,8 @@ func (a *AsciinemaAPI) urlForUpload() string {
 
 func (a *AsciinemaAPI) headersForUpload() map[string]string {
 	return map[string]string{
-		"User-Agent": fmt.Sprintf("asciinema/%s %s/%s %s-%s", a.version, runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
+		"User-Agent":       fmt.Sprintf("asciinema/%s %s/%s %s-%s", a.version, runtime.Compiler, runtime.Version(), runtime.GOOS, runtime.GOARCH),
+		"Content-Encoding": "gzip",
 	}
 }
 
@@ -84,7 +86,12 @@ func filesForUpload(path string) (map[string]io.ReadCloser, error) {
 		return nil, err
 	}
 
-	return map[string]io.ReadCloser{"asciicast:asciicast.json": file}, nil
+	zippedFile, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]io.ReadCloser{"asciicast:asciicast.json": zippedFile}, nil
 }
 
 func extractWarningMessage(response *http.Response) string {
