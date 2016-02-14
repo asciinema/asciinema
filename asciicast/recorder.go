@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	optimalCols = 120
-	optimalRows = 30
+	warnCols = 120
+	warnRows = 30
 )
 
 type Recorder interface {
@@ -30,7 +30,6 @@ func NewRecorder() Recorder {
 func (r *AsciicastRecorder) checkTerminalSize() chan<- bool {
 	rows, cols, _ := r.Terminal.Size()
 	doneChan := make(chan bool)
-	optimalSize := fmt.Sprintf("%s%dx%d%s", "\x1b[0m\x1b[32m", optimalCols, optimalRows, "\x1b[0m\x1b[33m")
 	go func() {
 		winch := make(chan os.Signal, 1)
 		signal.Notify(winch, syscall.SIGWINCH)
@@ -46,10 +45,7 @@ func (r *AsciicastRecorder) checkTerminalSize() chan<- bool {
 				if cols != newCols || rows != newRows {
 					cols, rows = newCols, newRows
 					currentSize := fmt.Sprintf("%dx%d", cols, rows)
-					if cols == optimalCols && rows == optimalRows {
-						currentSize = fmt.Sprintf("%s%dx%d%s", "\x1b[0m\x1b[32m", cols, rows, "\x1b[0m\x1b[33m")
-					}
-					util.ReplaceWarningf("Current terminal size is %s. Optimal is %s.", currentSize, optimalSize)
+					util.ReplaceWarningf("Current terminal size is %s.", currentSize)
 				}
 			case <-doneChan:
 				return
@@ -63,10 +59,11 @@ func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint, as
 	// TODO: touch savePath to ensure writing is possible
 
 	rows, cols, _ := r.Terminal.Size()
-	if rows != optimalRows || cols != optimalCols {
+	if rows > warnRows || cols > warnCols {
 		if !assumeYes {
 			doneChan := r.checkTerminalSize()
-			util.Warningf("Current terminal size is %vx%v. Optimal is %vx%v", cols, rows, optimalCols, optimalRows)
+			util.Warningf("Current terminal size is %vx%v.", cols, rows)
+			util.Warningf("It may be too big to be properly replayed on smaller screens.")
 			util.Warningf("You can now resize it. Press <Enter> to start recording.")
 			util.ReadLine()
 			doneChan <- true
