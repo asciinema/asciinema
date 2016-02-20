@@ -11,6 +11,8 @@ import (
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/go.crypto/ssh/terminal"
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/creack/termios/raw"
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/kr/pty"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/golang.org/x/text/encoding/unicode"
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/golang.org/x/text/transform"
 	"github.com/asciinema/asciinema/ptyx"
 	"github.com/asciinema/asciinema/util"
 )
@@ -34,7 +36,7 @@ func (p *Pty) Size() (int, int, error) {
 	return pty.Getsize(p.Stdout)
 }
 
-func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
+func (p *Pty) Record(command string, w io.Writer) error {
 	// start command in pty
 	cmd := exec.Command("sh", "-c", command)
 	cmd.Env = append(os.Environ(), "ASCIINEMA_REC=1")
@@ -71,11 +73,14 @@ func (p *Pty) Record(command string, stdoutCopy io.Writer) error {
 	// start stdin -> master copying
 	stop := util.Copy(master, p.Stdin)
 
-	// copy pty master -> p.stdout & stdoutCopy
-	stdout := io.MultiWriter(p.Stdout, stdoutCopy)
+	// copy pty master -> p.stdout & w
+
+	stdout := transform.NewWriter(w, unicode.UTF8.NewEncoder())
+	defer stdout.Close()
+
 	stdoutWaitChan := make(chan struct{})
 	go func() {
-		io.Copy(stdout, master)
+		io.Copy(io.MultiWriter(p.Stdout, stdout), master)
 		stdoutWaitChan <- struct{}{}
 	}()
 

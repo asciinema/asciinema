@@ -5,6 +5,7 @@
 * Playing asciicast from stdin: `cat demo.json | asciinema play -`
 * Playing asciicast from IPFS: `asciinema play ipfs://ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V`
 * `-q/--quiet` option added to `rec` command
+* Fixed handling of partial UTF-8 sequences in recorded stdout
 
 ## 1.1.1 (2015-06-21)
 

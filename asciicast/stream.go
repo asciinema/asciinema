@@ -10,10 +10,8 @@ type Stream struct {
 }
 
 func NewStream(maxWait uint) *Stream {
-	now := time.Now()
-
 	return &Stream{
-		lastWriteTime: now,
+		lastWriteTime: time.Now(),
 		maxWait:       time.Duration(maxWait) * time.Second,
 	}
 }
