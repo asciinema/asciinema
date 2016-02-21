@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 
@@ -92,6 +93,10 @@ func environment() map[string]string {
 	return env
 }
 
+func showCursorBack() {
+	fmt.Fprintf(os.Stdout, "\x1b[?25h")
+}
+
 func main() {
 	env := environment()
 
@@ -99,6 +104,15 @@ func main() {
 		fmt.Println("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
 		os.Exit(1)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		showCursorBack()
+		os.Exit(1)
+	}()
+	defer showCursorBack()
 
 	cfg, err := util.GetConfig(env)
 	if err != nil {

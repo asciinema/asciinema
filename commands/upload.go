@@ -18,7 +18,12 @@ func NewUploadCommand(api api.API) *UploadCommand {
 }
 
 func (c *UploadCommand) Execute(filename string) error {
-	url, warn, err := c.API.UploadAsciicast(filename)
+	var url, warn string
+	var err error
+
+	util.WithSpinner(0, func() {
+		url, warn, err = c.API.UploadAsciicast(filename)
+	})
 
 	if warn != "" {
 		util.Warningf(warn)

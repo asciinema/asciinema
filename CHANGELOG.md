@@ -8,6 +8,7 @@
 * `-q/--quiet` option added to `rec` command
 * Fixed handling of partial UTF-8 sequences in recorded stdout
 * Final "exit" is now removed from recorded stdout
+* Longer operations like uploading/downloading show "spinner"
 
 ## 1.1.1 (2015-06-21)
 

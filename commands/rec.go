@@ -49,7 +49,12 @@ func (c *RecordCommand) Execute(command, title string, assumeYes bool, maxWait u
 			util.ReadLine()
 		}
 
-		url, warn, err := c.API.UploadAsciicast(filename)
+		var url, warn string
+		var err error
+
+		util.WithSpinner(0, func() {
+			url, warn, err = c.API.UploadAsciicast(filename)
+		})
 
 		if warn != "" {
 			util.Warningf(warn)

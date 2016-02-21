@@ -7,7 +7,7 @@ import (
 )
 
 type Player interface {
-	Play(string, uint) error
+	Play(*Asciicast, uint) error
 }
 
 type AsciicastPlayer struct {
@@ -18,12 +18,7 @@ func NewPlayer() Player {
 	return &AsciicastPlayer{Terminal: terminal.NewTerminal()}
 }
 
-func (r *AsciicastPlayer) Play(path string, maxWait uint) error {
-	asciicast, err := Load(path)
-	if err != nil {
-		return err
-	}
-
+func (r *AsciicastPlayer) Play(asciicast *Asciicast, maxWait uint) error {
 	for _, frame := range asciicast.Stdout {
 		delay := frame.Delay
 		if maxWait > 0 && delay > float64(maxWait) {
