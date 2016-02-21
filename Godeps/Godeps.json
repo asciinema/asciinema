@@ -26,6 +26,10 @@
 			"Rev": "67e2db24c831afa6c64fc17b4a143390674365ef"
 		},
 		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "1d9fd3b8333e891c0e7353e1adcfe8a612573033"
+		},
+		{
 			"ImportPath": "golang.org/x/text/encoding",
 			"Rev": "07b9a78963006a15c538ec5175243979025fa7a8"
 		},

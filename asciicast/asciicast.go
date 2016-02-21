@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/asciinema/asciinema/Godeps/_workspace/src/golang.org/x/net/html"
 )
 
 type Env struct {
@@ -61,19 +63,51 @@ func Save(asciicast *Asciicast, path string) error {
 
 // asciinema play file.json
 // asciinema play https://asciinema.org/a/123.json
+// asciinema play https://asciinema.org/a/123
 // asciinema play ipfs://ipfs/QmbdpNCwqeZgnmAWBCQcs8u6Ts6P2ku97tfKAycE1XY88p
 // asciinema play -
 
+func getAttr(t *html.Token, name string) string {
+	for _, a := range t.Attr {
+		if a.Key == name {
+			return a.Val
+		}
+	}
+
+	return ""
+}
+
+func extractJSONURL(htmlDoc io.Reader) (string, error) {
+	z := html.NewTokenizer(htmlDoc)
+
+	for {
+		tt := z.Next()
+
+		switch {
+		case tt == html.ErrorToken:
+			return "", fmt.Errorf("expected alternate <link> not found in fetched HTML document")
+		case tt == html.StartTagToken:
+			t := z.Token()
+
+			if t.Data == "link" && getAttr(&t, "rel") == "alternate" && getAttr(&t, "type") == "application/asciicast+json" {
+				return getAttr(&t, "href"), nil
+			}
+		}
+	}
+}
+
 func getSource(url string) (io.ReadCloser, error) {
+	var source io.ReadCloser
+	var isHTML bool
+	var err error
+
 	if strings.HasPrefix(url, "ipfs://") {
 		url = fmt.Sprintf("https://ipfs.io/%v", url[7:len(url)])
 	}
 
 	if url == "-" {
-		return os.Stdin, nil
-	}
-
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		source = os.Stdin
+	} else if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
 		resp, err := http.Get(url)
 
 		if err != nil {
@@ -85,10 +119,33 @@ func getSource(url string) (io.ReadCloser, error) {
 			return nil, fmt.Errorf("got status %v when requesting %v", resp.StatusCode, url)
 		}
 
-		return resp.Body, nil
+		source = resp.Body
+
+		if strings.HasPrefix(resp.Header.Get("Content-Type"), "text/html") {
+			isHTML = true
+		}
+	} else {
+		source, err = os.Open(url)
+		if err != nil {
+			return nil, err
+		}
+
+		if strings.HasSuffix(url, ".html") {
+			isHTML = true
+		}
 	}
 
-	return os.Open(url)
+	if isHTML {
+		defer source.Close()
+		url, err = extractJSONURL(source)
+		if err != nil {
+			return nil, err
+		}
+
+		return getSource(url)
+	}
+
+	return source, nil
 }
 
 func Load(url string) (*Asciicast, error) {
