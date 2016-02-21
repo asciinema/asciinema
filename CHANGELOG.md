@@ -3,7 +3,7 @@
 ## master
 
 * Added playback from stdin: `cat demo.json | asciinema play -`
-* Added playback from IPFS: `asciinema play ipfs://ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V`
+* Added playback from IPFS: `asciinema play ipfs:/ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V`
 * Added playback from asciicast page URL: `asciinema play https://asciinema.org/a/22124`
 * `-q/--quiet` option added to `rec` command
 * Fixed handling of partial UTF-8 sequences in recorded stdout

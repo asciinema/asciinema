@@ -101,8 +101,10 @@ func getSource(url string) (io.ReadCloser, error) {
 	var isHTML bool
 	var err error
 
-	if strings.HasPrefix(url, "ipfs://") {
-		url = fmt.Sprintf("https://ipfs.io/%v", url[7:len(url)])
+	if strings.HasPrefix(url, "ipfs:/") {
+		url = fmt.Sprintf("https://ipfs.io/%v", url[6:])
+	} else if strings.HasPrefix(url, "fs:/") {
+		url = fmt.Sprintf("https://ipfs.io/%v", url[4:])
 	}
 
 	if url == "-" {

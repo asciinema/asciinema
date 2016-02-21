@@ -114,6 +114,11 @@ Playing from stdin:
     cat /path/to/asciicast.json | asciinema play -
     curl -sL https://asciinema.org/a/21310.json | asciinema play -
 
+Playing from IPFS:
+
+    asciinema play ipfs:/ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V
+    asciinema play fs:/ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V
+
 Available options:
 
 * `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max <sec> seconds
