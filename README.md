@@ -100,8 +100,18 @@ __Replay recorded asciicast in a terminal.__
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
 
-When "-" is passed as a filename the asciicast is read from stdin. For example:
+Playing from a local file:
 
+    asciinema play /path/to/asciicast.json
+
+Playing from asciicast page URL (it looks for `<link rel="alternate"
+type="application/asciicast+json" href="...">` in page's HTML):
+
+    asciinema play https://asciinema.org/a/22124
+
+Playing from stdin:
+
+    cat /path/to/asciicast.json | asciinema play -
     curl -sL https://asciinema.org/a/21310.json | asciinema play -
 
 Available options:
