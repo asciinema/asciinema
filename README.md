@@ -104,15 +104,21 @@ Playing from a local file:
 
     asciinema play /path/to/asciicast.json
 
-Playing from asciicast page URL (it looks for `<link rel="alternate"
-type="application/asciicast+json" href="...">` in page's HTML):
+Playing from HTTP(S) URL:
+
+    asciinema play https://asciinema.org/a/22124.json
+    asciinema play http://example.com/demo.json
+
+Playing from asciicast page URL (requires `<link rel="alternate"
+type="application/asciicast+json" href="....json">` in page's HTML):
 
     asciinema play https://asciinema.org/a/22124
+    asciinema play http://example.com/blog/post.html
 
 Playing from stdin:
 
     cat /path/to/asciicast.json | asciinema play -
-    curl -sL https://asciinema.org/a/21310.json | asciinema play -
+    ssh user@host cat asciicast.json | asciinema play -
 
 Playing from IPFS:
 
