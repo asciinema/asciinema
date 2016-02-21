@@ -12,7 +12,11 @@ func WithSpinner(delay int, f func()) {
 	stopChan := make(chan struct{})
 
 	go func() {
-		<-time.After(time.Duration(delay) * time.Millisecond)
+		select {
+		case <-stopChan:
+			return
+		case <-time.After(time.Duration(delay) * time.Millisecond):
+		}
 
 		i := 0
 		fmt.Fprintf(os.Stdout, "\x1b[?25l") // hide cursor
