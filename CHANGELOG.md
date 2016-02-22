@@ -1,6 +1,6 @@
 # asciinema changelog
 
-## master
+## 1.2.0 (2016-02-22)
 
 * Added playback from stdin: `cat demo.json | asciinema play -`
 * Added playback from IPFS: `asciinema play ipfs:/ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V`

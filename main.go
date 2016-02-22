@@ -13,7 +13,7 @@ import (
 	"github.com/asciinema/asciinema/util"
 )
 
-const Version = "1.1.1"
+const Version = "1.2.0"
 
 var usage = `Record and share your terminal sessions, the right way.
 
