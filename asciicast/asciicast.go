@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/golang.org/x/net/html"
@@ -35,6 +36,12 @@ type Asciicast struct {
 }
 
 func NewAsciicast(width, height int, duration float64, command, title string, frames []Frame, env map[string]string) *Asciicast {
+	var eviron *Env
+	if runtime.GOOS == "windows" {
+		eviron = &Env{Term: "Command Prompt", Shell: env["COMSPEC"]}
+	} else {
+		eviron = &Env{Term: env["TERM"], Shell: env["SHELL"]}
+	}
 	return &Asciicast{
 		Version:  1,
 		Width:    width,
@@ -42,7 +49,7 @@ func NewAsciicast(width, height int, duration float64, command, title string, fr
 		Duration: Duration(duration),
 		Command:  command,
 		Title:    title,
-		Env:      &Env{Term: env["TERM"], Shell: env["SHELL"]},
+		Env:      eviron,
 		Stdout:   frames,
 	}
 }

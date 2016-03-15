@@ -27,7 +27,9 @@ func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint, as
 
 		if !assumeYes {
 			util.Warningf("You can now resize it. Press <Enter> to start recording.")
-			util.ReadLine()
+			if _, err := util.ReadLine(); err != nil {
+				return nil // EOF
+			}
 		}
 	}
 

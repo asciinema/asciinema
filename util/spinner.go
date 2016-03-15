@@ -2,11 +2,15 @@ package util
 
 import (
 	"fmt"
-	"os"
 	"time"
+
+	"github.com/mattn/go-colorable"
 )
 
-var spinner = []rune("▉▊▋▌▍▎▏▎▍▌▋▊▉")
+var (
+	spinner = []rune("▉▊▋▌▍▎▏▎▍▌▋▊▉")
+	stdout  = colorable.NewColorableStderr()
+)
 
 func WithSpinner(delay int, f func()) {
 	stopChan := make(chan struct{})
@@ -19,14 +23,14 @@ func WithSpinner(delay int, f func()) {
 		}
 
 		i := 0
-		fmt.Fprintf(os.Stdout, "\x1b[?25l") // hide cursor
+		fmt.Fprintf(stdout, "\x1b[?25l") // hide cursor
 
 		for {
 			select {
 			case <-stopChan:
 				return
 			case <-time.After(100 * time.Millisecond):
-				fmt.Fprintf(os.Stdout, "\r%c", spinner[i])
+				fmt.Fprintf(stdout, "\r%c", spinner[i])
 				i = (i + 1) % len(spinner)
 			}
 		}
@@ -35,5 +39,5 @@ func WithSpinner(delay int, f func()) {
 	f()
 
 	close(stopChan)
-	fmt.Fprintf(os.Stdout, "\r\x1b[K\x1b[?25h") // clear line and show cursor back
+	fmt.Fprintf(stdout, "\r\x1b[K\x1b[?25h") // clear line and show cursor back
 }
