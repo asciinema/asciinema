@@ -23,12 +23,12 @@ type ConfigAPI struct {
 
 type ConfigRecord struct {
 	Command string
-	MaxWait uint
+	MaxWait float64
 	Yes     bool
 }
 
 type ConfigPlay struct {
-	MaxWait uint
+	MaxWait float64
 }
 
 type ConfigUser struct {
@@ -59,7 +59,7 @@ func (c *Config) RecordCommand() string {
 	return FirstNonBlank(c.File.Record.Command, c.Env["SHELL"], DefaultCommand)
 }
 
-func (c *Config) RecordMaxWait() uint {
+func (c *Config) RecordMaxWait() float64 {
 	return c.File.Record.MaxWait
 }
 
@@ -67,7 +67,7 @@ func (c *Config) RecordYes() bool {
 	return c.File.Record.Yes
 }
 
-func (c *Config) PlayMaxWait() uint {
+func (c *Config) PlayMaxWait() float64 {
 	return c.File.Play.MaxWait
 }
 

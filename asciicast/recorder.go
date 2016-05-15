@@ -6,7 +6,7 @@ import (
 )
 
 type Recorder interface {
-	Record(string, string, string, uint, bool, map[string]string) error
+	Record(string, string, string, float64, bool, map[string]string) error
 }
 
 type AsciicastRecorder struct {
@@ -17,7 +17,7 @@ func NewRecorder() Recorder {
 	return &AsciicastRecorder{Terminal: terminal.NewTerminal()}
 }
 
-func (r *AsciicastRecorder) Record(path, command, title string, maxWait uint, assumeYes bool, env map[string]string) error {
+func (r *AsciicastRecorder) Record(path, command, title string, maxWait float64, assumeYes bool, env map[string]string) error {
 	// TODO: touch savePath to ensure writing is possible
 
 	rows, cols, _ := r.Terminal.Size()

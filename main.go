@@ -34,7 +34,7 @@ Commands:
 Options:
   -c, --command=<command>  Specify command to record, defaults to $SHELL
   -t, --title=<title>      Specify title of the asciicast
-  -w, --max-wait=<sec>     Reduce recorded terminal inactivity to max <sec> seconds
+  -w, --max-wait=<sec>     Reduce recorded terminal inactivity to max <sec> seconds (can be fractional)
   -y, --yes                Answer "yes" to all prompts (e.g. upload confirmation)
   -q, --quiet              Be quiet, suppress all notices/warnings (implies -y)
   -h, --help               Show this message
@@ -64,14 +64,14 @@ func boolArg(args map[string]interface{}, name string) bool {
 	return args[name].(bool)
 }
 
-func uintArg(args map[string]interface{}, name string, defaultValue uint) uint {
+func floatArg(args map[string]interface{}, name string, defaultValue float64) float64 {
 	val := args[name]
 
 	if val != nil {
-		number, err := strconv.ParseUint(val.(string), 10, 0)
+		number, err := strconv.ParseFloat(val.(string), 64)
 
 		if err == nil {
-			return uint(number)
+			return float64(number)
 		}
 	}
 
@@ -134,13 +134,13 @@ func main() {
 			assumeYes = true
 		}
 
-		maxWait := uintArg(args, "--max-wait", cfg.RecordMaxWait())
+		maxWait := floatArg(args, "--max-wait", cfg.RecordMaxWait())
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewRecordCommand(api, env)
 		err = cmd.Execute(command, title, assumeYes, maxWait, filename)
 
 	case "play":
-		maxWait := uintArg(args, "--max-wait", cfg.PlayMaxWait())
+		maxWait := floatArg(args, "--max-wait", cfg.PlayMaxWait())
 		filename := stringArg(args, "<filename>")
 		cmd := commands.NewPlayCommand()
 		err = cmd.Execute(filename, maxWait)

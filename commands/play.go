@@ -15,7 +15,7 @@ func NewPlayCommand() *PlayCommand {
 	}
 }
 
-func (c *PlayCommand) Execute(url string, maxWait uint) error {
+func (c *PlayCommand) Execute(url string, maxWait float64) error {
 	var cast *asciicast.Asciicast
 	var err error
 
