@@ -104,15 +104,15 @@ func TestConfig_RecordCommand(t *testing.T) {
 func TestConfig_RecordMaxWait(t *testing.T) {
 	var tests = []struct {
 		cfg      util.ConfigFile
-		expected uint
+		expected float64
 	}{
 		{
 			util.ConfigFile{},
 			0,
 		},
 		{
-			util.ConfigFile{Record: util.ConfigRecord{MaxWait: 1}},
-			1,
+			util.ConfigFile{Record: util.ConfigRecord{MaxWait: 1.23456}},
+			1.23456,
 		},
 	}
 
@@ -154,15 +154,15 @@ func TestConfig_RecordYes(t *testing.T) {
 func TestConfig_PlayMaxWait(t *testing.T) {
 	var tests = []struct {
 		cfg      util.ConfigFile
-		expected uint
+		expected float64
 	}{
 		{
 			util.ConfigFile{},
 			0,
 		},
 		{
-			util.ConfigFile{Play: util.ConfigPlay{MaxWait: 1}},
-			1,
+			util.ConfigFile{Play: util.ConfigPlay{MaxWait: 1.23456}},
+			1.23456,
 		},
 	}
 
