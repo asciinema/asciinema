@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"fmt"
 
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/go.crypto/ssh/terminal"
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/github.com/creack/termios/raw"
@@ -57,6 +58,12 @@ func (p *Pty) Record(command string, w io.Writer) error {
 	}()
 	defer close(signals)
 
+	// install SIGTERM signal handler
+	signalsSIGTERM := make(chan os.Signal, 1)
+	signal.Notify(signalsSIGTERM, syscall.SIGTERM)
+	defer signal.Stop(signalsSIGTERM)
+	defer close(signalsSIGTERM)
+
 	// put stdin in raw mode (if it's a tty)
 	fd := p.Stdin.Fd()
 	if terminal.IsTerminal(int(fd)) {
@@ -85,7 +92,18 @@ func (p *Pty) Record(command string, w io.Writer) error {
 	}()
 
 	// wait for the process to exit and reap it
-	cmd.Wait()
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+	select {
+		case <-signalsSIGTERM:
+		if err := cmd.Process.Kill(); err != nil {
+			fmt.Printf("failed to kill\n")
+		}
+		fmt.Printf("process get terminated\n")
+		case <-done:
+	}
 
 	// wait for master -> stdout copying to finish
 	//
