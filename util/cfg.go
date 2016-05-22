@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/asciinema/asciinema/Godeps/_workspace/src/code.google.com/p/gcfg"
 )
@@ -56,6 +56,9 @@ func (c *Config) ApiToken() string {
 }
 
 func (c *Config) RecordCommand() string {
+	if runtime.GOOS == "windows" {
+		return FirstNonBlank(c.File.Record.Command, c.Env["COMSPEC"])
+	}
 	return FirstNonBlank(c.File.Record.Command, c.Env["SHELL"], DefaultCommand)
 }
 
@@ -82,19 +85,25 @@ func GetConfig(env map[string]string) (*Config, error) {
 
 func loadConfigFile(env map[string]string) (*ConfigFile, error) {
 	pathsToCheck := make([]string, 0, 4)
-	if env["ASCIINEMA_CONFIG_HOME"] != "" {
+
+	if runtime.GOOS == "windows" {
 		pathsToCheck = append(pathsToCheck,
-			filepath.Join(env["ASCIINEMA_CONFIG_HOME"], "config"))
-	}
-	if env["XDG_CONFIG_HOME"] != "" {
-		pathsToCheck = append(pathsToCheck,
-			filepath.Join(env["XDG_CONFIG_HOME"], "asciinema", "config"))
-	}
-	if env["HOME"] != "" {
-		pathsToCheck = append(pathsToCheck,
-			filepath.Join(env["HOME"], ".config", "asciinema", "config"))
-		pathsToCheck = append(pathsToCheck,
-			filepath.Join(env["HOME"], ".asciinema", "config"))
+			filepath.Join(env["APPDATA"], "asciinema", "config"))
+	} else {
+		if env["ASCIINEMA_CONFIG_HOME"] != "" {
+			pathsToCheck = append(pathsToCheck,
+				filepath.Join(env["ASCIINEMA_CONFIG_HOME"], "config"))
+		}
+		if env["XDG_CONFIG_HOME"] != "" {
+			pathsToCheck = append(pathsToCheck,
+				filepath.Join(env["XDG_CONFIG_HOME"], "asciinema", "config"))
+		}
+		if env["HOME"] != "" {
+			pathsToCheck = append(pathsToCheck,
+				filepath.Join(env["HOME"], ".config", "asciinema", "config"))
+			pathsToCheck = append(pathsToCheck,
+				filepath.Join(env["HOME"], ".asciinema", "config"))
+		}
 	}
 
 	cfgPath := ""
@@ -130,6 +139,6 @@ func readConfigFile(cfgPath string) (*ConfigFile, error) {
 func createConfigFile(cfgPath string) error {
 	apiToken := NewUUID().String()
 	contents := fmt.Sprintf("[api]\ntoken = %v\n", apiToken)
-	os.MkdirAll(path.Dir(cfgPath), 0755)
+	os.MkdirAll(filepath.Dir(cfgPath), 0755)
 	return ioutil.WriteFile(cfgPath, []byte(contents), 0644)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/asciinema/asciinema/api"
 	"github.com/asciinema/asciinema/commands"
 	"github.com/asciinema/asciinema/util"
+	"github.com/mattn/go-colorable"
 )
 
 const Version = "1.2.0"
@@ -87,22 +89,30 @@ func environment() map[string]string {
 
 	for _, keyval := range os.Environ() {
 		pair := strings.SplitN(keyval, "=", 2)
+		if runtime.GOOS == "windows" {
+			pair[0] = strings.ToUpper(pair[0])
+		}
 		env[pair[0]] = pair[1]
 	}
 
 	return env
 }
 
+var stdout = colorable.NewColorableStdout()
+
 func showCursorBack() {
-	fmt.Fprintf(os.Stdout, "\x1b[?25h")
+	fmt.Fprintf(stdout, "\x1b[?25h")
+	fmt.Fprintf(stdout, "\x1b[0m")
 }
 
 func main() {
 	env := environment()
 
-	if !util.IsUtf8Locale(env) {
-		fmt.Println("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
-		os.Exit(1)
+	if runtime.GOOS != "windows" {
+		if !util.IsUtf8Locale(env) {
+			fmt.Println("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
+			os.Exit(1)
+		}
 	}
 
 	c := make(chan os.Signal, 1)

@@ -1,3 +1,5 @@
+// +build !windows
+
 package ptyx
 
 // Extension to github.com/kr/pty adding Setsize()

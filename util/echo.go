@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
+
+	"github.com/mattn/go-colorable"
 )
 
-var loggerOutput io.Writer = os.Stdout
+var loggerOutput io.Writer = colorable.NewColorableStdout()
 
 func BeQuiet() {
 	loggerOutput = ioutil.Discard

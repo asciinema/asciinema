@@ -44,6 +44,14 @@
 		{
 			"ImportPath": "golang.org/x/text/transform",
 			"Rev": "07b9a78963006a15c538ec5175243979025fa7a8"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Rev": "07b9a78963006a15c538ec5175243979025fa7a8"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "07b9a78963006a15c538ec5175243979025fa7a8"
 		}
 	]
 }

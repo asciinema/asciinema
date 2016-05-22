@@ -5,7 +5,6 @@ import (
 	"os"
 )
 
-func ReadLine() string {
-	s, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	return s
+func ReadLine() (string, error) {
+	return bufio.NewReader(os.Stdin).ReadString('\n')
 }
