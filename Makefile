@@ -1,34 +1,17 @@
 NAME=asciinema
-VERSION=$(shell grep 'const Version' main.go | awk -F '"' '{print $$2}')
+VERSION=`python -c "import asciinema; print(asciinema.__version__)"`
 
-DIRS=bin
-INSTALL_DIRS=`find $(DIRS) -type d 2>/dev/null`
-INSTALL_FILES=`find $(DIRS) -type f 2>/dev/null`
-DOC_FILES=*.md LICENSE
+test: test-unit test-integration
 
-PREFIX?=/usr/local
-DOC_DIR=$(PREFIX)/share/doc/$(NAME)
+test-unit:
+	nosetests
 
-.PHONY: all build test fmt fmtdiff travis gox tag push release install uninstall binary-tarballs os-arch-tgz
+test-integration:
+	tests/integration.sh
 
-all: build
+release: test tag push
 
-build: test
-	go build -o bin/asciinema
-
-test:
-	go test ./...
-
-fmt:
-	go fmt ./...
-
-fmtdiff:
-	find . -type f -name "*.go" | xargs gofmt -d
-
-travis: build fmtdiff
-
-gox:
-	gox -os="darwin freebsd linux" -arch="386 amd64" -output="bin/asciinema_{{.OS}}_{{.Arch}}"
+release-test: test push-test
 
 tag:
 	git tag | grep "v$(VERSION)" && echo "Tag v$(VERSION) exists" && exit 1 || true
@@ -36,34 +19,11 @@ tag:
 	git push --tags
 
 push:
-	echo "TODO: uploading binaries to github release"
+	python setup.py sdist upload -r pypi
+
+push-test:
+	python setup.py sdist upload -r test
 
 release: test tag push
 
-install:
-	for dir in $(INSTALL_DIRS); do mkdir -p $(DESTDIR)$(PREFIX)/$$dir; done
-	for file in $(INSTALL_FILES); do cp $$file $(DESTDIR)$(PREFIX)/$$file; done
-	mkdir -p $(DESTDIR)$(DOC_DIR)
-	cp -r $(DOC_FILES) $(DESTDIR)$(DOC_DIR)/
-
-uninstall:
-	for file in $(INSTALL_FILES); do rm -f $(DESTDIR)$(PREFIX)/$$file; done
-	rm -rf $(DESTDIR)$(DOC_DIR)
-
-binary-tarballs:
-	GOOS=darwin GOARCH=386 $(MAKE) os-arch-tgz
-	GOOS=darwin GOARCH=amd64 $(MAKE) os-arch-tgz
-	GOOS=freebsd GOARCH=386 $(MAKE) os-arch-tgz
-	GOOS=freebsd GOARCH=amd64 $(MAKE) os-arch-tgz
-	GOOS=linux GOARCH=386 $(MAKE) os-arch-tgz
-	GOOS=linux GOARCH=amd64 $(MAKE) os-arch-tgz
-	GOOS=linux GOARCH=arm $(MAKE) os-arch-tgz
-	cd dist/$(VERSION) && sha1sum *.tar.gz >sha1sum.txt
-
-RELEASE=asciinema-$(VERSION)-$(GOOS)-$(GOARCH)
-
-os-arch-tgz:
-	mkdir -p dist/$(VERSION)/$(RELEASE)
-	go build -o dist/$(VERSION)/$(RELEASE)/asciinema
-	cp README.md CHANGELOG.md LICENSE dist/$(VERSION)/$(RELEASE)
-	cd dist/$(VERSION) && tar czf $(RELEASE).tar.gz $(RELEASE)
+.PHONY: test test-unit test-integration release release-test tag push push-test
