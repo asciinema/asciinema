@@ -9,6 +9,7 @@ import termios
 import select
 import io
 import shlex
+import sys
 
 from .stdout import Stdout
 
@@ -70,25 +71,24 @@ class PtyRecorder(object):
             when new data arrives.
             '''
 
-            while 1:
-                try:
-                    rfds, wfds, xfds = select.select([master_fd, pty.STDIN_FILENO], [], [])
-                except select.error as e:
-                    if e[0] == errno.EINTR:   # Interrupted system call.
-                        continue
+            fds = [master_fd, pty.STDIN_FILENO]
+
+            while True:
+                rfds, wfds, xfds = select.select(fds, [], [])
 
                 if master_fd in rfds:
                     data = os.read(master_fd, 1024)
-
-                    if len(data) == 0:
-                        break
-
-                    _handle_master_read(data)
+                    if not data:  # Reached EOF.
+                        fds.remove(master_fd)
+                    else:
+                        _handle_master_read(data)
 
                 if pty.STDIN_FILENO in rfds:
                     data = os.read(pty.STDIN_FILENO, 1024)
-                    _handle_stdin_read(data)
-
+                    if not data:
+                        fds.remove(pty.STDIN_FILENO)
+                    else:
+                        _handle_stdin_read(data)
 
         pid, master_fd = pty.fork()
 
@@ -114,5 +114,6 @@ class PtyRecorder(object):
 
         os.close(master_fd)
         signal.signal(signal.SIGWINCH, old_handler)
+        os.waitpid(pid, 0)
 
         return output

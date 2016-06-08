@@ -24,7 +24,6 @@ class RecordCommand(object):
         self._upload_asciicast(asciicast)
 
     def _record_asciicast(self):
-        self._reset_terminal()
         print('~ Asciicast recording started.')
 
         if not self.cmd:
@@ -34,7 +33,6 @@ class RecordCommand(object):
 
         asciicast = self.recorder.record(self.cmd, self.title)
 
-        self._reset_terminal()
         print('~ Asciicast recording finished.')
 
         return asciicast
@@ -57,7 +55,3 @@ class RecordCommand(object):
             return True
 
         return self.confirmator.confirm("~ Do you want to upload it? [Y/n] ")
-
-    def _reset_terminal(self):
-        subprocess.call(["reset"])
-        pass
