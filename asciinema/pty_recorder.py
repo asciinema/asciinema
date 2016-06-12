@@ -96,6 +96,7 @@ class PtyRecorder(object):
             os.execlp(command[0], *command)
 
         old_handler = signal.signal(signal.SIGWINCH, _signal_winch)
+        signal.signal(signal.SIGCHLD, lambda signal, frame: os.close(master_fd))
 
         try:
             mode = tty.tcgetattr(pty.STDIN_FILENO)
@@ -112,7 +113,6 @@ class PtyRecorder(object):
             if restore:
                 tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
 
-        os.close(master_fd)
         signal.signal(signal.SIGWINCH, old_handler)
         os.waitpid(pid, 0)
 
