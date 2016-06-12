@@ -1,3 +1,8 @@
+import sys
+
+if sys.version_info[0] < 3:
+    sys.exit('Python < 3 is unsupported.')
+
 try:
     from setuptools import setup
 except ImportError:
@@ -35,10 +40,12 @@ setup(
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Topic :: System :: Shells',
         'Topic :: Terminals',
         'Topic :: Utilities'
