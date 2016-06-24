@@ -36,11 +36,6 @@ class PtyRecorder(object):
                 buf = array.array('h', [24, 80, 0, 0])
                 fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
-        def _signal_winch(signal, frame):
-            '''Signal handler for SIGWINCH - window size has changed.'''
-
-            _set_pty_size()
-
         def _write_stdout(data):
             '''Writes to stdout as if the child process had written the data.'''
 
@@ -95,8 +90,8 @@ class PtyRecorder(object):
         if pid == pty.CHILD:
             os.execlp(command[0], *command)
 
-        old_handler = signal.signal(signal.SIGWINCH, _signal_winch)
-        signal.signal(signal.SIGCHLD, lambda signal, frame: os.close(master_fd))
+        old_sigwinch_handler = signal.signal(signal.SIGWINCH, lambda signal, frame: _set_pty_size())
+        old_sigchld_handler = signal.signal(signal.SIGCHLD, lambda signal, frame: os.close(master_fd))
 
         try:
             mode = tty.tcgetattr(pty.STDIN_FILENO)
@@ -113,7 +108,9 @@ class PtyRecorder(object):
             if restore:
                 tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
 
-        signal.signal(signal.SIGWINCH, old_handler)
+        signal.signal(signal.SIGWINCH, old_sigwinch_handler)
+        signal.signal(signal.SIGCHLD, old_sigchld_handler)
+
         os.waitpid(pid, 0)
 
         return output
