@@ -1,46 +1,21 @@
 import time
-import io
-
-
-class StdoutTiming(object):
-
-    def __init__(self):
-        self._items = []
-
-    def append(self, item):
-        self._items.append(item)
-
-    def __str__(self):
-        lines = ["%f %d" % (item[0], item[1]) for item in self._items]
-        return "\n".join(lines)
+import codecs
 
 
 class Stdout(object):
 
     def __init__(self, timing=None):
-        self._data = io.BytesIO()
-        self._timing = timing if timing is not None else StdoutTiming()
-
-        self._start_timing()
-
-    @property
-    def data(self):
-        return self._data.getvalue()
-
-    @property
-    def timing(self):
-        return str(self._timing).encode()
+        self.frames = []
+        self.last_write_time = time.time()
+        self.decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
     def write(self, data):
         now = time.time()
-        delta = now - self._prev_time
-        self._prev_time = now
-
-        self._data.write(data)
-        self._timing.append([delta, len(data)])
+        delay = now - self.last_write_time
+        # delay = int(delay * 1000000) / 1000000.0 # millisecond precission
+        string = self.decoder.decode(data)
+        self.frames.append([delay, string])
+        self.last_write_time = now
 
     def close(self):
-        self._data.close()
-
-    def _start_timing(self):
-        self._prev_time = time.time()
+        pass

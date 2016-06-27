@@ -1,4 +1,5 @@
 import os
+import subprocess
 from . import timer
 
 from .asciicast import Asciicast
@@ -11,14 +12,26 @@ class Recorder(object):
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
         self.env = env if env is not None else os.environ
 
-    def record(self, cmd, title):
-        duration, stdout = timer.timeit(self.pty_recorder.record_command,
-                                        cmd or self.env.get('SHELL', '/bin/sh'))
+    def record(self, command, title):
+        command = command or self.env.get('SHELL', '/bin/sh')
+        duration, stdout = timer.timeit(self.pty_recorder.record_command, command)
+        width = int(get_command_output(['tput', 'cols']))
+        height = int(get_command_output(['tput', 'lines']))
 
-        asciicast = Asciicast()
-        asciicast.title = title
-        asciicast.command = cmd
-        asciicast.stdout = stdout
-        asciicast.duration = duration
+        asciicast = Asciicast(
+            stdout,
+            width,
+            height,
+            duration,
+            command=command,
+            title=title,
+            term=self.env.get('TERM'),
+            shell=self.env.get('SHELL')
+        )
 
         return asciicast
+
+
+def get_command_output(args):
+    process = subprocess.Popen(args, stdout=subprocess.PIPE)
+    return process.communicate()[0].strip()

@@ -1,5 +1,7 @@
 import sys
+import os
 import subprocess
+import tempfile
 
 from asciinema.recorder import Recorder
 from asciinema.uploader import Uploader, ServerMaintenanceError, ResourceNotFoundError
@@ -21,7 +23,9 @@ class RecordCommand(object):
 
     def execute(self):
         asciicast = self._record_asciicast()
-        self._upload_asciicast(asciicast)
+        path = self._tmp_path()
+        asciicast.save(path)
+        self._upload_asciicast(path)
 
     def _record_asciicast(self):
         print('~ Asciicast recording started.')
@@ -55,3 +59,8 @@ class RecordCommand(object):
             return True
 
         return self.confirmator.confirm("~ Do you want to upload it? [Y/n] ")
+
+    def _tmp_path(self):
+        fd, path = tempfile.mkstemp(suffix='.json')
+        os.close(fd)
+        return path

@@ -35,14 +35,15 @@ class MultipartFormdataEncoder(object):
                 value = str(value)
             yield encoder(self.u(value))
             yield encoder('\r\n')
-        for (key, filename_and_data) in files.items():
-            (filename, data) = filename_and_data
+        for (key, filename_and_f) in files.items():
+            filename, f = filename_and_f
             key = self.u(key)
             filename = self.u(filename)
             yield encoder('--{}\r\n'.format(self.boundary))
             yield encoder(self.u('Content-Disposition: form-data; name="{}"; filename="{}"\r\n').format(key, filename))
             yield encoder('Content-Type: {}\r\n'.format(mimetypes.guess_type(filename)[0] or 'application/octet-stream'))
             yield encoder('\r\n')
+            data = f.read()
             yield (data, len(data))
             yield encoder('\r\n')
         yield encoder('--{}--\r\n'.format(self.boundary))
