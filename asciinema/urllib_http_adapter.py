@@ -3,6 +3,7 @@ import mimetypes
 import sys
 import uuid
 import io
+import base64
 
 from urllib.request import Request, urlopen
 
@@ -55,10 +56,17 @@ class MultipartFormdataEncoder(object):
 
 class URLLibHttpAdapter(object):
 
-    def post(self, url, fields={}, files={}, headers={}):
+    def post(self, url, fields={}, files={}, headers={}, username=None, password=None):
         content_type, body = MultipartFormdataEncoder().encode(fields, files)
+
         headers = headers.copy()
         headers["Content-Type"] = content_type
+
+        if password:
+            auth = "%s:%s" % (username, password)
+            encoded_auth = base64.encodestring(auth.encode('utf-8'))[:-1]
+            headers["Authorization"] = b"Basic %" + encoded_auth
+
         request = Request(url, data=body, headers=headers, method="POST")
 
         response = urlopen(request)

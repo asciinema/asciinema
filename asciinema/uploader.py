@@ -22,11 +22,13 @@ class Uploader(object):
 
     def upload(self, api_url, api_token, asciicast):
         url = '%s/api/asciicasts' % api_url
-        files = self._asciicast_files(asciicast, api_token)
+        files = self._asciicast_files(asciicast)
         headers = self._headers()
 
         status, headers, body = self.http_adapter.post(url, files=files,
-                                                            headers=headers)
+                                                            headers=headers,
+                                                            username=asciicast.username,
+                                                            password=api_token)
 
         if status == 503:
             raise ServerMaintenanceError()
@@ -36,11 +38,11 @@ class Uploader(object):
 
         return body
 
-    def _asciicast_files(self, asciicast, api_token):
+    def _asciicast_files(self, asciicast):
         return {
             'asciicast[stdout]': self._stdout_data_file(asciicast.stdout),
             'asciicast[stdout_timing]': self._stdout_timing_file(asciicast.stdout),
-            'asciicast[meta]': self._meta_file(asciicast, api_token)
+            'asciicast[meta]': self._meta_file(asciicast)
         }
 
     def _headers(self):
@@ -52,15 +54,13 @@ class Uploader(object):
     def _stdout_timing_file(self, stdout):
         return ('stdout.time', bz2.compress(stdout.timing))
 
-    def _meta_file(self, asciicast, api_token):
-        return ('meta.json', self._meta_json(asciicast, api_token))
+    def _meta_file(self, asciicast):
+        return ('meta.json', self._meta_json(asciicast))
 
-    def _meta_json(self, asciicast, api_token):
+    def _meta_json(self, asciicast):
         meta_data = asciicast.meta_data
-        auth_data = { 'user_token': api_token }
-        data = dict(list(meta_data.items()) + list(auth_data.items()))
 
-        return json.dumps(data).encode('utf-8')
+        return json.dumps(meta_data).encode('utf-8')
 
     def _user_agent(self):
         os = re.sub('([^-]+)-(.*)', '\\1/\\2', platform.platform())
