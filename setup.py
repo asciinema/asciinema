@@ -13,9 +13,7 @@ import asciinema
 
 url_template = 'https://github.com/sickill/asciinema/archive/v%s.tar.gz'
 
-requirements = [
-    'requests>=1.1.0'
-]
+requirements = []
 
 setup(
     name='asciinema',

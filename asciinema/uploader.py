@@ -4,7 +4,7 @@ import platform
 import re
 
 from asciinema import __version__
-from .requests_http_adapter import RequestsHttpAdapter
+from .urllib_http_adapter import URLLibHttpAdapter
 
 
 class ResourceNotFoundError(Exception):
@@ -18,7 +18,7 @@ class ServerMaintenanceError(Exception):
 class Uploader(object):
 
     def __init__(self, http_adapter=None):
-        self.http_adapter = http_adapter if http_adapter is not None else RequestsHttpAdapter()
+        self.http_adapter = http_adapter if http_adapter is not None else URLLibHttpAdapter()
 
     def upload(self, api_url, api_token, asciicast):
         url = '%s/api/asciicasts' % api_url
@@ -60,7 +60,7 @@ class Uploader(object):
         auth_data = { 'user_token': api_token }
         data = dict(list(meta_data.items()) + list(auth_data.items()))
 
-        return json.dumps(data)
+        return json.dumps(data).encode('utf-8')
 
     def _user_agent(self):
         os = re.sub('([^-]+)-(.*)', '\\1/\\2', platform.platform())
