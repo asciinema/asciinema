@@ -1,5 +1,5 @@
 __author__ = 'Marcin Kulik'
-__version__ = '0.9.8'
+__version__ = '1.3.0'
 
 import sys
 
