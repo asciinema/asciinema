@@ -10,6 +10,7 @@ import select
 import io
 import shlex
 import sys
+import struct
 
 from .stdout import Stdout
 
@@ -59,17 +60,20 @@ class PtyRecorder(object):
 
             _write_master(data)
 
-        def _copy():
+        def _copy(signal_fd):
             '''Main select loop.
 
             Passes control to _master_read() or _stdin_read()
             when new data arrives.
             '''
 
-            fds = [master_fd, pty.STDIN_FILENO]
+            fds = [master_fd, pty.STDIN_FILENO, signal_fd]
 
             while True:
-                rfds, wfds, xfds = select.select(fds, [], [])
+                try:
+                    rfds, wfds, xfds = select.select(fds, [], [])
+                except InterruptedError as e:
+                    continue
 
                 if master_fd in rfds:
                     data = os.read(master_fd, 1024)
@@ -85,13 +89,31 @@ class PtyRecorder(object):
                     else:
                         _handle_stdin_read(data)
 
+                if signal_fd in rfds:
+                    data = os.read(signal_fd, 1024)
+                    if data:
+                        signals = struct.unpack('%uB' % len(data), data)
+                        for sig in signals:
+                            if sig == signal.SIGCHLD:
+                                os.close(master_fd)
+                                return
+                            elif sig == signal.SIGWINCH:
+                                _set_pty_size()
+
         pid, master_fd = pty.fork()
 
         if pid == pty.CHILD:
             os.execlp(command[0], *command)
 
-        old_sigwinch_handler = signal.signal(signal.SIGWINCH, lambda signal, frame: _set_pty_size())
-        old_sigchld_handler = signal.signal(signal.SIGCHLD, lambda signal, frame: os.close(master_fd))
+        pipe_r, pipe_w = os.pipe()
+        flags = fcntl.fcntl(pipe_w, fcntl.F_GETFL, 0)
+        flags = flags | os.O_NONBLOCK
+        flags = fcntl.fcntl(pipe_w, fcntl.F_SETFL, flags)
+
+        signal.set_wakeup_fd(pipe_w)
+
+        old_sigwinch_handler = signal.signal(signal.SIGWINCH, lambda signal, frame: None)
+        old_sigchld_handler = signal.signal(signal.SIGCHLD, lambda signal, frame: None)
 
         try:
             mode = tty.tcgetattr(pty.STDIN_FILENO)
@@ -103,8 +125,8 @@ class PtyRecorder(object):
         _set_pty_size()
 
         try:
-            _copy()
-        except (IOError, OSError):
+            _copy(pipe_r)
+        finally:
             if restore:
                 tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
 
