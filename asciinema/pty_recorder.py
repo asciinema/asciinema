@@ -15,7 +15,7 @@ import struct
 from .stdout import Stdout
 
 
-class PtyRecorder(object):
+class PtyRecorder:
 
     def record_command(self, command, output=None):
         command = shlex.split(command)

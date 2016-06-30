@@ -18,7 +18,7 @@ def create_config(content=None, overrides={}):
     return Config(path, overrides)
 
 
-class TestConfig(object):
+class TestConfig:
 
     def test_api_url_when_no_file_and_no_override_set(self):
         config = create_config()

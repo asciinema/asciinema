@@ -2,7 +2,7 @@ import time
 import codecs
 
 
-class Stdout(object):
+class Stdout:
 
     def __init__(self, timing=None):
         self.frames = []

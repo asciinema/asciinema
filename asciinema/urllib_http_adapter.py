@@ -8,7 +8,7 @@ import base64
 from urllib.request import Request, urlopen
 
 
-class MultipartFormdataEncoder(object):
+class MultipartFormdataEncoder:
     def __init__(self):
         self.boundary = uuid.uuid4().hex
         self.content_type = 'multipart/form-data; boundary={}'.format(self.boundary)
@@ -55,7 +55,7 @@ class MultipartFormdataEncoder(object):
         return self.content_type, body.getvalue()
 
 
-class URLLibHttpAdapter(object):
+class URLLibHttpAdapter:
 
     def post(self, url, fields={}, files={}, headers={}, username=None, password=None):
         content_type, body = MultipartFormdataEncoder().encode(fields, files)

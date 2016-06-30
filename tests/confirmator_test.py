@@ -4,7 +4,7 @@ from asciinema.confirmator import Confirmator
 from .test_helper import assert_printed, assert_not_printed, Test
 
 
-class FakeStdin(object):
+class FakeStdin:
 
     def set_line(self, line):
         self.line = line

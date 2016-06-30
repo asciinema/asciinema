@@ -7,7 +7,7 @@ from asciinema.uploader import ServerMaintenanceError, ResourceNotFoundError
 from .test_helper import assert_printed, assert_not_printed, Test, FakeAsciicast
 
 
-class FakeRecorder(object):
+class FakeRecorder:
 
     def __init__(self):
         self.asciicast = None
@@ -17,7 +17,7 @@ class FakeRecorder(object):
         return self.asciicast
 
 
-class FakeUploader(object):
+class FakeUploader:
 
     def __init__(self, error_to_raise=None):
         self.uploaded = None
@@ -31,7 +31,7 @@ class FakeUploader(object):
         return 'http://asciicast/url'
 
 
-class FakeConfirmator(object):
+class FakeConfirmator:
 
     def __init__(self):
         self.text = ''

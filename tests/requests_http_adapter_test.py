@@ -4,7 +4,7 @@ from .test_helper import Test
 from asciinema.requests_http_adapter import RequestsHttpAdapter
 
 
-class FakeResponse(object):
+class FakeResponse:
 
     def __init__(self, status=200, headers={}, body=''):
         self.status_code = status

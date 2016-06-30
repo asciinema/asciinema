@@ -1,7 +1,7 @@
 import requests
 
 
-class RequestsHttpAdapter(object):
+class RequestsHttpAdapter:
 
     def post(self, url, fields={}, files={}, headers={}):
         response = requests.post(url, data=fields, files=files, headers=headers)

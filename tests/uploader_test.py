@@ -7,7 +7,7 @@ from asciinema import __version__
 from asciinema.uploader import Uploader, ServerMaintenanceError, ResourceNotFoundError
 
 
-class FakeHttpAdapter(object):
+class FakeHttpAdapter:
 
     def __init__(self, status):
         self.status = status
@@ -23,7 +23,7 @@ class FakeHttpAdapter(object):
         return (self.status, { 'Content-type': 'text/plain' }, b'success!')
 
 
-class FakeStdout(object):
+class FakeStdout:
 
     def __init__(self, data=None, timing=None):
         self.data = data or b''

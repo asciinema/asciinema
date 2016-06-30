@@ -8,7 +8,7 @@ from asciinema.uploader import Uploader, ServerMaintenanceError, ResourceNotFoun
 from asciinema.confirmator import Confirmator
 
 
-class RecordCommand(object):
+class RecordCommand:
 
     def __init__(self, api_url, api_token, cmd, title, skip_confirmation,
                  recorder=None, uploader=None, confirmator=None):

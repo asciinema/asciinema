@@ -5,9 +5,9 @@ from asciinema.recorder import Recorder
 import asciinema.timer
 
 
-class FakePtyRecorder(object):
+class FakePtyRecorder:
 
-    class Stdout(object):
+    class Stdout:
         pass
 
     def __init__(self):

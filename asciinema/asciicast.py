@@ -2,7 +2,7 @@ import json
 from .stdout import Stdout
 
 
-class Asciicast(object):
+class Asciicast:
 
     def __init__(self, stdout, width, height, duration, command=None, title=None, term=None, shell=None):
         self.stdout = stdout

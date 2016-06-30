@@ -6,7 +6,7 @@ from .asciicast import Asciicast
 from .pty_recorder import PtyRecorder
 
 
-class Recorder(object):
+class Recorder:
 
     def __init__(self, pty_recorder=None, env=None):
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()

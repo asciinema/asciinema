@@ -18,7 +18,7 @@ def assert_not_printed(expected):
     assert success, 'not expected text "%s" printed' % expected
 
 
-class Test(object):
+class Test:
 
     def setUp(self):
         global stdout
@@ -29,7 +29,7 @@ class Test(object):
         sys.stdout = self.real_stdout
 
 
-class FakeClock(object):
+class FakeClock:
 
     def __init__(self, values):
         self.values = values
@@ -42,7 +42,7 @@ class FakeClock(object):
         return value
 
 
-class FakeAsciicast(object):
+class FakeAsciicast:
 
     def __init__(self, cmd=None, title=None, stdout=None, meta_data=None):
         self.cmd = cmd

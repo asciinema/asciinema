@@ -2,7 +2,7 @@ from __future__ import print_function
 import sys
 
 
-class Confirmator(object):
+class Confirmator:
 
     def confirm(self, text):
         print(text, end='')

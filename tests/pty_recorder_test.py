@@ -8,7 +8,7 @@ from asciinema.stdout import Stdout
 from asciinema.pty_recorder import PtyRecorder
 
 
-class FakeStdout(object):
+class FakeStdout:
 
     def __init__(self):
         self.data = []

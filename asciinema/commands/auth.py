@@ -1,4 +1,4 @@
-class AuthCommand(object):
+class AuthCommand:
 
     def __init__(self, api_url, api_token):
         self.api_url = api_url

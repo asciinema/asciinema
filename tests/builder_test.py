@@ -8,7 +8,7 @@ from asciinema.commands.help import HelpCommand
 from asciinema.commands.version import VersionCommand
 
 
-class Config(object):
+class Config:
 
     def api_url(self):
         return 'http://api/url'
@@ -17,7 +17,7 @@ class Config(object):
         return 'a-toh-can'
 
 
-class TestGetCommand(object):
+class TestGetCommand:
 
     def setUp(self):
         self.config = Config()
