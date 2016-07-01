@@ -3,14 +3,15 @@ import os
 import subprocess
 import tempfile
 
-import asciinema.util as util
+from asciinema.commands.command import Command
 from asciinema.recorder import Recorder
 from asciinema.api import APIError
 
 
-class RecordCommand:
+class RecordCommand(Command):
 
     def __init__(self, api, filename, command, title, assume_yes, recorder=None):
+        Command.__init__(self)
         self.api = api
         self.filename = filename
         self.command = command
@@ -25,16 +26,16 @@ class RecordCommand:
         else:
             upload = False
 
-        util.printf("Asciicast recording started.")
-        util.printf("""Hit Ctrl-D or type "exit" to finish.""")
+        self.print_info("Asciicast recording started.")
+        self.print_info("""Hit Ctrl-D or type "exit" to finish.""")
 
         self.recorder.record(self.filename, self.command, self.title)
 
-        util.printf("Asciicast recording finished.")
+        self.print_info("Asciicast recording finished.")
 
         if upload:
             if not self.assume_yes:
-                util.printf("Press <Enter> to upload, <Ctrl-C> to cancel.")
+                self.print_info("Press <Enter> to upload, <Ctrl-C> to cancel.")
                 try:
                     sys.stdin.readline()
                 except KeyboardInterrupt:
@@ -43,12 +44,12 @@ class RecordCommand:
             try:
                 url, warn = self.api.upload_asciicast(self.filename)
                 if warn:
-                    util.warningf(warn)
+                    self.print_warning(warn)
                 os.remove(self.filename)
-                print(url)
+                self.print(url)
             except APIError as e:
-                util.warningf("Upload failed: {}".format(str(e)))
-                util.warningf("Retry later by running: asciinema upload {}".format(self.filename))
+                self.print_warning("Upload failed: %s" % str(e))
+                self.print_warning("Retry later by running: asciinema upload %s" % self.filename)
                 return 1
 
         return 0
