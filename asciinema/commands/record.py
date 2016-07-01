@@ -61,6 +61,6 @@ class RecordCommand:
         return self.confirmator.confirm("~ Do you want to upload it? [Y/n] ")
 
     def _tmp_path(self):
-        fd, path = tempfile.mkstemp(suffix='.json')
+        fd, path = tempfile.mkstemp(suffix='-asciinema.json')
         os.close(fd)
         return path
