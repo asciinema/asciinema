@@ -10,13 +10,13 @@ from asciinema.api import APIError
 
 class RecordCommand(Command):
 
-    def __init__(self, api, filename, command, title, assume_yes, recorder=None):
-        Command.__init__(self)
+    def __init__(self, api, filename, command, title, assume_yes, quiet, recorder=None):
+        Command.__init__(self, quiet)
         self.api = api
         self.filename = filename
         self.command = command
         self.title = title
-        self.assume_yes = assume_yes
+        self.assume_yes = assume_yes or quiet
         self.recorder = recorder if recorder is not None else Recorder()
 
     def execute(self):

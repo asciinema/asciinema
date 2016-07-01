@@ -14,7 +14,7 @@ def auth(args, config):
 
 def rec(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
-    return RecordCommand(api, args.filename, args.command, args.title, args.yes)
+    return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet)
 
 def main():
     if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
@@ -47,6 +47,7 @@ For help on a specifc command run:
     parser_rec.add_argument('-c', '--command', help='command to record, defaults to $SHELL')
     parser_rec.add_argument('-t', '--title', help='title of the asciicast')
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true')
+    parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true')
     parser_rec.add_argument('filename', nargs='?', default='')
     parser_rec.set_defaults(func=rec)
 
