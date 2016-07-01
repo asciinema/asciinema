@@ -18,18 +18,18 @@ def positive_float(value):
         raise argparse.ArgumentTypeError("must be positive")
     return value
 
-def auth(args, config):
+def auth_command(args, config):
     return AuthCommand(config.api_url, config.api_token)
 
-def rec(args, config):
+def rec_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
     return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet, args.max_wait)
 
-def upload(args, config):
+def upload_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
     return UploadCommand(api, args.filename)
 
-def play(args, config):
+def play_command(args, config):
     return PlayCommand(args.filename)
 
 def main():
@@ -56,7 +56,7 @@ For help on a specifc command run:
 
     # create the parser for the "auth" command
     parser_auth = subparsers.add_parser('auth', help='Assign local API token to asciinema.org account')
-    parser_auth.set_defaults(func=auth)
+    parser_auth.set_defaults(func=auth_command)
 
     # create the parser for the "rec" command
     parser_rec = subparsers.add_parser('rec', help='Record terminal session')
@@ -66,17 +66,17 @@ For help on a specifc command run:
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true')
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true')
     parser_rec.add_argument('filename', nargs='?', default='')
-    parser_rec.set_defaults(func=rec)
+    parser_rec.set_defaults(func=rec_command)
 
     # create the parser for the "upload" command
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
     parser_upload.add_argument('filename')
-    parser_upload.set_defaults(func=upload)
+    parser_upload.set_defaults(func=upload_command)
 
     # create the parser for the "play" command
     parser_upload = subparsers.add_parser('play', help='Replay terminal session')
     parser_upload.add_argument('filename')
-    parser_upload.set_defaults(func=play)
+    parser_upload.set_defaults(func=play_command)
 
     # parse the args and call whatever function was selected
     args = parser.parse_args()
