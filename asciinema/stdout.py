@@ -22,6 +22,12 @@ class Stdout:
     def close(self):
         self._increment_elapsed_time()
 
+        if len(self.frames) > 0:
+            last_frame = self.frames[-1]
+            if last_frame[1] == "exit\r\n":
+                self.frames = self.frames[0:-1]
+                self.duration -= last_frame[0]
+
     def _increment_elapsed_time(self):
         # delay = int(delay * 1000000) / 1000000.0 # millisecond precission
         now = time.time()
