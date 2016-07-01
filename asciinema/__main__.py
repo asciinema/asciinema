@@ -6,6 +6,7 @@ import sys
 from asciinema import __version__
 from asciinema.commands.auth import AuthCommand
 from asciinema.commands.record import RecordCommand
+from asciinema.commands.play import PlayCommand
 from asciinema.commands.upload import UploadCommand
 from asciinema.config import Config
 from asciinema.api import Api
@@ -27,6 +28,9 @@ def rec(args, config):
 def upload(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
     return UploadCommand(api, args.filename)
+
+def play(args, config):
+    return PlayCommand(args.filename)
 
 def main():
     if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
@@ -68,6 +72,11 @@ For help on a specifc command run:
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
     parser_upload.add_argument('filename')
     parser_upload.set_defaults(func=upload)
+
+    # create the parser for the "play" command
+    parser_upload = subparsers.add_parser('play', help='Replay terminal session')
+    parser_upload.add_argument('filename')
+    parser_upload.set_defaults(func=play)
 
     # parse the args and call whatever function was selected
     args = parser.parse_args()

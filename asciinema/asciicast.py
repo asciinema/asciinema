@@ -38,3 +38,16 @@ class Asciicast:
             return o.frames
 
         return json.JSONEncoder.default(self, o)
+
+
+def load(filename):
+    with open(filename) as f:
+        attrs = json.loads(f.read())
+        return Asciicast(
+            attrs['stdout'],
+            attrs['width'],
+            attrs['height'],
+            attrs['duration'],
+            attrs['command'],
+            attrs['title']
+        )
