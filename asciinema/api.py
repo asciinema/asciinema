@@ -51,8 +51,21 @@ class Api:
             platform.python_implementation(), platform.python_version(), os)
 
     def _handle_error(self, status, body):
-        if status == 404:
-            raise APIError("Your client version is no longer supported. Please upgrade to the latest version.")
+        errors = {
+            400: "Invalid request: %s" % body,
+            401: "Invalid or revoked recorder token",
+            404: "API endpoint not found. This asciinema version may no longer be supported. Please upgrade to the latest version.",
+            413: "Sorry, your asciicast is too big.",
+            422: "Invalid asciicast: %s" % body,
+            503: "The server is down for maintenance. Try again in a minute."
+        }
 
-        if status == 503:
-            raise APIError("The server is down for maintenance. Try again in a minute.")
+        error = errors.get(status)
+
+        if not error:
+            if status >= 500:
+                error = "The server is having temporary problems. Try again in a minute."
+            else:
+                error = "HTTP status: %i" % status
+
+        raise APIError(error)
