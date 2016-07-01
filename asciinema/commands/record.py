@@ -1,6 +1,5 @@
 import sys
 import os
-import subprocess
 import tempfile
 
 from asciinema.commands.command import Command

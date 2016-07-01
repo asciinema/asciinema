@@ -4,8 +4,9 @@ import os
 import sys
 
 from asciinema import __version__
-from asciinema.commands.record import RecordCommand
 from asciinema.commands.auth import AuthCommand
+from asciinema.commands.record import RecordCommand
+from asciinema.commands.upload import UploadCommand
 from asciinema.config import Config
 from asciinema.api import Api
 
@@ -22,6 +23,10 @@ def auth(args, config):
 def rec(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
     return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet, args.max_wait)
+
+def upload(args, config):
+    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    return UploadCommand(api, args.filename)
 
 def main():
     if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
@@ -58,6 +63,11 @@ For help on a specifc command run:
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true')
     parser_rec.add_argument('filename', nargs='?', default='')
     parser_rec.set_defaults(func=rec)
+
+    # create the parser for the "upload" command
+    parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
+    parser_upload.add_argument('filename')
+    parser_upload.set_defaults(func=upload)
 
     # parse the args and call whatever function was selected
     args = parser.parse_args()
