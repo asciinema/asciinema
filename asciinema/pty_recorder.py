@@ -18,7 +18,6 @@ from .stdout import Stdout
 class PtyRecorder:
 
     def record_command(self, command, output=None):
-        command = shlex.split(command)
         output = output if output is not None else Stdout()
         master_fd = None
 
