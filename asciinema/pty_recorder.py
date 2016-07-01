@@ -125,6 +125,8 @@ class PtyRecorder:
 
         try:
             _copy(pipe_r)
+        except (IOError, OSError):
+            pass
         finally:
             if restore:
                 tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
