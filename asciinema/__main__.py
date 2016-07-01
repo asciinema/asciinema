@@ -23,7 +23,7 @@ def rec_command(args, config):
     return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet, args.max_wait)
 
 def play_command(args, config):
-    return PlayCommand(args.filename)
+    return PlayCommand(args.filename, args.max_wait)
 
 def upload_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
@@ -66,6 +66,7 @@ For help on a specifc command run:
 
     # create the parser for the "play" command
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
+    parser_play.add_argument('-w', '--max-wait', help='limit terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float)
     parser_play.add_argument('filename')
     parser_play.set_defaults(func=play_command)
 
