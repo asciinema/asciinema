@@ -39,9 +39,7 @@ class Api:
         if status != 200 and status != 201:
             self._handle_error(status, body)
 
-        warn = self._extract_warning_message(headers)
-
-        return body, warn
+        return body, headers.get('Warning')
 
     def _headers(self):
         return { 'User-Agent': self._user_agent() }
@@ -51,9 +49,6 @@ class Api:
 
         return 'asciinema/%s %s/%s %s' % (__version__,
             platform.python_implementation(), platform.python_version(), os)
-
-    def _extract_warning_message(self, headers):
-        pass # TODO
 
     def _handle_error(self, status, body):
         if status == 404:

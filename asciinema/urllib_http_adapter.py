@@ -75,13 +75,20 @@ class URLLibHttpAdapter:
         try:
             response = urlopen(request)
             status = response.status
-            headers = response.getheaders()
+            headers = self._parse_headers(response)
             body = response.read().decode('utf-8')
         except HTTPError as e:
             status = e.code
-            headers = e.headers
+            headers = {}
             body = e.read().decode('utf-8')
         except URLError as e:
             raise HTTPConnectionError(str(e))
 
         return (status, headers, body)
+
+    def _parse_headers(self, response):
+        headers = {}
+        for k, v in response.getheaders():
+            headers[k] = v
+
+        return headers
