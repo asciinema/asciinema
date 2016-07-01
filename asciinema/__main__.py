@@ -65,9 +65,9 @@ For help on a specifc command run:
     parser_rec.set_defaults(func=rec_command)
 
     # create the parser for the "play" command
-    parser_upload = subparsers.add_parser('play', help='Replay terminal session')
-    parser_upload.add_argument('filename')
-    parser_upload.set_defaults(func=play_command)
+    parser_play = subparsers.add_parser('play', help='Replay terminal session')
+    parser_play.add_argument('filename')
+    parser_play.set_defaults(func=play_command)
 
     # create the parser for the "upload" command
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
