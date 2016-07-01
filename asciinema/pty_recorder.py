@@ -132,3 +132,4 @@ class PtyRecorder:
         signal.signal(signal.SIGCHLD, old_sigchld_handler)
 
         os.waitpid(pid, 0)
+        output.close()

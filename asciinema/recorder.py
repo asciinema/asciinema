@@ -1,6 +1,5 @@
 import os
 import subprocess
-from . import timer
 
 from .asciicast import Asciicast
 from .pty_recorder import PtyRecorder
@@ -17,7 +16,9 @@ class Recorder:
         command = user_command or self.env.get('SHELL') or 'sh'
         full_command = ['env', 'ASCIINEMA_REC=1', 'sh', '-c', command]
         stdout = Stdout(max_wait)
-        duration, _ = timer.timeit(self.pty_recorder.record_command, full_command, stdout)
+
+        self.pty_recorder.record_command(full_command, stdout)
+
         width = int(get_command_output(['tput', 'cols']))
         height = int(get_command_output(['tput', 'lines']))
 
@@ -25,7 +26,7 @@ class Recorder:
             stdout,
             width,
             height,
-            duration,
+            stdout.duration,
             command=user_command,
             title=title,
             term=self.env.get('TERM'),
