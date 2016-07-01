@@ -14,8 +14,9 @@ class Stdout:
         delay = now - self.last_write_time
         # delay = int(delay * 1000000) / 1000000.0 # millisecond precission
         string = self.decoder.decode(data)
-        self.frames.append([delay, string])
-        self.last_write_time = now
+        if string:
+            self.frames.append([delay, string])
+            self.last_write_time = now
 
     def close(self):
         pass
