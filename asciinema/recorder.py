@@ -12,7 +12,7 @@ class Recorder:
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
         self.env = env if env is not None else os.environ
 
-    def record(self, command, title):
+    def record(self, path, command, title):
         command = command or self.env.get('SHELL', '/bin/sh')
         duration, stdout = timer.timeit(self.pty_recorder.record_command, command)
         width = int(get_command_output(['tput', 'cols']))
@@ -29,7 +29,7 @@ class Recorder:
             shell=self.env.get('SHELL')
         )
 
-        return asciicast
+        asciicast.save(path)
 
 
 def get_command_output(args):

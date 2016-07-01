@@ -1,20 +1,33 @@
 import argparse
+import os
+import sys
 
 from asciinema import __version__
 from asciinema.commands.record import RecordCommand
 from asciinema.commands.auth import AuthCommand
 from asciinema.config import Config
+from asciinema.api import Api
 
 def auth(args, config):
     return AuthCommand(config.api_url, config.api_token)
 
 def rec(args, config):
-    return RecordCommand(config.api_url, config.api_token, args.command, args.title, args.yes)
+    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    return RecordCommand(api, args.filename, args.command, args.title, args.yes)
 
 def main():
     # create the top-level parser
     parser = argparse.ArgumentParser(
-        description="Record and share your terminal sessions, the right way."
+        description="Record and share your terminal sessions, the right way.",
+        epilog="""example usage:
+  Record terminal and upload it to asciinema.org:
+    \x1b[1masciinema rec\x1b[0m
+  Record terminal to local file:
+    \x1b[1masciinema rec demo.json\x1b[0m
+
+For help on a specifc command run:
+  \x1b[1masciinema <command> -h\x1b[0m""",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument('--version', help='show version information', action='store_true')
 
@@ -39,7 +52,9 @@ def main():
         print('asciinema %s' % __version__)
     else:
         if hasattr(args, 'func'):
-            args.func(args, Config()).execute()
+            command = args.func(args, Config())
+            code = command.execute()
+            sys.exit(code)
         else:
             parser.print_help()
 

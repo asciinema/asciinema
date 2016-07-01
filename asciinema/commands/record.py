@@ -3,62 +3,55 @@ import os
 import subprocess
 import tempfile
 
+import asciinema.util as util
 from asciinema.recorder import Recorder
-from asciinema.uploader import Uploader, ServerMaintenanceError, ResourceNotFoundError
-from asciinema.confirmator import Confirmator
+from asciinema.api import APIError
 
 
 class RecordCommand:
 
-    def __init__(self, api_url, api_token, cmd, title, skip_confirmation,
-                 recorder=None, uploader=None, confirmator=None):
-        self.api_url = api_url
-        self.api_token = api_token
-        self.cmd = cmd
+    def __init__(self, api, filename, command, title, assume_yes, recorder=None):
+        self.api = api
+        self.filename = filename
+        self.command = command
         self.title = title
-        self.skip_confirmation = skip_confirmation
+        self.assume_yes = assume_yes
         self.recorder = recorder if recorder is not None else Recorder()
-        self.uploader = uploader if uploader is not None else Uploader()
-        self.confirmator = confirmator if confirmator is not None else Confirmator()
 
     def execute(self):
-        asciicast = self._record_asciicast()
-        path = self._tmp_path()
-        asciicast.save(path)
-        self._upload_asciicast(path)
+        if self.filename == "":
+            self.filename = self._tmp_path()
+            upload = True
+        else:
+            upload = False
 
-    def _record_asciicast(self):
-        print('~ Asciicast recording started.')
+        util.printf("Asciicast recording started.")
+        util.printf("""Hit Ctrl-D or type "exit" to finish.""")
 
-        if not self.cmd:
-            print('~ Hit ctrl+d or type "exit" to finish.')
+        self.recorder.record(self.filename, self.command, self.title)
 
-        print('')
+        util.printf("Asciicast recording finished.")
 
-        asciicast = self.recorder.record(self.cmd, self.title)
+        if upload:
+            if not self.assume_yes:
+                util.printf("Press <Enter> to upload, <Ctrl-C> to cancel.")
+                try:
+                    sys.stdin.readline()
+                except KeyboardInterrupt:
+                    return 0
 
-        print('~ Asciicast recording finished.')
-
-        return asciicast
-
-    def _upload_asciicast(self, asciicast):
-        if self._upload_confirmed():
-            print('~ Uploading...')
             try:
-                url = self.uploader.upload(self.api_url, self.api_token, asciicast)
+                url, warn = self.api.upload_asciicast(self.filename)
+                if warn:
+                    util.warningf(warn)
+                os.remove(self.filename)
                 print(url)
-            except ServerMaintenanceError:
-                print('~ Upload failed: The server is down for maintenance. Try again in a minute.')
-                sys.exit(1)
-            except ResourceNotFoundError:
-                print('~ Upload failed: Your client version is no longer supported. Please upgrade to the latest version.')
-                sys.exit(1)
+            except APIError as e:
+                util.warningf("Upload failed: {}".format(str(e)))
+                util.warningf("Retry later by running: asciinema upload {}".format(self.filename))
+                return 1
 
-    def _upload_confirmed(self):
-        if self.skip_confirmation:
-            return True
-
-        return self.confirmator.confirm("~ Do you want to upload it? [Y/n] ")
+        return 0
 
     def _tmp_path(self):
         fd, path = tempfile.mkstemp(suffix='-asciinema.json')

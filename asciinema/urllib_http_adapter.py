@@ -6,6 +6,8 @@ import io
 import base64
 
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
+from .http_adapter import HTTPConnectionError
 
 
 class MultipartFormdataEncoder:
@@ -70,10 +72,16 @@ class URLLibHttpAdapter:
 
         request = Request(url, data=body, headers=headers, method="POST")
 
-        response = urlopen(request)
-
-        status = response.status
-        headers = response.getheaders()
-        body = response.read().decode('utf-8')
+        try:
+            response = urlopen(request)
+            status = response.status
+            headers = response.getheaders()
+            body = response.read().decode('utf-8')
+        except HTTPError as e:
+            status = e.code
+            headers = e.headers
+            body = e.read().decode('utf-8')
+        except URLError as e:
+            raise HTTPConnectionError(str(e))
 
         return (status, headers, body)
