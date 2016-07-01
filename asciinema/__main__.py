@@ -1,3 +1,4 @@
+import locale
 import argparse
 import os
 import sys
@@ -16,6 +17,10 @@ def rec(args, config):
     return RecordCommand(api, args.filename, args.command, args.title, args.yes)
 
 def main():
+    if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
+        print("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
+        sys.exit(1)
+
     # create the top-level parser
     parser = argparse.ArgumentParser(
         description="Record and share your terminal sessions, the right way.",
