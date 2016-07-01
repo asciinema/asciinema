@@ -12,13 +12,10 @@ import shlex
 import sys
 import struct
 
-from .stdout import Stdout
-
 
 class PtyRecorder:
 
-    def record_command(self, command, output=None):
-        output = output if output is not None else Stdout()
+    def record_command(self, command, output):
         master_fd = None
 
         def _set_pty_size():
@@ -135,5 +132,3 @@ class PtyRecorder:
         signal.signal(signal.SIGCHLD, old_sigchld_handler)
 
         os.waitpid(pid, 0)
-
-        return output

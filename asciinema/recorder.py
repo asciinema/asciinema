@@ -4,6 +4,7 @@ from . import timer
 
 from .asciicast import Asciicast
 from .pty_recorder import PtyRecorder
+from .stdout import Stdout
 
 
 class Recorder:
@@ -12,10 +13,11 @@ class Recorder:
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
         self.env = env if env is not None else os.environ
 
-    def record(self, path, user_command, title):
+    def record(self, path, user_command, title, max_wait):
         command = user_command or self.env.get('SHELL') or 'sh'
         full_command = ['env', 'ASCIINEMA_REC=1', 'sh', '-c', command]
-        duration, stdout = timer.timeit(self.pty_recorder.record_command, full_command)
+        stdout = Stdout(max_wait)
+        duration, _ = timer.timeit(self.pty_recorder.record_command, full_command, stdout)
         width = int(get_command_output(['tput', 'cols']))
         height = int(get_command_output(['tput', 'lines']))
 
