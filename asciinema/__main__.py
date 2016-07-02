@@ -16,21 +16,27 @@ def positive_float(value):
     value = float(value)
     if value <= 0.0:
         raise argparse.ArgumentTypeError("must be positive")
+
     return value
+
 
 def rec_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
     return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet, args.max_wait)
 
+
 def play_command(args, config):
     return PlayCommand(args.filename, args.max_wait)
+
 
 def upload_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
     return UploadCommand(api, args.filename)
 
+
 def auth_command(args, config):
     return AuthCommand(config.api_url, config.api_token)
+
 
 def main():
     if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
