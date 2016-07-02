@@ -1,77 +1,77 @@
 import os
+import os.path as path
 import sys
-
-try:
-    from ConfigParser import RawConfigParser, ParsingError, NoOptionError
-except ImportError:
-    from configparser import RawConfigParser, ParsingError, NoOptionError
-
 import uuid
+import configparser
 
 
-DEFAULT_CONFIG_FILE_PATH = "~/.asciinema/config"
+class ConfigError(Exception):
+    pass
+
+
 DEFAULT_API_URL = 'https://asciinema.org'
+
 
 class Config:
 
-    def __init__(self, path=DEFAULT_CONFIG_FILE_PATH, overrides=None):
-        self.path = os.path.expanduser(path)
-        self.overrides = overrides if overrides is not None else os.environ
-
-        self._parse_config_file()
-
-    def _parse_config_file(self):
-        config = RawConfigParser()
-        config.add_section('user')
-        config.add_section('api')
-
-        try:
-            config.read(self.path)
-        except ParsingError:
-            print('Config file %s contains syntax errors' % self.path)
-            sys.exit(2)
-
+    def __init__(self, config, env=None):
         self.config = config
+        self.env = env if env is not None else os.environ
 
     @property
     def api_url(self):
-        try:
-            api_url = self.config.get('api', 'url')
-        except NoOptionError:
-            api_url = DEFAULT_API_URL
-
-        api_url = self.overrides.get('ASCIINEMA_API_URL', api_url)
-
-        return api_url
+        return self.env.get(
+            'ASCIINEMA_API_URL',
+            self.config.get('api', 'url', fallback=DEFAULT_API_URL)
+        )
 
     @property
     def api_token(self):
         try:
-            return self._get_api_token()
-        except NoOptionError:
+            return self.config.get('api', 'token')
+        except (configparser.NoOptionError, configparser.NoSectionError):
             try:
-                return self._get_user_token()
-            except NoOptionError:
-                return self._create_api_token()
+                return self.config.get('user', 'token')
+            except (configparser.NoOptionError, configparser.NoSectionError):
+                raise ConfigError('no API token found in config file')
 
-    def _ensure_base_dir(self):
-        dir = os.path.dirname(self.path)
 
-        if not os.path.isdir(dir):
-            os.mkdir(dir)
+def load_file(paths):
+    config = configparser.ConfigParser()
+    read_paths = config.read(paths)
 
-    def _get_api_token(self):
-        return self.config.get('api', 'token')
+    if read_paths:
+        return config
 
-    def _get_user_token(self):
-        return self.config.get('user', 'token')
 
-    def _create_api_token(self):
-        api_token = str(uuid.uuid1())
-        self.config.set('api', 'token', api_token)
+def create_file(filename):
+    config = configparser.ConfigParser()
+    config['api'] = {}
+    config['api']['token'] = str(uuid.uuid4())
+    os.makedirs(path.dirname(filename))
+    with open(filename, 'w') as f:
+        config.write(f)
 
-        self._ensure_base_dir()
-        with open(self.path, 'w') as f:
-            self.config.write(f)
+    return config
 
-        return api_token
+
+def load():
+    paths = []
+
+    asciinema_config_home = os.environ.get("ASCIINEMA_CONFIG_HOME")
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+    home = os.environ.get("HOME")
+
+    if asciinema_config_home:
+        paths.append(path.join(asciinema_config_home, "config"))
+    elif xdg_config_home:
+        paths.append(path.join(xdg_config_home, "asciinema", "config"))
+    elif home:
+        paths.append(path.join(home, ".asciinema", "config"))
+        paths.append(path.join(home, ".config", "asciinema", "config"))
+    else:
+        raise Exception("need $ASCIINEMA_CONFIG_HOME or $XDG_CONFIG_HOME or $HOME")
+
+    config = load_file(paths) or create_file(paths[-1])
+
+    return Config(config)

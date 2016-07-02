@@ -4,11 +4,11 @@ import os
 import sys
 
 from asciinema import __version__
+import asciinema.config as config
 from asciinema.commands.auth import AuthCommand
 from asciinema.commands.record import RecordCommand
 from asciinema.commands.play import PlayCommand
 from asciinema.commands.upload import UploadCommand
-from asciinema.config import Config
 from asciinema.api import Api
 
 
@@ -86,7 +86,7 @@ For help on a specifc command run:
         print('asciinema %s' % __version__)
     else:
         if hasattr(args, 'func'):
-            command = args.func(args, Config())
+            command = args.func(args, config.load())
             code = command.execute()
             sys.exit(code)
         else:
