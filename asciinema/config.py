@@ -48,6 +48,10 @@ class Config:
         return self.config.getboolean('record', 'yes', fallback=False)
 
     @property
+    def record_quiet(self):
+        return self.config.getboolean('record', 'quiet', fallback=False)
+
+    @property
     def play_max_wait(self):
         return self.config.getfloat('play', 'maxwait', fallback=None)
 

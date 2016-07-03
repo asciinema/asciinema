@@ -185,6 +185,7 @@ available options set:
     command = /bin/bash -l
     maxwait = 2
     yes = true
+    quiet = true
 
     [play]
     maxwait = 1
