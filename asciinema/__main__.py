@@ -38,10 +38,17 @@ def auth_command(args, config):
     return AuthCommand(config.api_url, config.api_token)
 
 
+def maybe_str(v):
+    if v is not None:
+        return str(v)
+
+
 def main():
     if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
         print("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
         sys.exit(1)
+
+    cfg = config.load()
 
     # create the top-level parser
     parser = argparse.ArgumentParser(
@@ -62,17 +69,17 @@ For help on a specifc command run:
 
     # create the parser for the "rec" command
     parser_rec = subparsers.add_parser('rec', help='Record terminal session')
-    parser_rec.add_argument('-c', '--command', help='command to record, defaults to $SHELL')
+    parser_rec.add_argument('-c', '--command', help='command to record, defaults to $SHELL', default=cfg.record_command)
     parser_rec.add_argument('-t', '--title', help='title of the asciicast')
-    parser_rec.add_argument('-w', '--max-wait', help='limit recorded terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float)
-    parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true')
+    parser_rec.add_argument('-w', '--max-wait', help='limit recorded terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.record_max_wait))
+    parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true', default=cfg.record_yes)
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true')
     parser_rec.add_argument('filename', nargs='?', default='')
     parser_rec.set_defaults(func=rec_command)
 
     # create the parser for the "play" command
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
-    parser_play.add_argument('-w', '--max-wait', help='limit terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float)
+    parser_play.add_argument('-w', '--max-wait', help='limit terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.play_max_wait))
     parser_play.add_argument('filename')
     parser_play.set_defaults(func=play_command)
 
@@ -92,7 +99,7 @@ For help on a specifc command run:
         print('asciinema %s' % __version__)
     else:
         if hasattr(args, 'func'):
-            command = args.func(args, config.load())
+            command = args.func(args, cfg)
             code = command.execute()
             sys.exit(code)
         else:

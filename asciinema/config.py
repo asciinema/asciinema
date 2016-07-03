@@ -35,6 +35,22 @@ class Config:
             except (configparser.NoOptionError, configparser.NoSectionError):
                 raise ConfigError('no API token found in config file')
 
+    @property
+    def record_command(self):
+        return self.config.get('record', 'command', fallback=None)
+
+    @property
+    def record_max_wait(self):
+        return self.config.getfloat('record', 'maxwait', fallback=None)
+
+    @property
+    def record_yes(self):
+        return self.config.getboolean('record', 'yes', fallback=False)
+
+    @property
+    def play_max_wait(self):
+        return self.config.getfloat('play', 'maxwait', fallback=None)
+
 
 def load_file(paths):
     config = configparser.ConfigParser()
