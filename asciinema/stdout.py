@@ -24,7 +24,7 @@ class Stdout:
 
         if len(self.frames) > 0:
             last_frame = self.frames[-1]
-            if last_frame[1] == "exit\r\n":
+            if last_frame[1] == "exit\r\n" or last_frame[1] == "logout\r\n":
                 self.frames = self.frames[0:-1]
                 self.duration -= last_frame[0]
 
