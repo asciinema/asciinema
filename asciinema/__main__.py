@@ -63,7 +63,7 @@ For help on a specifc command run:
   \x1b[1masciinema <command> -h\x1b[0m""",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument('--version', help='show version information', action='store_true')
+    parser.add_argument('--version', action='version', version='asciinema %s' % __version__)
 
     subparsers = parser.add_subparsers()
 
@@ -95,16 +95,13 @@ For help on a specifc command run:
     # parse the args and call whatever function was selected
     args = parser.parse_args()
 
-    if args.version:
-        print('asciinema %s' % __version__)
+    if hasattr(args, 'func'):
+        command = args.func(args, cfg)
+        code = command.execute()
+        sys.exit(code)
     else:
-        if hasattr(args, 'func'):
-            command = args.func(args, cfg)
-            code = command.execute()
-            sys.exit(code)
-        else:
-            parser.print_help()
-            sys.exit(1)
+        parser.print_help()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
