@@ -1,5 +1,5 @@
 NAME=asciinema
-VERSION=`python -c "import asciinema; print(asciinema.__version__)"`
+VERSION=`python3 -c "import asciinema; print(asciinema.__version__)"`
 
 test: test-integration
 
@@ -19,10 +19,10 @@ tag:
 	git push --tags
 
 push:
-	python setup.py sdist upload -r pypi
+	python3 setup.py sdist upload -r pypi
 
 push-test:
-	python setup.py sdist upload -r test
+	python3 setup.py sdist upload -r test
 
 release: test tag push
 
