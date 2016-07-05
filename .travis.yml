@@ -7,10 +7,6 @@ python:
   - "3.4"
   - "3.5"
 
-os:
-  - linux
-  - osx
-
 script: make test
 
 notifications:
