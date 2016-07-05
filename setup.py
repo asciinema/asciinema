@@ -19,7 +19,7 @@ setup(
     version=asciinema.__version__,
     packages=['asciinema', 'asciinema.commands'],
     license='GNU GPLv3',
-    description='Command line recorder for asciinema.org service',
+    description='Terminal session recorder',
     author=asciinema.__author__,
     author_email='m@ku1ik.com',
     url='https://asciinema.org',
