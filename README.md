@@ -10,46 +10,27 @@ Terminal session recorder and the best companion of
 
 ## Installation
 
-### Using package manager
+### Native packages
 
-asciinema is available in repositories of most popular package managers on Mac
-OS X, Linux and FreeBSD. Look for package named `asciinema`. See the
+asciinema is included in repositories of most popular package managers on Mac OS
+X, Linux and FreeBSD. Look for package named `asciinema`. See the
 [list of available packages](https://asciinema.org/docs/installation).
 
-### Building from source
+### Python package
 
-To build asciinema from source you need to have
-[Go development toolchain](http://golang.org/doc/install) installed.
+asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
+be installed with pip:
 
-#### With `go get`
+    sudo pip3 install asciinema
 
-You can use `go get` to fetch the source, build and install asciinema at
-`$GOPATH/bin/asciinema` in one go:
+### Running latest version from master
 
-    go get github.com/asciinema/asciinema
+If none of the above works for you (or you want to help with development) just
+clone the repo and run asciinema straight from the checkout:
 
-#### With `make`
-
-Download the source code into your `$GOPATH`:
-
-    mkdir -p $GOPATH/src/github.com/asciinema
-    git clone https://github.com/asciinema/asciinema.git $GOPATH/src/github.com/asciinema/asciinema
-
-Build the binary:
-
-    cd $GOPATH/src/github.com/asciinema/asciinema
-    make build
-
-This will produce asciinema binary at
-`$GOPATH/src/github.com/asciinema/asciinema/bin/asciinema`.
-
-To install it system wide (to `/usr/local`):
-
-    sudo make install
-
-If you want to install it in other location:
-
-    PREFIX=/the/prefix make install
+    git clone https://github.com/asciinema/asciinema.git
+    cd asciinema
+    python3 -m asciinema --version
 
 ## Usage
 
@@ -168,17 +149,19 @@ from as many machines as you want.
 asciinema uses a config file to keep API token and user settings. In most cases
 the location of this file is `$HOME/.config/asciinema/config`.
 
-When you first run `asciinema`, local API token is generated and saved in the
-file (unless the file already exists). It looks like this:
+*NOTE: When you first run asciinema, local API token is generated (UUID) and
+saved in the file (unless the file already exists).*
+
+The auto-generated, minimal config file looks like this:
 
     [api]
-    token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
+    token = <your-api-token-here>
 
 There are several options you can set in this file. Here's a config with all
 available options set:
 
     [api]
-    token = d5a2dce4-173f-45b2-a405-ac33d7b70c5f
+    token = <your-api-token-here>
     url = https://asciinema.example.com
 
     [record]
@@ -210,7 +193,7 @@ file (in the given order):
 * `$HOME/.config/asciinema/config` - in most cases it's here
 * `$HOME/.asciinema/config` - created by asciinema versions prior to 1.1
 
-The first one which is found is used.
+The first one found is used.
 
 ## Contributing
 
