@@ -68,8 +68,9 @@ class PtyRecorder:
             while True:
                 try:
                     rfds, wfds, xfds = select.select(fds, [], [])
-                except InterruptedError as e:
-                    continue
+                except OSError as e:
+                    if e.errno == errno.EINTR:
+                        continue
 
                 if master_fd in rfds:
                     data = os.read(master_fd, 1024)
