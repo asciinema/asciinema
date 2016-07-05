@@ -18,5 +18,7 @@ class PlayCommand(Command):
         except FileNotFoundError as e:
             self.print_warning("Playback failed: %s" % str(e))
             return 1
+        except KeyboardInterrupt:
+            return 1
 
         return 0
