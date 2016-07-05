@@ -15,7 +15,7 @@ class PlayCommand(Command):
         try:
             self.player.play(asciicast.load(self.filename), self.max_wait)
 
-        except FileNotFoundError as e:
+        except asciicast.LoadError as e:
             self.print_warning("Playback failed: %s" % str(e))
             return 1
         except KeyboardInterrupt:
