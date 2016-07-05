@@ -11,8 +11,7 @@ except ImportError:
 import asciinema
 
 
-url_template = 'https://github.com/sickill/asciinema/archive/v%s.tar.gz'
-
+url_template = 'https://github.com/asciinema/asciinema/archive/v%s.tar.gz'
 requirements = []
 
 setup(
