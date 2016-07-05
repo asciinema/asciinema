@@ -1,12 +1,10 @@
 #!/bin/bash
 
 set -e
+set -x
 
-test() {
-  echo "Test: $1"
-  eval "PYTHONPATH=. python -m asciinema.__main__ $2 >/dev/null || (echo 'failed' && exit 1)"
-}
-
-test "help" "-h"
-test "version" "-v"
-test "auth" "auth"
+python3 -m asciinema -h
+python3 -m asciinema --version
+python3 -m asciinema auth
+python3 -m asciinema rec -c who __who.json && rm __who.json
+python3 -m asciinema rec -c 'bash -c "echo 1; sleep 1; echo 2"' __sleep.json && rm __sleep.json

@@ -1,14 +1,13 @@
 sudo: false
-language: go
+language: python
 
-go:
-  - 1.3
-  - 1.4
-  - 1.5
-  - 1.6
-  - tip
+python:
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
 
-script: make travis
+script: make test
 
 notifications:
   irc:
