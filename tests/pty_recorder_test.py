@@ -17,6 +17,9 @@ class FakeStdout:
     def write(self, data):
         self.data.append(data)
 
+    def close(self):
+        self.close = True
+
 
 class TestPtyRecorder(Test):
 
@@ -31,19 +34,11 @@ class TestPtyRecorder(Test):
         if fd != pty.STDOUT_FILENO:
             self.real_os_write(fd, data)
 
-    def test_record_command_returns_stdout_instance(self):
-        pty_recorder = PtyRecorder()
-
-        output = pty_recorder.record_command('ls -l')
-
-        assert_equal(Stdout, type(output))
-
     def test_record_command_writes_to_stdout(self):
         pty_recorder = PtyRecorder()
         output = FakeStdout()
 
-        command = 'python -c "import sys, time; sys.stdout.write(\'foo\'); ' \
-                  'sys.stdout.flush(); time.sleep(0.01); sys.stdout.write(\'bar\')"'
+        command = ['python3', '-c', "import sys; import time; sys.stdout.write(\'foo\'); sys.stdout.flush(); time.sleep(0.01); sys.stdout.write(\'bar\')"]
         pty_recorder.record_command(command, output)
 
         assert_equal([b'foo', b'bar'], output.data)
