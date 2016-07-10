@@ -21,7 +21,7 @@ class RecordCommand(Command):
 
     def execute(self):
         if self.filename == "":
-            self.filename = self._tmp_path()
+            self.filename = _tmp_path()
             upload = True
         else:
             upload = False
@@ -60,10 +60,12 @@ class RecordCommand(Command):
 
         return 0
 
-    def _tmp_path(self):
-        fd, path = tempfile.mkstemp(suffix='-asciinema.json')
-        os.close(fd)
-        return path
+
+def _tmp_path():
+    fd, path = tempfile.mkstemp(suffix='-asciinema.json')
+    os.close(fd)
+    return path
+
 
 def _touch(path):
     open(path, 'a').close()
