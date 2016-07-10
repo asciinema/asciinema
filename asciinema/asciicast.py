@@ -20,29 +20,24 @@ class Asciicast:
         self.shell = shell
 
     def save(self, path):
+        stdout = list(map(lambda frame: [round(frame[0], 6), frame[1]], self.stdout.frames))
+        duration = round(self.duration, 6)
         attrs = {
             "version": 1,
             "width": self.width,
             "height": self.height,
-            "duration": self.duration,
+            "duration": duration,
             "command": self.command,
             "title": self.title,
             "env": {
                 "TERM": self.term,
                 "SHELL": self.shell
             },
-            "stdout": self.stdout
+            "stdout": stdout
         }
 
         with open(path, "w") as f:
-            json_string = json.dumps(attrs, ensure_ascii=False, indent=2, default=self.json_default)
-            f.write(json_string)
-
-    def json_default(self, o):
-        if isinstance(o, Stdout):
-            return o.frames
-
-        return json.JSONEncoder.default(self, o)
+            f.write(json.dumps(attrs, ensure_ascii=False, indent=2))
 
 
 # asciinema play file.json
