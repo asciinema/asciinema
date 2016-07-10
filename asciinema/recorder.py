@@ -19,8 +19,8 @@ class Recorder:
 
         self.pty_recorder.record_command(full_command, stdout)
 
-        width = int(get_command_output(['tput', 'cols']))
-        height = int(get_command_output(['tput', 'lines']))
+        width = int(subprocess.check_output(['tput', 'cols']))
+        height = int(subprocess.check_output(['tput', 'lines']))
 
         asciicast = Asciicast(
             stdout,
@@ -34,8 +34,3 @@ class Recorder:
         )
 
         asciicast.save(path)
-
-
-def get_command_output(args):
-    process = subprocess.Popen(args, stdout=subprocess.PIPE)
-    return process.communicate()[0].strip()
