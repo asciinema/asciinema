@@ -1,7 +1,7 @@
 NAME=asciinema
 VERSION=`python3 -c "import asciinema; print(asciinema.__version__)"`
 
-test: test-integration
+test: test-unit test-integration
 
 test-unit:
 	nosetests
