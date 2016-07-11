@@ -75,12 +75,12 @@ def create_file(filename):
     return config
 
 
-def load():
+def load(env=os.environ):
     paths = []
 
-    asciinema_config_home = os.environ.get("ASCIINEMA_CONFIG_HOME")
-    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
-    home = os.environ.get("HOME")
+    asciinema_config_home = env.get("ASCIINEMA_CONFIG_HOME")
+    xdg_config_home = env.get("XDG_CONFIG_HOME")
+    home = env.get("HOME")
 
     if asciinema_config_home:
         paths.append(path.join(asciinema_config_home, "config"))
@@ -94,4 +94,4 @@ def load():
 
     config = load_file(paths) or create_file(paths[-1])
 
-    return Config(config)
+    return Config(config, env)
