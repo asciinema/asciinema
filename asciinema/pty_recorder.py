@@ -68,8 +68,11 @@ class PtyRecorder:
             while True:
                 try:
                     rfds, wfds, xfds = select.select(fds, [], [])
-                except OSError as e:
+                except OSError as e: # Python >= 3.3
                     if e.errno == errno.EINTR:
+                        continue
+                except select.error as e: # Python < 3.3
+                    if e[0] == 4:
                         continue
 
                 if master_fd in rfds:
