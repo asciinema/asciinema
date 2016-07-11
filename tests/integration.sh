@@ -16,13 +16,17 @@ asciinema --version
 
 asciinema auth
 
-asciinema rec -c who __tmp.json && rm __tmp.json
+asciinema rec -c who __tmp.json
+rm -f __tmp.json
 
 bash -c "sleep 1; pkill -28 -n -f 'm asciinema'" &
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json
+rm -f __tmp.json
 
 bash -c "sleep 1; pkill -n -f 'bash -c echo t3st'" &
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json
+rm -f __tmp.json
 
 bash -c "sleep 1; pkill -9 -n -f 'bash -c echo t3st'" &
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json
+rm -f __tmp.json
