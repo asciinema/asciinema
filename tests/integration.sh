@@ -6,19 +6,23 @@ set -x
 export ASCIINEMA_CONFIG_HOME=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-config-home`
 trap "echo rm -rf $ASCIINEMA_CONFIG_HOME" EXIT
 
-python3 -m asciinema -h
+function asciinema() {
+    python3 -m asciinema "$@"
+}
 
-python3 -m asciinema --version
+asciinema -h
 
-python3 -m asciinema auth
+asciinema --version
 
-python3 -m asciinema rec -c who __tmp.json && rm __tmp.json
+asciinema auth
 
-bash -c "sleep 1; pkill -28 -f 'thon -m asciinema'" &
-python3 -m asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+asciinema rec -c who __tmp.json && rm __tmp.json
 
-bash -c "sleep 1; pkill -f 'bash -c echo t3st'" &
-python3 -m asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+bash -c "sleep 1; pkill -28 -n -f 'm asciinema'" &
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
 
-bash -c "sleep 1; pkill -9 -f 'bash -c echo t3st'" &
-python3 -m asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+bash -c "sleep 1; pkill -n -f 'bash -c echo t3st'" &
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
+
+bash -c "sleep 1; pkill -9 -n -f 'bash -c echo t3st'" &
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' __tmp.json && rm __tmp.json
