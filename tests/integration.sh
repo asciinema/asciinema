@@ -3,6 +3,9 @@
 set -e
 set -x
 
+export ASCIINEMA_CONFIG_HOME=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-config-home`
+trap "echo rm -rf $ASCIINEMA_CONFIG_HOME" EXIT
+
 python3 -m asciinema -h
 
 python3 -m asciinema --version
