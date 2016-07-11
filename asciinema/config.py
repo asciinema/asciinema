@@ -68,7 +68,10 @@ def create_file(filename):
     config = configparser.ConfigParser()
     config['api'] = {}
     config['api']['token'] = str(uuid.uuid4())
-    os.makedirs(path.dirname(filename), exist_ok=True)
+
+    if not path.exists(path.dirname(filename)):
+        os.makedirs(path.dirname(filename))
+
     with open(filename, 'w') as f:
         config.write(f)
 
