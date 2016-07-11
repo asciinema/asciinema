@@ -72,7 +72,7 @@ class PtyRecorder:
                     if e.errno == errno.EINTR:
                         continue
                 except select.error as e: # Python < 3.3
-                    if e[0] == 4:
+                    if e.args[0] == 4:
                         continue
 
                 if master_fd in rfds:
