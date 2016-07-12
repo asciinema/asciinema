@@ -89,7 +89,7 @@ For help on a specific command run:
     parser_upload.set_defaults(func=upload_command)
 
     # create the parser for the "auth" command
-    parser_auth = subparsers.add_parser('auth', help='Assign local API token to asciinema.org account')
+    parser_auth = subparsers.add_parser('auth', help='Manage recordings on asciinema.org account')
     parser_auth.set_defaults(func=auth_command)
 
     # parse the args and call whatever function was selected
