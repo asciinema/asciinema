@@ -51,14 +51,13 @@ class LoadError(Exception):
     pass
 
 
- # <link rel="alternate" type="application/asciicast+json" href="https://asciinema.org/a/77324.json">
-
 class Parser(html.parser.HTMLParser):
     def __init__(self):
         html.parser.HTMLParser.__init__(self)
         self.url = None
 
     def handle_starttag(self, tag, attrs_list):
+        # look for <link rel="alternate" type="application/asciicast+json" href="https://...json">
         if tag == 'link':
             attrs = {}
             for k, v in attrs_list:
