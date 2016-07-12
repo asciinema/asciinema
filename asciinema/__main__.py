@@ -82,18 +82,18 @@ For help on a specific command run:
     parser_rec.add_argument('-w', '--max-wait', help='limit recorded terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.record_max_wait))
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true', default=cfg.record_yes)
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true', default=cfg.record_quiet)
-    parser_rec.add_argument('filename', nargs='?', default='')
+    parser_rec.add_argument('filename', nargs='?', default='', help='filename/path to save the recording to')
     parser_rec.set_defaults(func=rec_command)
 
     # create the parser for the "play" command
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
     parser_play.add_argument('-w', '--max-wait', help='limit terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.play_max_wait))
-    parser_play.add_argument('filename')
+    parser_play.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
     parser_play.set_defaults(func=play_command)
 
     # create the parser for the "upload" command
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
-    parser_upload.add_argument('filename')
+    parser_upload.add_argument('filename', help='filename or path of local recording')
     parser_upload.set_defaults(func=upload_command)
 
     # create the parser for the "auth" command
