@@ -59,7 +59,7 @@ def main():
   Record terminal to local file:
     \x1b[1masciinema rec demo.json\x1b[0m
 
-For help on a specifc command run:
+For help on a specific command run:
   \x1b[1masciinema <command> -h\x1b[0m""",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
