@@ -14,10 +14,11 @@ class Recorder:
 
     def record(self, path, user_command, title, max_wait):
         command = user_command or self.env.get('SHELL') or 'sh'
-        full_command = ['env', 'ASCIINEMA_REC=1', 'sh', '-c', command]
         stdout = Stdout(max_wait)
+        env = os.environ.copy()
+        env['ASCIINEMA_REC'] = '1'
 
-        self.pty_recorder.record_command(full_command, stdout)
+        self.pty_recorder.record_command(['sh', '-c', command], stdout, env)
 
         width = int(subprocess.check_output(['tput', 'cols']))
         height = int(subprocess.check_output(['tput', 'lines']))

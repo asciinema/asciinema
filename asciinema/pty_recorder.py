@@ -15,7 +15,7 @@ import struct
 
 class PtyRecorder:
 
-    def record_command(self, command, output):
+    def record_command(self, command, output, env=os.environ):
         master_fd = None
 
         def _set_pty_size():
@@ -103,7 +103,7 @@ class PtyRecorder:
         pid, master_fd = pty.fork()
 
         if pid == pty.CHILD:
-            os.execlp(command[0], *command)
+            os.execvpe(command[0], command, env)
 
         pipe_r, pipe_w = os.pipe()
         flags = fcntl.fcntl(pipe_w, fcntl.F_GETFL, 0)
