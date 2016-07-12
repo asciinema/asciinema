@@ -19,7 +19,7 @@ X, Linux and FreeBSD. Look for package named `asciinema`. See the
 ### Python package
 
 asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
-be installed with pip:
+be installed with pip (Python 3 required):
 
     sudo pip3 install asciinema
 
@@ -127,22 +127,19 @@ publishing it on asciinema.org.
 
 ### `auth`
 
-__Assign local API token to asciinema.org account.__
+__Manage recordings and asciinema.org account.__
 
-On every machine you install asciinema recorder, you get a new, unique API
-token. This command connects this local token with your asciinema.org account,
-and links all asciicasts recorded on this machine with the account.
+If you want to manage your recordings on asciinema.org (set title/description,
+delete etc) you need to authenticate. This command displays the URL you should
+open in your web browser to do that.
 
-This command displays the URL you should open in your web browser. If you never
-logged in to asciinema.org then your account will be created when opening the
-URL.
-
-NOTE: it is __necessary__ to do this if you want to __edit or delete__ your
-recordings on asciinema.org.
+On every machine you run asciinema recorder, you get a new, unique API token. If
+you're already logged in on asciinema.org website and you run `asciinema auth`
+from a new computer then this new device will be linked to your account.
 
 You can synchronize your config file (which keeps the API token) across the
-machines but that's not necessary. You can assign new tokens to your account
-from as many machines as you want.
+machines so all of them use the same token, but that's not necessary. You can
+assign new tokens to your account from as many machines as you want.
 
 ## Configuration file
 
