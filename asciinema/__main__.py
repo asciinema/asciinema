@@ -58,6 +58,14 @@ def main():
     \x1b[1masciinema rec\x1b[0m
   Record terminal to local file:
     \x1b[1masciinema rec demo.json\x1b[0m
+  Record terminal and upload it to asciinema.org, specifying title:
+    \x1b[1masciinema rec -t "My git tutorial"\x1b[0m
+  Record terminal to local file, "trimming" longer pauses to max 2.5 sec:
+    \x1b[1masciinema rec -w 2.5 demo.json\x1b[0m
+  Replay terminal recording from local file:
+    \x1b[1masciinema play demo.json\x1b[0m
+  Replay terminal recording hosted on asciinema.org:
+    \x1b[1masciinema play https://asciinema.org/a/difqlgx86ym6emrmd8u62yqu8\x1b[0m
 
 For help on a specific command run:
   \x1b[1masciinema <command> -h\x1b[0m""",
