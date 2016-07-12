@@ -127,7 +127,7 @@ publishing it on asciinema.org.
 
 ### `auth`
 
-__Manage recordings and asciinema.org account.__
+__Manage recordings on asciinema.org account.__
 
 If you want to manage your recordings on asciinema.org (set title/description,
 delete etc) you need to authenticate. This command displays the URL you should
