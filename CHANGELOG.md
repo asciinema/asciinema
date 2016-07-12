@@ -1,5 +1,21 @@
 # asciinema changelog
 
+## 1.3.0 (2016-07-12)
+
+This release rejuvenates original Python implementation of asciinema. It's based
+on 0.9.8 codebase and adds all features and bug fixes that have been implemented
+in asciinema's Go version between 0.9.8 and 1.2.0.
+
+Other notable changes:
+
+* Zero dependencies! (other than Python 3)
+* Fixed crash when resizing terminal window during recording (#167)
+* Fixed upload from IPv6 hosts (#94)
+* Improved UTF-8 charset detection (#160)
+* `-q/--quiet` option can be saved in config file now
+* Final "logout" (produced by csh) is now removed from recorded stdout
+* `rec` command now tries to write to target path before starting recording
+
 ## 1.2.0 (2016-02-22)
 
 * Added playback from stdin: `cat demo.json | asciinema play -`
