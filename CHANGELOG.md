@@ -2,9 +2,9 @@
 
 ## 1.3.0 (2016-07-12)
 
-This release rejuvenates original Python implementation of asciinema. It's based
-on 0.9.8 codebase and adds all features and bug fixes that have been implemented
-in asciinema's Go version between 0.9.8 and 1.2.0.
+This release brings back the original Python implementation of asciinema. It's
+based on 0.9.8 codebase and adds all features and bug fixes that have been
+implemented in asciinema's Go version between 0.9.8 and 1.2.0.
 
 Other notable changes:
 
