@@ -22,7 +22,7 @@ push:
 	python3 setup.py sdist upload -r pypi
 
 push-test:
-	python3 setup.py sdist upload -r test
+	python3 setup.py sdist upload -r pypitest
 
 release: test tag push
 
