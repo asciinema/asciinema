@@ -36,6 +36,10 @@ class Config:
                 raise ConfigError('no API token found in config file')
 
     @property
+    def record_upload(self):
+        return self.config.getboolean('record', 'upload', fallback=True)
+
+    @property
     def record_command(self):
         return self.config.get('record', 'command', fallback=None)
 

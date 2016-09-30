@@ -21,7 +21,7 @@ def positive_float(value):
 
 
 def rec_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    api = Api(config.api_url, os.environ.get("USER"), config.api_token) if config.record_upload else None
     return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet, args.max_wait)
 
 
@@ -82,7 +82,7 @@ For help on a specific command run:
     parser_rec.add_argument('-w', '--max-wait', help='limit recorded terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.record_max_wait))
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true', default=cfg.record_yes)
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true', default=cfg.record_quiet)
-    parser_rec.add_argument('filename', nargs='?', default='', help='filename/path to save the recording to')
+    parser_rec.add_argument('filename', nargs='?' if cfg.record_upload else None, default='', help='filename/path to save the recording to')
     parser_rec.set_defaults(func=rec_command)
 
     # create the parser for the "play" command

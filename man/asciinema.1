@@ -28,7 +28,9 @@ By running \fBasciinema rec\fP \fI[filename]\fP you start a new recording sessio
 .PP
 Recording finishes when you exit the shell (hit \fBCtrl+D\fP or type \fIexit\fP). If the recorded process is not a shell than recording finishes when the process exits.
 .PP
-If the \fIfilename\fP argument is given then the resulting recording is saved to a local file. It can later be replayed with \fBasciinema play\fP \fI<filename>\fP and/or uploaded to asciinema.org with \fBasciinema upload\fP \fI<filename>\fP. If the \fIfilename\fP argument is omitted then (after asking for confirmation) the resulting asciicast is uploaded to asciinema.org for further playback in a web browser.
+If the \fIfilename\fP argument is given then the resulting recording is saved to a local file. It can later be replayed with \fBasciinema play\fP \fI<filename>\fP and/or uploaded to asciinema.org with \fBasciinema upload\fP \fI<filename>\fP.
+.PP
+If the \fIfilename\fP argument is omitted then (after asking for confirmation) the resulting asciicast is uploaded to asciinema.org for further playback in a web browser. If you wish to disable this functionality (because, for example, you wish to prevent accidental leakage of recordings from a sensitive environment), you can set record.upload = no in your config file. If asciicast uploading is disabled, the \fIfilename\fP argument is required.
 .PP
 \fBASCIINEMA_REC=1\fP is added to recorded process environment variables. This can be used by your shell's config file (\fI.bashrc\fP, \fI.zshrc\fP) to alter the prompt or play a sound when shell is being recorded.
 .TP

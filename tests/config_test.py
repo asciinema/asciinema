@@ -32,6 +32,10 @@ def test_default_api_url():
     config = create_config('')
     assert_equal('https://asciinema.org', config.api_url)
 
+def test_default_record_upload():
+    config = create_config('')
+    assert_equal(True, config.record_upload)
+
 def test_default_record_command():
     config = create_config('')
     assert_equal(None, config.record_command)
@@ -81,6 +85,11 @@ def test_api_token_when_api_token_set_and_user_token_set():
     api_token = 'bar'
     config = create_config("[user]\ntoken = %s\n[api]\ntoken = %s" % (user_token, api_token))
     assert re.match(api_token, config.api_token)
+
+def test_record_upload():
+    upload = 'no'
+    config = create_config("[record]\nupload = %s" % upload)
+    assert_equal(False, config.record_upload)
 
 def test_record_command():
     command = 'bash -l'
