@@ -22,7 +22,7 @@ class RecordCommand(Command):
     def execute(self):
         if self.filename == "":
             self.filename = _tmp_path()
-            upload = True
+            upload = self.api is not None
         else:
             upload = False
 

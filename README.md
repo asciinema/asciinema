@@ -58,9 +58,14 @@ the process exits.
 If the `filename` argument is given then the resulting recording (called
 [asciicast](doc/asciicast-v1.md)) is saved to a local file. It can later be
 replayed with `asciinema play <filename>` and/or uploaded to asciinema.org with
-`asciinema upload <filename>`. If the `filename` argument is omitted then
-(after asking for confirmation) the resulting asciicast is uploaded to
-asciinema.org for further playback in a web browser.
+`asciinema upload <filename>`.
+
+If the `filename` argument is omitted then (after asking for confirmation) the
+resulting asciicast is uploaded to asciinema.org for further playback in a web
+browser. If you wish to disable this functionality (because, for example, you
+wish to prevent accidental leakage of recordings from a sensitive environment),
+you can set `record.upload = no` in your config file. If asciicast uploading is
+disabled, the `filename` argument is required.
 
 `ASCIINEMA_REC=1` is added to recorded process environment variables. This
 can be used by your shell's config file (`.bashrc`, `.zshrc`) to alter the
