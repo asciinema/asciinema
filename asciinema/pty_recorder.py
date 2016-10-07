@@ -11,6 +11,8 @@ import io
 import shlex
 import sys
 import struct
+import tempfile
+import random
 
 
 class PtyRecorder:
@@ -137,3 +139,85 @@ class PtyRecorder:
 
         os.waitpid(pid, 0)
         output.close()
+
+    def record_script(self, script, output, env=os.environ):
+
+        def random_sleep(min_secs, max_secs):
+            val = random.random()
+            while(val < min_secs or val > max_secs):
+                val = random.random()
+            return val
+
+        def escape_char(char):
+            if char in ['$', '"']:
+                char = '\\%s' % char
+            return char
+
+        def type_line(line, fh, min_secs, max_secs):
+            # type specified line of text, like a human would
+            # TAB: tab completion until next space
+            # COPYPASTE: complete command until next space
+            i, n = 0, len(line)
+            while i < n:
+                if line[i:].startswith('TAB') or line[i:].startswith('COPYPASTE'):
+                    tab = False
+                    if line[i:].startswith('TAB'):
+                        i += len('TAB')
+                        tab = True
+                    else:
+                        i += len('COPYPASTE')
+
+                    # complete until next space or end of line
+                    word = ''
+                    while i < n and line[i] != ' ' and not (tab and line[i] == '/'):
+                        word += escape_char(line[i])
+                        i += 1
+                else:
+                    word = escape_char(line[i])
+                    i += 1
+
+                fh.write('echo -n "%s"; sleep %f\n' % (word, random_sleep(min_secs, max_secs)))
+
+            fh.write('sleep %f; echo\n' % random_sleep(min_secs, max_secs))
+
+        def verified_command(cmd, fh):
+            cmd = cmd.replace('TAB', '').replace('COPYPASTE', '')
+            fh.write(cmd + '\n')
+            fh.write('if [ $? -ne 0 ]; then echo "ERROR: last command failed" >&2; exit 1; fi\n')
+
+        fd, scriptfile = tempfile.mkstemp(suffix='.sh')
+        os.close(fd)
+        fh = open(scriptfile, 'w')
+        fh.write('#!/bin/bash\n')
+
+        for line in open(script).read().strip().split('\n'):
+
+            if line.startswith('###'):
+                # typed comment
+                type_line(line[2:], fh, 0.01, 0.05)
+
+            elif line.startswith('##') or line == '':
+                # regular comment or empty line; just echo, but make sure bash doesn't interpret its contents
+                fh.write('echo "%s"\n' % line[1:].replace("$", "\\$"))
+
+            elif line.startswith('# '):
+                # silent command (just execute it, don't show it
+                verified_command(line[2:], fh)
+
+            elif line == 'CLEAR':
+                # wipe screen using 'clear' command
+                fh.write('clear  # CLEAR\n')
+
+            elif line.startswith('PAUSE '):
+                # pause for specified amount of time
+                secs = float(line[len('PAUSE '):])
+                fh.write('sleep %f  # PAUSE\n' % secs)
+
+            else:
+                fh.write('echo; echo -n "$ "; sleep %f\n' % random_sleep(0.1, 0.3))
+                type_line(line, fh, 0.01, 0.1)
+                verified_command(line, fh)
+        fh.close()
+
+        self.record_command(['/bin/bash', '-i', scriptfile], output, env)
+        os.remove(scriptfile)
