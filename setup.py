@@ -3,11 +3,7 @@ import sys
 if sys.version_info[0] < 3:
     sys.exit('Python < 3 is unsupported.')
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-
+from setuptools import setup
 import asciinema
 
 
