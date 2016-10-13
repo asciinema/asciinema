@@ -1,6 +1,7 @@
 import sys
 import time
 
+
 class Player:
 
     def play(self, asciicast, max_wait=None):
