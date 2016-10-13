@@ -1,11 +1,10 @@
+import asciinema
 import sys
 
 if sys.version_info[0] < 3:
     sys.exit('Python < 3 is unsupported.')
 
 from setuptools import setup
-import asciinema
-
 
 url_template = 'https://github.com/asciinema/asciinema/archive/v%s.tar.gz'
 requirements = []

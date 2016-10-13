@@ -68,10 +68,10 @@ class PtyRecorder:
             while True:
                 try:
                     rfds, wfds, xfds = select.select(fds, [], [])
-                except OSError as e: # Python >= 3.3
+                except OSError as e:  # Python >= 3.3
                     if e.errno == errno.EINTR:
                         continue
-                except select.error as e: # Python < 3.3
+                except select.error as e:  # Python < 3.3
                     if e.args[0] == 4:
                         continue
 
@@ -119,7 +119,7 @@ class PtyRecorder:
             mode = tty.tcgetattr(pty.STDIN_FILENO)
             tty.setraw(pty.STDIN_FILENO)
             restore = 1
-        except tty.error: # This is the same as termios.error
+        except tty.error:  # This is the same as termios.error
             restore = 0
 
         _set_pty_size()
