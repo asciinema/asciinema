@@ -9,6 +9,7 @@ from asciinema.http_adapter import HTTPConnectionError
 class APIError(Exception):
     pass
 
+
 class Api:
 
     def __init__(self, url, user, token, http_adapter=None):
@@ -28,7 +29,7 @@ class Api:
             try:
                 status, headers, body = self.http_adapter.post(
                     self.upload_url(),
-                    files={ "asciicast": ("asciicast.json", f) },
+                    files={"asciicast": ("asciicast.json", f)},
                     headers=self._headers(),
                     username=self.user,
                     password=self.token
@@ -42,13 +43,16 @@ class Api:
         return body, headers.get('Warning')
 
     def _headers(self):
-        return { 'User-Agent': self._user_agent() }
+        return {'User-Agent': self._user_agent()}
 
     def _user_agent(self):
         os = re.sub('([^-]+)-(.*)', '\\1/\\2', platform.platform())
 
         return 'asciinema/%s %s/%s %s' % (__version__,
-            platform.python_implementation(), platform.python_version(), os)
+                                          platform.python_implementation(),
+                                          platform.python_version(),
+                                          os
+                                          )
 
     def _handle_error(self, status, body):
         errors = {

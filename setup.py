@@ -1,3 +1,4 @@
+import asciinema
 import sys
 
 if sys.version_info[0] < 3:
@@ -7,9 +8,6 @@ try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
-
-import asciinema
-
 
 url_template = 'https://github.com/asciinema/asciinema/archive/v%s.tar.gz'
 requirements = []

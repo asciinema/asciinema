@@ -7,7 +7,12 @@ python:
   - "3.4"
   - "3.5"
 
-script: make test
+before_install:
+  - pip install pep8
+
+script:
+  - find . -name \*.py -exec pep8 --ignore=E501 {} +
+  - make test
 
 notifications:
   irc:
