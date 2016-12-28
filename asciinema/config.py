@@ -33,7 +33,11 @@ class Config:
             try:
                 return self.config.get('user', 'token')
             except (configparser.NoOptionError, configparser.NoSectionError):
-                raise ConfigError('no API token found in config file')
+                environment_variable_fallback = self.env.get('ASCIINEMA_TOKEN')
+                if environment_variable_fallback is not None:
+                    return environment_variable_fallback
+                else:
+                    raise ConfigError('no API token found in config file, and ASCIINEMA_TOKEN is unset')
 
     @property
     def record_command(self):
