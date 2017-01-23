@@ -26,7 +26,7 @@ def rec_command(args, config):
 
 
 def play_command(args, config):
-    return PlayCommand(args.filename, args.max_wait)
+    return PlayCommand(args.filename, args.max_wait, args.speed)
 
 
 def upload_command(args, config):
@@ -88,6 +88,7 @@ For help on a specific command run:
     # create the parser for the "play" command
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
     parser_play.add_argument('-w', '--max-wait', help='limit terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.play_max_wait))
+    parser_play.add_argument('-s', '--speed', help='playback speedup (can be fractional)', type=positive_float, default=cfg.play_speed)
     parser_play.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
     parser_play.set_defaults(func=play_command)
 

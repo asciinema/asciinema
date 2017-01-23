@@ -109,6 +109,7 @@ Playing from IPFS:
 Available options:
 
 * `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max <sec> seconds
+* `-s, --speed=<factor>` - Playback speedup (can be fractional)
 
 NOTE: it is recommended to run `asciinema play` in a terminal of dimensions not
 smaller than the one used for recording as there's no "transcoding" of control

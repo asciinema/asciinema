@@ -55,6 +55,10 @@ class Config:
     def play_max_wait(self):
         return self.config.getfloat('play', 'maxwait', fallback=None)
 
+    @property
+    def play_speed(self):
+        return self.config.getfloat('play', 'speed', fallback=1.0)
+
 
 def load_file(paths):
     config = configparser.ConfigParser()
