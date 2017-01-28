@@ -142,6 +142,18 @@ You can synchronize your config file (which keeps the API token) across the
 machines so all of them use the same token, but that's not necessary. You can
 assign new tokens to your account from as many machines as you want.
 
+## Hosting the recordings on the web
+
+As mentioned in the `Usage / rec` section above, if the `filename` argument to
+`asciinema rec` is omitted then the resulting asciicast is uploaded
+to [asciinema.org](https://asciinema.org) where it's hosted for further playback
+in a web browser.
+
+If you prefer to host the recordings yourself, you can do so by recording to a
+file (`asciinema rec demo.json`) and using
+[asciinema's standalone web player](https://github.com/asciinema/asciinema-player#self-hosting-quick-start)
+in your HTML page.
+
 ## Configuration file
 
 asciinema uses a config file to keep API token and user settings. In most cases
