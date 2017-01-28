@@ -1,4 +1,4 @@
-import os
+simport os
 import os.path as path
 import sys
 import uuid
@@ -28,16 +28,12 @@ class Config:
     @property
     def api_token(self):
         try:
-            return self.config.get('api', 'token')
+            return self.env.get('ASCIINEMA_API_TOKEN', self.config.get('api', 'token'))
         except (configparser.NoOptionError, configparser.NoSectionError):
             try:
                 return self.config.get('user', 'token')
             except (configparser.NoOptionError, configparser.NoSectionError):
-                environment_variable_fallback = self.env.get('ASCIINEMA_TOKEN')
-                if environment_variable_fallback is not None:
-                    return environment_variable_fallback
-                else:
-                    raise ConfigError('no API token found in config file, and ASCIINEMA_TOKEN is unset')
+                raise ConfigError('no API token found in config file, and ASCIINEMA_API_TOKEN is unset')
 
     @property
     def record_command(self):
