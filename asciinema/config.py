@@ -28,12 +28,12 @@ class Config:
     @property
     def api_token(self):
         try:
-            return self.config.get('api', 'token')
+            return self.env.get('ASCIINEMA_API_TOKEN') or self.config.get('api', 'token')
         except (configparser.NoOptionError, configparser.NoSectionError):
             try:
                 return self.config.get('user', 'token')
             except (configparser.NoOptionError, configparser.NoSectionError):
-                raise ConfigError('no API token found in config file')
+                raise ConfigError('no API token found in config file, and ASCIINEMA_API_TOKEN is unset')
 
     @property
     def record_command(self):
