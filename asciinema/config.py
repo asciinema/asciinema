@@ -28,7 +28,7 @@ class Config:
     @property
     def api_token(self):
         try:
-            return self.env.get('ASCIINEMA_API_TOKEN', self.config.get('api', 'token'))
+            return self.env.get('ASCIINEMA_API_TOKEN') or self.config.get('api', 'token')
         except (configparser.NoOptionError, configparser.NoSectionError):
             try:
                 return self.config.get('user', 'token')
