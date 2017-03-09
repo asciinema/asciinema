@@ -55,6 +55,12 @@ class PtyRecorder:
             '''Handles new data on child process stdin.'''
 
             _write_master(data)
+            
+        def _signals(signal_list):
+            old_handlers = []
+            for sig, handler in signal_list:
+                old_handlers.append( (sig, signal.signal(sig, handler)) )
+            return old_handlers
 
         def _copy(signal_fd):
             '''Main select loop.
@@ -94,7 +100,7 @@ class PtyRecorder:
                     if data:
                         signals = struct.unpack('%uB' % len(data), data)
                         for sig in signals:
-                            if sig == signal.SIGCHLD:
+                            if sig in [signal.SIGCHLD, signal.SIGHUP, signal.SIGTERM, signal.SIGQUIT]:
                                 os.close(master_fd)
                                 return
                             elif sig == signal.SIGWINCH:
@@ -112,8 +118,13 @@ class PtyRecorder:
 
         signal.set_wakeup_fd(pipe_w)
 
-        old_sigwinch_handler = signal.signal(signal.SIGWINCH, lambda signal, frame: None)
-        old_sigchld_handler = signal.signal(signal.SIGCHLD, lambda signal, frame: None)
+        old_handlers = _signals(map(lambda s: (s, lambda signal, frame: None),
+                                    [signal.SIGWINCH,
+                                     signal.SIGCHLD,
+                                     signal.SIGHUP,
+                                     signal.SIGTERM,
+                                     signal.SIGQUIT,
+                                    ]))
 
         try:
             mode = tty.tcgetattr(pty.STDIN_FILENO)
@@ -132,8 +143,7 @@ class PtyRecorder:
             if restore:
                 tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
 
-        signal.signal(signal.SIGWINCH, old_sigwinch_handler)
-        signal.signal(signal.SIGCHLD, old_sigchld_handler)
+        _signals(old_handlers)
 
         os.waitpid(pid, 0)
         output.close()
