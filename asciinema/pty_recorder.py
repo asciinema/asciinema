@@ -55,11 +55,11 @@ class PtyRecorder:
             '''Handles new data on child process stdin.'''
 
             _write_master(data)
-            
+
         def _signals(signal_list):
             old_handlers = []
             for sig, handler in signal_list:
-                old_handlers.append( (sig, signal.signal(sig, handler)) )
+                old_handlers.append((sig, signal.signal(sig, handler)))
             return old_handlers
 
         def _copy(signal_fd):
@@ -123,8 +123,7 @@ class PtyRecorder:
                                      signal.SIGCHLD,
                                      signal.SIGHUP,
                                      signal.SIGTERM,
-                                     signal.SIGQUIT,
-                                    ]))
+                                     signal.SIGQUIT]))
 
         try:
             mode = tty.tcgetattr(pty.STDIN_FILENO)
