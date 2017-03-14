@@ -1,23 +1,43 @@
 # asciicast file format (version 2)
 
-asciicast file is JSON file containing meta-data like duration or title of the
-recording, and the actual content printed to terminal's stdout during
-recording.
+asciicast v2 file
+is [NDJSON (newline delimited JSON)](https://github.com/ndjson/ndjson-spec) file
+where:
 
-## Attributes
+* __first line__ contains meta-data (duration, terminal size etc), encoded as JSON
+  object,
+* __all subsequent lines__ contain stream data, _each line_ representing single stream
+  element (event), encoded as JSON array.
 
-Every asciicast includes the following set of attributes:
+## Meta-data
 
-* `version` - set to 1,
+Every asciicast v2 includes the following meta-data:
+
+* `version` - set to 2,
 * `width` - terminal width (number of columns),
 * `height` - terminal height (number of rows),
 * `duration` - total duration of asciicast as floating point number,
 * `command` - command that was recorded, as given via `-c` option to `rec`,
 * `title` - title of the asciicast, as given via `-t` option to `rec`,
-* `env` - map of environment variables useful for debugging playback problems,
-* `stdout` - array of "frames", see below.
+* `env` - map of environment variables useful for debugging playback problems.
 
-### Frame
+Example meta-data line:
+
+    { "version": 2, "width": 80, "height": 24, "duration": 1.515658, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
+
+## Stream data
+
+TODO: explain
+
+    [ time, event-type, event-data ]
+    
+TODO: explain
+
+    [ 1.001376, "o", "Hello world" ]
+
+### "o" event - print to stdout
+
+TODO: change this section to reflect new structure
 
 Frame represents an event of printing new data to terminal's stdout. It is a 2
 element array containing **delay** and **data**.
@@ -34,10 +54,12 @@ non-printable Unicode codepoints encoded as `\uXXXX`.
 For example, frame `[5.4321, "foo\rbar\u0007..."]` means there was 5 seconds of
 inactivity between previous printing and printing of `foo\rbar\u0007...`.
 
-## Example asciicast v2
+## Complete asciicast v2 example
 
-A very short asciicast may look like this:
+A very short asciicast v2 file looks like this:
 
-    { "version": 1, "width": 80, "height": 24, "duration": 1.515658, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
+    { "version": 2, "width": 80, "height": 24, "duration": 1.515658, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
     [ 0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n" ]
-    [ 1.001376, "o", "I am \rThis is on the next line." ]
+    [ 1.001376, "o", "This is overwritten\rThis is better." ]
+    [ 0.143733, "o", " " ]
+    [ 0.541828, "o", "Bye!" ]
