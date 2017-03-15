@@ -47,8 +47,8 @@ Each element of the event stream is a 3-tuple encoded as JSON array:
 Where:
 
 * `time` (number) - relative time (in seconds) since the previous event occured
-  (or since the beginning of the recording session for the first event in the
-  stream),
+  (or, for the first event in the stream, since the beginning of the recording
+  session),
 * `event-type` (string) - one of: `"o"`, `"i"`, `"size"`,
 * `event-data` (any) - event specific data, described separately for each event
   type.
