@@ -102,7 +102,7 @@ not supported by current versions of the recorder and players
 
 A very short asciicast v2 file looks like this:
 
-    { "version": 2, "width": 80, "height": 24, "duration": 1.515658, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
+    { "version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
     [ 0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n" ]
     [ 1.001376, "o", "This is overwritten\rThis is better." ]
     [ 0.143733, "o", " " ]
