@@ -9,6 +9,17 @@ where:
 * __all subsequent lines__ form an event stream, _each line_ representing a
   separate event stream item, encoded as JSON array.
 
+By making the event stream a first class concept in the v2 format we get the
+following benefits:
+
+* it enables live, incremental writing to a file during recording (with v1
+  format the final recording JSON can only be written as a whole after finishing
+  the recording session),
+* it allows the players to start the playback as soon as they read the meta-data
+  line (contrary to v1 format which requires reading the whole file),
+* whether you're recording to a file or streaming via UNIX pipe or WebSocket the
+  data representation is the same.
+
 ## Meta-data
 
 The following meta-data is **required** in asciicast v2:
