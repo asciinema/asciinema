@@ -27,15 +27,29 @@ Example meta-data line:
 
 ## Stream data
 
-TODO: explain
+Every stream element is a 3-tuple encoded as JSON array:
 
     [ time, event-type, event-data ]
-    
-TODO: explain
+
+Where:
+
+* `time` (number) - relative time (in seconds) since the previous event (or
+  since the beginning of the recording session when it's the first event in the
+  stream)
+* `event-type` (string) - one of: "o", "i", "size"
+* `event-data` (any) - event specific data, described separately for each event
+  type
+
+For example, let's look at the following line:
 
     [ 1.001376, "o", "Hello world" ]
 
-### "o" event - print to stdout
+It represents an event of printing text "Hello world" to stdout ("o" event type,
+see below), which happened 1.001376 sec after a previous event in the stream.
+
+### Supported (planned) event types
+
+#### "o" - output, printing to stdout
 
 TODO: change this section to reflect new structure
 
@@ -53,6 +67,14 @@ non-printable Unicode codepoints encoded as `\uXXXX`.
 
 For example, frame `[5.4321, "foo\rbar\u0007..."]` means there was 5 seconds of
 inactivity between previous printing and printing of `foo\rbar\u0007...`.
+
+#### "i" - input, from keyboard
+
+TODO
+
+#### "size" - terminal resize
+
+TODO
 
 ## Complete asciicast v2 example
 
