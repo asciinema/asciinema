@@ -7,7 +7,7 @@ where:
 * __first line__ contains meta-data (duration, initial terminal size, etc),
   encoded as JSON object,
 * __all subsequent lines__ form an event stream, _each line_ representing a
-  separate event stream item.
+  separate event stream item, encoded as JSON array.
 
 ## Meta-data
 
