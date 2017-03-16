@@ -109,5 +109,5 @@ A very short asciicast v2 file looks like this:
     [ 0.143733, "o", " " ]
     [ 0.541828, "o", "Bye!" ]
 
-The final `"Bye!"` was printed to a terminal after 1.935785 sec (0.248848 +
-1.001376 + 0.143733 + 0.541828).
+The final `"Bye!"` was printed to a terminal 1.935785 sec (0.248848 + 1.001376 +
+0.143733 + 0.541828) after the beginning of the recording session.
