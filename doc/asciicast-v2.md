@@ -30,6 +30,7 @@ The following meta-data is **required** in asciicast v2:
 
 The following meta-data is **optional** in asciicast v2:
 
+* `duration` - duration of the whole recording in seconds (when it's known upfront),
 * `command` - command that was recorded, as given via `-c` option to `asciinema rec`,
 * `title` - title of the asciicast, as given via `-t` option to `asciinema rec`,
 * `env` - map of environment variables useful for debugging playback problems.
