@@ -1,5 +1,6 @@
 import curses
 
+
 class CursesWrapper:
     def __init__(self):
         self._stdscr = curses.initscr()
@@ -14,6 +15,7 @@ class CursesWrapper:
         # Flush stdin and clean up terminal
         curses.flushinp()
         curses.endwin()
+
 
 class Player:
 
