@@ -1,6 +1,4 @@
 import curses
-import sys
-import time
 
 class CursesWrapper:
     def __init__(self):
@@ -13,6 +11,7 @@ class CursesWrapper:
         return self
 
     def __exit__(self, type, value, traceback):
+        # Flush stdin and clean up terminal
         curses.flushinp()
         curses.endwin()
 
@@ -23,6 +22,8 @@ class Player:
             for delay, text in asciicast.stdout:
                 if max_wait and delay > max_wait:
                     delay = max_wait
-                time.sleep(delay / speed)
-                sys.stdout.write(text)
-                sys.stdout.flush()
+                delay_ms = int(delay * 1000 / speed)
+                curses.delay_output(delay_ms)
+                text_bytes = text.encode('utf-8')
+                curses.putp(text_bytes)
+                curses.doupdate()
