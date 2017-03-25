@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "width": 80,
+  "height": 40,
+  "duration": 6.46111,
+  "command": "/bin/bash",
+  "title": null,
+  "env": {
+    "TERM": "xterm-256color",
+    "SHELL": "/bin/bash"
+  },
+  "stdout": [
+    [
+      0.013659,
+      "\u001b[?1034hbash-3.2$ "
+    ],
+    [
+      1.923187,
+      "v"
+    ],
+    [
+      0.064049,
+      "i"
+    ],
+    [
+      0.032034,
+      "m"
+    ],
+    [
+      0.19157,
+      "\r\n"
+    ],
+    [
+      0.032342,
+      "\u001b[?1049h\u001b[?1h\u001b=\u001b[2;1H▽\u001b[6n\u001b[2;1H  \u001b[1;1H"
+    ],
+    [
+      0.001436,
+      "\u001b[1;40r\u001b[?12;25h\u001b[?12l\u001b[?25h\u001b[27m\u001b[m\u001b[H\u001b[2J\u001b[>c"
+    ],
+    [
+      0.000311,
+      "\u001b[?25l\u001b[1;1H\u001b[33m  1 \u001b[m\r\n\u001b[1m\u001b[34m~                                                                               \u001b[3;1H~                                                                               \u001b[4;1H~                                                                               \u001b[5;1H~                                                                               \u001b[6;1H~                                                                               \u001b[7;1H~                                                                               \u001b[8;1H~                                                                               \u001b[9;1H~                                                                               \u001b[10;1H~                                                                               \u001b[11;1H~                                                                               \u001b[12;1H~                                                                               \u001b[13;1H~                                      "
+    ],
+    [
+      3.9e-05,
+      "                                         \u001b[14;1H~                                                                               \u001b[15;1H~                                                                               \u001b[16;1H~                                                                               \u001b[17;1H~                                                                               \u001b[18;1H~                                                                               \u001b[19;1H~                                                                               \u001b[20;1H~                                                                               \u001b[21;1H~                                                                               \u001b[22;1H~                                                                               \u001b[23;1H~                                                                               \u001b[24;1H~                                                                               \u001b[25;1H~                 "
+    ],
+    [
+      9.2e-05,
+      "                                                              \u001b[26;1H~                                                                               \u001b[27;1H~                                                                               \u001b[28;1H~                                                                               \u001b[29;1H~                                                                               \u001b[30;1H~                                                                               \u001b[31;1H~                                                                               \u001b[32;1H~                                                                               \u001b[33;1H~                                                                               \u001b[34;1H~                                                                               \u001b[35;1H~                                                                               \u001b[36;1H~                                                                               \u001b[37;"
+    ],
+    [
+      2.4e-05,
+      "1H~                                                                               \u001b[38;1H~                                                                               \u001b[m\u001b[39;1H\u001b[1m\u001b[7m[No Name]                                                                       \u001b[m\u001b[14;32HVIM - Vi IMproved\u001b[16;33Hversion 7.4.8056\u001b[17;29Hby Bram Moolenaar et al.\u001b[18;19HVim is open source and freely distributable\u001b[20;26HBecome a registered Vim user!\u001b[21;18Htype  :help register\u001b[32m<Enter>\u001b[m   for information \u001b[23;18Htype  :q\u001b[32m<Enter>\u001b[m               to exit         \u001b[24;18Htype  :help\u001b[32m<Enter>\u001b[m  or  \u001b[32m<F1>\u001b[m  for on-line help\u001b[25;18Htype  :help version7\u001b[32m<Enter>\u001b[m   for version info\u001b[1;5H\u001b[?12l\u001b[?25h"
+    ],
+    [
+      1.070242,
+      "\u001b[?25l\u001b[40;1H:"
+    ],
+    [
+      2.3e-05,
+      "\u001b[?12l\u001b[?25h"
+    ],
+    [
+      0.503964,
+      "q"
+    ],
+    [
+      0.151903,
+      "u"
+    ],
+    [
+      0.04002,
+      "i"
+    ],
+    [
+      0.088084,
+      "t"
+    ],
+    [
+      0.287636,
+      "\r"
+    ],
+    [
+      0.002178,
+      "\u001b[?25l\u001b[40;1H\u001b[K\u001b[40;1H\u001b[?1l\u001b>\u001b[?12l\u001b[?25h\u001b[?1049l"
+    ],
+    [
+      0.000999,
+      "bash-3.2$ "
+    ],
+    [
+      1.58912,
+      "e"
+    ],
+    [
+      0.184114,
+      "x"
+    ],
+    [
+      0.087915,
+      "i"
+    ],
+    [
+      0.103987,
+      "t"
+    ],
+    [
+      0.087613,
+      "\r\n"
+    ]
+  ]
+}

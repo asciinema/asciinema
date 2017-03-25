@@ -12,6 +12,8 @@ import shlex
 import sys
 import struct
 
+from asciinema.term import raw
+
 
 class PtyRecorder:
 
@@ -125,22 +127,13 @@ class PtyRecorder:
                                      signal.SIGTERM,
                                      signal.SIGQUIT]))
 
-        try:
-            mode = tty.tcgetattr(pty.STDIN_FILENO)
-            tty.setraw(pty.STDIN_FILENO)
-            restore = 1
-        except tty.error:  # This is the same as termios.error
-            restore = 0
-
         _set_pty_size()
 
-        try:
-            _copy(pipe_r)
-        except (IOError, OSError):
-            pass
-        finally:
-            if restore:
-                tty.tcsetattr(pty.STDIN_FILENO, tty.TCSAFLUSH, mode)
+        with raw(pty.STDIN_FILENO):
+            try:
+                _copy(pipe_r)
+            except (IOError, OSError):
+                pass
 
         _signals(old_handlers)
 
