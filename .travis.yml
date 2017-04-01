@@ -2,10 +2,10 @@ sudo: false
 language: python
 
 python:
-  - "3.2"
   - "3.3"
   - "3.4"
   - "3.5"
+  - "3.6"
 
 before_install:
   - pip install pep8
