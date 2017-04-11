@@ -195,6 +195,10 @@ options you pass to `asciinema rec`/`asciinema play` command. If you happen to
 often use either `-c`, `-w` or `-y` with these commands then consider saving it
 as a default in the config file.
 
+*NOTE: If you want to publish your asciinema config file (in public dotfiles
+repository) you __should__ remove `token = ...` line from the file and use
+`ASCIINEMA_API_TOKEN` environment variable instead.*
+
 ### Configuration file locations
 
 In fact, the following locations are checked for the presence of the config
