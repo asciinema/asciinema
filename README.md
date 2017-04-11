@@ -160,7 +160,8 @@ asciinema uses a config file to keep API token and user settings. In most cases
 the location of this file is `$HOME/.config/asciinema/config`.
 
 *NOTE: When you first run asciinema, local API token is generated (UUID) and
-saved in the file (unless the file already exists).*
+saved in the file (unless the file already exists or you have set
+`ASCIINEMA_API_TOKEN` environment variable).*
 
 The auto-generated, minimal config file looks like this:
 
@@ -186,7 +187,8 @@ available options set:
 The options in `[api]` section are related to API location and authentication.
 To tell asciinema recorder to use your own asciinema site instance rather than
 the default one (asciinema.org), you can set `url` option. API URL can also be
-passed via `ASCIINEMA_API_URL` environment variable.
+passed via `ASCIINEMA_API_URL` environment variable, as well as API token, via
+`ASCIINEMA_API_TOKEN` environment variable.
 
 The options in `[record]` and `[play]` sections have the same meaning as the
 options you pass to `asciinema rec`/`asciinema play` command. If you happen to
