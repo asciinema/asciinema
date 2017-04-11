@@ -19,6 +19,8 @@ asciinema auth
 
 asciinema play -s 5 tests/vim.json
 
+asciinema play -s 5 -w 0.2 tests/vim.json
+
 asciinema rec -c who "$TMP_DATA_DIR/1.json"
 
 bash -c "sleep 1; pkill -28 -n -f 'm asciinema'" &
