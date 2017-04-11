@@ -1,5 +1,14 @@
 # asciinema changelog
 
+## 1.4.0 (2017-04-11)
+
+* Dropped distutils fallback in setup.py - setuptools required now (thanks Jakub "@jakubjedelsky" Jedelsky!)
+* Dropped official support for Python 3.2 (although it still works on 3.2)
+* New `--speed` option for `asciinema play` (thanks Bastiaan "@bastiaanb" Bakker!)
+* Ability to set API token via `ASCIINEMA_API_TOKEN` env variable (thanks Samantha "@samdmarshall" Marshall!)
+* Improved shutdown on more signals: CHLD, HUP, TERM, QUIT (thanks Richard "@typerlc"!)
+* Fixed stdin handling during playback via `asciinema play`
+
 ## 1.3.0 (2016-07-13)
 
 This release brings back the original Python implementation of asciinema. It's
