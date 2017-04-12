@@ -19,7 +19,7 @@ X, Linux and FreeBSD. Look for package named `asciinema`. See the
 ### Python package
 
 asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
-be installed with pip (Python 3 required):
+be installed with pip (Python 3 with setuptools required):
 
     sudo pip3 install asciinema
 
