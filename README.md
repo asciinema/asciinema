@@ -16,6 +16,14 @@ asciinema is included in repositories of most popular package managers on Mac OS
 X, Linux and FreeBSD. Look for package named `asciinema`. See the
 [list of available packages](https://asciinema.org/docs/installation).
 
+### Linux
+ 
+Install asciinema in seconds on [Ubuntu and other snap supported Linux distributions](https://snapcraft.io/docs/core/install) with:
+ 
+    snap install asciinema --classic
+ 
+Installing a snap is very quick. Snaps contain all necessary dependencies required to run. The snap will get automatically updated when a new version is pushed to the store.
+
 ### Python package
 
 asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
