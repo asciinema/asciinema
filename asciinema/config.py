@@ -40,6 +40,10 @@ class Config:
         return self.config.get('record', 'command', fallback=None)
 
     @property
+    def record_script(self):
+        return self.config.get('record', 'script', fallback=None)
+
+    @property
     def record_max_wait(self):
         return self.config.getfloat('record', 'maxwait', fallback=None)
 

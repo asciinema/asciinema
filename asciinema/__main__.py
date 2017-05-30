@@ -22,7 +22,7 @@ def positive_float(value):
 
 def rec_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
-    return RecordCommand(api, args.filename, args.command, args.title, args.yes, args.quiet, args.max_wait)
+    return RecordCommand(api, args.filename, args.command, args.script, args.title, args.yes, args.quiet, args.max_wait)
 
 
 def play_command(args, config):
@@ -78,6 +78,7 @@ For help on a specific command run:
     # create the parser for the "rec" command
     parser_rec = subparsers.add_parser('rec', help='Record terminal session')
     parser_rec.add_argument('-c', '--command', help='command to record, defaults to $SHELL', default=cfg.record_command)
+    parser_rec.add_argument('-s', '--script', help='script to record', default=cfg.record_script)
     parser_rec.add_argument('-t', '--title', help='title of the asciicast')
     parser_rec.add_argument('-w', '--max-wait', help='limit recorded terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.record_max_wait))
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true', default=cfg.record_yes)
