@@ -6,6 +6,10 @@ import urllib.error
 import html.parser
 from .stdout import Stdout
 
+try:
+    JSONDecodeError = json.decoder.JSONDecodeError
+except AttributeError:
+    JSONDecodeError = ValueError
 
 class Asciicast:
 
@@ -114,7 +118,7 @@ def load(filename):
         )
     except (OSError, urllib.error.HTTPError) as e:
         raise LoadError(str(e))
-    except json.decoder.JSONDecodeError as e:
+    except JSONDecodeError as e:
         raise LoadError('JSON decoding error: ' + str(e))
     except KeyError as e:
         raise LoadError('asciicast is missing key ' + str(e))
