@@ -11,6 +11,7 @@ try:
 except AttributeError:
     JSONDecodeError = ValueError
 
+
 class Asciicast:
 
     def __init__(self, stdout, width, height, duration, command=None, title=None, term=None, shell=None):
