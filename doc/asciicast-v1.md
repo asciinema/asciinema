@@ -4,7 +4,7 @@ asciicast file is JSON file containing meta-data like duration or title of the
 recording, and the actual content printed to terminal's stdout during
 recording.
 
-Version 1 of the format was used by the asciinema recorder versions 1.0 up to 1.3.
+Version 1 of the format was used by the asciinema recorder versions 1.0 up to 1.4.
 
 ## Attributes
 
