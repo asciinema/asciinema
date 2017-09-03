@@ -4,7 +4,6 @@ import pty
 from nose.tools import assert_equal
 from .test_helper import Test
 
-from asciinema.stdout import Stdout
 from asciinema.pty_recorder import PtyRecorder
 
 
