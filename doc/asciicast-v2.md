@@ -30,6 +30,7 @@ The following meta-data is **required** in asciicast v2:
 
 The following meta-data is **optional** in asciicast v2:
 
+* `timestamp` - Unix timestamp of the beginning of the recording session (integer),
 * `duration` - duration of the whole recording in seconds (when it's known upfront),
 * `command` - command that was recorded, as given via `-c` option to `asciinema rec`,
 * `title` - title of the asciicast, as given via `-t` option to `asciinema rec`,
