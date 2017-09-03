@@ -14,7 +14,8 @@ class PlayCommand(Command):
 
     def execute(self):
         try:
-            self.player.play(asciicast.load(self.filename), self.max_wait, self.speed)
+            with asciicast.open_from_url(self.filename) as a:
+                self.player.play(a, self.max_wait, self.speed)
 
         except asciicast.LoadError as e:
             self.print_warning("Playback failed: %s" % str(e))
