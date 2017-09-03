@@ -138,4 +138,3 @@ class PtyRecorder:
         _signals(old_handlers)
 
         os.waitpid(pid, 0)
-        output.close()
