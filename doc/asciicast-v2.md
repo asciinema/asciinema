@@ -47,9 +47,8 @@ Each element of the event stream is a 3-tuple encoded as JSON array:
 
 Where:
 
-* `time` (number) - relative time (in seconds) since the previous event occured
-  (or, for the first event in the stream, since the beginning of the recording
-  session),
+* `time` (float) - indicates when this event happened, represented as the number
+  of seconds since the beginning of the recording session,
 * `event-type` (string) - one of: `"o"`, `"i"`, `"size"`,
 * `event-data` (any) - event specific data, described separately for each event
   type.
@@ -60,7 +59,7 @@ For example, let's look at the following line:
 
 It represents the event which:
 
-* happened 1.001376 sec after a previous event in the stream,
+* happened 1.001376 sec after the start of the recording session,
 * is of type `"o"` (print to stdout, see below),
 * has data `"Hello world"`.
 
@@ -73,10 +72,8 @@ current and future versions of the format. For example, we may add new event
 type for text overlay (subtitles display).
 
 A tool which interprets the event stream (web/cli player, post-processor) should
-ignore event types it doesn't understand or doesn't care about. However, it
-should honor the amount of time specified by such stream item (by pausing for
-this amount of time when playing back) in order to keep the subsequent events on
-the timeline.
+ignore (or pass through) event types it doesn't understand or doesn't care
+about.
 
 #### "o" - output, printing to stdout
 
@@ -103,11 +100,8 @@ not supported by current versions of the recorder and players
 
 A very short asciicast v2 file looks like this:
 
-    {"version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": null, "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+    {"version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
     [0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
     [1.001376, "o", "This is overwritten\rThis is better."]
-    [0.143733, "o", " "]
-    [0.541828, "o", "Bye!"]
-
-The final `"Bye!"` was printed to a terminal 1.935785 sec (0.248848 + 1.001376 +
-0.143733 + 0.541828) after the beginning of the recording session.
+    [2.143733, "o", " "]
+    [6.541828, "o", "Bye!"]
