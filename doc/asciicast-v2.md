@@ -4,8 +4,8 @@ asciicast v2 file
 is [NDJSON (newline delimited JSON)](https://github.com/ndjson/ndjson-spec) file
 where:
 
-* __first line__ contains meta-data (duration, initial terminal size, etc),
-  encoded as JSON object,
+* __first line__ contains header (initial terminal size, timestamp and other
+  meta-data), encoded as JSON object,
 * __all subsequent lines__ form an event stream, _each line_ representing a
   separate event stream item, encoded as JSON array.
 
@@ -20,15 +20,15 @@ following benefits:
 * whether you're recording to a file or streaming via UNIX pipe or WebSocket the
   data representation is the same.
 
-## Meta-data
+## Header
 
-The following meta-data is **required** in asciicast v2:
+The following header attributes are **required** in asciicast v2:
 
 * `version` - set to 2,
 * `width` - initial terminal width (number of columns),
 * `height` - initial terminal height (number of rows).
 
-The following meta-data is **optional** in asciicast v2:
+The following header attributes are **optional** in asciicast v2:
 
 * `timestamp` - Unix timestamp of the beginning of the recording session (integer),
 * `duration` - duration of the whole recording in seconds (when it's known upfront),
@@ -36,7 +36,7 @@ The following meta-data is **optional** in asciicast v2:
 * `title` - title of the asciicast, as given via `-t` option to `asciinema rec`,
 * `env` - map of environment variables useful for debugging playback problems.
 
-Example meta-data line:
+Example header line:
 
     {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "command": "/bin/zsh", "title": null, "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
 
