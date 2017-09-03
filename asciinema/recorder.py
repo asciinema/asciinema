@@ -5,15 +5,14 @@ import time
 import codecs
 from multiprocessing import Process, Queue
 
-from .asciicast import Asciicast
 from .pty_recorder import PtyRecorder
-from .stdout import Stdout
 
 
 def write_json_lines_from_queue(path, queue):
     with open(path, 'w') as f:
         for json_value in iter(queue.get, None):
-            f.write(json.dumps(json_value, ensure_ascii=False) + "\n")
+            line = json.dumps(json_value, ensure_ascii=False, indent=None, separators=(', ', ': '))
+            f.write(line + '\n')
 
 
 class v2_writer():
