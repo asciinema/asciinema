@@ -11,7 +11,7 @@ requirements = []
 setup(
     name='asciinema',
     version=asciinema.__version__,
-    packages=['asciinema', 'asciinema.commands'],
+    packages=['asciinema', 'asciinema.commands', 'asciinema.asciicast'],
     license='GNU GPLv3',
     description='Terminal session recorder',
     author=asciinema.__author__,
