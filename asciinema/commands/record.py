@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from asciinema.commands.command import Command
-from asciinema.recorder import Recorder
+from asciinema.asciicast.v2 import Recorder
 from asciinema.api import APIError
 
 
