@@ -37,13 +37,13 @@ The following meta-data is **optional** in asciicast v2:
 
 Example meta-data line:
 
-    { "version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
+    {"version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": null, "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
 
 ## Event stream
 
 Each element of the event stream is a 3-tuple encoded as JSON array:
 
-    [ time, event-type, event-data ]
+    [time, event-type, event-data]
 
 Where:
 
@@ -56,7 +56,7 @@ Where:
 
 For example, let's look at the following line:
 
-    [ 1.001376, "o", "Hello world" ]
+    [1.001376, "o", "Hello world"]
 
 It represents the event which:
 
@@ -103,11 +103,11 @@ not supported by current versions of the recorder and players
 
 A very short asciicast v2 file looks like this:
 
-    { "version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": null, "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" } }
-    [ 0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n" ]
-    [ 1.001376, "o", "This is overwritten\rThis is better." ]
-    [ 0.143733, "o", " " ]
-    [ 0.541828, "o", "Bye!" ]
+    {"version": 2, "width": 80, "height": 24, "command": "/bin/zsh", "title": null, "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+    [0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
+    [1.001376, "o", "This is overwritten\rThis is better."]
+    [0.143733, "o", " "]
+    [0.541828, "o", "Bye!"]
 
 The final `"Bye!"` was printed to a terminal 1.935785 sec (0.248848 + 1.001376 +
 0.143733 + 0.541828) after the beginning of the recording session.
