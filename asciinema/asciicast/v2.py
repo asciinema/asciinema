@@ -93,6 +93,7 @@ class Recorder:
             'version': 2,
             'width': cols,
             'height': lines,
+            'timestamp': int(time.time()),
             'env': saved_env,
             # TODO save max_wait here
         }
