@@ -81,14 +81,14 @@ class open_from_url():
             line = self.file.readline()
             self.file.seek(0)
 
-            try: # parse it as v2
+            try:  # parse it as v2
                 v2_header = json.loads(line)
                 if v2_header.get('version') == 2:
                     return v2.load_from_file(self.file)
                 else:
                     raise LoadError(self.FORMAT_ERROR)
             except JSONDecodeError as e:
-                try: # parse it as v1
+                try:  # parse it as v1
                     attrs = json.load(self.file)
                     self.file.close()
                     if attrs.get('version') == 1:
