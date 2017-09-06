@@ -3,7 +3,7 @@
 First, if you're opening a Github issue make sure it goes to the correct repository:
 
 * [asciinema/asciinema](https://github.com/asciinema/asciinema/issues) - command-line recorder
-* [asciinema/asciinema.org](https://github.com/asciinema/asciinema.org/issues) - public website hosting recordings
+* [asciinema/asciinema-server](https://github.com/asciinema/asciinema-server/issues) - public website hosting recordings
 * [asciinema/asciinema-player](https://github.com/asciinema/asciinema-player/issues) - player
 
 ## Reporting bugs
