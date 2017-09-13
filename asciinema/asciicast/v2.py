@@ -34,7 +34,7 @@ def load_from_file(f):
 
 
 def write_json_lines_from_queue(path, queue):
-    with open(path, 'w') as f:
+    with open(path, mode='w', buffering=1) as f:
         for json_value in iter(queue.get, None):
             line = json.dumps(json_value, ensure_ascii=False, indent=None, separators=(', ', ': '))
             f.write(line + '\n')
