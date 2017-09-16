@@ -80,23 +80,23 @@ class Recorder:
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
         self.env = env if env is not None else os.environ
 
-    def record(self, path, user_command, title, max_wait):
+    def record(self, path, user_command, env_whitelist, title, max_wait):
         cols = int(subprocess.check_output(['tput', 'cols']))
         lines = int(subprocess.check_output(['tput', 'lines']))
 
-        saved_env = {
-            'TERM': self.env.get('TERM'),
-            'SHELL': self.env.get('SHELL')
-        }
+        vars = filter(None, map((lambda var: var.strip()), env_whitelist.split(',')))
+        captured_env = {var: self.env.get(var) for var in vars}
 
         header = {
             'version': 2,
             'width': cols,
             'height': lines,
             'timestamp': int(time.time()),
-            'env': saved_env,
             # TODO save max_wait here
         }
+
+        if captured_env:
+            header['env'] = captured_env
 
         if title:
             header['title'] = title
