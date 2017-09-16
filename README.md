@@ -6,7 +6,7 @@
 Terminal session recorder and the best companion of
 [asciinema.org](https://asciinema.org).
 
-[![demo](https://asciinema.org/a/42383.png)](https://asciinema.org/a/42383?autoplay=1)
+[![demo](https://asciinema.org/a/113463.png)](https://asciinema.org/a/113463?autoplay=1)
 
 ## Installation
 
