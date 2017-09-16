@@ -102,7 +102,7 @@ Available options:
 
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
 * `-t, --title=<title>` - Specify the title of the asciicast
-* `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max <sec> seconds
+* `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max `<sec>` seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
 * `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
 
@@ -140,7 +140,7 @@ Playing from IPFS:
 
 Available options:
 
-* `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max <sec> seconds
+* `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max `<sec>` seconds
 * `-s, --speed=<factor>` - Playback speedup (can be fractional)
 
 NOTE: it is recommended to run `asciinema play` in a terminal of dimensions not
