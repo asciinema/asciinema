@@ -11,26 +11,31 @@ Terminal session recorder and the best companion of
 
 ## Installation
 
-### Native packages
-
-asciinema is included in repositories of most popular package managers on Mac OS
-X, Linux and FreeBSD. Look for package named `asciinema`. See the
-[list of available packages](https://asciinema.org/docs/installation).
-
-### Linux
- 
-Install asciinema in seconds on [Ubuntu and other snap supported Linux distributions](https://snapcraft.io/docs/core/install) with:
- 
-    snap install asciinema --classic
- 
-Installing a snap is very quick. Snaps contain all necessary dependencies required to run. The snap will get automatically updated when a new version is pushed to the store.
-
 ### Python package
 
 asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
 be installed with pip (Python 3 with setuptools required):
 
     sudo pip3 install asciinema
+
+This is the recommended way of installation, which gives you the latest released
+version.
+
+### Native packages
+
+asciinema is included in repositories of most popular package managers on Mac OS
+X, Linux and FreeBSD. Look for package named `asciinema`. See the
+[list of available packages](https://asciinema.org/docs/installation).
+
+### Snap supported Linux distros
+
+If your run [Ubuntu or other snap supported Linux distribution](https://snapcraft.io/docs/core/install) you can
+install asciinema with:
+
+    snap install asciinema --classic
+
+The snap contains all necessary dependencies required to run asciinema, and will
+get automatically updated when a new version is pushed to the store.
 
 ### Docker image
 
