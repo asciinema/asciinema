@@ -177,10 +177,9 @@ assign new tokens to your account from as many machines as you want.
 
 ## Hosting the recordings on the web
 
-As mentioned in the `Usage / rec` section above, if the `filename` argument to
-`asciinema rec` is omitted then the resulting asciicast is uploaded
-to [asciinema.org](https://asciinema.org) where it's hosted for further playback
-in a web browser.
+As mentioned in the `Usage > rec` section above, if the `filename` argument to
+`asciinema rec` is omitted then the recorded asciicast is uploaded
+to [asciinema.org](https://asciinema.org). You can watch it there and share it via secret URL.
 
 If you prefer to host the recordings yourself, you can do so by recording to a
 file (`asciinema rec demo.json`) and using
