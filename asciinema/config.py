@@ -10,6 +10,7 @@ class ConfigError(Exception):
 
 
 DEFAULT_API_URL = 'https://asciinema.org'
+DEFAULT_RECORD_ENV = 'SHELL,TERM'
 
 
 class Config:
@@ -38,6 +39,10 @@ class Config:
     @property
     def record_command(self):
         return self.config.get('record', 'command', fallback=None)
+
+    @property
+    def record_env(self):
+        return self.config.get('record', 'env', fallback=DEFAULT_RECORD_ENV)
 
     @property
     def record_max_wait(self):
