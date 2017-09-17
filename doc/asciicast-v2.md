@@ -22,23 +22,49 @@ following benefits:
 
 ## Header
 
-The following header attributes are **required** in asciicast v2:
+asciicast header is JSON-encoded object containing recording meta-data.
 
-* `version` - set to 2,
-* `width` - initial terminal width (number of columns),
-* `height` - initial terminal height (number of rows).
+Example header:
 
-The following header attributes are **optional** in asciicast v2:
+```json
+{"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Vim tutorial #1", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+```
 
-* `timestamp` - Unix timestamp of the beginning of the recording session (integer),
-* `duration` - duration of the whole recording in seconds (when it's known upfront),
-* `command` - command that was recorded, as given via `-c` option to `asciinema rec`,
-* `title` - title of the asciicast, as given via `-t` option to `asciinema rec`,
-* `env` - map of environment variables useful for debugging playback problems.
+### Required header attributes:
 
-Example header line:
+#### `version`
 
-    {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "command": "/bin/zsh", "title": null, "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+Must be set to `2`.
+
+#### `width`
+
+Initial terminal width (number of columns). Integer.
+
+#### `height`
+
+Initial terminal height (number of rows). Integer.
+
+### Optional header attributes:
+
+#### `timestamp`
+
+Unix timestamp of the beginning of the recording session. Integer.
+
+#### `duration`
+
+Duration of the whole recording in seconds (when it's known upfront). Float.
+
+#### `command`
+
+Command that was recorded, as given via `-c` option to `asciinema rec`. String.
+
+#### `title`
+
+Title of the asciicast, as given via `-t` option to `asciinema rec`. String.
+
+#### `env`
+
+Map of captured environment variables. Object (String -> String).
 
 ## Event stream
 
@@ -101,7 +127,7 @@ not supported by current versions of the recorder and players
 
 A very short asciicast v2 file looks like this:
 
-    {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "command": "/bin/zsh", "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+    {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
     [0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
     [1.001376, "o", "This is overwritten\rThis is better."]
     [2.143733, "o", " "]
