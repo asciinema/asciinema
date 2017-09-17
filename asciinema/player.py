@@ -29,11 +29,11 @@ class Player:
                 if 0x20 in data:  # space
                     exit = self._pause_loop()
                     if exit:
-                      break
+                        break
                 if 0x2b in data:  # plus sign
-                    speed = 2*speed
+                    speed = 2 * speed
                 if 0x2d in data:  # minus sign
-                    speed = speed/2
+                    speed = speed / 2
 
     def _pause_loop(self):
         while True:
