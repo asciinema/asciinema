@@ -29,7 +29,7 @@ X, Linux and FreeBSD. Look for package named `asciinema`. See the
 
 ### Snap supported Linux distros
 
-If your run [Ubuntu or other snap supported Linux distribution](https://snapcraft.io/docs/core/install) you can
+If you run [Ubuntu or other snap supported Linux distribution](https://snapcraft.io/docs/core/install) you can
 install asciinema with:
 
     snap install asciinema --classic
