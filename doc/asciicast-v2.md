@@ -69,12 +69,39 @@ Map of captured environment variables. Object (String -> String).
 Example env:
 
 ```json
-{"SHELL": "xterm-256color", "TERM": "/bin/bash"}
+"env": {
+  "SHELL": "xterm-256color",
+  "TERM": "/bin/bash"
+}
 ```
 
 Official asciinema recorder captures only `SHELL` and `TERM` by default. All
 implementations of asciicast-compatible terminal recorder should not capture any
 additional environment variables unless explicitly permitted by the user.
+
+#### `theme`
+
+Color theme of the recorded terminal. Object, with the following attributes:
+
+- `fg` - normal text color,
+- `bg` - normal background color,
+- `palette` - list of 8 or 16 colors, separated by colon character.
+
+All colors are in the CSS `#rrggbb` format.
+
+Example theme:
+
+```json
+"theme": {
+  "fg": "#d0d0d0",
+  "bg": "#212121",
+  "palette": "#151515:#ac4142:#7e8e50:#e5b567:#6c99bb:#9f4e85:#7dd6cf:#d0d0d0:#505050:#ac4142:#7e8e50:#e5b567:#6c99bb:#9f4e85:#7dd6cf:#f5f5f5"
+}
+```
+
+A specific technique of obtaining the colors from a terminal (using xrdb,
+requesting them from a terminal via special escape sequences etc) doesn't matter
+as long as the recorder can save it in the above format.
 
 ## Event stream
 
