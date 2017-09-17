@@ -32,6 +32,8 @@ class Player:
                         paused_data = read_non_blocking(sys.stdin.fileno())
                         if 0x20 in paused_data:
                             break
+                        if 0x03 in data:  # ctrl-c
+                            return
                 if 0x2b in data:  # plus sign
                     speed = 2*speed
                 if 0x2d in data:  # minus sign
