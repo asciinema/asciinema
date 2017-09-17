@@ -107,9 +107,6 @@ class Recorder:
         if title:
             header['title'] = title
 
-        if user_command:
-            header['command'] = user_command
-
         command = user_command or self.env.get('SHELL') or 'sh'
 
         with incremental_writer(path, header, rec_stdin) as w:
