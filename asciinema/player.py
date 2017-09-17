@@ -27,14 +27,19 @@ class Player:
                 if 0x03 in data:  # ctrl-c
                     break
                 if 0x20 in data:  # space
-                    while True:
-                        time.sleep(0.001)
-                        paused_data = read_non_blocking(sys.stdin.fileno())
-                        if 0x20 in paused_data:
-                            break
-                        if 0x03 in data:  # ctrl-c
-                            return
+                    exit = self._pause_loop()
+                    if exit:
+                      break
                 if 0x2b in data:  # plus sign
                     speed = 2*speed
                 if 0x2d in data:  # minus sign
                     speed = speed/2
+
+    def _pause_loop(self):
+        while True:
+            time.sleep(0.001)
+            paused_data = read_non_blocking(sys.stdin.fileno())
+            if 0x20 in paused_data:
+                return False
+            if 0x03 in paused_data:  # ctrl-c
+                return True
