@@ -30,7 +30,6 @@ class Player:
                 if 0x03 in data:  # ctrl-c
                     break
                 if 0x20 in data or step:  # space
-                    step = False
                     step, exit = self._pause_loop()
                     if exit:
                         break
