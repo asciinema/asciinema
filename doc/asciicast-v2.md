@@ -66,6 +66,16 @@ Title of the asciicast, as given via `-t` option to `asciinema rec`. String.
 
 Map of captured environment variables. Object (String -> String).
 
+Example env:
+
+```json
+{"SHELL": "xterm-256color", "TERM": "/bin/bash"}
+```
+
+Official asciinema recorder captures only `SHELL` and `TERM` by default. All
+implementations of asciicast-compatible terminal recorder should not capture any
+additional environment variables unless explicitly permitted by the user.
+
 ## Event stream
 
 Each element of the event stream is a 3-tuple encoded as JSON array:
