@@ -82,9 +82,6 @@ all available commands with their options.
 
 __Record terminal session.__
 
-This is the single most important command in asciinema, since it is how you
-utilize this tool's main job.
-
 By running `asciinema rec [filename]` you start a new recording session. The
 command (process) that is recorded can be specified with `-c` option (see
 below), and defaults to `$SHELL` which is what you want in most cases.
