@@ -15,9 +15,12 @@ class Player:
             self._play(asciicast, max_wait, speed, False)
 
     def _play(self, asciicast, max_wait, speed, raw):
+        step = False
         for delay, text in asciicast.stdout:
             if max_wait and delay > max_wait:
                 delay = max_wait
+            if step:
+                delay = 0
             time.sleep(delay / speed)
             sys.stdout.write(text)
             sys.stdout.flush()
@@ -26,3 +29,22 @@ class Player:
                 data = read_non_blocking(sys.stdin.fileno())
                 if 0x03 in data:  # ctrl-c
                     break
+                if 0x20 in data or step:  # space
+                    step, exit = self._pause_loop()
+                    if exit:
+                        break
+                if 0x2b in data:  # plus sign
+                    speed = 2 * speed
+                if 0x2d in data:  # minus sign
+                    speed = speed / 2
+
+    def _pause_loop(self):
+        while True:
+            time.sleep(0.001)
+            paused_data = read_non_blocking(sys.stdin.fileno())
+            if 0x2e in paused_data:  # period; step one terminal change
+                return True, False
+            if 0x20 in paused_data:
+                return False, False
+            if 0x03 in paused_data:  # ctrl-c
+                return False, True
