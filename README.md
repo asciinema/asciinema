@@ -155,7 +155,7 @@ sequences for new terminal size.
 __Upload recorded asciicast to asciinema.org site.__
 
 This command uploads given asciicast (as recorded by `rec` command) to
-asciinema.org for further playback in a web browser.
+asciinema.org, where it can be watched and shared.
 
 `asciinema rec demo.json` + `asciinema play demo.json` + `asciinema upload
 demo.json` is a nice combo for when you want to review an asciicast before
