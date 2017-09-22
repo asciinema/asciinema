@@ -3,17 +3,18 @@ import os
 import tempfile
 
 from asciinema.commands.command import Command
-from asciinema.recorder import Recorder
+from asciinema.asciicast.v2 import Recorder
 from asciinema.api import APIError
 
 
 class RecordCommand(Command):
 
-    def __init__(self, api, filename, command, title, assume_yes, quiet, max_wait, recorder=None):
+    def __init__(self, api, filename, command, env_whitelist, title, assume_yes, quiet, max_wait, recorder=None):
         Command.__init__(self, quiet)
         self.api = api
         self.filename = filename
         self.command = command
+        self.env_whitelist = env_whitelist
         self.title = title
         self.assume_yes = assume_yes or quiet
         self.max_wait = max_wait
@@ -28,6 +29,7 @@ class RecordCommand(Command):
 
         try:
             _touch(self.filename)
+            os.remove(self.filename)
         except OSError as e:
             self.print_warning("Can't record to %s: %s" % (self.filename, str(e)))
             return 1
@@ -35,7 +37,7 @@ class RecordCommand(Command):
         self.print_info("Asciicast recording started.")
         self.print_info("""Hit Ctrl-D or type "exit" to finish.""")
 
-        self.recorder.record(self.filename, self.command, self.title, self.max_wait)
+        self.recorder.record(self.filename, self.command, self.env_whitelist, self.title, self.max_wait)
 
         self.print_info("Asciicast recording finished.")
 

@@ -224,6 +224,7 @@ available options set:
 
     [record]
     command = /bin/bash -l
+    env = SHELL,TERM,USER
     maxwait = 2
     yes = true
     quiet = true
