@@ -121,11 +121,19 @@ prompt or play a sound when the shell is being recorded.
 
 Available options:
 
+* `-i, --stdin` - Enable stdin (keyboard) recording (see below)
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
 * `-t, --title=<title>` - Specify the title of the asciicast
 * `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max `<sec>` seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
 * `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
+
+Stdin recording allows for capturing of all characters typed in by the user in
+the currently recorded shell. This may be used by a player (e.g.
+[asciinema-player](https://github.com/asciinema/asciinema-player)) to display
+pressed keys. Because it's basically a key-logging (scoped to a single shell
+instance), it's disabled by default, and has to be explicitly enabled via `-i`
+option.
 
 ### `play <filename>`
 
@@ -229,6 +237,7 @@ available options set:
 
     [record]
     command = /bin/bash -l
+    stdin = no
     env = SHELL,TERM,USER
     maxwait = 2
     yes = true
