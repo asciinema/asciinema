@@ -139,7 +139,7 @@ A tool which interprets the event stream (web/cli player, post-processor) should
 ignore (or pass through) event types it doesn't understand or doesn't care
 about.
 
-#### "o" - output, printing to stdout
+#### "o" - data written to stdout
 
 Event of type `"o"` represents printing new data to terminal's stdout.
 
@@ -148,11 +148,19 @@ has to be valid, UTF-8 encoded JSON string as described
 in [JSON RFC section 2.5](http://www.ietf.org/rfc/rfc4627.txt), with all
 non-printable Unicode codepoints encoded as `\uXXXX`.
 
-#### "i" - input, from keyboard (planned?)
+#### "i" - data read from stdin
 
-TODO
+Event of type `"i"` represents character(s) typed in (or pasted) by the user, or
+more specifically, data sent from terminal emulator to stdin of the recorded
+shell.
 
-not supported by current versions of the recorder and players
+`event-data` is a string containing the captured character(s). Like with `"o"`
+event, it's UTF-8 encoded JSON string, with all non-printable Unicode codepoints
+encoded as `\uXXXX`.
+
+_Note: Official asciinema recorder doesn't capture stdin by default. All
+implementations of asciicast-compatible terminal recorder should not capture it
+either unless explicitly permitted by the user._
 
 #### "size" - terminal resize (planned?)
 

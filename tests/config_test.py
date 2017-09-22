@@ -35,6 +35,11 @@ def test_default_api_url():
     assert_equal('https://asciinema.org', config.api_url)
 
 
+def test_default_record_stdin():
+    config = create_config('')
+    assert_equal(False, config.record_stdin)
+
+
 def test_default_record_command():
     config = create_config('')
     assert_equal(None, config.record_command)
@@ -105,6 +110,11 @@ def test_record_command():
     command = 'bash -l'
     config = create_config("[record]\ncommand = %s" % command)
     assert_equal(command, config.record_command)
+
+
+def test_record_stdin():
+    config = create_config("[record]\nstdin = yes")
+    assert_equal(True, config.record_stdin)
 
 
 def test_record_env():

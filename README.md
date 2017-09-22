@@ -105,24 +105,35 @@ Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
 `exit`). If the recorded process is not a shell then recording finishes when
 the process exits.
 
-If the `filename` argument is given then the resulting recording
-(called [asciicast](doc/asciicast-v1.md)) is saved to a local file. It can later be replayed with
-`asciinema play <filename>` and/or uploaded to asciinema.org with `asciinema
-upload <filename>`. If the `filename` argument is omitted then (after asking for
-confirmation) the resulting asciicast is uploaded to asciinema.org, where it can
-be watched and shared.
+If the `filename` argument is omitted then (after asking for confirmation) the
+resulting asciicast is uploaded to
+[asciinema-server](https://github.com/asciinema/asciinema-server) (by default to
+asciinema.org), where it can be watched and shared.
+
+If the `filename` argument is given then the resulting recording (called
+[asciicast](doc/asciicast-v2.md)) is saved to a local file. It can later be
+replayed with `asciinema play <filename>` and/or uploaded to asciinema server
+with `asciinema upload <filename>`.
 
 `ASCIINEMA_REC=1` is added to recorded process environment variables. This
 can be used by your shell's config file (`.bashrc`, `.zshrc`) to alter the
-prompt or play a sound when shell is being recorded.
+prompt or play a sound when the shell is being recorded.
 
 Available options:
 
+* `-i, --stdin` - Enable stdin (keyboard) recording (see below)
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
 * `-t, --title=<title>` - Specify the title of the asciicast
 * `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max `<sec>` seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
 * `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
+
+Stdin recording allows for capturing of all characters typed in by the user in
+the currently recorded shell. This may be used by a player (e.g.
+[asciinema-player](https://github.com/asciinema/asciinema-player)) to display
+pressed keys. Because it's basically a key-logging (scoped to a single shell
+instance), it's disabled by default, and has to be explicitly enabled via `-i`
+option.
 
 ### `play <filename>`
 
@@ -226,6 +237,7 @@ available options set:
 
     [record]
     command = /bin/bash -l
+    stdin = no
     env = SHELL,TERM,USER
     maxwait = 2
     yes = true

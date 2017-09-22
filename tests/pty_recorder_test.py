@@ -11,13 +11,12 @@ class FakeStdout:
 
     def __init__(self):
         self.data = []
-        self.closed = False
 
-    def write(self, data):
+    def write_stdout(self, data):
         self.data.append(data)
 
-    def close(self):
-        self.close = True
+    def write_stdin(self, data):
+        pass
 
 
 class TestPtyRecorder(Test):

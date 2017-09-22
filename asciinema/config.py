@@ -37,6 +37,10 @@ class Config:
                 raise ConfigError('no API token found in config file, and ASCIINEMA_API_TOKEN is unset')
 
     @property
+    def record_stdin(self):
+        return self.config.getboolean('record', 'stdin', fallback=False)
+
+    @property
     def record_command(self):
         return self.config.get('record', 'command', fallback=None)
 
