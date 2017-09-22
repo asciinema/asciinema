@@ -5,7 +5,8 @@ import tempfile
 from asciinema.commands.command import Command
 from asciinema.recorder import Recorder
 from asciinema.api import APIError
-
+from asciinema.player import Player
+import asciinema.asciicast as asciicast
 
 class RecordCommand(Command):
 
@@ -38,26 +39,31 @@ class RecordCommand(Command):
         self.recorder.record(self.filename, self.command, self.title, self.max_wait)
 
         self.print_info("Asciicast recording finished.")
-
-        if upload:
-            if not self.assume_yes:
-                self.print_info("Press <Enter> to upload, <Ctrl-C> to cancel.")
-                try:
-                    sys.stdin.readline()
-                except KeyboardInterrupt:
-                    return 0
-
-            try:
-                url, warn = self.api.upload_asciicast(self.filename)
-                if warn:
-                    self.print_warning(warn)
-                os.remove(self.filename)
-                self.print(url)
-            except APIError as e:
-                self.print_warning("Upload failed: %s" % str(e))
-                self.print_warning("Retry later by running: asciinema upload %s" % self.filename)
-                return 1
-
+        shouldReview = True
+        while (shouldReview):
+                if upload:
+                    if not self.assume_yes:
+                        self.print_info("Press <Enter> to upload, 'r' to review, <Ctrl-C> to cancel.")
+                        try:
+                            if (not sys.stdin.readline().startswith('r')):
+                                shouldReview = False
+                        except KeyboardInterrupt:
+                            return 0
+                    if (not shouldReview):
+                            try:
+                               url, warn = self.api.upload_asciicast(self.filename)
+                               if warn:
+                                   self.print_warning(warn)
+                                   os.remove(self.filename)
+                                   self.print(url)
+                            except APIError as e:
+                                self.print_warning("Upload failed: %s" % str(e))
+                                self.print_warning("Retry later by running: asciinema upload %s" % self.filename)
+                                return 1
+                    else:
+                            # review it
+                            self.print("Playback in progress...")
+                            Player().play(asciicast.load(self.filename), self.max_wait)
         return 0
 
 
