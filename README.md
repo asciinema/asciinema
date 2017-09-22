@@ -1,6 +1,8 @@
+_Note: This is README for `development` branch. [See the version for latest stable release](https://github.com/asciinema/asciinema/blob/master/README.md)._
+
 # asciinema
 
-[![Build Status](https://travis-ci.org/asciinema/asciinema.svg?branch=master)](https://travis-ci.org/asciinema/asciinema)
+[![Build Status](https://travis-ci.org/asciinema/asciinema.svg?branch=develop)](https://travis-ci.org/asciinema/asciinema)
 [![PyPI](https://img.shields.io/pypi/v/asciinema.svg)](https://pypi.org/project/asciinema/)
 [![license](http://img.shields.io/badge/license-GNU-blue.svg)](https://raw.githubusercontent.com/asciinema/asciinema/master/LICENSE)
 
@@ -61,13 +63,26 @@ as the command, install extra packages and manually start `asciinema rec`:
     root@6689517d99a1:~# apt-get install foobar
     root@6689517d99a1:~# asciinema rec
 
-### Running latest version from master
+### Running latest version from source code checkout
 
-If none of the above works for you (or you want to help with development) just
-clone the repo and run asciinema straight from the checkout:
+If none of the above works for you just clone the repo and run asciinema
+straight from the checkout.
+
+Clone the repo:
 
     git clone https://github.com/asciinema/asciinema.git
     cd asciinema
+
+If you want latest stable version:
+
+    git checkout master
+
+If you want current development version:
+
+    git checkout develop
+
+Then run it with:
+
     python3 -m asciinema --version
 
 ## Usage
