@@ -72,7 +72,7 @@ class RecordCommand(Command):
 
 
 def _tmp_path():
-    fd, path = tempfile.mkstemp(suffix='-asciinema.json')
+    fd, path = tempfile.mkstemp(suffix='-ascii.cast')
     os.close(fd)
     return path
 

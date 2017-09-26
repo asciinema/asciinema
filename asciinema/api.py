@@ -29,7 +29,7 @@ class Api:
             try:
                 status, headers, body = self.http_adapter.post(
                     self.upload_url(),
-                    files={"asciicast": ("asciicast.json", f)},
+                    files={"asciicast": ("ascii.cast", f)},
                     headers=self._headers(),
                     username=self.user,
                     password=self.token
