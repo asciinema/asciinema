@@ -13,10 +13,3 @@ before_install:
 script:
   - find . -name \*.py -exec pep8 --ignore=E501 {} +
   - make test
-
-notifications:
-  irc:
-    channels:
-      - "chat.freenode.net#asciinema"
-    use_notice: true
-    skip_join: true
