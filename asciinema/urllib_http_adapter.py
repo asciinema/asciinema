@@ -1,5 +1,4 @@
 import codecs
-import mimetypes
 import sys
 import uuid
 import io
@@ -43,7 +42,7 @@ class MultipartFormdataEncoder:
             filename = self.u(filename)
             yield encoder('--{}\r\n'.format(self.boundary))
             yield encoder(self.u('Content-Disposition: form-data; name="{}"; filename="{}"\r\n').format(key, filename))
-            yield encoder('Content-Type: {}\r\n'.format(mimetypes.guess_type(filename)[0] or 'application/octet-stream'))
+            yield encoder('Content-Type: application/octet-stream\r\n')
             yield encoder('\r\n')
             data = f.read()
             yield (data, len(data))
