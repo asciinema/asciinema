@@ -144,7 +144,7 @@ your terminal.
 
 Playing from a local file:
 
-    asciinema play /path/to/asciicast.json
+    asciinema play /path/to/asciicast.cast
 
 Playing from HTTP(S) URL:
 
@@ -159,8 +159,8 @@ type="application/asciicast+json" href="....json">` in page's HTML):
 
 Playing from stdin:
 
-    cat /path/to/asciicast.json | asciinema play -
-    ssh user@host cat asciicast.json | asciinema play -
+    cat /path/to/asciicast.cast | asciinema play -
+    ssh user@host cat asciicast.cast | asciinema play -
 
 Playing from IPFS:
 
@@ -183,8 +183,8 @@ __Upload recorded asciicast to asciinema.org site.__
 This command uploads given asciicast (as recorded by `rec` command) to
 asciinema.org, where it can be watched and shared.
 
-`asciinema rec demo.json` + `asciinema play demo.json` + `asciinema upload
-demo.json` is a nice combo for when you want to review an asciicast before
+`asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload
+demo.cast` is a nice combo for when you want to review an asciicast before
 publishing it on asciinema.org.
 
 ### `auth`
@@ -210,7 +210,7 @@ As mentioned in the `Usage > rec` section above, if the `filename` argument to
 to [asciinema.org](https://asciinema.org). You can watch it there and share it via secret URL.
 
 If you prefer to host the recordings yourself, you can do so by recording to a
-file (`asciinema rec demo.json`) and using
+file (`asciinema rec demo.cast`) and using
 [asciinema's standalone web player](https://github.com/asciinema/asciinema-player#self-hosting-quick-start)
 in your HTML page.
 

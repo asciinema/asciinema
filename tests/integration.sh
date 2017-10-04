@@ -21,15 +21,15 @@ asciinema play -s 5 tests/vim.json
 
 asciinema play -s 5 -w 0.2 tests/vim.json
 
-asciinema rec -c who "$TMP_DATA_DIR/1.json"
+asciinema rec -c who "$TMP_DATA_DIR/1.cast"
 
 bash -c "sleep 1; pkill -28 -n -f 'm asciinema'" &
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/2.json"
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/2.cast"
 
 bash -c "sleep 1; pkill -n -f 'bash -c echo t3st'" &
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/3.json"
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/3.cast"
 
 bash -c "sleep 1; pkill -9 -n -f 'bash -c echo t3st'" &
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/4.json"
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/4.cast"
 
-asciinema rec -i -c 'bash -c "echo t3st; sleep 1; echo ok"' "$TMP_DATA_DIR/5.json"
+asciinema rec -i -c 'bash -c "echo t3st; sleep 1; echo ok"' "$TMP_DATA_DIR/5.cast"
