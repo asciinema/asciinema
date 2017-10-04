@@ -1,11 +1,12 @@
 import sys
 import json.decoder
-import urllib.request
+from urllib.request import Request, urlopen
 import urllib.error
 import html.parser
 import tempfile
 import shutil
 import io
+import gzip
 
 from . import v1
 from . import v2
@@ -50,8 +51,16 @@ def download_url(url):
         return tmp_file
 
     if url.startswith("http:") or url.startswith("https:"):
-        response = urllib.request.urlopen(url)
-        data = response.read().decode(errors='replace')
+        req = Request(url)
+        req.add_header('Accept-Encoding', 'gzip')
+
+        response = urlopen(req)
+        data = response.read()
+
+        if response.headers['Content-Encoding'] == 'gzip':
+            data = gzip.decompress(data)
+
+        data = data.decode(errors='replace')
 
         content_type = response.headers['Content-Type']
         if content_type and content_type.startswith('text/html'):
