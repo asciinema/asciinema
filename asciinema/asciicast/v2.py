@@ -43,8 +43,7 @@ def write_json_lines_from_queue(path, queue):
 class incremental_writer():
 
     def __init__(self, path, header, rec_stdin):
-        self.tmp_path = path + '.tmp'
-        self.final_path = path
+        self.path = path
         self.header = header
         self.rec_stdin = rec_stdin
         self.queue = Queue()
@@ -54,7 +53,7 @@ class incremental_writer():
     def __enter__(self):
         self.process = Process(
             target=write_json_lines_from_queue,
-            args=(self.tmp_path, self.queue)
+            args=(self.path, self.queue)
         )
         self.process.start()
         self.queue.put(self.header)
@@ -64,7 +63,6 @@ class incremental_writer():
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.queue.put(None)
         self.process.join()
-        os.rename(self.tmp_path, self.final_path)
 
     def write_stdin(self, data):
         if self.rec_stdin:
