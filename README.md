@@ -124,7 +124,7 @@ Available options:
 * `--stdin` - Enable stdin (keyboard) recording (see below)
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
 * `-t, --title=<title>` - Specify the title of the asciicast
-* `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max `<sec>` seconds
+* `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
 * `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
 
@@ -169,7 +169,7 @@ Playing from IPFS:
 
 Available options:
 
-* `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max `<sec>` seconds
+* `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 * `-s, --speed=<factor>` - Playback speedup (can be fractional)
 
 NOTE: it is recommended to run `asciinema play` in a terminal of dimensions not
@@ -239,12 +239,12 @@ available options set:
     command = /bin/bash -l
     stdin = no
     env = SHELL,TERM,USER
-    maxwait = 2
+    idle_time_limit = 2
     yes = true
     quiet = true
 
     [play]
-    maxwait = 1
+    idle_time_limit = 1
 
 The options in `[api]` section are related to API location and authentication.
 To tell asciinema recorder to use your own asciinema site instance rather than

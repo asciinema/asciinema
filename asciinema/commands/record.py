@@ -9,7 +9,7 @@ from asciinema.api import APIError
 
 class RecordCommand(Command):
 
-    def __init__(self, api, filename, rec_stdin, command, env_whitelist, title, assume_yes, quiet, max_wait, recorder=None):
+    def __init__(self, api, filename, rec_stdin, command, env_whitelist, title, assume_yes, quiet, idle_time_limit, recorder=None):
         Command.__init__(self, quiet)
         self.api = api
         self.filename = filename
@@ -18,7 +18,7 @@ class RecordCommand(Command):
         self.env_whitelist = env_whitelist
         self.title = title
         self.assume_yes = assume_yes or quiet
-        self.max_wait = max_wait
+        self.idle_time_limit = idle_time_limit
         self.recorder = recorder if recorder is not None else Recorder()
 
     def execute(self):
@@ -44,7 +44,7 @@ class RecordCommand(Command):
             self.command,
             self.env_whitelist,
             self.title,
-            self.max_wait
+            self.idle_time_limit
         )
 
         self.print_info("Asciicast recording finished.")

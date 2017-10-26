@@ -10,10 +10,10 @@ from asciinema.pty_recorder import PtyRecorder
 
 class Asciicast:
 
-    def __init__(self, f, max_wait):
+    def __init__(self, f, idle_time_limit):
         self.version = 2
         self.__file = f
-        self.max_wait = max_wait
+        self.idle_time_limit = idle_time_limit
 
     def stdout(self):
         prev_ts = 0
@@ -29,8 +29,8 @@ class Asciicast:
 
 def load_from_file(f):
     header = json.loads(f.readline())
-    max_wait = header.get('max_wait')
-    return Asciicast(f, max_wait)
+    idle_time_limit = header.get('idle_time_limit')
+    return Asciicast(f, idle_time_limit)
 
 
 def write_json_lines_from_queue(path, queue):
@@ -88,7 +88,7 @@ class Recorder:
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
         self.env = env if env is not None else os.environ
 
-    def record(self, path, rec_stdin, user_command, env_whitelist, title, max_wait):
+    def record(self, path, rec_stdin, user_command, env_whitelist, title, idle_time_limit):
         cols = int(subprocess.check_output(['tput', 'cols']))
         lines = int(subprocess.check_output(['tput', 'lines']))
 

@@ -49,8 +49,9 @@ class Config:
         return self.config.get('record', 'env', fallback=DEFAULT_RECORD_ENV)
 
     @property
-    def record_max_wait(self):
-        return self.config.getfloat('record', 'maxwait', fallback=None)
+    def record_idle_time_limit(self):
+        fallback = self.config.getfloat('record', 'maxwait', fallback=None) # pre 2.0
+        return self.config.getfloat('record', 'idle_time_limit', fallback=fallback)
 
     @property
     def record_yes(self):
@@ -61,8 +62,9 @@ class Config:
         return self.config.getboolean('record', 'quiet', fallback=False)
 
     @property
-    def play_max_wait(self):
-        return self.config.getfloat('play', 'maxwait', fallback=None)
+    def play_idle_time_limit(self):
+        fallback = self.config.getfloat('play', 'maxwait', fallback=None) # pre 2.0
+        return self.config.getfloat('play', 'idle_time_limit', fallback=fallback)
 
     @property
     def play_speed(self):

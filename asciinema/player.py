@@ -5,9 +5,9 @@ import time
 from asciinema.term import raw, read_non_blocking
 
 
-def compress_time(stdout, max_wait):
-    if max_wait:
-        return ([min(delay, max_wait), text] for delay, text in stdout)
+def compress_time(stdout, idle_time_limit):
+    if idle_time_limit:
+        return ([min(delay, idle_time_limit), text] for delay, text in stdout)
     else:
         return stdout
 
@@ -18,18 +18,18 @@ def adjust_speed(stdout, speed):
 
 class Player:
 
-    def play(self, asciicast, max_wait=None, speed=1.0):
+    def play(self, asciicast, idle_time_limit=None, speed=1.0):
         if os.isatty(sys.stdin.fileno()):
             with raw(sys.stdin.fileno()):
-                self._play(asciicast, max_wait, speed, True)
+                self._play(asciicast, idle_time_limit, speed, True)
         else:
-            self._play(asciicast, max_wait, speed, False)
+            self._play(asciicast, idle_time_limit, speed, False)
 
-    def _play(self, asciicast, max_wait, speed, raw):
-        max_wait = max_wait or asciicast.max_wait
+    def _play(self, asciicast, idle_time_limit, speed, raw):
+        idle_time_limit = idle_time_limit or asciicast.idle_time_limit
 
         stdout = asciicast.stdout()
-        stdout = compress_time(stdout, max_wait)
+        stdout = compress_time(stdout, idle_time_limit)
         stdout = adjust_speed(stdout, speed)
 
         for delay, text in stdout:

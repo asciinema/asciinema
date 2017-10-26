@@ -5,17 +5,17 @@ import asciinema.asciicast as asciicast
 
 class PlayCommand(Command):
 
-    def __init__(self, filename, max_wait, speed, player=None):
+    def __init__(self, filename, idle_time_limit, speed, player=None):
         Command.__init__(self)
         self.filename = filename
-        self.max_wait = max_wait
+        self.idle_time_limit = idle_time_limit
         self.speed = speed
         self.player = player if player is not None else Player()
 
     def execute(self):
         try:
             with asciicast.open_from_url(self.filename) as a:
-                self.player.play(a, self.max_wait, self.speed)
+                self.player.play(a, self.idle_time_limit, self.speed)
 
         except asciicast.LoadError as e:
             self.print_warning("Playback failed: %s" % str(e))

@@ -50,9 +50,9 @@ def test_default_record_env():
     assert_equal('SHELL,TERM', config.record_env)
 
 
-def test_default_record_max_wait():
+def test_default_record_idle_time_limit():
     config = create_config('')
-    assert_equal(None, config.record_max_wait)
+    assert_equal(None, config.record_idle_time_limit)
 
 
 def test_default_record_yes():
@@ -65,9 +65,9 @@ def test_default_record_quiet():
     assert_equal(False, config.record_quiet)
 
 
-def test_default_play_max_wait():
+def test_default_play_idle_time_limit():
     config = create_config('')
-    assert_equal(None, config.play_max_wait)
+    assert_equal(None, config.play_idle_time_limit)
 
 
 def test_api_url():
@@ -122,10 +122,12 @@ def test_record_env():
     assert_equal('FOO,BAR', config.record_env)
 
 
-def test_record_max_wait():
-    max_wait = '2.35'
-    config = create_config("[record]\nmaxwait = %s" % max_wait)
-    assert_equal(2.35, config.record_max_wait)
+def test_record_idle_time_limit():
+    config = create_config("[record]\nidle_time_limit = 2.35")
+    assert_equal(2.35, config.record_idle_time_limit)
+
+    config = create_config("[record]\nmaxwait = 2.35")
+    assert_equal(2.35, config.record_idle_time_limit)
 
 
 def test_record_yes():
@@ -140,7 +142,9 @@ def test_record_quiet():
     assert_equal(True, config.record_quiet)
 
 
-def test_play_max_wait():
-    max_wait = '2.35'
-    config = create_config("[play]\nmaxwait = %s" % max_wait)
-    assert_equal(2.35, config.play_max_wait)
+def test_play_idle_time_limit():
+    config = create_config("[play]\nidle_time_limit = 2.35")
+    assert_equal(2.35, config.play_idle_time_limit)
+
+    config = create_config("[play]\nmaxwait = 2.35")
+    assert_equal(2.35, config.play_idle_time_limit)

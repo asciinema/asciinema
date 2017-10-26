@@ -22,11 +22,11 @@ def positive_float(value):
 
 def rec_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
-    return RecordCommand(api, args.filename, args.stdin, args.command, args.env, args.title, args.yes, args.quiet, args.max_wait)
+    return RecordCommand(api, args.filename, args.stdin, args.command, args.env, args.title, args.yes, args.quiet, args.idle_time_limit)
 
 
 def play_command(args, config):
-    return PlayCommand(args.filename, args.max_wait, args.speed)
+    return PlayCommand(args.filename, args.idle_time_limit, args.speed)
 
 
 def upload_command(args, config):
@@ -60,8 +60,8 @@ def main():
     \x1b[1masciinema rec demo.cast\x1b[0m
   Record terminal and upload it to asciinema.org, specifying title:
     \x1b[1masciinema rec -t "My git tutorial"\x1b[0m
-  Record terminal to local file, "trimming" longer pauses to max 2.5 sec:
-    \x1b[1masciinema rec -w 2.5 demo.cast\x1b[0m
+  Record terminal to local file, limiting idle time to max 2.5 sec:
+    \x1b[1masciinema rec -i 2.5 demo.cast\x1b[0m
   Replay terminal recording from local file:
     \x1b[1masciinema play demo.cast\x1b[0m
   Replay terminal recording hosted on asciinema.org:
@@ -81,7 +81,7 @@ For help on a specific command run:
     parser_rec.add_argument('-c', '--command', help='command to record, defaults to $SHELL', default=cfg.record_command)
     parser_rec.add_argument('-e', '--env', help='list of environment variables to capture, defaults to ' + config.DEFAULT_RECORD_ENV, default=cfg.record_env)
     parser_rec.add_argument('-t', '--title', help='title of the asciicast')
-    parser_rec.add_argument('-w', '--max-wait', help='limit recorded terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.record_max_wait))
+    parser_rec.add_argument('-i', '--idle-time-limit', help='limit recorded idle time to given number of seconds', type=positive_float, default=maybe_str(cfg.record_idle_time_limit))
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true', default=cfg.record_yes)
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true', default=cfg.record_quiet)
     parser_rec.add_argument('filename', nargs='?', default='', help='filename/path to save the recording to')
@@ -89,7 +89,7 @@ For help on a specific command run:
 
     # create the parser for the "play" command
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
-    parser_play.add_argument('-w', '--max-wait', help='limit terminal inactivity to max <sec> seconds (can be fractional)', type=positive_float, default=maybe_str(cfg.play_max_wait))
+    parser_play.add_argument('-i', '--idle-time-limit', help='limit idle time during playback to given number of seconds', type=positive_float, default=maybe_str(cfg.play_idle_time_limit))
     parser_play.add_argument('-s', '--speed', help='playback speedup (can be fractional)', type=positive_float, default=cfg.play_speed)
     parser_play.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
     parser_play.set_defaults(func=play_command)
