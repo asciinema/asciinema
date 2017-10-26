@@ -100,7 +100,7 @@ class Recorder:
             'width': cols,
             'height': lines,
             'timestamp': int(time.time()),
-            # TODO save max_wait here
+            'idle_time_limit': idle_time_limit,
         }
 
         if captured_env:

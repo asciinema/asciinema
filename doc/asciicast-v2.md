@@ -54,6 +54,13 @@ Unix timestamp of the beginning of the recording session. Integer.
 
 Duration of the whole recording in seconds (when it's known upfront). Float.
 
+#### `idle_time_limit`
+
+Idle time limit, as given via `-i` option to `asciinema rec`. Float.
+
+This should be used by an asciicast player to reduce all terminal inactivity
+(delays between frames) to maximum of `idle_time_limit` value.
+
 #### `command`
 
 Command that was recorded, as given via `-c` option to `asciinema rec`. String.
