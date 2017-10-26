@@ -35,7 +35,8 @@ def upload_command(args, config):
 
 
 def auth_command(args, config):
-    return AuthCommand(config.api_url, config.api_token)
+    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    return AuthCommand(api)
 
 
 def maybe_str(v):

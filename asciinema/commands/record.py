@@ -32,11 +32,11 @@ class RecordCommand(Command):
             _touch(self.filename)
             os.remove(self.filename)
         except OSError as e:
-            self.print_warning("Can't record to %s: %s" % (self.filename, str(e)))
+            self.print_error("Can't write to %s: %s" % (self.filename, str(e)))
             return 1
 
-        self.print_info("Asciicast recording started.")
-        self.print_info("""Hit Ctrl-D or type "exit" to finish.""")
+        self.print_info("Recording asciicast to %s" % self.filename)
+        self.print_info("""Hit <Ctrl-D> or type "exit" when you're done.""")
 
         self.recorder.record(
             self.filename,
@@ -47,14 +47,16 @@ class RecordCommand(Command):
             self.idle_time_limit
         )
 
-        self.print_info("Asciicast recording finished.")
+        self.print_info("Recording finished.")
 
         if upload:
             if not self.assume_yes:
-                self.print_info("Press <Enter> to upload, <Ctrl-C> to cancel.")
+                self.print_info("Press <Enter> to upload to %s, <Ctrl-C> to save locally." % self.api.hostname())
                 try:
                     sys.stdin.readline()
                 except KeyboardInterrupt:
+                    self.print("\r", end="")
+                    self.print_info("Asciicast saved to %s" % self.filename)
                     return 0
 
             try:
@@ -64,9 +66,12 @@ class RecordCommand(Command):
                 os.remove(self.filename)
                 self.print(url)
             except APIError as e:
-                self.print_warning("Upload failed: %s" % str(e))
-                self.print_warning("Retry later by running: asciinema upload %s" % self.filename)
+                self.print("\r\x1b[A", end="")
+                self.print_error("Upload failed: %s" % str(e))
+                self.print_error("Retry later by running: asciinema upload %s" % self.filename)
                 return 1
+        else:
+            self.print_info("Asciicast saved to %s" % self.filename)
 
         return 0
 

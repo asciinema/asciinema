@@ -1,5 +1,6 @@
 import platform
 import re
+from urllib.parse import urlparse
 
 from asciinema import __version__
 from asciinema.urllib_http_adapter import URLLibHttpAdapter
@@ -17,6 +18,9 @@ class Api:
         self.user = user
         self.token = token
         self.http_adapter = http_adapter if http_adapter is not None else URLLibHttpAdapter()
+
+    def hostname(self):
+        return urlparse(self.url).hostname
 
     def auth_url(self):
         return "{}/connect/{}".format(self.url, self.token)
