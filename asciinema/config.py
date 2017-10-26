@@ -50,7 +50,7 @@ class Config:
 
     @property
     def record_idle_time_limit(self):
-        fallback = self.config.getfloat('record', 'maxwait', fallback=None) # pre 2.0
+        fallback = self.config.getfloat('record', 'maxwait', fallback=None)  # pre 2.0
         return self.config.getfloat('record', 'idle_time_limit', fallback=fallback)
 
     @property
@@ -63,7 +63,7 @@ class Config:
 
     @property
     def play_idle_time_limit(self):
-        fallback = self.config.getfloat('play', 'maxwait', fallback=None) # pre 2.0
+        fallback = self.config.getfloat('play', 'maxwait', fallback=None)  # pre 2.0
         return self.config.getfloat('play', 'idle_time_limit', fallback=fallback)
 
     @property
