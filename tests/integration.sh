@@ -11,15 +11,29 @@ function asciinema() {
     python3 -m asciinema "$@"
 }
 
+# test help message
+
 asciinema -h
+
+# test version command
 
 asciinema --version
 
+# test auth command
+
 asciinema auth
 
-asciinema play -s 5 tests/vim.json
+# test play command
 
-asciinema play -s 5 -i 0.2 tests/vim.json
+# asciicast v1
+asciinema play -s 5 tests/demo.json
+asciinema play -s 5 -i 0.2 tests/demo.json
+
+# asciicast v2
+asciinema play -s 5 tests/demo.cast
+asciinema play -s 5 -i 0.2 tests/demo.cast
+
+# test rec command
 
 asciinema rec -c who "$TMP_DATA_DIR/1.cast"
 
