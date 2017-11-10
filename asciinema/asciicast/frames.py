@@ -7,6 +7,7 @@ def to_relative_time(frames):
         prev_time = time
         yield [delay, data]
 
+
 def to_absolute_time(frames):
     time = 0
 
