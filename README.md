@@ -149,8 +149,8 @@ Playing from a local file:
 
 Playing from HTTP(S) URL:
 
-    asciinema play https://asciinema.org/a/22124.json
-    asciinema play http://example.com/demo.json
+    asciinema play https://asciinema.org/a/22124.cast
+    asciinema play http://example.com/demo.cast
 
 Playing from asciicast page URL (requires `<link rel="alternate"
 type="application/asciicast+json" href="....json">` in page's HTML):
