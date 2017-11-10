@@ -26,6 +26,9 @@ class RecordCommand(Command):
             self.filename = _tmp_path()
             upload = True
         else:
+            if os.path.exists(self.filename):
+                self.print_error("%s already exists, aborting." % self.filename)
+                return 1
             upload = False
 
         try:
