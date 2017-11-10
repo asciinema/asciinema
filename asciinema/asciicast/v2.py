@@ -16,15 +16,11 @@ class Asciicast:
         self.idle_time_limit = idle_time_limit
 
     def stdout(self):
-        prev_ts = 0
-
         for line in self.__file:
-            ts, type, data = json.loads(line)
+            time, type, data = json.loads(line)
 
             if type == 'o':
-                delay = ts - prev_ts
-                prev_ts = ts
-                yield [delay, data]
+                yield [time, data]
 
 
 def load_from_file(f):
