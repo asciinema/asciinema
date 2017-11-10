@@ -3,13 +3,14 @@ import os
 import tempfile
 
 from asciinema.commands.command import Command
-from asciinema.asciicast.v2 import Recorder
+import asciinema.asciicast as asciicast
+from asciinema.asciicast.v2 import Recorder, load_from_file
 from asciinema.api import APIError
 
 
 class RecordCommand(Command):
 
-    def __init__(self, api, filename, rec_stdin, command, env_whitelist, title, assume_yes, quiet, idle_time_limit, recorder=None):
+    def __init__(self, api, filename, rec_stdin, command, env_whitelist, title, assume_yes, quiet, idle_time_limit, append, recorder=None):
         Command.__init__(self, quiet)
         self.api = api
         self.filename = filename
@@ -19,21 +20,29 @@ class RecordCommand(Command):
         self.title = title
         self.assume_yes = assume_yes or quiet
         self.idle_time_limit = idle_time_limit
+        self.append = append
         self.recorder = recorder if recorder is not None else Recorder()
 
     def execute(self):
+        if os.path.exists(self.filename) and not self.append:
+            self.print_error("%s already exists, aborting." % self.filename)
+            return 1
+
+        start_time_offset = 0
+
         if self.filename == "":
             self.filename = _tmp_path()
             upload = True
         else:
-            if os.path.exists(self.filename):
-                self.print_error("%s already exists, aborting." % self.filename)
-                return 1
+            if self.append:
+                with asciicast.open_from_url(self.filename) as a:
+                    for last_frame in a.stdout():
+                        pass
+                    start_time_offset = last_frame[0]
             upload = False
 
         try:
             _touch(self.filename)
-            os.remove(self.filename)
         except OSError as e:
             self.print_error("Can't write to %s: %s" % (self.filename, str(e)))
             return 1
@@ -47,7 +56,8 @@ class RecordCommand(Command):
             self.command,
             self.env_whitelist,
             self.title,
-            self.idle_time_limit
+            self.idle_time_limit,
+            start_time_offset
         )
 
         self.print_info("Recording finished.")

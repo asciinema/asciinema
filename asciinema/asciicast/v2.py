@@ -30,7 +30,7 @@ def load_from_file(f):
 
 
 def write_json_lines_from_queue(path, queue):
-    with open(path, mode='w', buffering=1) as f:
+    with open(path, mode='a', buffering=1) as f:
         for json_value in iter(queue.get, None):
             line = json.dumps(json_value, ensure_ascii=False, indent=None, separators=(', ', ': '))
             f.write(line + '\n')
@@ -38,10 +38,11 @@ def write_json_lines_from_queue(path, queue):
 
 class incremental_writer():
 
-    def __init__(self, path, header, rec_stdin):
+    def __init__(self, path, header, rec_stdin, start_time_offset=0):
         self.path = path
         self.header = header
         self.rec_stdin = rec_stdin
+        self.start_time_offset = start_time_offset
         self.queue = Queue()
         self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
         self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
@@ -52,8 +53,9 @@ class incremental_writer():
             args=(self.path, self.queue)
         )
         self.process.start()
-        self.queue.put(self.header)
-        self.start_time = time.time()
+        if self.start_time_offset == 0:
+            self.queue.put(self.header)
+        self.start_time = time.time() - self.start_time_offset
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -82,7 +84,7 @@ class Recorder:
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
         self.env = env if env is not None else os.environ
 
-    def record(self, path, rec_stdin, user_command, env_whitelist, title, idle_time_limit):
+    def record(self, path, rec_stdin, user_command, env_whitelist, title, idle_time_limit, start_time_offset=0):
         cols = int(subprocess.check_output(['tput', 'cols']))
         lines = int(subprocess.check_output(['tput', 'lines']))
 
@@ -105,7 +107,7 @@ class Recorder:
 
         command = user_command or self.env.get('SHELL') or 'sh'
 
-        with incremental_writer(path, header, rec_stdin) as w:
+        with incremental_writer(path, header, rec_stdin, start_time_offset) as w:
             command_env = os.environ.copy()
             command_env['ASCIINEMA_REC'] = '1'
             self.pty_recorder.record_command(['sh', '-c', command], w, command_env)
