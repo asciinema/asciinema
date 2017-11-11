@@ -55,12 +55,12 @@ def download_url(url):
         req.add_header('Accept-Encoding', 'gzip')
 
         response = urlopen(req)
-        data = response.read()
+        body = response
 
         if response.headers['Content-Encoding'] == 'gzip':
-            data = gzip.decompress(data)
+            body = gzip.open(body)
 
-        data = data.decode(errors='replace')
+        data = body.read().decode(errors='replace')
 
         content_type = response.headers['Content-Type']
         if content_type and content_type.startswith('text/html'):
