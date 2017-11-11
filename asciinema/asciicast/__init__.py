@@ -40,9 +40,9 @@ class Parser(html.parser.HTMLParser):
 
 def download_url(url):
     if url.startswith("ipfs:/"):
-        url = "https://ipfs.io/%s" % url[6:]
+        url = "https://gateway.ipfs.io/%s" % url[6:]
     elif url.startswith("fs:/"):
-        url = "https://ipfs.io/%s" % url[4:]
+        url = "https://gateway.ipfs.io/%s" % url[4:]
 
     if url == "-":
         tmp_file = tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+')
