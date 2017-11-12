@@ -15,3 +15,14 @@ def to_absolute_time(frames):
         delay, data = frame
         time = time + delay
         yield [time, data]
+
+
+def cap_relative_time(frames, time_limit):
+    if time_limit:
+        return ([min(delay, time_limit), text] for delay, text in frames)
+    else:
+        return frames
+
+
+def adjust_speed(frames, speed):
+    return ([delay / speed, text] for delay, text in frames)

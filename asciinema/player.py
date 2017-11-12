@@ -2,19 +2,8 @@ import os
 import sys
 import time
 
-from asciinema.asciicast.frames import to_relative_time, to_absolute_time
+import asciinema.asciicast.frames as frames
 from asciinema.term import raw, read_non_blocking
-
-
-def compress_time(stdout, idle_time_limit):
-    if idle_time_limit:
-        return ([min(delay, idle_time_limit), text] for delay, text in stdout)
-    else:
-        return stdout
-
-
-def adjust_speed(stdout, speed):
-    return ([delay / speed, text] for delay, text in stdout)
 
 
 class Player:
@@ -30,10 +19,10 @@ class Player:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
 
         stdout = asciicast.stdout()
-        stdout = to_relative_time(stdout)
-        stdout = compress_time(stdout, idle_time_limit)
-        stdout = to_absolute_time(stdout)
-        stdout = adjust_speed(stdout, speed)
+        stdout = frames.to_relative_time(stdout)
+        stdout = frames.cap_relative_time(stdout, idle_time_limit)
+        stdout = frames.to_absolute_time(stdout)
+        stdout = frames.adjust_speed(stdout, speed)
 
         base_time = time.time()
 
