@@ -7,6 +7,7 @@ import tempfile
 import shutil
 import io
 import gzip
+import codecs
 
 from . import v1
 from . import v2
@@ -38,44 +39,41 @@ class Parser(html.parser.HTMLParser):
                 self.url = attrs.get('href')
 
 
-def download_url(url):
+def open_url(url):
+    if url == "-":
+        return sys.stdin
+
     if url.startswith("ipfs:/"):
         url = "https://gateway.ipfs.io/%s" % url[6:]
     elif url.startswith("fs:/"):
         url = "https://gateway.ipfs.io/%s" % url[4:]
 
-    if url == "-":
-        tmp_file = tempfile.SpooledTemporaryFile(max_size=10000000, mode='w+')
-        shutil.copyfileobj(sys.stdin, tmp_file)
-        tmp_file.seek(0)
-        return tmp_file
-
     if url.startswith("http:") or url.startswith("https:"):
         req = Request(url)
         req.add_header('Accept-Encoding', 'gzip')
-
         response = urlopen(req)
         body = response
 
         if response.headers['Content-Encoding'] == 'gzip':
             body = gzip.open(body)
 
-        data = body.read().decode(errors='replace')
-
+        utf8_reader = codecs.getreader('utf-8')
         content_type = response.headers['Content-Type']
+
         if content_type and content_type.startswith('text/html'):
+            html = utf8_reader(body, errors='replace').read()
             parser = Parser()
-            parser.feed(data)
+            parser.feed(html)
             url = parser.url
 
             if not url:
                 raise LoadError("""<link rel="alternate" type="application/asciicast+json" href="..."> not found in fetched HTML document""")
 
-            return download_url(url)
+            return open_url(url)
 
-        return io.StringIO(data)
+        return utf8_reader(body, errors='strict')
 
-    return open(url, 'r')
+    return open(url, mode='rt', encoding='utf-8')
 
 
 class open_from_url():
@@ -86,20 +84,18 @@ class open_from_url():
 
     def __enter__(self):
         try:
-            self.file = download_url(self.url)
-            line = self.file.readline()
-            self.file.seek(0)
+            self.file = open_url(self.url)
+            first_line = self.file.readline()
 
             try:  # parse it as v2
-                v2_header = json.loads(line)
+                v2_header = json.loads(first_line)
                 if v2_header.get('version') == 2:
-                    return v2.load_from_file(self.file)
+                    return v2.load_from_file(v2_header, self.file)
                 else:
                     raise LoadError(self.FORMAT_ERROR)
             except JSONDecodeError as e:
                 try:  # parse it as v1
-                    attrs = json.load(self.file)
-                    self.file.close()
+                    attrs = json.loads(first_line + self.file.read())
                     if attrs.get('version') == 1:
                         return v1.load_from_dict(attrs)
                     else:

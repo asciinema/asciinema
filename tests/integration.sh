@@ -28,10 +28,12 @@ asciinema auth
 # asciicast v1
 asciinema play -s 5 tests/demo.json
 asciinema play -s 5 -i 0.2 tests/demo.json
+cat tests/demo.json | asciinema play -s 5 -
 
 # asciicast v2
 asciinema play -s 5 tests/demo.cast
 asciinema play -s 5 -i 0.2 tests/demo.cast
+cat tests/demo.cast | asciinema play -s 5 -
 
 # test rec command
 

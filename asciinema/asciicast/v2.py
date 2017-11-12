@@ -23,8 +23,7 @@ class Asciicast:
                 yield [time, data]
 
 
-def load_from_file(f):
-    header = json.loads(f.readline())
+def load_from_file(header, f):
     idle_time_limit = header.get('idle_time_limit')
     return Asciicast(f, idle_time_limit)
 
