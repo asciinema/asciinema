@@ -5,7 +5,7 @@ import stat
 
 from asciinema.commands.command import Command
 import asciinema.asciicast as asciicast
-from asciinema.asciicast.v2 import Recorder, load_from_file
+from asciinema.asciicast.v2 import Recorder
 from asciinema.api import APIError
 
 
