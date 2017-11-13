@@ -22,7 +22,7 @@ def positive_float(value):
 
 def rec_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.api_token)
-    return RecordCommand(api, args.filename, args.stdin, args.command, args.env, args.title, args.yes, args.quiet, args.idle_time_limit, args.append)
+    return RecordCommand(api, args)
 
 
 def play_command(args, config):

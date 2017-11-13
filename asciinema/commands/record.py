@@ -11,17 +11,17 @@ from asciinema.api import APIError
 
 class RecordCommand(Command):
 
-    def __init__(self, api, filename, rec_stdin, command, env_whitelist, title, assume_yes, quiet, idle_time_limit, append, recorder=None):
-        Command.__init__(self, quiet)
+    def __init__(self, api, args, recorder=None):
+        Command.__init__(self, args.quiet)
         self.api = api
-        self.filename = filename
-        self.rec_stdin = rec_stdin
-        self.command = command
-        self.env_whitelist = env_whitelist
-        self.title = title
-        self.assume_yes = assume_yes or quiet
-        self.idle_time_limit = idle_time_limit
-        self.append = append
+        self.filename = args.filename
+        self.rec_stdin = args.stdin
+        self.command = args.command
+        self.env_whitelist = args.env
+        self.title = args.title
+        self.assume_yes = args.yes or args.quiet
+        self.idle_time_limit = args.idle_time_limit
+        self.append = args.append
         self.recorder = recorder if recorder is not None else Recorder()
 
     def execute(self):
