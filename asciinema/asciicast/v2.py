@@ -28,8 +28,8 @@ def load_from_file(header, f):
     return Asciicast(f, idle_time_limit)
 
 
-def write_json_lines_from_queue(path, queue):
-    with open(path, mode='a', buffering=1) as f:
+def write_json_lines_from_queue(path, mode, queue):
+    with open(path, mode=mode, buffering=1) as f:
         for json_value in iter(queue.get, None):
             line = json.dumps(json_value, ensure_ascii=False, indent=None, separators=(', ', ': '))
             f.write(line + '\n')
@@ -47,9 +47,10 @@ class incremental_writer():
         self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
     def __enter__(self):
+        mode = 'a' if self.start_time_offset > 0 else 'w'
         self.process = Process(
             target=write_json_lines_from_queue,
-            args=(self.path, self.queue)
+            args=(self.path, mode, self.queue)
         )
         self.process.start()
         if self.start_time_offset == 0:

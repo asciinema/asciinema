@@ -1,6 +1,7 @@
 import sys
 import os
 import tempfile
+import stat
 
 from asciinema.commands.command import Command
 import asciinema.asciicast as asciicast
@@ -24,28 +25,29 @@ class RecordCommand(Command):
         self.recorder = recorder if recorder is not None else Recorder()
 
     def execute(self):
-        if os.path.exists(self.filename) and not self.append:
-            self.print_error("%s already exists, aborting." % self.filename)
-            return 1
-
+        upload = False
+        append = self.append
         start_time_offset = 0
 
         if self.filename == "":
             self.filename = _tmp_path()
             upload = True
-        else:
-            if self.append:
-                with asciicast.open_from_url(self.filename) as a:
-                    for last_frame in a.stdout():
-                        pass
-                    start_time_offset = last_frame[0]
-            upload = False
 
-        try:
-            _touch(self.filename)
-        except OSError as e:
-            self.print_error("Can't write to %s: %s" % (self.filename, str(e)))
-            return 1
+        if os.path.exists(self.filename):
+            if not os.access(self.filename, os.W_OK):
+                self.print_error("Can't write to %s" % self.filename)
+                return 1
+
+            if os.stat(self.filename).st_size > 0:
+                if append:
+                    with asciicast.open_from_url(self.filename) as a:
+                        for last_frame in a.stdout():
+                            pass
+                        start_time_offset = last_frame[0]
+                else:
+                    self.print_error("%s already exists, aborting." % self.filename)
+                    self.print_error("Use --append option if you want to append to existing recording.")
+                    return 1
 
         self.print_info("Recording asciicast to %s" % self.filename)
         self.print_info("""Hit <Ctrl-D> or type "exit" when you're done.""")
@@ -93,7 +95,3 @@ def _tmp_path():
     fd, path = tempfile.mkstemp(suffix='-ascii.cast')
     os.close(fd)
     return path
-
-
-def _touch(path):
-    open(path, 'a').close()
