@@ -180,7 +180,7 @@ sequences for new terminal size.
 
 ### `cat <filename>`
 
-__Print full output of recorded asciicast to a terminl.__
+__Print full output of recorded asciicast to a terminal.__
 
 While `asciinema play <filename>` replays the recorded session using timing
 information saved in the asciicast, `asciinema cat <filename>` dumps the full
