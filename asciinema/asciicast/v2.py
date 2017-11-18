@@ -60,6 +60,15 @@ class open_from_file():
         self.file.close()
 
 
+def get_duration(path):
+    with open(path, mode='rt', encoding='utf-8') as f:
+        first_line = f.readline()
+        with open_from_file(first_line, f) as a:
+            for last_frame in a.stdout():
+                pass
+            return last_frame[0]
+
+
 def write_json_lines_from_queue(path, mode, queue):
     with open(path, mode=mode, buffering=1) as f:
         for json_value in iter(queue.get, None):
@@ -67,7 +76,7 @@ def write_json_lines_from_queue(path, mode, queue):
             f.write(line + '\n')
 
 
-class incremental_writer():
+class writer():
 
     def __init__(self, path, header, rec_stdin, start_time_offset=0):
         self.path = path
@@ -112,16 +121,17 @@ class incremental_writer():
 
 class Recorder:
 
-    def __init__(self, pty_recorder=None, env=None):
+    def __init__(self, pty_recorder=None):
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
-        self.env = env if env is not None else os.environ
 
-    def record(self, path, rec_stdin, user_command, env_whitelist, title, idle_time_limit, start_time_offset=0):
+    def record(self, path, append, command, command_env, captured_env, rec_stdin, title, idle_time_limit):
+        start_time_offset = 0
+
+        if append and os.stat(path).st_size > 0:
+            start_time_offset = get_duration(path)
+
         cols = int(subprocess.check_output(['tput', 'cols']))
         lines = int(subprocess.check_output(['tput', 'lines']))
-
-        vars = filter(None, map((lambda var: var.strip()), env_whitelist.split(',')))
-        captured_env = {var: self.env.get(var) for var in vars}
 
         header = {
             'version': 2,
@@ -137,9 +147,5 @@ class Recorder:
         if title:
             header['title'] = title
 
-        command = user_command or self.env.get('SHELL') or 'sh'
-
-        with incremental_writer(path, header, rec_stdin, start_time_offset) as w:
-            command_env = os.environ.copy()
-            command_env['ASCIINEMA_REC'] = '1'
+        with writer(path, header, rec_stdin, start_time_offset) as w:
             self.pty_recorder.record_command(['sh', '-c', command], w, command_env)

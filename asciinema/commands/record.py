@@ -1,17 +1,16 @@
 import sys
 import os
 import tempfile
-import stat
 
 from asciinema.commands.command import Command
 import asciinema.asciicast as asciicast
-from asciinema.asciicast.v2 import Recorder
+import asciinema.asciicast.v2 as v2
 from asciinema.api import APIError
 
 
 class RecordCommand(Command):
 
-    def __init__(self, api, args, recorder=None):
+    def __init__(self, api, args, env=None, recorder=None):
         Command.__init__(self, args.quiet)
         self.api = api
         self.filename = args.filename
@@ -22,12 +21,12 @@ class RecordCommand(Command):
         self.assume_yes = args.yes or args.quiet
         self.idle_time_limit = args.idle_time_limit
         self.append = args.append
-        self.recorder = recorder if recorder is not None else Recorder()
+        self.recorder = recorder if recorder is not None else v2.Recorder()
+        self.env = env if env is not None else os.environ
 
     def execute(self):
         upload = False
         append = self.append
-        start_time_offset = 0
 
         if self.filename == "":
             self.filename = _tmp_path()
@@ -38,29 +37,34 @@ class RecordCommand(Command):
                 self.print_error("Can't write to %s" % self.filename)
                 return 1
 
-            if os.stat(self.filename).st_size > 0:
-                if append:
-                    with asciicast.open_from_url(self.filename) as a:
-                        for last_frame in a.stdout():
-                            pass
-                        start_time_offset = last_frame[0]
-                else:
-                    self.print_error("%s already exists, aborting." % self.filename)
-                    self.print_error("Use --append option if you want to append to existing recording.")
-                    return 1
+            if os.stat(self.filename).st_size > 0 and not append:
+                self.print_error("%s already exists, aborting." % self.filename)
+                self.print_error("Use --append option if you want to append to existing recording.")
+                return 1
 
         self.print_info("Recording asciicast to %s" % self.filename)
         self.print_info("""Hit <Ctrl-D> or type "exit" when you're done.""")
 
-        self.recorder.record(
-            self.filename,
-            self.rec_stdin,
-            self.command,
-            self.env_whitelist,
-            self.title,
-            self.idle_time_limit,
-            start_time_offset
-        )
+        command = self.command or self.env.get('SHELL') or 'sh'
+        command_env = self.env.copy()
+        command_env['ASCIINEMA_REC'] = '1'
+        vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
+        captured_env = {var: self.env.get(var) for var in vars}
+
+        try:
+            self.recorder.record(
+                self.filename,
+                append,
+                command,
+                command_env,
+                captured_env,
+                self.rec_stdin,
+                self.title,
+                self.idle_time_limit
+            )
+        except v2.LoadError:
+            self.print_error("Can only append to asciicast v2 format recordings.")
+            return 1
 
         self.print_info("Recording finished.")
 
