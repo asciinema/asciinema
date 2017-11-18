@@ -87,7 +87,6 @@ class open_from_url():
                 except v1.LoadError:
                     raise LoadError(self.FORMAT_ERROR)
 
-
         except (OSError, urllib.error.HTTPError) as e:
             raise LoadError(str(e))
 
