@@ -11,6 +11,50 @@ Terminal session recorder and the best companion of
 
 [![demo](https://asciinema.org/a/113463.png)](https://asciinema.org/a/113463?autoplay=1)
 
+## Quick intro
+
+asciinema let's you easily record terminal sessions, replay them back in your
+terminal as well as in a web browser.
+
+Install latest version ([other installation options](#installation)):
+
+    sudo pip3 install asciinema
+
+Record your first session:
+
+    asciinema rec first.cast
+
+Now replay it with double speed:
+
+    asciinema play -s 2 first.cast
+
+Or with normal speed but with idle time limited to 2 seconds:
+
+    asciinema play -i 2 first.cast
+
+You can pass `-i 2` to `asciinema rec` too, to set it permanently on a
+recording. Idle time limiting makes the recordings much more interesting to
+watch, try it.
+
+If you want to watch and share it on the web upload it:
+
+    asciinema upload first.cast
+
+The above uploads it to [asciinema.org](https://asciinema.org), which is a
+default [asciinema-server](https://github.com/asciinema/asciinema-server)
+instance, and prints a secret link you can use to watch your recording in a web
+browser.
+
+You can record and upload in one step by omitting the filename:
+
+    asciinema rec
+
+You'll be asked to confirm the upload when the recording is done, so nothing is
+sent anywhere without your confirmation.
+
+These were the basics, but there's much more you can do. The following sections
+cover installation, usage and hosting of the recordings in more detail.
+
 ## Installation
 
 ### Python package
