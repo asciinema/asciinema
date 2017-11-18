@@ -30,10 +30,10 @@ class PtyRecorder:
             if os.isatty(pty.STDOUT_FILENO):
                 buf = array.array('h', [0, 0, 0, 0])
                 fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
-                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
             else:
                 buf = array.array('h', [24, 80, 0, 0])
-                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
+
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
         def _write_stdout(data):
             '''Writes to stdout as if the child process had written the data.'''
