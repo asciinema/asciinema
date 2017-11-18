@@ -5,12 +5,13 @@ import tempfile
 from asciinema.commands.command import Command
 import asciinema.asciicast as asciicast
 import asciinema.asciicast.v2 as v2
+import asciinema.asciicast.raw as raw
 from asciinema.api import APIError
 
 
 class RecordCommand(Command):
 
-    def __init__(self, api, args, env=None, recorder=None):
+    def __init__(self, api, args, env=None):
         Command.__init__(self, args.quiet)
         self.api = api
         self.filename = args.filename
@@ -21,7 +22,8 @@ class RecordCommand(Command):
         self.assume_yes = args.yes or args.quiet
         self.idle_time_limit = args.idle_time_limit
         self.append = args.append
-        self.recorder = recorder if recorder is not None else v2.Recorder()
+        self.raw = args.raw
+        self.recorder = raw.Recorder() if args.raw else v2.Recorder()
         self.env = env if env is not None else os.environ
 
     def execute(self):
@@ -29,8 +31,12 @@ class RecordCommand(Command):
         append = self.append
 
         if self.filename == "":
-            self.filename = _tmp_path()
-            upload = True
+            if self.raw:
+                self.print_error("Filename required when recording in raw mode.")
+                return 1
+            else:
+                self.filename = _tmp_path()
+                upload = True
 
         if os.path.exists(self.filename):
             if not os.access(self.filename, os.W_OK):

@@ -123,6 +123,7 @@ Available options:
 
 * `--stdin` - Enable stdin (keyboard) recording (see below)
 * `--append` - Append to existing recording
+* `--raw` - Save raw STDOUT output, without timing information or other metadata
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
 * `-t, --title=<title>` - Specify the title of the asciicast
 * `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
