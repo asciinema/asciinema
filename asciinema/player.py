@@ -9,13 +9,14 @@ from asciinema.term import raw, read_non_blocking
 class Player:
 
     def play(self, asciicast, idle_time_limit=None, speed=1.0):
-        if os.isatty(sys.stdin.fileno()):
-            with raw(sys.stdin.fileno()):
-                self._play(asciicast, idle_time_limit, speed, True)
-        else:
-            self._play(asciicast, idle_time_limit, speed, False)
+        try:
+            stdin = open('/dev/tty')
+            with raw(stdin.fileno()):
+                self._play(asciicast, idle_time_limit, speed, stdin)
+        except:
+            self._play(asciicast, idle_time_limit, speed, None)
 
-    def _play(self, asciicast, idle_time_limit, speed, raw):
+    def _play(self, asciicast, idle_time_limit, speed, stdin):
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
 
         stdout = asciicast.stdout()
@@ -35,7 +36,7 @@ class Player:
             sys.stdout.write(text)
             sys.stdout.flush()
 
-            if raw:
-                data = read_non_blocking(sys.stdin.fileno())
+            if stdin:
+                data = read_non_blocking(stdin.fileno())
                 if 0x03 in data:  # ctrl-c
                     break
