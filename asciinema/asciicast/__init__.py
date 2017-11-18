@@ -1,22 +1,12 @@
 import sys
-import json.decoder
 from urllib.request import Request, urlopen
 import urllib.error
 import html.parser
-import tempfile
-import shutil
-import io
 import gzip
 import codecs
 
 from . import v1
 from . import v2
-
-
-try:
-    JSONDecodeError = json.decoder.JSONDecodeError
-except AttributeError:
-    JSONDecodeError = ValueError
 
 
 class LoadError(Exception):
@@ -87,23 +77,19 @@ class open_from_url():
             self.file = open_url(self.url)
             first_line = self.file.readline()
 
-            try:  # parse it as v2
-                v2_header = json.loads(first_line)
-                if v2_header.get('version') == 2:
-                    return v2.load_from_file(v2_header, self.file)
-                else:
+            try:  # try v2 first
+                self.context = v2.open_from_file(first_line, self.file)
+                return self.context.__enter__()
+            except v2.LoadError:
+                try:  # try v1 next
+                    self.context = v1.open_from_file(first_line, self.file)
+                    return self.context.__enter__()
+                except v1.LoadError:
                     raise LoadError(self.FORMAT_ERROR)
-            except JSONDecodeError as e:
-                try:  # parse it as v1
-                    attrs = json.loads(first_line + self.file.read())
-                    if attrs.get('version') == 1:
-                        return v1.load_from_dict(attrs)
-                    else:
-                        raise LoadError(self.FORMAT_ERROR)
-                except JSONDecodeError as e:
-                    raise LoadError(self.FORMAT_ERROR)
+
+
         except (OSError, urllib.error.HTTPError) as e:
             raise LoadError(str(e))
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.file.close()
+        self.context.__exit__(exc_type, exc_value, exc_traceback)

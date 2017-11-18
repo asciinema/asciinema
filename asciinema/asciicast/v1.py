@@ -1,4 +1,17 @@
+import json
+import json.decoder
+
 from asciinema.asciicast.frames import to_absolute_time
+
+
+try:
+    JSONDecodeError = json.decoder.JSONDecodeError
+except AttributeError:
+    JSONDecodeError = ValueError
+
+
+class LoadError(Exception):
+    pass
 
 
 class Asciicast:
@@ -12,5 +25,20 @@ class Asciicast:
         return to_absolute_time(self.__stdout)
 
 
-def load_from_dict(attrs):
-    return Asciicast(attrs['stdout'])
+class open_from_file():
+    FORMAT_ERROR = "only asciicast v1 format can be opened"
+
+    def __init__(self, first_line, file):
+        self.first_line = first_line
+        self.file = file
+
+    def __enter__(self):
+        attrs = json.loads(self.first_line + self.file.read())
+
+        if attrs.get('version') == 1:
+            return Asciicast(attrs['stdout'])
+        else:
+            raise LoadError(self.FORMAT_ERROR)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.file.close()

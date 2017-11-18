@@ -1,11 +1,22 @@
 import os
 import subprocess
 import json
+import json.decoder
 import time
 import codecs
 from multiprocessing import Process, Queue
 
 from asciinema.pty_recorder import PtyRecorder
+
+
+try:
+    JSONDecodeError = json.decoder.JSONDecodeError
+except AttributeError:
+    JSONDecodeError = ValueError
+
+
+class LoadError(Exception):
+    pass
 
 
 class Asciicast:
@@ -23,9 +34,30 @@ class Asciicast:
                 yield [time, data]
 
 
-def load_from_file(header, f):
+def build_from_header_and_file(header, f):
     idle_time_limit = header.get('idle_time_limit')
     return Asciicast(f, idle_time_limit)
+
+
+class open_from_file():
+    FORMAT_ERROR = "only asciicast v2 format can be opened"
+
+    def __init__(self, first_line, file):
+        self.first_line = first_line
+        self.file = file
+
+    def __enter__(self):
+        try:
+            v2_header = json.loads(self.first_line)
+            if v2_header.get('version') == 2:
+                return build_from_header_and_file(v2_header, self.file)
+            else:
+                raise LoadError(self.FORMAT_ERROR)
+        except JSONDecodeError as e:
+            raise LoadError(self.FORMAT_ERROR)
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.file.close()
 
 
 def write_json_lines_from_queue(path, mode, queue):
