@@ -33,11 +33,14 @@ class open_from_file():
         self.file = file
 
     def __enter__(self):
-        attrs = json.loads(self.first_line + self.file.read())
+        try:
+            attrs = json.loads(self.first_line + self.file.read())
 
-        if attrs.get('version') == 1:
-            return Asciicast(attrs['stdout'])
-        else:
+            if attrs.get('version') == 1:
+                return Asciicast(attrs['stdout'])
+            else:
+                raise LoadError(self.FORMAT_ERROR)
+        except JSONDecodeError as e:
             raise LoadError(self.FORMAT_ERROR)
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
