@@ -186,6 +186,9 @@ While `asciinema play <filename>` replays the recorded session using timing
 information saved in the asciicast, `asciinema cat <filename>` dumps the full
 output (including all escape sequences) to a terminal immediately.
 
+`asciinema cat existing.cast >output.txt` gives the same result as recording via
+`asciinema rec --raw output.txt`.
+
 ### `upload <filename>`
 
 __Upload recorded asciicast to asciinema.org site.__
