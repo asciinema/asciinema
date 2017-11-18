@@ -5,7 +5,7 @@ set -x
 
 export ASCIINEMA_CONFIG_HOME=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-config-home`
 TMP_DATA_DIR=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-data-dir`
-trap "echo rm -rf $ASCIINEMA_CONFIG_HOME $TMP_DATA_DIR" EXIT
+trap "rm -rf $ASCIINEMA_CONFIG_HOME $TMP_DATA_DIR" EXIT
 
 function asciinema() {
     python3 -m asciinema "$@"
