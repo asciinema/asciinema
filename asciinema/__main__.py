@@ -8,6 +8,7 @@ import asciinema.config as config
 from asciinema.commands.auth import AuthCommand
 from asciinema.commands.record import RecordCommand
 from asciinema.commands.play import PlayCommand
+from asciinema.commands.cat import CatCommand
 from asciinema.commands.upload import UploadCommand
 from asciinema.api import Api
 
@@ -27,6 +28,10 @@ def rec_command(args, config):
 
 def play_command(args, config):
     return PlayCommand(args.filename, args.idle_time_limit, args.speed)
+
+
+def cat_command(args, config):
+    return CatCommand(args.filename)
 
 
 def upload_command(args, config):
@@ -67,6 +72,8 @@ def main():
     \x1b[1masciinema play demo.cast\x1b[0m
   Replay terminal recording hosted on asciinema.org:
     \x1b[1masciinema play https://asciinema.org/a/difqlgx86ym6emrmd8u62yqu8\x1b[0m
+  Print full output of recorded session:
+    \x1b[1masciinema cat demo.cast\x1b[0m
 
 For help on a specific command run:
   \x1b[1masciinema <command> -h\x1b[0m""",
@@ -96,6 +103,11 @@ For help on a specific command run:
     parser_play.add_argument('-s', '--speed', help='playback speedup (can be fractional)', type=positive_float, default=cfg.play_speed)
     parser_play.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
     parser_play.set_defaults(func=play_command)
+
+    # create the parser for the "cat" command
+    parser_cat = subparsers.add_parser('cat', help='Print full output of terminal session')
+    parser_cat.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
+    parser_cat.set_defaults(func=cat_command)
 
     # create the parser for the "upload" command
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')

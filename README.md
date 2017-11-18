@@ -178,6 +178,14 @@ NOTE: it is recommended to run `asciinema play` in a terminal of dimensions not
 smaller than the one used for recording as there's no "transcoding" of control
 sequences for new terminal size.
 
+### `cat <filename>`
+
+__Print full output of recorded asciicast to a terminl.__
+
+While `asciinema play <filename>` replays the recorded session using timing
+information saved in the asciicast, `asciinema cat <filename>` dumps the full
+output (including all escape sequences) to a terminal immediately.
+
 ### `upload <filename>`
 
 __Upload recorded asciicast to asciinema.org site.__
