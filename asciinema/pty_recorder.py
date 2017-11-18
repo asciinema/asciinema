@@ -2,7 +2,6 @@ import errno
 import os
 import pty
 import signal
-import tty
 import array
 import fcntl
 import termios
