@@ -13,8 +13,8 @@ Terminal session recorder and the best companion of
 
 ## Quick intro
 
-asciinema let's you easily record terminal sessions, replay them back in your
-terminal as well as in a web browser.
+asciinema lets you easily record terminal sessions and replay
+them in a terminal as well as in a web browser.
 
 Install latest version ([other installation options](#installation)):
 
@@ -32,11 +32,11 @@ Or with normal speed but with idle time limited to 2 seconds:
 
     asciinema play -i 2 first.cast
 
-You can pass `-i 2` to `asciinema rec` too, to set it permanently on a
+You can pass `-i 2` to `asciinema rec` as well, to set it permanently on a
 recording. Idle time limiting makes the recordings much more interesting to
 watch, try it.
 
-If you want to watch and share it on the web upload it:
+If you want to watch and share it on the web, upload it:
 
     asciinema upload first.cast
 
@@ -50,7 +50,7 @@ You can record and upload in one step by omitting the filename:
     asciinema rec
 
 You'll be asked to confirm the upload when the recording is done, so nothing is
-sent anywhere without your confirmation.
+sent anywhere without your consent.
 
 These were the basics, but there's much more you can do. The following sections
 cover installation, usage and hosting of the recordings in more detail.
