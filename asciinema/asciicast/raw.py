@@ -5,7 +5,8 @@ from asciinema.pty_recorder import PtyRecorder
 
 
 def write_bytes_from_queue(path, mode, queue):
-    with open(path, mode=mode+'b', buffering=0) as f:
+    mode = mode + 'b'
+    with open(path, mode=mode, buffering=0) as f:
         for data in iter(queue.get, None):
             f.write(data)
 
@@ -42,7 +43,7 @@ class Recorder:
         self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
 
     def record(self, path, append, command, command_env, _captured_env, _rec_stdin, _title, _idle_time_limit):
-        if os.path.exists(path) and os.stat(path).st_size == 0: # true for pipes
+        if os.path.exists(path) and os.stat(path).st_size == 0:  # true for pipes
             append = False
 
         with writer(path, append) as w:
