@@ -1,40 +1,31 @@
 # asciicast file format (version 2)
 
-asciicast v2 file
-is [NDJSON (newline delimited JSON)](https://github.com/ndjson/ndjson-spec) file
-where:
+asciicast v2 file is [newline-delimited JSON](http://jsonlines.org/) file where:
 
 * __first line__ contains header (initial terminal size, timestamp and other
   meta-data), encoded as JSON object,
-* __all subsequent lines__ form an event stream, _each line_ representing a
-  separate event stream item, encoded as JSON array.
+* __all following lines__ form an event stream, _each line_ representing a
+  separate event, encoded as 3-element JSON array.
 
-By making the event stream a first class concept in the v2 format we get the
-following benefits:
+Example file:
 
-* it enables live, incremental writing to a file during recording (with v1
-  format the final recording JSON can only be written as a whole after finishing
-  the recording session),
-* it allows the players to start the playback as soon as they read the meta-data
-  line (contrary to v1 format which requires reading the whole file),
-* whether you're recording to a file or streaming via UNIX pipe or WebSocket the
-  data representation is the same.
+```json
+{"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
+[0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
+[1.001376, "o", "That was ok\rThis is better."]
+[2.143733, "o", " "]
+[6.541828, "o", "Bye!"]
+```
 
 ## Header
 
 asciicast header is JSON-encoded object containing recording meta-data.
 
-Example header:
-
-```json
-{"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Vim tutorial #1", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
-```
-
 ### Required header attributes:
 
 #### `version`
 
-Must be set to `2`.
+Must be set to `2`. Integer.
 
 #### `width`
 
@@ -82,9 +73,9 @@ Example env:
 }
 ```
 
-Official asciinema recorder captures only `SHELL` and `TERM` by default. All
-implementations of asciicast-compatible terminal recorder should not capture any
-additional environment variables unless explicitly permitted by the user.
+> Official asciinema recorder captures only `SHELL` and `TERM` by default. All
+> implementations of asciicast-compatible terminal recorder should not capture
+> any additional environment variables unless explicitly permitted by the user.
 
 #### `theme`
 
@@ -106,9 +97,9 @@ Example theme:
 }
 ```
 
-A specific technique of obtaining the colors from a terminal (using xrdb,
-requesting them from a terminal via special escape sequences etc) doesn't matter
-as long as the recorder can save it in the above format.
+> A specific technique of obtaining the colors from a terminal (using xrdb,
+> requesting them from a terminal via special escape sequences etc) doesn't
+> matter as long as the recorder can save it in the above format.
 
 ## Event stream
 
@@ -120,7 +111,7 @@ Where:
 
 * `time` (float) - indicates when this event happened, represented as the number
   of seconds since the beginning of the recording session,
-* `event-type` (string) - one of: `"o"`, `"i"`, `"size"`,
+* `event-type` (string) - one of: `"o"`, `"i"`,
 * `event-data` (any) - event specific data, described separately for each event
   type.
 
@@ -157,7 +148,7 @@ non-printable Unicode codepoints encoded as `\uXXXX`.
 
 #### "i" - data read from stdin
 
-Event of type `"i"` represents character(s) typed in (or pasted) by the user, or
+Event of type `"i"` represents character(s) typed in by the user, or
 more specifically, data sent from terminal emulator to stdin of the recorded
 shell.
 
@@ -165,22 +156,26 @@ shell.
 event, it's UTF-8 encoded JSON string, with all non-printable Unicode codepoints
 encoded as `\uXXXX`.
 
-_Note: Official asciinema recorder doesn't capture stdin by default. All
-implementations of asciicast-compatible terminal recorder should not capture it
-either unless explicitly permitted by the user._
+> Official asciinema recorder doesn't capture stdin by default. All
+> implementations of asciicast-compatible terminal recorder should not capture
+> it either unless explicitly permitted by the user.
 
-#### "size" - terminal resize (planned?)
+## Notes on compatibility
 
-TODO
+Version 2 of asciicast file format solves several problems which couldn't be
+easily fixed in the old format:
 
-not supported by current versions of the recorder and players
+* minimal memory usage when recording and replaying arbitrarily long sessions -
+  disk space is the only limit,
+* when the recording session is interrupted (computer crash, accidental close of
+  terminal window) you don't lose the whole recording,
+* it's real-time streaming friendly.
 
-## Complete asciicast v2 example
+Due to file structure change (standard JSON => newline-delimited JSON) version 2
+is not backwards compatible with version 1. Support for v2 has been added in:
 
-A very short asciicast v2 file looks like this:
-
-    {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
-    [0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
-    [1.001376, "o", "This is overwritten\rThis is better."]
-    [2.143733, "o", " "]
-    [6.541828, "o", "Bye!"]
+* [asciinema terminal recorder](https://github.com/asciinema/asciinema) - 2.0
+  (to be released, currently on development branch)
+* [asciinema web player](https://github.com/asciinema/asciinema-player) - 2.6.0
+* [asciinema server](https://github.com/asciinema/asciinema-server) - v20171105
+  tag in git repository
