@@ -169,6 +169,8 @@ Available options:
 * `--append` - Append to existing recording
 * `--raw` - Save raw STDOUT output, without timing information or other metadata
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
+* `-e, --env=<var-names>` - List of environment variables to capture, defaults
+  to `SHELL,TERM`
 * `-t, --title=<title>` - Specify the title of the asciicast
 * `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
