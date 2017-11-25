@@ -3,7 +3,7 @@ import sys
 import time
 
 import asciinema.asciicast.frames as frames
-from asciinema.term import raw, read_non_blocking
+from asciinema.term import raw, read_blocking
 
 
 class Player:
@@ -31,12 +31,9 @@ class Player:
             delay = t - (time.time() - base_time)
 
             if delay > 0:
-                time.sleep(delay)
+                data = read_blocking(stdin.fileno(), delay)
+                if 0x03 in data:  # ctrl-c
+                    break
 
             sys.stdout.write(text)
             sys.stdout.flush()
-
-            if stdin:
-                data = read_non_blocking(stdin.fileno())
-                if 0x03 in data:  # ctrl-c
-                    break

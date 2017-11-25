@@ -21,10 +21,8 @@ class raw():
             tty.tcsetattr(self.fd, tty.TCSAFLUSH, self.mode)
 
 
-def read_non_blocking(fd):
-    data = b''
+def read_blocking(fd, timeout):
+    if fd in select.select([fd], [], [], timeout)[0]:
+        return os.read(fd, 1024)
 
-    while fd in select.select([fd], [], [], 0)[0]:
-        data += os.read(fd, 1024)
-
-    return data
+    return b''
