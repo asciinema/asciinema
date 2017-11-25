@@ -190,6 +190,12 @@ __Replay recorded asciicast in a terminal.__
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
 
+Following keyboard shortcuts are available:
+
+- <kbd>Space</kbd> - toggle pause,
+- <kbd>.</kbd> - step through a recording a frame at a time (when paused),
+- <kbd>Ctrl+C</kbd> - exit.
+
 Playing from a local file:
 
     asciinema play /path/to/asciicast.cast
