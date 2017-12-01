@@ -47,7 +47,7 @@ def open_url(url):
         req.add_header('Accept-Encoding', 'gzip')
         response = urlopen(req)
         body = response
-        url = response.geturl() # final URL after redirects
+        url = response.geturl()  # final URL after redirects
 
         if response.headers['Content-Encoding'] == 'gzip':
             body = gzip.open(body)
