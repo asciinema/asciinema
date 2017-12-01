@@ -3,6 +3,7 @@ import sys
 import uuid
 import io
 import base64
+import http
 
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -80,7 +81,7 @@ class URLLibHttpAdapter:
             status = e.code
             headers = {}
             body = e.read().decode('utf-8')
-        except URLError as e:
+        except (http.client.RemoteDisconnected, URLError) as e:
             raise HTTPConnectionError(str(e))
 
         return (status, headers, body)
