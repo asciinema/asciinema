@@ -39,6 +39,8 @@ def open_url(url):
         url = "https://gateway.ipfs.io/%s" % url[6:]
     elif url.startswith("fs:/"):
         url = "https://gateway.ipfs.io/%s" % url[4:]
+    elif url.startswith("dweb:/ipfs/"):
+        url = "https://gateway.ipfs.io/%s" % url[5:]
 
     if url.startswith("http:") or url.startswith("https:"):
         req = Request(url)
