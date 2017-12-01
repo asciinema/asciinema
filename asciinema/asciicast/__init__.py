@@ -1,5 +1,7 @@
 import sys
+import os
 from urllib.request import Request, urlopen
+from urllib.parse import urlparse, urlunparse
 import urllib.error
 import html.parser
 import gzip
@@ -45,6 +47,7 @@ def open_url(url):
         req.add_header('Accept-Encoding', 'gzip')
         response = urlopen(req)
         body = response
+        url = response.geturl() # final URL after redirects
 
         if response.headers['Content-Encoding'] == 'gzip':
             body = gzip.open(body)
@@ -56,12 +59,21 @@ def open_url(url):
             html = utf8_reader(body, errors='replace').read()
             parser = Parser()
             parser.feed(html)
-            url = parser.url
+            new_url = parser.url
 
-            if not url:
+            if not new_url:
                 raise LoadError("""<link rel="alternate" type="application/x-asciicast" href="..."> not found in fetched HTML document""")
 
-            return open_url(url)
+            if "://" not in new_url:
+                base_url = urlparse(url)
+
+                if new_url.startswith("/"):
+                    new_url = urlunparse((base_url[0], base_url[1], new_url, '', '', ''))
+                else:
+                    path = os.path.dirname(base_url[2]) + '/' + new_url
+                    new_url = urlunparse((base_url[0], base_url[1], path, '', '', ''))
+
+            return open_url(new_url)
 
         return utf8_reader(body, errors='strict')
 
