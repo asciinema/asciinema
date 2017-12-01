@@ -12,7 +12,7 @@
 * toggling pause in `asciinema play` by <kbd>Space</kbd>
 * stepping through a recording one frame at a time with <kbd>.</kbd> (when playback paused)
 * new `asciinema cat <filename>` command to dump full output of the recording
-* playback from new IPFS URL scheme (`dweb:/ipfs/`)
+* playback from new IPFS URL scheme: `dweb:/ipfs/` (replaces `fs:/`)
 * lots of other bugfixes and improvements
 
 ## 1.4.0 (2017-04-11)
