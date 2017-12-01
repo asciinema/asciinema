@@ -35,8 +35,8 @@ def open_url(url):
     if url == "-":
         return sys.stdin
 
-    if url.startswith("ipfs:/"):
-        url = "https://gateway.ipfs.io/%s" % url[6:]
+    if url.startswith("ipfs://"):
+        url = "https://gateway.ipfs.io/ipfs/%s" % url[7:]
     elif url.startswith("dweb:/ipfs/"):
         url = "https://gateway.ipfs.io/%s" % url[5:]
 
