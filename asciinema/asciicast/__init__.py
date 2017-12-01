@@ -19,14 +19,16 @@ class Parser(html.parser.HTMLParser):
         self.url = None
 
     def handle_starttag(self, tag, attrs_list):
-        # look for <link rel="alternate" type="application/asciicast+json" href="https://...json">
+        # look for <link rel="alternate" type="application/x-asciicast" href="https://...cast">
         if tag == 'link':
             attrs = {}
             for k, v in attrs_list:
                 attrs[k] = v
 
-            if attrs.get('rel') == 'alternate' and attrs.get('type') == 'application/asciicast+json':
-                self.url = attrs.get('href')
+            if attrs.get('rel') == 'alternate':
+                type = attrs.get('type')
+                if type == 'application/asciicast+json' or type == 'application/x-asciicast':
+                    self.url = attrs.get('href')
 
 
 def open_url(url):
@@ -57,7 +59,7 @@ def open_url(url):
             url = parser.url
 
             if not url:
-                raise LoadError("""<link rel="alternate" type="application/asciicast+json" href="..."> not found in fetched HTML document""")
+                raise LoadError("""<link rel="alternate" type="application/x-asciicast" href="..."> not found in fetched HTML document""")
 
             return open_url(url)
 

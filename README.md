@@ -206,7 +206,7 @@ Playing from HTTP(S) URL:
     asciinema play http://example.com/demo.cast
 
 Playing from asciicast page URL (requires `<link rel="alternate"
-type="application/asciicast+json" href="....json">` in page's HTML):
+type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
 
     asciinema play https://asciinema.org/a/22124
     asciinema play http://example.com/blog/post.html

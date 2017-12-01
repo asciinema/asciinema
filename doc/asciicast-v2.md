@@ -17,6 +17,9 @@ Example file:
 [6.541828, "o", "Bye!"]
 ```
 
+Suggested file extension is `.cast`, suggested media type is
+`application/x-asciicast`.
+
 ## Header
 
 asciicast header is JSON-encoded object containing recording meta-data.
