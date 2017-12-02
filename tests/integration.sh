@@ -11,19 +11,19 @@ function asciinema() {
     python3 -m asciinema "$@"
 }
 
-# test help message
+## test help message
 
 asciinema -h
 
-# test version command
+## test version command
 
 asciinema --version
 
-# test auth command
+## test auth command
 
 asciinema auth
 
-# test play command
+## test play command
 
 # asciicast v1
 asciinema play -s 5 tests/demo.json
@@ -35,7 +35,7 @@ asciinema play -s 5 tests/demo.cast
 asciinema play -s 5 -i 0.2 tests/demo.cast
 cat tests/demo.cast | asciinema play -s 5 -
 
-# test cat command
+## test cat command
 
 # asciicast v1
 asciinema cat tests/demo.json
@@ -45,10 +45,12 @@ cat tests/demo.json | asciinema cat -
 asciinema cat tests/demo.cast
 cat tests/demo.cast | asciinema cat -
 
-# test rec command
+## test rec command
 
-asciinema rec -c who "$TMP_DATA_DIR/1.cast"
+asciinema rec -c who "$TMP_DATA_DIR/1a.cast"
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/1b.cast"
 
+# signal handling
 bash -c "sleep 1; pkill -28 -n -f 'm asciinema'" &
 asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/2.cast"
 
@@ -58,6 +60,12 @@ asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/3.cast"
 bash -c "sleep 1; pkill -9 -n -f 'bash -c echo t3st'" &
 asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/4.cast"
 
+# with stdin recording
 asciinema rec --stdin -c 'bash -c "echo t3st; sleep 1; echo ok"' "$TMP_DATA_DIR/5.cast"
 
+# raw output recording
 asciinema rec --raw -c 'bash -c "echo t3st; sleep 1; echo ok"' "$TMP_DATA_DIR/6.raw"
+
+# appending to existing recording
+asciinema rec -c who "$TMP_DATA_DIR/7.cast"
+asciinema rec --append -c uptime "$TMP_DATA_DIR/7.cast"
