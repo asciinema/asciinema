@@ -1,7 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 set -x
+
+if ! type "pkill" >/dev/null 2>&1; then
+    echo "error: pkill not installed"
+    exit 1
+fi
 
 export ASCIINEMA_CONFIG_HOME=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-config-home`
 TMP_DATA_DIR=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-data-dir`
