@@ -138,8 +138,10 @@ class Recorder:
             'width': cols,
             'height': lines,
             'timestamp': int(time.time()),
-            'idle_time_limit': idle_time_limit,
         }
+
+        if idle_time_limit is not None:
+            header['idle_time_limit'] = idle_time_limit
 
         if captured_env:
             header['env'] = captured_env
