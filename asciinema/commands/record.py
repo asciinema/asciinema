@@ -48,7 +48,11 @@ class RecordCommand(Command):
                 self.print_error("Use --append option if you want to append to existing recording.")
                 return 1
 
-        self.print_info("Recording asciicast to %s" % self.filename)
+        if append:
+            self.print_info("Appending to asciicast at %s" % self.filename)
+        else:
+            self.print_info("Recording asciicast to %s" % self.filename)
+
         self.print_info("""Hit <Ctrl-D> or type "exit" when you're done.""")
 
         command = self.command or self.env.get('SHELL') or 'sh'
