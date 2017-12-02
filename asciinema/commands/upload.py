@@ -18,7 +18,7 @@ class UploadCommand(Command):
 
             self.print(url)
 
-        except FileNotFoundError as e:
+        except OSError as e:
             self.print_error("upload failed: %s" % str(e))
             return 1
 
