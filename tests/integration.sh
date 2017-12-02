@@ -8,6 +8,8 @@ if ! type "pkill" >/dev/null 2>&1; then
     exit 1
 fi
 
+python3 -V
+
 export ASCIINEMA_CONFIG_HOME=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-config-home`
 TMP_DATA_DIR=`mktemp -d 2>/dev/null || mktemp -d -t asciinema-data-dir`
 trap "rm -rf $ASCIINEMA_CONFIG_HOME $TMP_DATA_DIR" EXIT
@@ -52,8 +54,14 @@ cat tests/demo.cast | asciinema cat -
 
 ## test rec command
 
-asciinema rec -c who "$TMP_DATA_DIR/1a.cast"
-asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/1b.cast"
+# normal program
+asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "$TMP_DATA_DIR/1a.cast"
+grep '"o",' "$TMP_DATA_DIR/1a.cast"
+
+# very quickly exiting program
+# https://github.com/asciinema/asciinema/issues/246
+# asciinema rec -c who "$TMP_DATA_DIR/1b.cast"
+# grep '"o",' "$TMP_DATA_DIR/1b.cast"
 
 # signal handling
 bash -c "sleep 1; pkill -28 -n -f 'm asciinema'" &
@@ -72,5 +80,5 @@ asciinema rec --stdin -c 'bash -c "echo t3st; sleep 1; echo ok"' "$TMP_DATA_DIR/
 asciinema rec --raw -c 'bash -c "echo t3st; sleep 1; echo ok"' "$TMP_DATA_DIR/6.raw"
 
 # appending to existing recording
-asciinema rec -c who "$TMP_DATA_DIR/7.cast"
+asciinema rec -c 'echo allright!; sleep 0.1' "$TMP_DATA_DIR/7.cast"
 asciinema rec --append -c uptime "$TMP_DATA_DIR/7.cast"
