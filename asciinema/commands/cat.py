@@ -18,7 +18,7 @@ class CatCommand(Command):
                     sys.stdout.flush()
 
         except asciicast.LoadError as e:
-            self.print_error("Printing failed: %s" % str(e))
+            self.print_error("printing failed: %s" % str(e))
             return 1
 
         return 0

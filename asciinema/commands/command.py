@@ -11,10 +11,10 @@ class Command:
             print(text, file=file, end=end)
 
     def print_info(self, text):
-        self.print("\x1b[32m▶ %s\x1b[0m" % text)
+        self.print("\x1b[0;32masciinema: %s\x1b[0m" % text)
 
     def print_warning(self, text):
-        self.print("\x1b[33m▶ %s\x1b[0m" % text)
+        self.print("\x1b[0;33masciinema: %s\x1b[0m" % text)
 
     def print_error(self, text):
-        self.print("\x1b[31m▶ %s\x1b[0m" % text, file=sys.stderr, force=True)
+        self.print("\x1b[0;31masciinema: %s\x1b[0m" % text, file=sys.stderr, force=True)

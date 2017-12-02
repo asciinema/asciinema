@@ -19,12 +19,12 @@ class UploadCommand(Command):
             self.print(url)
 
         except FileNotFoundError as e:
-            self.print_error("Upload failed: %s" % str(e))
+            self.print_error("upload failed: %s" % str(e))
             return 1
 
         except APIError as e:
-            self.print_error("Upload failed: %s" % str(e))
-            self.print_error("Retry later by running: asciinema upload %s" % self.filename)
+            self.print_error("upload failed: %s" % str(e))
+            self.print_error("retry later by running: asciinema upload %s" % self.filename)
             return 1
 
         return 0
