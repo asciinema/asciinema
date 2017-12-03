@@ -15,9 +15,67 @@ DEFAULT_RECORD_ENV = 'SHELL,TERM'
 
 class Config:
 
-    def __init__(self, config, env=None):
-        self.config = config
+    def __init__(self, config_home, env=None):
+        self.config_home = config_home
+        self.config_file_path = path.join(config_home, "config")
+        self.install_id_path = path.join(self.config_home, 'install-id')
+        self.config = configparser.ConfigParser()
+        self.config.read(self.config_file_path)
         self.env = env if env is not None else os.environ
+
+    def upgrade(self):
+        try:
+            self.install_id
+        except ConfigError:
+            id = self.__api_token() or self.__user_token() or self.__gen_install_id()
+            self.__save_install_id(id)
+
+            items = {name: dict(section) for (name, section) in self.config.items()}
+            if items == {'DEFAULT': {}, 'api': {'token': id}} or items == {'DEFAULT': {}, 'user': {'token': id}}:
+                os.remove(self.config_file_path)
+
+        if self.env.get('ASCIINEMA_API_TOKEN'):
+            raise ConfigError('ASCIINEMA_API_TOKEN variable is no longer supported, please use ASCIINEMA_INSTALL_ID instead')
+
+    def __read_install_id(self):
+        p = self.install_id_path
+        if path.isfile(p):
+            with open(p, 'r') as f:
+                return f.read().strip()
+
+    def __gen_install_id(self):
+        return str(uuid.uuid4())
+
+    def __save_install_id(self, id):
+        self.__create_config_home()
+
+        with open(self.install_id_path, 'w') as f:
+            f.write(id)
+
+    def __create_config_home(self):
+        if not path.exists(self.config_home):
+            os.makedirs(self.config_home)
+
+    def __api_token(self):
+        try:
+            return self.config.get('api', 'token')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            pass
+
+    def __user_token(self):
+        try:
+            return self.config.get('user', 'token')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            pass
+
+    @property
+    def install_id(self):
+        id = self.env.get('ASCIINEMA_INSTALL_ID') or self.__read_install_id()
+
+        if id:
+            return id
+        else:
+            raise ConfigError('no install ID found')
 
     @property
     def api_url(self):
@@ -25,16 +83,6 @@ class Config:
             'ASCIINEMA_API_URL',
             self.config.get('api', 'url', fallback=DEFAULT_API_URL)
         )
-
-    @property
-    def api_token(self):
-        try:
-            return self.env.get('ASCIINEMA_API_TOKEN') or self.config.get('api', 'token')
-        except (configparser.NoOptionError, configparser.NoSectionError):
-            try:
-                return self.config.get('user', 'token')
-            except (configparser.NoOptionError, configparser.NoSectionError):
-                raise ConfigError('no API token found in config file, and ASCIINEMA_API_TOKEN is unset')
 
     @property
     def record_stdin(self):
@@ -71,45 +119,29 @@ class Config:
         return self.config.getfloat('play', 'speed', fallback=1.0)
 
 
-def load_file(paths):
-    config = configparser.ConfigParser()
-    read_paths = config.read(paths)
+def get_config_home(env=os.environ):
+    env_asciinema_config_home = env.get("ASCIINEMA_CONFIG_HOME")
+    env_xdg_config_home = env.get("XDG_CONFIG_HOME")
+    env_home = env.get("HOME")
 
-    if read_paths:
-        return config
+    config_home = None
 
+    if env_asciinema_config_home:
+        config_home = env_asciinema_config_home
+    elif env_xdg_config_home:
+        config_home = path.join(env_xdg_config_home, "asciinema")
+    elif env_home:
+        if path.isfile(path.join(env_home, ".config", "asciinema", "config")):
+            config_home = path.join(env_home, ".config", "asciinema")
+        else:
+            config_home = path.join(env_home, ".asciinema")  # location for versions < 1.1
+    else:
+        raise Exception("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME")
 
-def create_file(filename):
-    config = configparser.ConfigParser()
-    config['api'] = {}
-    config['api']['token'] = str(uuid.uuid4())
-
-    if not path.exists(path.dirname(filename)):
-        os.makedirs(path.dirname(filename))
-
-    with open(filename, 'w') as f:
-        config.write(f)
-
-    return config
+    return config_home
 
 
 def load(env=os.environ):
-    paths = []
-
-    asciinema_config_home = env.get("ASCIINEMA_CONFIG_HOME")
-    xdg_config_home = env.get("XDG_CONFIG_HOME")
-    home = env.get("HOME")
-
-    if asciinema_config_home:
-        paths.append(path.join(asciinema_config_home, "config"))
-    elif xdg_config_home:
-        paths.append(path.join(xdg_config_home, "asciinema", "config"))
-    elif home:
-        paths.append(path.join(home, ".asciinema", "config"))
-        paths.append(path.join(home, ".config", "asciinema", "config"))
-    else:
-        raise Exception("need $ASCIINEMA_CONFIG_HOME or $XDG_CONFIG_HOME or $HOME")
-
-    config = load_file(paths) or create_file(paths[-1])
-
-    return Config(config, env)
+    config = Config(get_config_home(env), env)
+    config.upgrade()
+    return config

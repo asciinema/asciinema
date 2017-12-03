@@ -1,33 +1,97 @@
 from nose.tools import assert_equal, assert_raises
 
 import os
+import os.path as path
 import tempfile
 import re
 
 import asciinema.config as cfg
 
 
-def create_config(content='', env={}):
+def create_config(content=None, env={}):
     dir = tempfile.mkdtemp()
-    path = dir + '/config'
 
-    with open(path, 'w') as f:
-        f.write(content)
+    if content:
+        path = dir + '/config'
+        with open(path, 'w') as f:
+            f.write(content)
 
-    return cfg.Config(cfg.load_file([path]), env)
+    return cfg.Config(dir, env)
 
 
-def test_load_config():
-    with tempfile.TemporaryDirectory() as dir:
-        config = cfg.load({'ASCIINEMA_CONFIG_HOME': dir + '/foo/bar'})
-        assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', config.api_token)
+def read_install_id(install_id_path):
+    with open(install_id_path, 'r') as f:
+        return f.read().strip()
 
-        with open(dir + '/config', 'w') as f:
-            token = 'foo-bar-baz-qux-quux'
-            f.write("[api]\ntoken = %s" % token)
 
-        config = cfg.load({'ASCIINEMA_CONFIG_HOME': dir})
-        assert_equal(token, config.api_token)
+def test_upgrade_no_config_file():
+    config = create_config()
+    config.upgrade()
+    install_id = read_install_id(config.install_id_path)
+
+    assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', install_id)
+    assert_equal(install_id, config.install_id)
+    assert not path.exists(config.config_file_path)
+
+    # it must not change after another upgrade
+
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), install_id)
+
+
+def test_upgrade_config_file_with_api_token():
+    config = create_config("[api]\ntoken = foo-bar-baz")
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+    assert_equal(config.install_id, 'foo-bar-baz')
+    assert not path.exists(config.config_file_path)
+
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+
+
+def test_upgrade_config_file_with_api_token_and_more():
+    config = create_config("[api]\ntoken = foo-bar-baz\nurl = http://example.com")
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+    assert_equal(config.install_id, 'foo-bar-baz')
+    assert_equal(config.api_url, 'http://example.com')
+    assert path.exists(config.config_file_path)
+
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+
+
+def test_upgrade_config_file_with_user_token():
+    config = create_config("[user]\ntoken = foo-bar-baz")
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+    assert_equal(config.install_id, 'foo-bar-baz')
+    assert not path.exists(config.config_file_path)
+
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+
+
+def test_upgrade_config_file_with_user_token_and_more():
+    config = create_config("[user]\ntoken = foo-bar-baz\n[api]\nurl = http://example.com")
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
+    assert_equal(config.install_id, 'foo-bar-baz')
+    assert_equal(config.api_url, 'http://example.com')
+    assert path.exists(config.config_file_path)
+
+    config.upgrade()
+
+    assert_equal(read_install_id(config.install_id_path), 'foo-bar-baz')
 
 
 def test_default_api_url():
@@ -79,31 +143,6 @@ def test_api_url_when_override_set():
     config = create_config("[api]\nurl = http://the/url", {
         'ASCIINEMA_API_URL': 'http://the/url2'})
     assert_equal('http://the/url2', config.api_url)
-
-
-def test_api_token():
-    token = 'foo-bar-baz'
-    config = create_config("[api]\ntoken = %s" % token)
-    assert re.match(token, config.api_token)
-
-
-def test_api_token_when_no_api_token_set():
-    config = create_config('')
-    with assert_raises(Exception):
-        config.api_token
-
-
-def test_api_token_when_user_token_set():
-    token = 'foo-bar-baz'
-    config = create_config("[user]\ntoken = %s" % token)
-    assert re.match(token, config.api_token)
-
-
-def test_api_token_when_api_token_set_and_user_token_set():
-    user_token = 'foo'
-    api_token = 'bar'
-    config = create_config("[user]\ntoken = %s\n[api]\ntoken = %s" % (user_token, api_token))
-    assert re.match(api_token, config.api_token)
 
 
 def test_record_command():

@@ -22,7 +22,7 @@ def positive_float(value):
 
 
 def rec_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    api = Api(config.api_url, os.environ.get("USER"), config.install_id)
     return RecordCommand(api, args)
 
 
@@ -35,12 +35,12 @@ def cat_command(args, config):
 
 
 def upload_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    api = Api(config.api_url, os.environ.get("USER"), config.install_id)
     return UploadCommand(api, args.filename)
 
 
 def auth_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.api_token)
+    api = Api(config.api_url, os.environ.get("USER"), config.install_id)
     return AuthCommand(api)
 
 
@@ -54,7 +54,11 @@ def main():
         print("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
         sys.exit(1)
 
-    cfg = config.load()
+    try:
+        cfg = config.load()
+    except config.ConfigError as e:
+        sys.stderr.write(str(e) + '\n')
+        sys.exit(1)
 
     # create the top-level parser
     parser = argparse.ArgumentParser(
