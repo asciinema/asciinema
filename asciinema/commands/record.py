@@ -22,6 +22,7 @@ class RecordCommand(Command):
         self.assume_yes = args.yes or args.quiet
         self.idle_time_limit = args.idle_time_limit
         self.append = args.append
+        self.overwrite = args.overwrite
         self.raw = args.raw
         self.recorder = raw.Recorder() if args.raw else v2.Recorder()
         self.env = env if env is not None else os.environ
@@ -43,7 +44,11 @@ class RecordCommand(Command):
                 self.print_error("can't write to %s" % self.filename)
                 return 1
 
-            if os.stat(self.filename).st_size > 0 and not append:
+            if os.stat(self.filename).st_size > 0 and self.overwrite:
+                os.remove(self.filename)
+                append = False
+
+            elif os.stat(self.filename).st_size > 0 and not append:
                 self.print_error("%s already exists, aborting" % self.filename)
                 self.print_error("use --append option if you want to append to existing recording")
                 return 1

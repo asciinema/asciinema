@@ -168,6 +168,7 @@ Available options:
 * `--stdin` - Enable stdin (keyboard) recording (see below)
 * `--append` - Append to existing recording
 * `--raw` - Save raw STDOUT output, without timing information or other metadata
+* `--overwrite` - Overwrite the recording if it already exists
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
 * `-e, --env=<var-names>` - List of environment variables to capture, defaults
   to `SHELL,TERM`
