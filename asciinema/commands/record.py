@@ -58,7 +58,7 @@ class RecordCommand(Command):
         else:
             self.print_info("recording asciicast to %s" % self.filename)
 
-        self.print_info("""hit <ctrl-d> or type "exit" when you're done""")
+        self.print_info("""press <ctrl-d> or type "exit" when you're done""")
 
         command = self.command or self.env.get('SHELL') or 'sh'
         command_env = self.env.copy()
