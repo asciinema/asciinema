@@ -245,11 +245,11 @@ output (including all escape sequences) to a terminal immediately.
 
 __Upload recorded asciicast to asciinema.org site.__
 
-This command uploads given asciicast (as recorded by `rec` command) to
+This command uploads given asciicast (recorded by `rec` command) to
 asciinema.org, where it can be watched and shared.
 
 `asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload
-demo.cast` is a nice combo for when you want to review an asciicast before
+demo.cast` is a nice combo if you want to review an asciicast before
 publishing it on asciinema.org.
 
 ### `auth`
@@ -348,8 +348,8 @@ A very minimal config file could look like that:
 idle_time_limit = 2
 ```
 
-Config file location can be changed by setting `$ASCIINEMA_CONFIG_HOME`
-environment variable, which should point to a directory.
+Config directory location can be changed by setting `$ASCIINEMA_CONFIG_HOME`
+environment variable.
 
 If `$XDG_CONFIG_HOME` is set on Linux then asciinema uses
 `$XDG_CONFIG_HOME/asciinema/config` instead of `$HOME/.config/asciinema/config`.
