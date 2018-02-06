@@ -352,9 +352,9 @@ Config directory location can be changed by setting `$ASCIINEMA_CONFIG_HOME`
 environment variable.
 
 If `$XDG_CONFIG_HOME` is set on Linux then asciinema uses
-`$XDG_CONFIG_HOME/asciinema/config` instead of `$HOME/.config/asciinema/config`.
+`$XDG_CONFIG_HOME/asciinema` instead of `$HOME/.config/asciinema`.
 
-> asciinema versions prior to 1.1 used `$HOME/.asciinema/config`. If you have it
+> asciinema versions prior to 1.1 used `$HOME/.asciinema`. If you have it
 > there you should `mv $HOME/.asciinema $HOME/.config/asciinema`.
 
 ## Contributing
