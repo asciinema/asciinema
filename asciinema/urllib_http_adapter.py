@@ -1,9 +1,9 @@
 import codecs
-import mimetypes
 import sys
 import uuid
 import io
 import base64
+import http
 
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -43,7 +43,7 @@ class MultipartFormdataEncoder:
             filename = self.u(filename)
             yield encoder('--{}\r\n'.format(self.boundary))
             yield encoder(self.u('Content-Disposition: form-data; name="{}"; filename="{}"\r\n').format(key, filename))
-            yield encoder('Content-Type: {}\r\n'.format(mimetypes.guess_type(filename)[0] or 'application/octet-stream'))
+            yield encoder('Content-Type: application/octet-stream\r\n')
             yield encoder('\r\n')
             data = f.read()
             yield (data, len(data))
@@ -81,7 +81,7 @@ class URLLibHttpAdapter:
             status = e.code
             headers = {}
             body = e.read().decode('utf-8')
-        except URLError as e:
+        except (http.client.RemoteDisconnected, URLError) as e:
             raise HTTPConnectionError(str(e))
 
         return (status, headers, body)

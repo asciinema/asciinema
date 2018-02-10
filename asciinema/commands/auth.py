@@ -3,13 +3,15 @@ from asciinema.commands.command import Command
 
 class AuthCommand(Command):
 
-    def __init__(self, api_url, api_token):
+    def __init__(self, api):
         Command.__init__(self)
-        self.api_url = api_url
-        self.api_token = api_token
+        self.api = api
 
     def execute(self):
-        url = '%s/connect/%s' % (self.api_url, self.api_token)
-        self.print('Open the following URL in a browser to register your API '
-                   'token and assign any recorded asciicasts to your profile:\n'
-                   '%s' % url)
+        self.print('Open the following URL in a web browser to link your '
+                   'install ID with your %s user account:\n\n'
+                   '%s\n\n'
+                   'This will associate all recordings uploaded from this machine '
+                   '(past and future ones) to your account, '
+                   'and allow you to manage them (change title/theme, delete) at %s.'
+                   % (self.api.hostname(), self.api.auth_url(), self.api.hostname()))

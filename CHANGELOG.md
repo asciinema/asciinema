@@ -1,5 +1,24 @@
 # asciinema changelog
 
+## 2.0 (2018-02-10)
+
+This major release brings many new features, improvements and bugfixes. The most
+notable ones:
+
+* new [asciicast v2 file format](doc/asciicast-v2.md)
+* recording and playback of arbitrarily long session with minimal memory usage
+* ability to live-stream via UNIX pipe: `asciinema rec unix.pipe` + `asciinema play unix.pipe` in second terminal tab/window
+* optional stdin recording (`asciinema rec --stdin`)
+* appending to existing recording (`asciinema rec --append <filename>`)
+* raw recording mode, storing only stdout bytes (`asciinema rec --raw <filename>`)
+* environment variable white-listing (`asciinema rec --env="VAR1,VAR2..."`)
+* toggling pause in `asciinema play` by <kbd>Space</kbd>
+* stepping through a recording one frame at a time with <kbd>.</kbd> (when playback paused)
+* new `asciinema cat <filename>` command to dump full output of the recording
+* playback from new IPFS URL scheme: `dweb:/ipfs/` (replaces `fs:/`)
+* lots of other bugfixes and improvements
+* dropped official support for Python 3.3 (although it still works on 3.3)
+
 ## 1.4.0 (2017-04-11)
 
 * Dropped distutils fallback in setup.py - setuptools required now (thanks Jakub "@jakubjedelsky" Jedelsky!)

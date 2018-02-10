@@ -9,6 +9,50 @@ Terminal session recorder and the best companion of
 
 [![demo](https://asciinema.org/a/113463.png)](https://asciinema.org/a/113463?autoplay=1)
 
+## Quick intro
+
+asciinema lets you easily record terminal sessions and replay
+them in a terminal as well as in a web browser.
+
+Install latest version ([other installation options](#installation)):
+
+    sudo pip3 install asciinema
+
+Record your first session:
+
+    asciinema rec first.cast
+
+Now replay it with double speed:
+
+    asciinema play -s 2 first.cast
+
+Or with normal speed but with idle time limited to 2 seconds:
+
+    asciinema play -i 2 first.cast
+
+You can pass `-i 2` to `asciinema rec` as well, to set it permanently on a
+recording. Idle time limiting makes the recordings much more interesting to
+watch, try it.
+
+If you want to watch and share it on the web, upload it:
+
+    asciinema upload first.cast
+
+The above uploads it to [asciinema.org](https://asciinema.org), which is a
+default [asciinema-server](https://github.com/asciinema/asciinema-server)
+instance, and prints a secret link you can use to watch your recording in a web
+browser.
+
+You can record and upload in one step by omitting the filename:
+
+    asciinema rec
+
+You'll be asked to confirm the upload when the recording is done, so nothing is
+sent anywhere without your consent.
+
+These were the basics, but there's much more you can do. The following sections
+cover installation, usage and hosting of the recordings in more detail.
+
 ## Installation
 
 ### Python package
@@ -103,24 +147,40 @@ Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
 `exit`). If the recorded process is not a shell then recording finishes when
 the process exits.
 
-If the `filename` argument is given then the resulting recording
-(called [asciicast](doc/asciicast-v1.md)) is saved to a local file. It can later be replayed with
-`asciinema play <filename>` and/or uploaded to asciinema.org with `asciinema
-upload <filename>`. If the `filename` argument is omitted then (after asking for
-confirmation) the resulting asciicast is uploaded to asciinema.org, where it can
-be watched and shared.
+If the `filename` argument is omitted then (after asking for confirmation) the
+resulting asciicast is uploaded to
+[asciinema-server](https://github.com/asciinema/asciinema-server) (by default to
+asciinema.org), where it can be watched and shared.
+
+If the `filename` argument is given then the resulting recording (called
+[asciicast](doc/asciicast-v2.md)) is saved to a local file. It can later be
+replayed with `asciinema play <filename>` and/or uploaded to asciinema server
+with `asciinema upload <filename>`.
 
 `ASCIINEMA_REC=1` is added to recorded process environment variables. This
 can be used by your shell's config file (`.bashrc`, `.zshrc`) to alter the
-prompt or play a sound when shell is being recorded.
+prompt or play a sound when the shell is being recorded.
 
 Available options:
 
+* `--stdin` - Enable stdin (keyboard) recording (see below)
+* `--append` - Append to existing recording
+* `--raw` - Save raw STDOUT output, without timing information or other metadata
+* `--overwrite` - Overwrite the recording if it already exists
 * `-c, --command=<command>` - Specify command to record, defaults to $SHELL
+* `-e, --env=<var-names>` - List of environment variables to capture, defaults
+  to `SHELL,TERM`
 * `-t, --title=<title>` - Specify the title of the asciicast
-* `-w, --max-wait=<sec>` - Reduce recorded terminal inactivity to max `<sec>` seconds
+* `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
 * `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
 * `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
+
+Stdin recording allows for capturing of all characters typed in by the user in
+the currently recorded shell. This may be used by a player (e.g.
+[asciinema-player](https://github.com/asciinema/asciinema-player)) to display
+pressed keys. Because it's basically a key-logging (scoped to a single shell
+instance), it's disabled by default, and has to be explicitly enabled via
+`--stdin` option.
 
 ### `play <filename>`
 
@@ -129,134 +189,171 @@ __Replay recorded asciicast in a terminal.__
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
 
+Following keyboard shortcuts are available:
+
+- <kbd>Space</kbd> - toggle pause,
+- <kbd>.</kbd> - step through a recording a frame at a time (when paused),
+- <kbd>Ctrl+C</kbd> - exit.
+
 Playing from a local file:
 
-    asciinema play /path/to/asciicast.json
+    asciinema play /path/to/asciicast.cast
 
 Playing from HTTP(S) URL:
 
-    asciinema play https://asciinema.org/a/22124.json
-    asciinema play http://example.com/demo.json
+    asciinema play https://asciinema.org/a/22124.cast
+    asciinema play http://example.com/demo.cast
 
 Playing from asciicast page URL (requires `<link rel="alternate"
-type="application/asciicast+json" href="....json">` in page's HTML):
+type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
 
     asciinema play https://asciinema.org/a/22124
     asciinema play http://example.com/blog/post.html
 
 Playing from stdin:
 
-    cat /path/to/asciicast.json | asciinema play -
-    ssh user@host cat asciicast.json | asciinema play -
+    cat /path/to/asciicast.cast | asciinema play -
+    ssh user@host cat asciicast.cast | asciinema play -
 
 Playing from IPFS:
 
-    asciinema play ipfs:/ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V
-    asciinema play fs:/ipfs/QmcdXYJp6e4zNuimuGeWPwNMHQdxuqWmKx7NhZofQ1nw2V
+    asciinema play dweb:/ipfs/QmNe7FsYaHc9SaDEAEXbaagAzNw9cH7YbzN4xV7jV1MCzK/ascii.cast
 
 Available options:
 
-* `-w, --max-wait=<sec>` - Reduce replayed terminal inactivity to max `<sec>` seconds
-* `-s, --speed=<factor>` - Playback speedup (can be fractional)
+* `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
+* `-s, --speed=<factor>` - Playback speed (can be fractional)
 
-NOTE: it is recommended to run `asciinema play` in a terminal of dimensions not
-smaller than the one used for recording as there's no "transcoding" of control
-sequences for new terminal size.
+> For the best playback experience it is recommended to run `asciinema play` in
+> a terminal of dimensions not smaller than the one used for recording, as
+> there's no "transcoding" of control sequences for new terminal size.
+
+### `cat <filename>`
+
+__Print full output of recorded asciicast to a terminal.__
+
+While `asciinema play <filename>` replays the recorded session using timing
+information saved in the asciicast, `asciinema cat <filename>` dumps the full
+output (including all escape sequences) to a terminal immediately.
+
+`asciinema cat existing.cast >output.txt` gives the same result as recording via
+`asciinema rec --raw output.txt`.
 
 ### `upload <filename>`
 
 __Upload recorded asciicast to asciinema.org site.__
 
-This command uploads given asciicast (as recorded by `rec` command) to
+This command uploads given asciicast (recorded by `rec` command) to
 asciinema.org, where it can be watched and shared.
 
-`asciinema rec demo.json` + `asciinema play demo.json` + `asciinema upload
-demo.json` is a nice combo for when you want to review an asciicast before
+`asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload
+demo.cast` is a nice combo if you want to review an asciicast before
 publishing it on asciinema.org.
 
 ### `auth`
 
-__Manage recordings on asciinema.org account.__
+__Link your install ID with your asciinema.org user account.__
 
-If you want to manage your recordings on asciinema.org (set title/description,
-delete etc) you need to authenticate. This command displays the URL you should
-open in your web browser to do that.
+If you want to manage your recordings (change title/theme, delete) at
+asciinema.org you need to link your "install ID" with asciinema.org user
+account.
 
-On every machine you run asciinema recorder, you get a new, unique API token. If
-you're already logged in on asciinema.org website and you run `asciinema auth`
-from a new computer then this new device will be linked to your account.
+This command displays the URL to open in a web browser to do that. You may be
+asked to log in first.
 
-You can synchronize your config file (which keeps the API token) across the
-machines so all of them use the same token, but that's not necessary. You can
-assign new tokens to your account from as many machines as you want.
+Install ID is a random ID ([UUID
+v4](https://en.wikipedia.org/wiki/Universally_unique_identifier)) generated
+locally when you run asciinema for the first time, and saved at
+`$HOME/.config/asciinema/install-id`. It's purpose is to connect local machine
+with uploaded recordings, so they can later be associated with asciinema.org
+account. This way we decouple uploading from account creation, allowing them to
+happen in any order.
+
+> A new install ID is generated on each machine and system user account you use
+> asciinema on, so in order to keep all recordings under a single asciinema.org
+> account you need to run `asciinema auth` on all of those machines.
+
+> asciinema versions prior to 2.0 confusingly referred to install ID as "API
+> token".
 
 ## Hosting the recordings on the web
 
 As mentioned in the `Usage > rec` section above, if the `filename` argument to
-`asciinema rec` is omitted then the recorded asciicast is uploaded
-to [asciinema.org](https://asciinema.org). You can watch it there and share it via secret URL.
+`asciinema rec` is omitted then the recorded asciicast is uploaded to
+[asciinema.org](https://asciinema.org). You can watch it there and share it via
+secret URL.
 
-If you prefer to host the recordings yourself, you can do so by recording to a
-file (`asciinema rec demo.json`) and using
-[asciinema's standalone web player](https://github.com/asciinema/asciinema-player#self-hosting-quick-start)
-in your HTML page.
+If you prefer to host the recordings yourself, you can do so by either:
+
+- recording to a file (`asciinema rec demo.cast`), and using [asciinema's
+  standalone web
+  player](https://github.com/asciinema/asciinema-player#self-hosting-quick-start)
+  in your HTML page, or
+- setting up your own
+  [asciinema-server](https://github.com/asciinema/asciinema-server) instance,
+  and [setting API URL
+  accordingly](https://github.com/asciinema/asciinema-server/blob/master/docs/INSTALL.md#using-asciinema-recorder-with-your-instance).
 
 ## Configuration file
 
-asciinema uses a config file to keep API token and user settings. In most cases
-the location of this file is `$HOME/.config/asciinema/config`.
+You can configure asciinema by creating config file at
+`$HOME/.config/asciinema/config`.
 
-*NOTE: When you first run asciinema, local API token is generated (UUID) and
-saved in the file (unless the file already exists or you have set
-`ASCIINEMA_API_TOKEN` environment variable).*
+Configuration is split into sections (`[api]`, `[record]`, `[play]`). Here's a
+list of all available options for each section:
 
-The auto-generated, minimal config file looks like this:
+```ini
+[api]
 
-    [api]
-    token = <your-api-token-here>
+; API server URL, default: https://asciinema.org
+; If you run your own instance of asciinema-server then set its address here
+; It can also be overriden by setting ASCIINEMA_API_URL environment variable
+url = https://asciinema.example.com
 
-There are several options you can set in this file. Here's a config with all
-available options set:
+[record]
 
-    [api]
-    token = <your-api-token-here>
-    url = https://asciinema.example.com
+; Command to record, default: $SHELL
+command = /bin/bash -l
 
-    [record]
-    command = /bin/bash -l
-    maxwait = 2
-    yes = true
-    quiet = true
+; Enable stdin (keyboard) recording, default: no
+stdin = yes
 
-    [play]
-    maxwait = 1
+; List of environment variables to capture, default: SHELL,TERM
+env = SHELL,TERM,USER
 
-The options in `[api]` section are related to API location and authentication.
-To tell asciinema recorder to use your own asciinema site instance rather than
-the default one (asciinema.org), you can set `url` option. API URL can also be
-passed via `ASCIINEMA_API_URL` environment variable, as well as API token, via
-`ASCIINEMA_API_TOKEN` environment variable.
+; Limit recorded terminal inactivity to max n seconds, default: off
+idle_time_limit = 2
 
-The options in `[record]` and `[play]` sections have the same meaning as the
-options you pass to `asciinema rec`/`asciinema play` command. If you happen to
-often use either `-c`, `-w` or `-y` with these commands then consider saving it
-as a default in the config file.
+; Answer "yes" to all interactive prompts, default: no
+yes = true
 
-*NOTE: If you want to publish your asciinema config file (in public dotfiles
-repository) you __should__ remove `token = ...` line from the file and use
-`ASCIINEMA_API_TOKEN` environment variable instead.*
+; Be quiet, suppress all notices/warnings, default: no
+quiet = true
 
-### Configuration file locations
+[play]
 
-In fact, the following locations are checked for the presence of the config
-file (in the given order):
+; Playback speed (can be fractional), default: 1
+speed = 2
 
-* `$ASCIINEMA_CONFIG_HOME/config` - if you have set `$ASCIINEMA_CONFIG_HOME`
-* `$XDG_CONFIG_HOME/asciinema/config` - on Linux, `$XDG_CONFIG_HOME` usually points to `$HOME/.config/`
-* `$HOME/.config/asciinema/config` - in most cases it's here
-* `$HOME/.asciinema/config` - created by asciinema versions prior to 1.1
+; Limit replayed terminal inactivity to max n seconds, default: off
+idle_time_limit = 1
+```
 
-The first one found is used.
+A very minimal config file could look like that:
+
+```ini
+[record]
+idle_time_limit = 2
+```
+
+Config directory location can be changed by setting `$ASCIINEMA_CONFIG_HOME`
+environment variable.
+
+If `$XDG_CONFIG_HOME` is set on Linux then asciinema uses
+`$XDG_CONFIG_HOME/asciinema` instead of `$HOME/.config/asciinema`.
+
+> asciinema versions prior to 1.1 used `$HOME/.asciinema`. If you have it
+> there you should `mv $HOME/.asciinema $HOME/.config/asciinema`.
 
 ## Contributing
 

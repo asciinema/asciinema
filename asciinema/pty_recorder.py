@@ -2,7 +2,6 @@ import errno
 import os
 import pty
 import signal
-import tty
 import array
 import fcntl
 import termios
@@ -30,10 +29,10 @@ class PtyRecorder:
             if os.isatty(pty.STDOUT_FILENO):
                 buf = array.array('h', [0, 0, 0, 0])
                 fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
-                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
             else:
                 buf = array.array('h', [24, 80, 0, 0])
-                fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
+
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
         def _write_stdout(data):
             '''Writes to stdout as if the child process had written the data.'''
@@ -43,8 +42,8 @@ class PtyRecorder:
         def _handle_master_read(data):
             '''Handles new data on child process stdout.'''
 
+            output.write_stdout(data)
             _write_stdout(data)
-            output.write(data)
 
         def _write_master(data):
             '''Writes to the child process from its controlling terminal.'''
@@ -56,6 +55,7 @@ class PtyRecorder:
         def _handle_stdin_read(data):
             '''Handles new data on child process stdin.'''
 
+            output.write_stdin(data)
             _write_master(data)
 
         def _signals(signal_list):
@@ -138,4 +138,3 @@ class PtyRecorder:
         _signals(old_handlers)
 
         os.waitpid(pid, 0)
-        output.close()

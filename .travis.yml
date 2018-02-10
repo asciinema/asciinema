@@ -2,10 +2,10 @@ sudo: false
 language: python
 
 python:
-  - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7-dev"
 
 before_install:
   - pip install pep8
@@ -13,10 +13,3 @@ before_install:
 script:
   - find . -name \*.py -exec pep8 --ignore=E501 {} +
   - make test
-
-notifications:
-  irc:
-    channels:
-      - "chat.freenode.net#asciinema"
-    use_notice: true
-    skip_join: true
