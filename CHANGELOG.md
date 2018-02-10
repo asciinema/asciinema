@@ -1,6 +1,9 @@
 # asciinema changelog
 
-## 2.0 (develop branch)
+## 2.0 (2018-02-10)
+
+This major release brings many new features, improvements and bugfixes. The most
+notable ones:
 
 * new [asciicast v2 file format](doc/asciicast-v2.md)
 * recording and playback of arbitrarily long session with minimal memory usage
@@ -14,7 +17,7 @@
 * new `asciinema cat <filename>` command to dump full output of the recording
 * playback from new IPFS URL scheme: `dweb:/ipfs/` (replaces `fs:/`)
 * lots of other bugfixes and improvements
-* Dropped official support for Python 3.3 (although it still works on 3.3)
+* dropped official support for Python 3.3 (although it still works on 3.3)
 
 ## 1.4.0 (2017-04-11)
 
