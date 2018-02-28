@@ -21,10 +21,11 @@ class LoadError(Exception):
 
 class Asciicast:
 
-    def __init__(self, f, idle_time_limit):
+    def __init__(self, f, header):
         self.version = 2
         self.__file = f
-        self.idle_time_limit = idle_time_limit
+        self.v2_header = header
+        self.idle_time_limit = header.get('idle_time_limit')
 
     def stdout(self):
         for line in self.__file:
@@ -35,8 +36,7 @@ class Asciicast:
 
 
 def build_from_header_and_file(header, f):
-    idle_time_limit = header.get('idle_time_limit')
-    return Asciicast(f, idle_time_limit)
+    return Asciicast(f, header)
 
 
 class open_from_file():
