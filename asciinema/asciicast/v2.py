@@ -27,10 +27,12 @@ class Asciicast:
         self.v2_header = header
         self.idle_time_limit = header.get('idle_time_limit')
 
-    def stdout(self):
+    def events(self):
         for line in self.__file:
-            time, type, data = json.loads(line)
+            yield json.loads(line)
 
+    def stdout(self):
+        for time, type, data in self.events():
             if type == 'o':
                 yield [time, data]
 

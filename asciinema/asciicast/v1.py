@@ -27,6 +27,10 @@ class Asciicast:
         header = {k: v for k, v in self.__attrs.items() if k in keys and v is not None}
         return header
 
+    def events(self):
+        for time, data in self.stdout():
+            yield [time, 'o', data]
+
     def stdout(self):
         return to_absolute_time(self.__attrs['stdout'])
 
