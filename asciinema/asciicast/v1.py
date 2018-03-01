@@ -1,7 +1,7 @@
 import json
 import json.decoder
 
-from asciinema.asciicast.frames import to_absolute_time
+from asciinema.asciicast.events import to_absolute_time
 
 
 try:
@@ -27,12 +27,15 @@ class Asciicast:
         header = {k: v for k, v in self.__attrs.items() if k in keys and v is not None}
         return header
 
-    def events(self):
-        for time, data in self.stdout():
+    def __stdout_events(self):
+        for time, data in self.__attrs['stdout']:
             yield [time, 'o', data]
 
-    def stdout(self):
-        return to_absolute_time(self.__attrs['stdout'])
+    def events(self):
+        return self.stdout_events()
+
+    def stdout_events(self):
+        return to_absolute_time(self.__stdout_events())
 
 
 class open_from_file():

@@ -31,10 +31,10 @@ class Asciicast:
         for line in self.__file:
             yield json.loads(line)
 
-    def stdout(self):
+    def stdout_events(self):
         for time, type, data in self.events():
             if type == 'o':
-                yield [time, data]
+                yield [time, type, data]
 
 
 def build_from_header_and_file(header, f):
@@ -66,7 +66,7 @@ def get_duration(path):
     with open(path, mode='rt', encoding='utf-8') as f:
         first_line = f.readline()
         with open_from_file(first_line, f) as a:
-            for last_frame in a.stdout():
+            for last_frame in a.stdout_events():
                 pass
             return last_frame[0]
 
