@@ -79,7 +79,7 @@ class writer():
         self.buffering = buffering
 
         if mode == 'w':
-            self.header = { 'version': 2, 'width': width, 'height': height }
+            self.header = {'version': 2, 'width': width, 'height': height}
             self.header.update(header or {})
             assert type(self.header['width']) == int, 'width or header missing'
             assert type(self.header['height']) == int, 'height or header missing'
