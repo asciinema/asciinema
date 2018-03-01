@@ -71,14 +71,56 @@ def get_duration(path):
             return last_frame[0]
 
 
-def write_json_lines_from_queue(path, mode, queue):
-    with open(path, mode=mode, buffering=1) as f:
-        for json_value in iter(queue.get, None):
-            line = json.dumps(json_value, ensure_ascii=False, indent=None, separators=(', ', ': '))
-            f.write(line + '\n')
-
-
 class writer():
+
+    def __init__(self, path, width=None, height=None, header=None, mode='w', buffering=-1):
+        self.path = path
+        self.mode = mode
+        self.buffering = buffering
+
+        if mode == 'w':
+            self.header = { 'version': 2, 'width': width, 'height': height }
+            self.header.update(header or {})
+            assert type(self.header['width']) == int, 'width or header missing'
+            assert type(self.header['height']) == int, 'height or header missing'
+        else:
+            self.header = None
+
+    def __enter__(self):
+        self.file = open(self.path, mode=self.mode, buffering=self.buffering)
+
+        if self.header:
+            self.__write_line(self.header)
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.file.close()
+
+    def write_event(self, ts, type=None, data=None):
+        if type is None:
+            self.__write_line(ts)
+        else:
+            self.__write_line([ts, type, data])
+
+    def write_stdout(self, ts, data):
+        self.write_event(ts, 'o', data)
+
+    def write_stdin(self, ts, data):
+        self.write_event(ts, 'i', data)
+
+    def __write_line(self, obj):
+        line = json.dumps(obj, ensure_ascii=False, indent=None, separators=(', ', ': '))
+        self.file.write(line + '\n')
+
+
+def write_json_lines_from_queue(path, header, mode, queue):
+    with writer(path, header=header, mode=mode, buffering=1) as w:
+        for event in iter(queue.get, None):
+            w.write_event(event)
+
+
+class async_writer():
 
     def __init__(self, path, header, rec_stdin, start_time_offset=0):
         self.path = path
@@ -93,11 +135,9 @@ class writer():
         mode = 'a' if self.start_time_offset > 0 else 'w'
         self.process = Process(
             target=write_json_lines_from_queue,
-            args=(self.path, mode, self.queue)
+            args=(self.path, self.header, mode, self.queue)
         )
         self.process.start()
-        if self.start_time_offset == 0:
-            self.queue.put(self.header)
         self.start_time = time.time() - self.start_time_offset
         return self
 
@@ -151,5 +191,5 @@ class Recorder:
         if title:
             header['title'] = title
 
-        with writer(path, header, rec_stdin, start_time_offset) as w:
+        with async_writer(path, header, rec_stdin, start_time_offset) as w:
             self.pty_recorder.record_command(['sh', '-c', command], w, command_env)
