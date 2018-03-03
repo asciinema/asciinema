@@ -103,6 +103,8 @@ class writer():
         if etype is None:
             ts, etype, data = ts
 
+        ts = round(ts, 6)
+
         if etype == 'o':
             if type(data) == str:
                 data = data.encode(encoding='utf-8', errors='strict')
@@ -158,11 +160,11 @@ class async_writer():
 
     def write_stdin(self, data):
         if self.rec_stdin:
-            ts = round(time.time() - self.start_time, 6)
+            ts = time.time() - self.start_time
             self.queue.put([ts, 'i', data])
 
     def write_stdout(self, data):
-        ts = round(time.time() - self.start_time, 6)
+        ts = time.time() - self.start_time
         self.queue.put([ts, 'o', data])
 
 
