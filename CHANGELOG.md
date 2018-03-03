@@ -1,5 +1,9 @@
 # asciinema changelog
 
+## develop (unreleased)
+
+* Fixed location of config dir (you can `mv ~/.asciinema ~/.config/asciinema`).
+
 ## 2.0 (2018-02-10)
 
 This major release brings many new features, improvements and bugfixes. The most

@@ -131,10 +131,11 @@ def get_config_home(env=os.environ):
     elif env_xdg_config_home:
         config_home = path.join(env_xdg_config_home, "asciinema")
     elif env_home:
-        if path.isfile(path.join(env_home, ".config", "asciinema", "config")):
-            config_home = path.join(env_home, ".config", "asciinema")
+        if path.isfile(path.join(env_home, ".asciinema", "config")):
+            # location for versions < 1.1
+            config_home = path.join(env_home, ".asciinema")
         else:
-            config_home = path.join(env_home, ".asciinema")  # location for versions < 1.1
+            config_home = path.join(env_home, ".config", "asciinema")
     else:
         raise Exception("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME")
 
