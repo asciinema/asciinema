@@ -77,6 +77,8 @@ class writer():
         self.path = path
         self.mode = mode
         self.buffering = buffering
+        self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
+        self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
         if mode == 'w':
             self.header = {'version': 2, 'width': width, 'height': height}
@@ -97,11 +99,22 @@ class writer():
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.file.close()
 
-    def write_event(self, ts, type=None, data=None):
-        if type is None:
-            self.__write_line(ts)
+    def write_event(self, ts, etype=None, data=None):
+        if etype is None:
+            ts, etype, data = ts
+
+        if etype == 'o':
+            if type(data) == str:
+                data = data.encode(encoding='utf-8', errors='strict')
+            text = self.stdout_decoder.decode(data)
+            self.__write_line([ts, etype, text])
+        elif etype == 'i':
+            if type(data) == str:
+                data = data.encode(encoding='utf-8', errors='strict')
+            text = self.stdin_decoder.decode(data)
+            self.__write_line([ts, etype, text])
         else:
-            self.__write_line([ts, type, data])
+            self.__write_line([ts, etype, data])
 
     def write_stdout(self, ts, data):
         self.write_event(ts, 'o', data)
@@ -128,8 +141,6 @@ class async_writer():
         self.rec_stdin = rec_stdin
         self.start_time_offset = start_time_offset
         self.queue = Queue()
-        self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
-        self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
     def __enter__(self):
         mode = 'a' if self.start_time_offset > 0 else 'w'
@@ -147,18 +158,12 @@ class async_writer():
 
     def write_stdin(self, data):
         if self.rec_stdin:
-            text = self.stdin_decoder.decode(data)
-
-            if text:
-                ts = round(time.time() - self.start_time, 6)
-                self.queue.put([ts, 'i', text])
+            ts = round(time.time() - self.start_time, 6)
+            self.queue.put([ts, 'i', data])
 
     def write_stdout(self, data):
-        text = self.stdout_decoder.decode(data)
-
-        if text:
-            ts = round(time.time() - self.start_time, 6)
-            self.queue.put([ts, 'o', text])
+        ts = round(time.time() - self.start_time, 6)
+        self.queue.put([ts, 'o', data])
 
 
 class Recorder:
