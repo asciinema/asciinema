@@ -1,6 +1,7 @@
 from ..test_helper import Test
 import asciinema.asciicast.v2 as v2
 import tempfile
+import json
 
 
 class TestWriter(Test):
@@ -15,9 +16,9 @@ class TestWriter(Test):
             w.write_stdout(4, bytes.fromhex('78 78'))
 
         with open(path, 'r') as f:
-            text = f.read()
-            assert text == '{"version": 2, "width": 80, "height": 24}\n' + \
-                           '[1, "o", "x"]\n' + \
-                           '[2, "o", "xżó"]\n' + \
-                           '[3, "o", "łć"]\n' + \
-                           '[4, "o", "xx"]\n', 'got:\n\n%s' % text
+            lines = list(map(json.loads, f.read().strip().split('\n')))
+            assert lines == [{"version": 2, "width": 80, "height": 24},
+                             [1, "o", "x"],
+                             [2, "o", "xżó"],
+                             [3, "o", "łć"],
+                             [4, "o", "xx"]], 'got:\n\n%s' % lines
