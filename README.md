@@ -99,8 +99,7 @@ Default command run in a container is `asciinema rec`.
 
 There's not much software installed in this image though. In most cases you may
 want to install extra programs before recording. One option is to derive new
-image from this one (start your custom Dockerfile with `FROM
-asciinema/asciinema`). Another option is to start the container with `/bin/bash`
+image from this one (start your custom Dockerfile with `FROM asciinema/asciinema`). Another option is to start the container with `/bin/bash`
 as the command, install extra packages and manually start `asciinema rec`:
 
     docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema /bin/bash
@@ -139,7 +138,7 @@ all available commands with their options.
 
 ### `rec [filename]`
 
-__Record terminal session.__
+**Record terminal session.**
 
 By running `asciinema rec [filename]` you start a new recording session. The
 command (process) that is recorded can be specified with `-c` option (see
@@ -186,16 +185,16 @@ instance), it's disabled by default, and has to be explicitly enabled via
 
 ### `play <filename>`
 
-__Replay recorded asciicast in a terminal.__
+**Replay recorded asciicast in a terminal.**
 
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
 
 Following keyboard shortcuts are available:
 
-- <kbd>Space</kbd> - toggle pause,
-- <kbd>.</kbd> - step through a recording a frame at a time (when paused),
-- <kbd>Ctrl+C</kbd> - exit.
+* <kbd>Space</kbd> - toggle pause,
+* <kbd>.</kbd> - step through a recording a frame at a time (when paused),
+* <kbd>Ctrl+C</kbd> - exit.
 
 Playing from a local file:
 
@@ -206,8 +205,7 @@ Playing from HTTP(S) URL:
     asciinema play https://asciinema.org/a/22124.cast
     asciinema play http://example.com/demo.cast
 
-Playing from asciicast page URL (requires `<link rel="alternate"
-type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
+Playing from asciicast page URL (requires `<link rel="alternate" type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
 
     asciinema play https://asciinema.org/a/22124
     asciinema play http://example.com/blog/post.html
@@ -232,7 +230,7 @@ Available options:
 
 ### `cat <filename>`
 
-__Print full output of recorded asciicast to a terminal.__
+**Print full output of recorded asciicast to a terminal.**
 
 While `asciinema play <filename>` replays the recorded session using timing
 information saved in the asciicast, `asciinema cat <filename>` dumps the full
@@ -243,18 +241,17 @@ output (including all escape sequences) to a terminal immediately.
 
 ### `upload <filename>`
 
-__Upload recorded asciicast to asciinema.org site.__
+**Upload recorded asciicast to asciinema.org site.**
 
 This command uploads given asciicast (recorded by `rec` command) to
 asciinema.org, where it can be watched and shared.
 
-`asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload
-demo.cast` is a nice combo if you want to review an asciicast before
+`asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload demo.cast` is a nice combo if you want to review an asciicast before
 publishing it on asciinema.org.
 
 ### `auth`
 
-__Link your install ID with your asciinema.org user account.__
+**Link your install ID with your asciinema.org user account.**
 
 If you want to manage your recordings (change title/theme, delete) at
 asciinema.org you need to link your "install ID" with asciinema.org user
@@ -287,11 +284,11 @@ secret URL.
 
 If you prefer to host the recordings yourself, you can do so by either:
 
-- recording to a file (`asciinema rec demo.cast`), and using [asciinema's
+* recording to a file (`asciinema rec demo.cast`), and using [asciinema's
   standalone web
   player](https://github.com/asciinema/asciinema-player#self-hosting-quick-start)
   in your HTML page, or
-- setting up your own
+* setting up your own
   [asciinema-server](https://github.com/asciinema/asciinema-server) instance,
   and [setting API URL
   accordingly](https://github.com/asciinema/asciinema-server/blob/master/docs/INSTALL.md#using-asciinema-recorder-with-your-instance).

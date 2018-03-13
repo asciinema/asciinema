@@ -1,24 +1,20 @@
 % ASCIINEMA(1) Version 2.0 | asciinema
 
-NAME
-====
+# NAME
 
 **asciinema** - terminal session recorder
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 | **asciinema \-\-version**
 | **asciinema** _command_ \[_options_] \[_args_]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 asciinema lets you easily record terminal sessions and replay
 them in a terminal as well as in a web browser.
 
-COMMANDS
-========
+# COMMANDS
 
 asciinema is composed of multiple commands, similar to `git`, `apt-get` or
 `brew`.
@@ -26,8 +22,7 @@ asciinema is composed of multiple commands, similar to `git`, `apt-get` or
 When you run **asciinema** with no arguments help message is displayed, listing
 all available commands with their options.
 
-rec [_filename_]
----
+## rec [_filename_]
 
 Record terminal session.
 
@@ -94,8 +89,7 @@ pressed keys. Because it's basically a key-logging (scoped to a single shell
 instance), it's disabled by default, and has to be explicitly enabled via
 **--stdin** option.
 
-play <_filename_>
----
+## play <_filename_>
 
 Replay recorded asciicast in a terminal.
 
@@ -117,8 +111,7 @@ Playing from HTTP(S) URL:
     asciinema play https://asciinema.org/a/22124.cast
     asciinema play http://example.com/demo.cast
 
-Playing from asciicast page URL (requires `<link rel="alternate"
-type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
+Playing from asciicast page URL (requires `<link rel="alternate" type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
 
     asciinema play https://asciinema.org/a/22124
     asciinema play http://example.com/blog/post.html
@@ -142,8 +135,7 @@ Available options:
     `-s, --speed=<factor>`
     : Playback speed (can be fractional)
 
-cat <_filename_>
----
+## cat <_filename_>
 
 Print full output of recorded asciicast to a terminal.
 
@@ -154,8 +146,7 @@ output (including all escape sequences) to a terminal immediately.
 **asciinema cat existing.cast >output.txt** gives the same result as recording via
 **asciinema rec \-\-raw output.txt**.
 
-upload <filename>
----
+## upload <filename>
 
 Upload recorded asciicast to asciinema.org site.
 
@@ -166,8 +157,7 @@ asciinema.org, where it can be watched and shared.
 demo.cast** is a nice combo if you want to review an asciicast before
 publishing it on asciinema.org.
 
-auth
----
+## auth
 
 Link your install ID with your asciinema.org user account.
 
@@ -193,8 +183,7 @@ account you need to run **asciinema auth** on all of those machines.
 Note: asciinema versions prior to 2.0 confusingly referred to install ID as "API
 token".
 
-EXAMPLES
-========
+# EXAMPLES
 
 Record your first session:
 
@@ -228,27 +217,24 @@ You can record and upload in one step by omitting the filename:
 You'll be asked to confirm the upload when the recording is done, so nothing is
 sent anywhere without your consent.
 
-ENVIRONMENT
-===========
+# ENVIRONMENT
 
 **ASCIINEMA_API_URL**
 
 : This variable allows overriding asciinema-server URL (which defaults to
-  https://asciinema.org) in case you're running your own asciinema-server instance.
+https://asciinema.org) in case you're running your own asciinema-server instance.
 
 **ASCIINEMA_CONFIG_HOME**
 
 : This variable allows overriding config directory location. Default location
-  is $XDG\_CONFIG\_HOME/asciinema (when $XDG\_CONFIG\_HOME is set)
-  or $HOME/.config/asciinema.
+is $XDG_CONFIG_HOME/asciinema (when $XDG_CONFIG_HOME is set)
+or $HOME/.config/asciinema.
 
-BUGS
-====
+# BUGS
 
 See GitHub Issues: <https://github.com/asciinema/asciinema/issues>
 
-AUTHORS
-=======
+# AUTHORS
 
 asciinema's lead developer is Marcin Kulik.
 
