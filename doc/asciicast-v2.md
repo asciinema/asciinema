@@ -2,19 +2,24 @@
 
 asciicast v2 file is [newline-delimited JSON](http://jsonlines.org/) file where:
 
-* __first line__ contains header (initial terminal size, timestamp and other
+* **first line** contains header (initial terminal size, timestamp and other
   meta-data), encoded as JSON object,
-* __all following lines__ form an event stream, _each line_ representing a
+* **all following lines** form an event stream, _each line_ representing a
   separate event, encoded as 3-element JSON array.
 
 Example file:
 
 ```json
-{"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
-[0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
-[1.001376, "o", "That was ok\rThis is better."]
-[2.143733, "o", " "]
-[6.541828, "o", "Bye!"]
+{
+  "version": 2,
+  "width": 80,
+  "height": 24,
+  "timestamp": 1504467315,
+  "title": "Demo",
+  "env": { "TERM": "xterm-256color", "SHELL": "/bin/zsh" }
+}[(0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n")][
+  (1.001376, "o", "That was ok\rThis is better.")
+][(2.143733, "o", " ")][(6.541828, "o", "Bye!")]
 ```
 
 Suggested file extension is `.cast`, suggested media type is
@@ -84,9 +89,9 @@ Example env:
 
 Color theme of the recorded terminal. Object, with the following attributes:
 
-- `fg` - normal text color,
-- `bg` - normal background color,
-- `palette` - list of 8 or 16 colors, separated by colon character.
+* `fg` - normal text color,
+* `bg` - normal background color,
+* `palette` - list of 8 or 16 colors, separated by colon character.
 
 All colors are in the CSS `#rrggbb` format.
 
