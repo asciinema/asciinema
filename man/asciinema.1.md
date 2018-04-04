@@ -1,4 +1,4 @@
-% ASCIINEMA(1) Version 2.0 | asciinema
+% ASCIINEMA(1) Version 2.0.1 | asciinema
 
 NAME
 ====
