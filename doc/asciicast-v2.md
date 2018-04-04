@@ -71,8 +71,8 @@ Example env:
 
 ```json
 "env": {
-  "SHELL": "xterm-256color",
-  "TERM": "/bin/bash"
+  "SHELL": "/bin/bash",
+  "TERM": "xterm-256color"
 }
 ```
 

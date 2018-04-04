@@ -1,5 +1,12 @@
 # asciinema changelog
 
+## 2.0.1 (2018-04-04)
+
+* Fixed example in asciicast v2 format doc (thanks Josh "@anowlcalledjosh" Holland!)
+* Replaced deprecated `encodestring` (since Python 3.1) with `encodebytes` (thanks @delirious-lettuce!)
+* Fixed location of config dir (you can `mv ~/.asciinema ~/.config/asciinema`)
+* Internal refactorings
+
 ## 2.0 (2018-02-10)
 
 This major release brings many new features, improvements and bugfixes. The most

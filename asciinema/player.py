@@ -2,7 +2,7 @@ import os
 import sys
 import time
 
-import asciinema.asciicast.frames as frames
+import asciinema.asciicast.events as ev
 from asciinema.term import raw, read_blocking
 
 
@@ -19,18 +19,18 @@ class Player:
     def _play(self, asciicast, idle_time_limit, speed, stdin):
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
 
-        stdout = asciicast.stdout()
-        stdout = frames.to_relative_time(stdout)
-        stdout = frames.cap_relative_time(stdout, idle_time_limit)
-        stdout = frames.to_absolute_time(stdout)
-        stdout = frames.adjust_speed(stdout, speed)
+        stdout = asciicast.stdout_events()
+        stdout = ev.to_relative_time(stdout)
+        stdout = ev.cap_relative_time(stdout, idle_time_limit)
+        stdout = ev.to_absolute_time(stdout)
+        stdout = ev.adjust_speed(stdout, speed)
 
         base_time = time.time()
         ctrl_c = False
         paused = False
         pause_time = None
 
-        for t, text in stdout:
+        for t, _type, text in stdout:
             delay = t - (time.time() - base_time)
 
             while stdin and not ctrl_c and delay > 0:

@@ -1,7 +1,7 @@
 import json
 import json.decoder
 
-from asciinema.asciicast.frames import to_absolute_time
+from asciinema.asciicast.events import to_absolute_time
 
 
 try:
@@ -16,13 +16,26 @@ class LoadError(Exception):
 
 class Asciicast:
 
-    def __init__(self, stdout):
+    def __init__(self, attrs):
         self.version = 1
-        self.__stdout = stdout
+        self.__attrs = attrs
         self.idle_time_limit = None  # v1 doesn't store it
 
-    def stdout(self):
-        return to_absolute_time(self.__stdout)
+    @property
+    def v2_header(self):
+        keys = ['width', 'height', 'duration', 'command', 'title', 'env']
+        header = {k: v for k, v in self.__attrs.items() if k in keys and v is not None}
+        return header
+
+    def __stdout_events(self):
+        for time, data in self.__attrs['stdout']:
+            yield [time, 'o', data]
+
+    def events(self):
+        return self.stdout_events()
+
+    def stdout_events(self):
+        return to_absolute_time(self.__stdout_events())
 
 
 class open_from_file():
@@ -37,7 +50,7 @@ class open_from_file():
             attrs = json.loads(self.first_line + self.file.read())
 
             if attrs.get('version') == 1:
-                return Asciicast(attrs['stdout'])
+                return Asciicast(attrs)
             else:
                 raise LoadError(self.FORMAT_ERROR)
         except JSONDecodeError as e:

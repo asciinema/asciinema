@@ -13,7 +13,7 @@ class CatCommand(Command):
     def execute(self):
         try:
             with asciicast.open_from_url(self.filename) as a:
-                for t, text in a.stdout():
+                for t, _type, text in a.stdout_events():
                     sys.stdout.write(text)
                     sys.stdout.flush()
 

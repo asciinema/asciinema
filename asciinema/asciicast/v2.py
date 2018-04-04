@@ -21,22 +21,24 @@ class LoadError(Exception):
 
 class Asciicast:
 
-    def __init__(self, f, idle_time_limit):
+    def __init__(self, f, header):
         self.version = 2
         self.__file = f
-        self.idle_time_limit = idle_time_limit
+        self.v2_header = header
+        self.idle_time_limit = header.get('idle_time_limit')
 
-    def stdout(self):
+    def events(self):
         for line in self.__file:
-            time, type, data = json.loads(line)
+            yield json.loads(line)
 
+    def stdout_events(self):
+        for time, type, data in self.events():
             if type == 'o':
-                yield [time, data]
+                yield [time, type, data]
 
 
 def build_from_header_and_file(header, f):
-    idle_time_limit = header.get('idle_time_limit')
-    return Asciicast(f, idle_time_limit)
+    return Asciicast(f, header)
 
 
 class open_from_file():
@@ -64,19 +66,76 @@ def get_duration(path):
     with open(path, mode='rt', encoding='utf-8') as f:
         first_line = f.readline()
         with open_from_file(first_line, f) as a:
-            for last_frame in a.stdout():
+            for last_frame in a.stdout_events():
                 pass
             return last_frame[0]
 
 
-def write_json_lines_from_queue(path, mode, queue):
-    with open(path, mode=mode, buffering=1) as f:
-        for json_value in iter(queue.get, None):
-            line = json.dumps(json_value, ensure_ascii=False, indent=None, separators=(', ', ': '))
-            f.write(line + '\n')
-
-
 class writer():
+
+    def __init__(self, path, width=None, height=None, header=None, mode='w', buffering=-1):
+        self.path = path
+        self.mode = mode
+        self.buffering = buffering
+        self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
+        self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
+
+        if mode == 'w':
+            self.header = {'version': 2, 'width': width, 'height': height}
+            self.header.update(header or {})
+            assert type(self.header['width']) == int, 'width or header missing'
+            assert type(self.header['height']) == int, 'height or header missing'
+        else:
+            self.header = None
+
+    def __enter__(self):
+        self.file = open(self.path, mode=self.mode, buffering=self.buffering)
+
+        if self.header:
+            self.__write_line(self.header)
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.file.close()
+
+    def write_event(self, ts, etype=None, data=None):
+        if etype is None:
+            ts, etype, data = ts
+
+        ts = round(ts, 6)
+
+        if etype == 'o':
+            if type(data) == str:
+                data = data.encode(encoding='utf-8', errors='strict')
+            text = self.stdout_decoder.decode(data)
+            self.__write_line([ts, etype, text])
+        elif etype == 'i':
+            if type(data) == str:
+                data = data.encode(encoding='utf-8', errors='strict')
+            text = self.stdin_decoder.decode(data)
+            self.__write_line([ts, etype, text])
+        else:
+            self.__write_line([ts, etype, data])
+
+    def write_stdout(self, ts, data):
+        self.write_event(ts, 'o', data)
+
+    def write_stdin(self, ts, data):
+        self.write_event(ts, 'i', data)
+
+    def __write_line(self, obj):
+        line = json.dumps(obj, ensure_ascii=False, indent=None, separators=(', ', ': '))
+        self.file.write(line + '\n')
+
+
+def write_json_lines_from_queue(path, header, mode, queue):
+    with writer(path, header=header, mode=mode, buffering=1) as w:
+        for event in iter(queue.get, None):
+            w.write_event(event)
+
+
+class async_writer():
 
     def __init__(self, path, header, rec_stdin, start_time_offset=0):
         self.path = path
@@ -84,18 +143,14 @@ class writer():
         self.rec_stdin = rec_stdin
         self.start_time_offset = start_time_offset
         self.queue = Queue()
-        self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
-        self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
     def __enter__(self):
         mode = 'a' if self.start_time_offset > 0 else 'w'
         self.process = Process(
             target=write_json_lines_from_queue,
-            args=(self.path, mode, self.queue)
+            args=(self.path, self.header, mode, self.queue)
         )
         self.process.start()
-        if self.start_time_offset == 0:
-            self.queue.put(self.header)
         self.start_time = time.time() - self.start_time_offset
         return self
 
@@ -105,18 +160,12 @@ class writer():
 
     def write_stdin(self, data):
         if self.rec_stdin:
-            text = self.stdin_decoder.decode(data)
-
-            if text:
-                ts = round(time.time() - self.start_time, 6)
-                self.queue.put([ts, 'i', text])
+            ts = time.time() - self.start_time
+            self.queue.put([ts, 'i', data])
 
     def write_stdout(self, data):
-        text = self.stdout_decoder.decode(data)
-
-        if text:
-            ts = round(time.time() - self.start_time, 6)
-            self.queue.put([ts, 'o', text])
+        ts = time.time() - self.start_time
+        self.queue.put([ts, 'o', data])
 
 
 class Recorder:
@@ -149,5 +198,5 @@ class Recorder:
         if title:
             header['title'] = title
 
-        with writer(path, header, rec_stdin, start_time_offset) as w:
+        with async_writer(path, header, rec_stdin, start_time_offset) as w:
             self.pty_recorder.record_command(['sh', '-c', command], w, command_env)
