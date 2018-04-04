@@ -1,6 +1,6 @@
 # asciinema changelog
 
-## develop (unreleased)
+## 2.0.1 (2018-04-04)
 
 * Fixed example in asciicast v2 format doc (thanks Josh "@anowlcalledjosh" Holland!)
 * Replaced deprecated `encodestring` (since Python 3.1) with `encodebytes` (thanks @delirious-lettuce!)
