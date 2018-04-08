@@ -4,7 +4,16 @@ import json
 import json.decoder
 import time
 import codecs
-from multiprocessing import Process, Queue
+
+try:
+    # Importing synchronize is to detect platforms where
+    # multiprocessing does not work (python issue 3770)
+    # and cause an ImportError. Otherwise it will happen
+    # later when trying to use Queue().
+    from multiprocessing import synchronize, Process, Queue
+except ImportError:
+    from threading import Thread as Process
+    from queue import Queue
 
 from asciinema.pty_recorder import PtyRecorder
 
