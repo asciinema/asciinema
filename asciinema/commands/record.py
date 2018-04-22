@@ -10,7 +10,25 @@ from asciinema.api import APIError
 
 
 class RecordCommand(Command):
+    """
+    This is the main command used in asciinema, it records metadata as well as
+    standard input.
 
+    Attributes:
+        api (asciinema.API): the API that will be used to upload the session
+        filename (str): name of file that asciicast will be saved to
+        rec_stdin (?): ?
+        command (?): ?
+        env_whitelist (?): ?
+        title (?): ?
+        assume_yes (?): ?
+        idle_time_limit (?): ?
+        append (?): ?
+        overwrite (?): ?
+        raw (?): ?
+        recorder (?): ?
+        env (?): ?
+    """
     def __init__(self, api, args, env=None):
         Command.__init__(self, args.quiet)
         self.api = api
@@ -28,6 +46,12 @@ class RecordCommand(Command):
         self.env = env if env is not None else os.environ
 
     def execute(self):
+        """
+        Performs the selected command
+
+        Returns:
+            0 if successful, 1 otherwise.
+        """
         upload = False
         append = self.append
 
