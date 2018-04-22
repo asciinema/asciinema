@@ -19,7 +19,6 @@ class Command:
 
         self.quiet = quiet
 
-
     def print(self, text, file=sys.stdout, end="\n", force=False):
         """
         Custom print method that can change print destination and newline delimeter.
