@@ -50,8 +50,8 @@ def maybe_str(v):
 
 
 def main():
-    if locale.nl_langinfo(locale.CODESET).upper() != 'UTF-8':
-        print("asciinema needs a UTF-8 native locale to run. Check the output of `locale` command.")
+    if locale.nl_langinfo(locale.CODESET).upper() not in ['US-ASCII', 'UTF-8']:
+        print("asciinema needs an ASCII or UTF-8 character encoding to run. Check the output of `locale` command.")
         sys.exit(1)
 
     try:
