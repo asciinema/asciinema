@@ -73,16 +73,6 @@ asciinema is included in repositories of most popular package managers on Mac OS
 X, Linux and FreeBSD. Look for package named `asciinema`. See the
 [list of available packages](https://asciinema.org/docs/installation).
 
-### Snap supported Linux distros
-
-If you run [Ubuntu or other snap supported Linux distribution](https://snapcraft.io/docs/core/install) you can
-install asciinema with:
-
-    snap install asciinema --classic
-
-The snap contains all necessary dependencies required to run asciinema, and will
-get automatically updated when a new version is pushed to the store.
-
 ### Docker image
 
 asciinema Docker image is based on Ubuntu 16.04 and has the latest version of
