@@ -118,6 +118,14 @@ class Config:
     def play_speed(self):
         return self.config.getfloat('play', 'speed', fallback=1.0)
 
+    @property
+    def play_step_chars(self):
+        return self.config.get('play', 'step_chars', fallback='.')
+
+    @property
+    def play_pause_chars(self):
+        return self.config.get('play', 'pause_chars', fallback=' ')
+
 
 def get_config_home(env=os.environ):
     env_asciinema_config_home = env.get("ASCIINEMA_CONFIG_HOME")

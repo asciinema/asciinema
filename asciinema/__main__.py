@@ -27,7 +27,10 @@ def rec_command(args, config):
 
 
 def play_command(args, config):
-    return PlayCommand(args.filename, args.idle_time_limit, args.speed)
+    chars = {}
+    chars['pause'] = config.play_pause_chars
+    chars['step'] = config.play_step_chars
+    return PlayCommand(args.filename, args.idle_time_limit, args.speed, chars)
 
 
 def cat_command(args, config):

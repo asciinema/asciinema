@@ -187,3 +187,13 @@ def test_play_idle_time_limit():
 
     config = create_config("[play]\nmaxwait = 2.35")
     assert_equal(2.35, config.play_idle_time_limit)
+
+
+def test_play_step_chars():
+    config = create_config("[play]\nstep_chars = %s" % 'abcde')
+    assert_equal("abcde", config.play_step_chars)
+
+
+def test_play_pause_chars():
+    config = create_config("[play]\npause_chars = %s" % 'pause')
+    assert_equal("pause", config.play_pause_chars)
