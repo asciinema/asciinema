@@ -355,10 +355,10 @@ If you want to contribute to this project check out
 ## Authors
 
 Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
-source [contributors](https://github.com/asciinema/asciinema/contributors)
+source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 ## License
 
-Copyright &copy; 2011-2017 Marcin Kulik.
+Copyright &copy; 2011–2018 Marcin Kulik.
 
 All code is licensed under the GPL, v3 or later. See LICENSE file for details.
