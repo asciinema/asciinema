@@ -9,7 +9,7 @@ _Note: This is README for `development` branch. [See the version for latest stab
 Terminal session recorder and the best companion of
 [asciinema.org](https://asciinema.org).
 
-[![demo](https://asciinema.org/a/113463.png)](https://asciinema.org/a/113463?autoplay=1)
+[![demo](https://asciinema.org/a/113463.svg)](https://asciinema.org/a/113463?autoplay=1)
 
 ## Quick intro
 
