@@ -2,6 +2,7 @@ import sys
 import os
 import tempfile
 
+import asciinema
 from asciinema.commands.command import Command
 import asciinema.asciicast as asciicast
 import asciinema.asciicast.v2 as v2
@@ -24,7 +25,7 @@ class RecordCommand(Command):
         self.append = args.append
         self.overwrite = args.overwrite
         self.raw = args.raw
-        self.recorder = raw.Recorder() if args.raw else v2.Recorder()
+        self.writer = raw.writer if args.raw else v2.async_writer
         self.env = env if env is not None else os.environ
 
     def execute(self):
@@ -60,22 +61,19 @@ class RecordCommand(Command):
 
         self.print_info("""press <ctrl-d> or type "exit" when you're done""")
 
-        command = self.command or self.env.get('SHELL') or 'sh'
-        command_env = self.env.copy()
-        command_env['ASCIINEMA_REC'] = '1'
         vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
-        captured_env = {var: self.env.get(var) for var in vars}
 
         try:
-            self.recorder.record(
+            asciinema.record_asciicast(
                 self.filename,
-                append,
-                command,
-                command_env,
-                captured_env,
-                self.rec_stdin,
-                self.title,
-                self.idle_time_limit
+                command=self.command,
+                append=append,
+                title=self.title,
+                idle_time_limit=self.idle_time_limit,
+                command_env=self.env,
+                capture_env=vars,
+                rec_stdin=self.rec_stdin,
+                writer=self.writer
             )
         except v2.LoadError:
             self.print_error("can only append to asciicast v2 format recordings")
