@@ -13,6 +13,7 @@ import time
 
 import asciinema.asciicast.v2 as v2
 import asciinema.pty as pty
+import asciinema.term as term
 
 
 def record_asciicast(path, command=None, append=False, idle_time_limit=None,
@@ -29,9 +30,11 @@ def record_asciicast(path, command=None, append=False, idle_time_limit=None,
     if capture_env is None:
         capture_env = ['SHELL', 'TERM']
 
+    w, h = term.get_size()
+
     full_metadata = {
-        'width': int(subprocess.check_output(['tput', 'cols'])),
-        'height': int(subprocess.check_output(['tput', 'lines'])),
+        'width': w,
+        'height': h,
         'timestamp': int(time.time())
     }
 
