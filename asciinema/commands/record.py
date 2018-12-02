@@ -92,11 +92,14 @@ class RecordCommand(Command):
                     return 0
 
             try:
-                url, warn = self.api.upload_asciicast(self.filename)
+                result, warn = self.api.upload_asciicast(self.filename)
+
                 if warn:
                     self.print_warning(warn)
+
                 os.remove(self.filename)
-                self.print(url)
+                self.print(result['url'])
+
             except APIError as e:
                 self.print("\r\x1b[A", end="")
                 self.print_error("upload failed: %s" % str(e))

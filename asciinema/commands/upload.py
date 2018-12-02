@@ -11,12 +11,12 @@ class UploadCommand(Command):
 
     def execute(self):
         try:
-            url, warn = self.api.upload_asciicast(self.filename)
+            result, warn = self.api.upload_asciicast(self.filename)
 
             if warn:
                 self.print_warning(warn)
 
-            self.print(url)
+            self.print(result['url'])
 
         except OSError as e:
             self.print_error("upload failed: %s" % str(e))

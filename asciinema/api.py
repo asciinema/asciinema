@@ -1,5 +1,6 @@
 import platform
 import re
+import json
 from urllib.parse import urlparse
 
 from asciinema import __version__
@@ -44,10 +45,15 @@ class Api:
         if status != 200 and status != 201:
             self._handle_error(status, body)
 
-        return body, headers.get('Warning')
+        if (headers.get('content-type') or '')[0:16] == 'application/json':
+            result = json.loads(body)
+        else:
+            result = {'url': body}
+
+        return result, headers.get('Warning')
 
     def _headers(self):
-        return {'User-Agent': self._user_agent()}
+        return {'User-Agent': self._user_agent(), 'Accept': 'application/json'}
 
     def _user_agent(self):
         os = re.sub('([^-]+)-(.*)', '\\1/\\2', platform.platform())
