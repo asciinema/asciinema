@@ -1,13 +1,12 @@
-import sys
 import os
+import sys
 import tempfile
 
 import asciinema
-from asciinema.commands.command import Command
-import asciinema.asciicast as asciicast
-import asciinema.asciicast.v2 as v2
 import asciinema.asciicast.raw as raw
+import asciinema.asciicast.v2 as v2
 from asciinema.api import APIError
+from asciinema.commands.command import Command
 
 
 class RecordCommand(Command):
@@ -59,7 +58,10 @@ class RecordCommand(Command):
         else:
             self.print_info("recording asciicast to %s" % self.filename)
 
-        self.print_info("""press <ctrl-d> or type "exit" when you're done""")
+        if self.command:
+            self.print_info("""exit opened program when you're done""")
+        else:
+            self.print_info("""press <ctrl-d> or type "exit" when you're done""")
 
         vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
 
@@ -83,7 +85,8 @@ class RecordCommand(Command):
 
         if upload:
             if not self.assume_yes:
-                self.print_info("press <enter> to upload to %s, <ctrl-c> to save locally" % self.api.hostname())
+                self.print_info("press <enter> to upload to %s, <ctrl-c> to save locally"
+                                % self.api.hostname())
                 try:
                     sys.stdin.readline()
                 except KeyboardInterrupt:
