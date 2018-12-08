@@ -8,8 +8,8 @@ python:
   - "3.7-dev"
 
 before_install:
-  - pip install pep8
+  - pip install pycodestyle
 
 script:
-  - find . -name \*.py -exec pep8 --ignore=E501 {} +
+  - find . -name \*.py -exec pycodestyle --ignore=E501,E402 {} +
   - make test
