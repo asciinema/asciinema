@@ -1,4 +1,5 @@
-sudo: false
+sudo: required
+dist: xenial
 language: python
 
 python:
