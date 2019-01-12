@@ -117,7 +117,7 @@ image from this one (start your custom Dockerfile with `FROM
 asciinema/asciinema`). Another option is to start the container with `/bin/bash`
 as the entrypoint, install extra packages and manually start `asciinema rec`:
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema  --entrypoint=/bin/bash asciinema/asciinema
+    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema --entrypoint=/bin/bash asciinema/asciinema
     root@6689517d99a1:~# apt-get install foobar
     root@6689517d99a1:~# asciinema rec
 
