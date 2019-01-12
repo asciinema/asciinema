@@ -1,5 +1,15 @@
 # asciinema changelog
 
+## 2.0.2 (2019-01-12)
+
+* Official support for Python 3.7
+* Recording is now possible on US-ASCII locale (thanks Jean-Philippe @jpouellet Ouellet!)
+* Improved Android support (thanks Fredrik @fornwall Fornwall!)
+* Possibility of programatic recording with `asciinema.record_asciicast` function
+* Uses new JSON response format added recently to asciinema-server
+* Tweaked message about how to stop recording (thanks Bachynin @vanyakosmos Ivan!)
+* Added proper description and other metadata to Python package (thanks @Crestwave!)
+
 ## 2.0.1 (2018-04-04)
 
 * Fixed example in asciicast v2 format doc (thanks Josh "@anowlcalledjosh" Holland!)
