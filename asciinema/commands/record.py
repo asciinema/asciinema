@@ -101,7 +101,7 @@ class RecordCommand(Command):
                     self.print_warning(warn)
 
                 os.remove(self.filename)
-                self.print(result['url'])
+                self.print(result.get('message') or result['url'])
 
             except APIError as e:
                 self.print("\r\x1b[A", end="")

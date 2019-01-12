@@ -16,7 +16,7 @@ class UploadCommand(Command):
             if warn:
                 self.print_warning(warn)
 
-            self.print(result['url'])
+            self.print(result.get('message') or result['url'])
 
         except OSError as e:
             self.print_error("upload failed: %s" % str(e))
