@@ -97,7 +97,7 @@ Then run it with:
 
 ### Docker image
 
-asciinema Docker image is based on Ubuntu 16.04 and has the latest version of
+asciinema Docker image is based on Ubuntu 18.04 and has the latest version of
 asciinema recorder pre-installed.
 
     docker pull asciinema/asciinema
