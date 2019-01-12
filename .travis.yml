@@ -1,15 +1,17 @@
-sudo: false
+sudo: required
+dist: xenial
 language: python
 
 python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7-dev"
+  - "3.7"
+  - "3.8-dev"
 
 before_install:
-  - pip install pep8
+  - pip install pycodestyle
 
 script:
-  - find . -name \*.py -exec pep8 --ignore=E501 {} +
+  - find . -name \*.py -exec pycodestyle --ignore=E501,E402 {} +
   - make test

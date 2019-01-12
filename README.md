@@ -7,7 +7,7 @@
 Terminal session recorder and the best companion of
 [asciinema.org](https://asciinema.org).
 
-[![demo](https://asciinema.org/a/113463.png)](https://asciinema.org/a/113463?autoplay=1)
+[![demo](https://asciinema.org/a/113463.svg)](https://asciinema.org/a/113463?autoplay=1)
 
 ## Quick intro
 
@@ -32,7 +32,7 @@ Or with normal speed but with idle time limited to 2 seconds:
 
 You can pass `-i 2` to `asciinema rec` as well, to set it permanently on a
 recording. Idle time limiting makes the recordings much more interesting to
-watch, try it.
+watch. Try it.
 
 If you want to watch and share it on the web, upload it:
 
@@ -47,10 +47,10 @@ You can record and upload in one step by omitting the filename:
 
     asciinema rec
 
-You'll be asked to confirm the upload when the recording is done, so nothing is
+You'll be asked to confirm the upload when the recording is done. Nothing is
 sent anywhere without your consent.
 
-These were the basics, but there's much more you can do. The following sections
+These are the basics, but there's much more you can do. The following sections
 cover installation, usage and hosting of the recordings in more detail.
 
 ## Installation
@@ -70,16 +70,6 @@ version.
 asciinema is included in repositories of most popular package managers on Mac OS
 X, Linux and FreeBSD. Look for package named `asciinema`. See the
 [list of available packages](https://asciinema.org/docs/installation).
-
-### Snap supported Linux distros
-
-If you run [Ubuntu or other snap supported Linux distribution](https://snapcraft.io/docs/core/install) you can
-install asciinema with:
-
-    snap install asciinema --classic
-
-The snap contains all necessary dependencies required to run asciinema, and will
-get automatically updated when a new version is pushed to the store.
 
 ### Docker image
 
@@ -363,10 +353,10 @@ If you want to contribute to this project check out
 ## Authors
 
 Developed with passion by [Marcin Kulik](http://ku1ik.com) and great open
-source [contributors](https://github.com/asciinema/asciinema/contributors)
+source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 ## License
 
-Copyright &copy; 2011-2017 Marcin Kulik.
+Copyright &copy; 2011–2018 Marcin Kulik.
 
 All code is licensed under the GPL, v3 or later. See LICENSE file for details.

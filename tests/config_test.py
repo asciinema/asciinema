@@ -29,7 +29,7 @@ def test_upgrade_no_config_file():
     config.upgrade()
     install_id = read_install_id(config.install_id_path)
 
-    assert re.match('^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}', install_id)
+    assert re.match('^\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}', install_id)
     assert_equal(install_id, config.install_id)
     assert not path.exists(config.config_file_path)
 

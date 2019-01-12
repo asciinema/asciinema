@@ -1,12 +1,12 @@
-import sys
 import os
+import sys
 import tempfile
 
-from asciinema.commands.command import Command
-import asciinema.asciicast as asciicast
-import asciinema.asciicast.v2 as v2
+import asciinema
 import asciinema.asciicast.raw as raw
+import asciinema.asciicast.v2 as v2
 from asciinema.api import APIError
+from asciinema.commands.command import Command
 
 
 class RecordCommand(Command):
@@ -24,7 +24,7 @@ class RecordCommand(Command):
         self.append = args.append
         self.overwrite = args.overwrite
         self.raw = args.raw
-        self.recorder = raw.Recorder() if args.raw else v2.Recorder()
+        self.writer = raw.writer if args.raw else v2.async_writer
         self.env = env if env is not None else os.environ
 
     def execute(self):
@@ -58,24 +58,24 @@ class RecordCommand(Command):
         else:
             self.print_info("recording asciicast to %s" % self.filename)
 
-        self.print_info("""press <ctrl-d> or type "exit" when you're done""")
+        if self.command:
+            self.print_info("""exit opened program when you're done""")
+        else:
+            self.print_info("""press <ctrl-d> or type "exit" when you're done""")
 
-        command = self.command or self.env.get('SHELL') or 'sh'
-        command_env = self.env.copy()
-        command_env['ASCIINEMA_REC'] = '1'
         vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
-        captured_env = {var: self.env.get(var) for var in vars}
 
         try:
-            self.recorder.record(
+            asciinema.record_asciicast(
                 self.filename,
-                append,
-                command,
-                command_env,
-                captured_env,
-                self.rec_stdin,
-                self.title,
-                self.idle_time_limit
+                command=self.command,
+                append=append,
+                title=self.title,
+                idle_time_limit=self.idle_time_limit,
+                command_env=self.env,
+                capture_env=vars,
+                rec_stdin=self.rec_stdin,
+                writer=self.writer
             )
         except v2.LoadError:
             self.print_error("can only append to asciicast v2 format recordings")
@@ -85,7 +85,8 @@ class RecordCommand(Command):
 
         if upload:
             if not self.assume_yes:
-                self.print_info("press <enter> to upload to %s, <ctrl-c> to save locally" % self.api.hostname())
+                self.print_info("press <enter> to upload to %s, <ctrl-c> to save locally"
+                                % self.api.hostname())
                 try:
                     sys.stdin.readline()
                 except KeyboardInterrupt:
@@ -94,11 +95,14 @@ class RecordCommand(Command):
                     return 0
 
             try:
-                url, warn = self.api.upload_asciicast(self.filename)
+                result, warn = self.api.upload_asciicast(self.filename)
+
                 if warn:
                     self.print_warning(warn)
+
                 os.remove(self.filename)
-                self.print(url)
+                self.print(result.get('message') or result['url'])
+
             except APIError as e:
                 self.print("\r\x1b[A", end="")
                 self.print_error("upload failed: %s" % str(e))

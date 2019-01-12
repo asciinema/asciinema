@@ -7,6 +7,10 @@ if sys.version_info[0] < 3:
 
 url_template = 'https://github.com/asciinema/asciinema/archive/v%s.tar.gz'
 requirements = []
+test_requirements = ['nose']
+
+with open('README.md', encoding='utf8') as file:
+    long_description = file.read()
 
 setup(
     name='asciinema',
@@ -14,6 +18,8 @@ setup(
     packages=['asciinema', 'asciinema.commands', 'asciinema.asciicast'],
     license='GNU GPLv3',
     description='Terminal session recorder',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author=asciinema.__author__,
     author_email='m@ku1ik.com',
     url='https://asciinema.org',
@@ -23,7 +29,15 @@ setup(
             'asciinema = asciinema.__main__:main',
         ],
     },
+    data_files=[('share/doc/asciinema', ['CHANGELOG.md',
+                                         'CODE_OF_CONDUCT.md',
+                                         'CONTRIBUTING.md',
+                                         'README.md',
+                                         'doc/asciicast-v1.md',
+                                         'doc/asciicast-v2.md']),
+                ('share/man/man1', ['man/asciinema.1'])],
     install_requires=requirements,
+    tests_require=test_requirements,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
@@ -37,6 +51,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: System :: Shells',
         'Topic :: Terminals',
         'Topic :: Utilities'

@@ -1,6 +1,7 @@
-import tty
-import select
 import os
+import select
+import subprocess
+import tty
 
 
 class raw():
@@ -26,3 +27,11 @@ def read_blocking(fd, timeout):
         return os.read(fd, 1024)
 
     return b''
+
+
+def get_size():
+    # TODO maybe use os.get_terminal_size ?
+    return (
+        int(subprocess.check_output(['tput', 'cols'])),
+        int(subprocess.check_output(['tput', 'lines']))
+    )

@@ -1,12 +1,17 @@
-import os
-import subprocess
 import json
 import json.decoder
 import time
 import codecs
-from multiprocessing import Process, Queue
 
-from asciinema.pty_recorder import PtyRecorder
+try:
+    # Importing synchronize is to detect platforms where
+    # multiprocessing does not work (python issue 3770)
+    # and cause an ImportError. Otherwise it will happen
+    # later when trying to use Queue().
+    from multiprocessing import synchronize, Process, Queue
+except ImportError:
+    from threading import Thread as Process
+    from queue import Queue
 
 
 try:
@@ -69,6 +74,22 @@ def get_duration(path):
             for last_frame in a.stdout_events():
                 pass
             return last_frame[0]
+
+
+def build_header(metadata):
+    header = {}
+    header.update(metadata)
+    header['version'] = 2
+
+    assert 'width' in header, 'width missing in metadata'
+    assert 'height' in header, 'height missing in metadata'
+    assert type(header['width']) == int
+    assert type(header['height']) == int
+
+    if 'timestamp' in header:
+        assert type(header['timestamp']) == int or type(header['timestamp']) == float
+
+    return header
 
 
 class writer():
@@ -137,21 +158,25 @@ def write_json_lines_from_queue(path, header, mode, queue):
 
 class async_writer():
 
-    def __init__(self, path, header, rec_stdin, start_time_offset=0):
+    def __init__(self, path, metadata, append=False, time_offset=0):
+        if append:
+            assert time_offset > 0
+
         self.path = path
-        self.header = header
-        self.rec_stdin = rec_stdin
-        self.start_time_offset = start_time_offset
+        self.metadata = metadata
+        self.append = append
+        self.time_offset = time_offset
         self.queue = Queue()
 
     def __enter__(self):
-        mode = 'a' if self.start_time_offset > 0 else 'w'
+        header = build_header(self.metadata)
+        mode = 'a' if self.append else 'w'
         self.process = Process(
             target=write_json_lines_from_queue,
-            args=(self.path, self.header, mode, self.queue)
+            args=(self.path, header, mode, self.queue)
         )
         self.process.start()
-        self.start_time = time.time() - self.start_time_offset
+        self.start_time = time.time() - self.time_offset
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -159,44 +184,9 @@ class async_writer():
         self.process.join()
 
     def write_stdin(self, data):
-        if self.rec_stdin:
-            ts = time.time() - self.start_time
-            self.queue.put([ts, 'i', data])
+        ts = time.time() - self.start_time
+        self.queue.put([ts, 'i', data])
 
     def write_stdout(self, data):
         ts = time.time() - self.start_time
         self.queue.put([ts, 'o', data])
-
-
-class Recorder:
-
-    def __init__(self, pty_recorder=None):
-        self.pty_recorder = pty_recorder if pty_recorder is not None else PtyRecorder()
-
-    def record(self, path, append, command, command_env, captured_env, rec_stdin, title, idle_time_limit):
-        start_time_offset = 0
-
-        if append and os.stat(path).st_size > 0:
-            start_time_offset = get_duration(path)
-
-        cols = int(subprocess.check_output(['tput', 'cols']))
-        lines = int(subprocess.check_output(['tput', 'lines']))
-
-        header = {
-            'version': 2,
-            'width': cols,
-            'height': lines,
-            'timestamp': int(time.time()),
-        }
-
-        if idle_time_limit is not None:
-            header['idle_time_limit'] = idle_time_limit
-
-        if captured_env:
-            header['env'] = captured_env
-
-        if title:
-            header['title'] = title
-
-        with async_writer(path, header, rec_stdin, start_time_offset) as w:
-            self.pty_recorder.record_command(['sh', '-c', command], w, command_env)

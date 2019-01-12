@@ -89,6 +89,6 @@ class URLLibHttpAdapter:
     def _parse_headers(self, response):
         headers = {}
         for k, v in response.getheaders():
-            headers[k] = v
+            headers[k.lower()] = v
 
         return headers

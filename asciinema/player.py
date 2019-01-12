@@ -13,7 +13,7 @@ class Player:
             stdin = open('/dev/tty')
             with raw(stdin.fileno()):
                 self._play(asciicast, idle_time_limit, speed, stdin)
-        except:
+        except Exception:
             self._play(asciicast, idle_time_limit, speed, None)
 
     def _play(self, asciicast, idle_time_limit, speed, stdin):
