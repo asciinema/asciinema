@@ -19,4 +19,4 @@ ENV LANG en_US.utf8
 ENV SHELL /bin/bash
 ENV USER docker
 WORKDIR /root
-CMD ["asciinema", "rec"]
+ENTRYPOINT ["/usr/local/bin/asciinema"]

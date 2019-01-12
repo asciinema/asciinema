@@ -105,17 +105,19 @@ asciinema recorder pre-installed.
 When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
 (`-i`) and mount config directory volume (`-v`):
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema
+    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema rec
 
-Default command run in a container is `asciinema rec`.
+Container's entrypoint is set to `/usr/local/bin/asciinema` so you can run the
+container with any arguments you would normally pass to `asciinema` binary (see
+Usage section for commands and options).
 
 There's not much software installed in this image though. In most cases you may
 want to install extra programs before recording. One option is to derive new
 image from this one (start your custom Dockerfile with `FROM
 asciinema/asciinema`). Another option is to start the container with `/bin/bash`
-as the command, install extra packages and manually start `asciinema rec`:
+as the entrypoint, install extra packages and manually start `asciinema rec`:
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema /bin/bash
+    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema  --entrypoint=/bin/bash asciinema/asciinema
     root@6689517d99a1:~# apt-get install foobar
     root@6689517d99a1:~# asciinema rec
 
