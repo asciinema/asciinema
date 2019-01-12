@@ -73,6 +73,28 @@ asciinema is included in repositories of most popular package managers on Mac OS
 X, Linux and FreeBSD. Look for package named `asciinema`. See the
 [list of available packages](https://asciinema.org/docs/installation).
 
+### Running latest version from source code checkout
+
+If you can't use Python package or native package for your OS is outdated you
+can clone the repo and run asciinema straight from the checkout.
+
+Clone the repo:
+
+    git clone https://github.com/asciinema/asciinema.git
+    cd asciinema
+
+If you want latest stable version:
+
+    git checkout master
+
+If you want current development version:
+
+    git checkout develop
+
+Then run it with:
+
+    python3 -m asciinema --version
+
 ### Docker image
 
 asciinema Docker image is based on Ubuntu 16.04 and has the latest version of
@@ -96,28 +118,6 @@ as the command, install extra packages and manually start `asciinema rec`:
     docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema /bin/bash
     root@6689517d99a1:~# apt-get install foobar
     root@6689517d99a1:~# asciinema rec
-
-### Running latest version from source code checkout
-
-If none of the above works for you just clone the repo and run asciinema
-straight from the checkout.
-
-Clone the repo:
-
-    git clone https://github.com/asciinema/asciinema.git
-    cd asciinema
-
-If you want latest stable version:
-
-    git checkout master
-
-If you want current development version:
-
-    git checkout develop
-
-Then run it with:
-
-    python3 -m asciinema --version
 
 ## Usage
 
