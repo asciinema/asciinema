@@ -5,12 +5,26 @@ import asciinema.asciicast as asciicast
 
 
 class CatCommand(Command):
+    """
+    Prints output of recorded asciicast session
+
+    Attributes:
+        filename (str): name of file that will be printed
+    """
 
     def __init__(self, filename):
+
         Command.__init__(self)
         self.filename = filename
 
     def execute(self):
+        """
+        Attempts to open file and write contents to standard out
+
+        Returns:
+            0 if successful, 1 otherwise.
+        """
+
         try:
             with asciicast.open_from_url(self.filename) as a:
                 for t, _type, text in a.stdout_events():
