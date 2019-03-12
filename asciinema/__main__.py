@@ -9,6 +9,7 @@ from asciinema.commands.auth import AuthCommand
 from asciinema.commands.record import RecordCommand
 from asciinema.commands.play import PlayCommand
 from asciinema.commands.cat import CatCommand
+from asciinema.commands.edit import EditCommand
 from asciinema.commands.upload import UploadCommand
 from asciinema.api import Api
 
@@ -33,6 +34,9 @@ def play_command(args, config):
 def cat_command(args, config):
     return CatCommand(args.filename)
 
+
+def edit_command(args, config):
+    return EditCommand(args.from_file, args.filename)
 
 def upload_command(args, config):
     api = Api(config.api_url, os.environ.get("USER"), config.install_id)
@@ -113,6 +117,12 @@ For help on a specific command run:
     parser_cat = subparsers.add_parser('cat', help='Print full output of terminal session')
     parser_cat.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
     parser_cat.set_defaults(func=cat_command)
+
+    # create the parser for the "edit" command
+    parser_edit = subparsers.add_parser('edit', help='Edit one or more recordings and save the result to a new recording')
+    parser_edit.add_argument('filename', help='filename/path to save the edited recording to')
+    parser_edit.add_argument('-f', '--from-file', help='file(s) to edit', action='append')
+    parser_edit.set_defaults(func=edit_command)
 
     # create the parser for the "upload" command
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
