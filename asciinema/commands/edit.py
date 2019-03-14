@@ -1,5 +1,6 @@
 from asciinema.commands.command import Command
 import asciinema.asciicast as asciicast
+from asciinema.asciicast import v2
 
 
 class EditCommand(Command):
@@ -10,12 +11,21 @@ class EditCommand(Command):
 
     def execute(self):
         try:
-            for source in self.source_files:
-                with asciicast.open_from_url(source) as s:
-                    print(s) 
+            header = None
+            with asciicast.open_from_url(self.source_files[0]) as first_cast:
+                header = first_cast.v2_header()
+            with v2.writer(self.target_file, header=header) as target:
+                offset = 0
+                for source in self.source_files:
+                    with asciicast.open_from_url(source) as cast:
+                        for ev in cast.events():
+                            ts, etype, data = ev
+                            ts += offset
+                            target.write_event(ts, etype, data)
+                        offset += cast.v2_header['duration']
 
         except asciicast.LoadError as e:
-            self.print_error("playback failed: %s" % str(e))
+            self.print_error("loading failed: %s" % str(e))
             return 1
 
         return 0
