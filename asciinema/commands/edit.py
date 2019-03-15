@@ -7,7 +7,6 @@ def edit_events(events, write_event, time_offset=0):
     result = []
     for ev in events:
         ts, etype, data = ev
-        ts += time_offset
         if etype is 's':
             result[-1][2] += data
         elif etype is 'd':
@@ -16,6 +15,7 @@ def edit_events(events, write_event, time_offset=0):
             result.append(ev)
     for ev in result:
         ts, etype, data = ev
+        ts += time_offset
         write_event(ts, etype, data)
 
 class EditCommand(Command):
