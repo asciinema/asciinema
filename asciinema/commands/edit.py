@@ -4,11 +4,19 @@ from asciinema.asciicast import v2
 
 
 def edit_events(events, write_event, time_offset=0):
+    result = []
     for ev in events:
         ts, etype, data = ev
         ts += time_offset
-        if etype is not 'd':
-            write_event(ts, etype, data)
+        if etype is 's':
+            result[-1][2] += data
+        elif etype is 'd':
+            pass
+        else:
+            result.append(ev)
+    for ev in result:
+        ts, etype, data = ev
+        write_event(ts, etype, data)
 
 class EditCommand(Command):
 
