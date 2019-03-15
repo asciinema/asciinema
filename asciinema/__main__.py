@@ -119,7 +119,7 @@ For help on a specific command run:
     parser_cat.set_defaults(func=cat_command)
 
     # create the parser for the "edit" command
-    parser_edit = subparsers.add_parser('edit', help='Edit one or more recordings and save the result to a new recording')
+    parser_edit = subparsers.add_parser('edit', help='Edit recordings and concatenate them')
     parser_edit.add_argument('filename', help='filename/path to save the edited recording to')
     parser_edit.add_argument('-f', '--from-file', help='file(s) to edit', action='append')
     parser_edit.set_defaults(func=edit_command)

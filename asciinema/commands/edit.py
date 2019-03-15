@@ -13,16 +13,16 @@ class EditCommand(Command):
         try:
             header = None
             with asciicast.open_from_url(self.source_files[0]) as first_cast:
-                header = first_cast.v2_header()
+                header = first_cast.v2_header
             with v2.writer(self.target_file, header=header) as target:
-                offset = 0
+                time_offset = 0
                 for source in self.source_files:
                     with asciicast.open_from_url(source) as cast:
                         for ev in cast.events():
                             ts, etype, data = ev
-                            ts += offset
+                            ts += time_offset
                             target.write_event(ts, etype, data)
-                        offset += cast.v2_header['duration']
+                    time_offset += v2.get_duration(source)
 
         except asciicast.LoadError as e:
             self.print_error("loading failed: %s" % str(e))
