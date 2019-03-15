@@ -233,6 +233,21 @@ output (including all escape sequences) to a terminal immediately.
 `asciinema cat existing.cast >output.txt` gives the same result as recording via
 `asciinema rec --raw output.txt`.
 
+### `edit -f <edited-file-1> [-f <edited-file-2> ...] <result-filename>`
+
+__Process manually edited asciicasts and join them to a single recording.__
+
+Take one or more asciicast files and edit them manually. Change the event
+types (it's the second item and usually an "o") as follows,
+
+- "d": delete, this event will be deleted
+- "s": squash, this event will be squashed onto the previous one. 
+  More consecutive lines can be squashed.
+
+After the individual files are processed, they are concatenated into a single
+recording. The times are adjusted, so the last event in the first file is 
+immediately followed by the first event in the second file, and so on.
+
 ### `upload <filename>`
 
 __Upload recorded asciicast to asciinema.org site.__
