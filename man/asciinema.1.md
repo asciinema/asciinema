@@ -35,6 +35,11 @@ By running **asciinema rec [filename]** you start a new recording session. The
 command (process) that is recorded can be specified with **-c** option (see
 below), and defaults to **$SHELL** which is what you want in most cases.
 
+You can temporarily "mute" recording by pressing <kbd>Ctrl+P</kbd>. This is
+useful when you want to execute some commands during the recording session that
+should not be captured (e.g. pasting secrets). Un-mute by pressing
+<kbd>Ctrl+P</kbd> again.
+
 Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
 `exit`). If the recorded process is not a shell then recording finishes when
 the process exits.
