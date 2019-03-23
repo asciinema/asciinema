@@ -4,6 +4,7 @@ import time
 import asciinema.asciicast.v2 as v2
 import asciinema.pty as pty
 import asciinema.term as term
+import asciinema.notifier as notifier
 from asciinema.async_worker import async_worker
 
 
@@ -45,7 +46,15 @@ def record(path, command=None, append=False, idle_time_limit=None,
         time_offset = v2.get_duration(path)
 
     with async_writer(writer, path, full_metadata, append) as w:
-        record(['sh', '-c', command], w, command_env, rec_stdin, time_offset)
+        with async_notifier() as n:
+            record(
+                ['sh', '-c', command],
+                w,
+                command_env,
+                rec_stdin,
+                time_offset,
+                n
+            )
 
 
 class async_writer(async_worker):
@@ -71,3 +80,20 @@ class async_writer(async_worker):
                     w.write_stdout(ts, data)
                 elif etype == 'i':
                     w.write_stdin(ts, data)
+
+
+class async_notifier(async_worker):
+    def __init__(self):
+        async_worker.__init__(self)
+        self.notifier = notifier.get_notifier()
+
+    def notify(self, text):
+        self.enqueue(text)
+
+    def perform(self, text):
+        try:
+            self.notifier.notify(text)
+        except:
+            # we catch *ALL* exceptions here because we don't want failed
+            # notification to crash the recording session
+            pass
