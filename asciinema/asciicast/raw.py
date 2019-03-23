@@ -32,8 +32,8 @@ class writer():
         self.queue.put(None)
         self.process.join()
 
-    def write_stdin(self, data):
+    def write_stdin(self, ts, data):
         pass
 
-    def write_stdout(self, data):
+    def write_stdout(self, ts, data):
         self.queue.put(data)

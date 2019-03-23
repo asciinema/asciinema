@@ -176,17 +176,16 @@ class async_writer():
             args=(self.path, header, mode, self.queue)
         )
         self.process.start()
-        self.start_time = time.time() - self.time_offset
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.queue.put(None)
         self.process.join()
 
-    def write_stdin(self, data):
-        ts = time.time() - self.start_time
+    def write_stdin(self, ts, data):
+        ts = ts + self.time_offset
         self.queue.put([ts, 'i', data])
 
-    def write_stdout(self, data):
-        ts = time.time() - self.start_time
+    def write_stdout(self, ts, data):
+        ts = ts + self.time_offset
         self.queue.put([ts, 'o', data])

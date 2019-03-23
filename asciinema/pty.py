@@ -10,12 +10,14 @@ import signal
 import struct
 import sys
 import termios
+import time
 
 from asciinema.term import raw
 
 
 def record(command, writer, env=os.environ, rec_stdin=False):
     master_fd = None
+    start_time = None
 
     def _set_pty_size():
         '''
@@ -40,7 +42,7 @@ def record(command, writer, env=os.environ, rec_stdin=False):
     def _handle_master_read(data):
         '''Handles new data on child process stdout.'''
 
-        writer.write_stdout(data)
+        writer.write_stdout(time.time() - start_time, data)
         _write_stdout(data)
 
     def _write_master(data):
@@ -56,7 +58,7 @@ def record(command, writer, env=os.environ, rec_stdin=False):
         _write_master(data)
 
         if rec_stdin:
-            writer.write_stdin(data)
+            writer.write_stdin(time.time() - start_time, data)
 
     def _signals(signal_list):
         old_handlers = []
@@ -128,6 +130,8 @@ def record(command, writer, env=os.environ, rec_stdin=False):
                                     signal.SIGQUIT]))
 
     _set_pty_size()
+
+    start_time = time.time()
 
     with raw(pty.STDIN_FILENO):
         try:
