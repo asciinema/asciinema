@@ -94,7 +94,7 @@ def build_header(metadata):
 
 class writer():
 
-    def __init__(self, path, width=None, height=None, header=None, append=False, buffering=-1):
+    def __init__(self, path, width=None, height=None, header=None, append=False, buffering=1):
         self.path = path
         self.buffering = buffering
         self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
@@ -152,7 +152,7 @@ class writer():
 
 
 def write_json_lines_from_queue(path, header, append, queue):
-    with writer(path, header=header, append=append, buffering=1) as w:
+    with writer(path, header=header, append=append) as w:
         for event in iter(queue.get, None):
             w.write_event(event)
 
