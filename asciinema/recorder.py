@@ -1,19 +1,10 @@
 import os
 import time
 
-try:
-    # Importing synchronize is to detect platforms where
-    # multiprocessing does not work (python issue 3770)
-    # and cause an ImportError. Otherwise it will happen
-    # later when trying to use Queue().
-    from multiprocessing import synchronize, Process, Queue
-except ImportError:
-    from threading import Thread as Process
-    from queue import Queue
-
 import asciinema.asciicast.v2 as v2
 import asciinema.pty as pty
 import asciinema.term as term
+from asciinema.async_worker import async_worker
 
 
 def record(path, command=None, append=False, idle_time_limit=None,
@@ -57,40 +48,26 @@ def record(path, command=None, append=False, idle_time_limit=None,
         record(['sh', '-c', command], w, command_env, rec_stdin, time_offset)
 
 
-def write_events_from_queue(writer, path, metadata, append, queue):
-    with writer(path, metadata=metadata, append=append) as w:
-        for event in iter(queue.get, None):
-            ts, etype, data = event
-
-            if etype == 'o':
-                w.write_stdout(ts, data)
-            elif etype == 'i':
-                w.write_stdin(ts, data)
-
-
-class async_writer():
-
+class async_writer(async_worker):
     def __init__(self, writer, path, metadata, append=False):
+        async_worker.__init__(self)
         self.writer = writer
         self.path = path
         self.metadata = metadata
         self.append = append
-        self.queue = Queue()
-
-    def __enter__(self):
-        self.process = Process(
-            target=write_events_from_queue,
-            args=(self.writer, self.path, self.metadata, self.append, self.queue)
-        )
-        self.process.start()
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.queue.put(None)
-        self.process.join()
 
     def write_stdin(self, ts, data):
-        self.queue.put([ts, 'i', data])
+        self.enqueue([ts, 'i', data])
 
     def write_stdout(self, ts, data):
-        self.queue.put([ts, 'o', data])
+        self.enqueue([ts, 'o', data])
+
+    def run(self):
+        with self.writer(self.path, metadata=self.metadata, append=self.append) as w:
+            for event in iter(self.queue.get, None):
+                ts, etype, data = event
+
+                if etype == 'o':
+                    w.write_stdout(ts, data)
+                elif etype == 'i':
+                    w.write_stdin(ts, data)
