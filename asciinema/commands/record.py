@@ -2,7 +2,7 @@ import os
 import sys
 import tempfile
 
-import asciinema
+import asciinema.recorder as recorder
 import asciinema.asciicast.raw as raw
 import asciinema.asciicast.v2 as v2
 from asciinema.api import APIError
@@ -24,7 +24,7 @@ class RecordCommand(Command):
         self.append = args.append
         self.overwrite = args.overwrite
         self.raw = args.raw
-        self.writer = raw.writer if args.raw else v2.async_writer
+        self.writer = raw.writer if args.raw else v2.writer
         self.env = env if env is not None else os.environ
 
     def execute(self):
@@ -66,7 +66,7 @@ class RecordCommand(Command):
         vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
 
         try:
-            asciinema.record_asciicast(
+            recorder.record(
                 self.filename,
                 command=self.command,
                 append=append,

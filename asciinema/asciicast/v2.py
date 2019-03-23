@@ -4,17 +4,6 @@ import time
 import codecs
 
 try:
-    # Importing synchronize is to detect platforms where
-    # multiprocessing does not work (python issue 3770)
-    # and cause an ImportError. Otherwise it will happen
-    # later when trying to use Queue().
-    from multiprocessing import synchronize, Process, Queue
-except ImportError:
-    from threading import Thread as Process
-    from queue import Queue
-
-
-try:
     JSONDecodeError = json.decoder.JSONDecodeError
 except AttributeError:
     JSONDecodeError = ValueError
@@ -76,10 +65,9 @@ def get_duration(path):
             return last_frame[0]
 
 
-def build_header(metadata):
-    header = {}
+def build_header(width, height, metadata):
+    header = {'version': 2, 'width': width, 'height': height}
     header.update(metadata)
-    header['version'] = 2
 
     assert 'width' in header, 'width missing in metadata'
     assert 'height' in header, 'height missing in metadata'
@@ -94,7 +82,7 @@ def build_header(metadata):
 
 class writer():
 
-    def __init__(self, path, width=None, height=None, header=None, append=False, buffering=1):
+    def __init__(self, path, metadata=None, append=False, buffering=1, width=None, height=None):
         self.path = path
         self.buffering = buffering
         self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
@@ -105,10 +93,7 @@ class writer():
             self.header = None
         else:
             self.mode = 'w'
-            self.header = {'version': 2, 'width': width, 'height': height}
-            self.header.update(header or {})
-            assert type(self.header['width']) == int, 'width or header missing'
-            assert type(self.header['height']) == int, 'height or header missing'
+            self.header = build_header(width, height, metadata or {})
 
     def __enter__(self):
         self.file = open(self.path, mode=self.mode, buffering=self.buffering)
@@ -139,48 +124,3 @@ class writer():
     def __write_line(self, obj):
         line = json.dumps(obj, ensure_ascii=False, indent=None, separators=(', ', ': '))
         self.file.write(line + '\n')
-
-
-def write_json_lines_from_queue(path, header, append, queue):
-    with writer(path, header=header, append=append) as w:
-        for event in iter(queue.get, None):
-            ts, etype, data = event
-
-            if etype == 'o':
-                w.write_stdout(ts, data)
-            elif etype == 'i':
-                w.write_stdin(ts, data)
-
-
-class async_writer():
-
-    def __init__(self, path, metadata, append=False, time_offset=0):
-        if append:
-            assert time_offset > 0
-
-        self.path = path
-        self.metadata = metadata
-        self.append = append
-        self.time_offset = time_offset
-        self.queue = Queue()
-
-    def __enter__(self):
-        header = build_header(self.metadata)
-        self.process = Process(
-            target=write_json_lines_from_queue,
-            args=(self.path, header, self.append, self.queue)
-        )
-        self.process.start()
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.queue.put(None)
-        self.process.join()
-
-    def write_stdin(self, ts, data):
-        ts = ts + self.time_offset
-        self.queue.put([ts, 'i', data])
-
-    def write_stdout(self, ts, data):
-        ts = ts + self.time_offset
-        self.queue.put([ts, 'o', data])
