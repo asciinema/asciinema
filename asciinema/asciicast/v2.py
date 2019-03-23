@@ -94,20 +94,21 @@ def build_header(metadata):
 
 class writer():
 
-    def __init__(self, path, width=None, height=None, header=None, mode='w', buffering=-1):
+    def __init__(self, path, width=None, height=None, header=None, append=False, buffering=-1):
         self.path = path
-        self.mode = mode
         self.buffering = buffering
         self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
         self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
-        if mode == 'w':
+        if append:
+            self.mode = 'a'
+            self.header = None
+        else:
+            self.mode = 'w'
             self.header = {'version': 2, 'width': width, 'height': height}
             self.header.update(header or {})
             assert type(self.header['width']) == int, 'width or header missing'
             assert type(self.header['height']) == int, 'height or header missing'
-        else:
-            self.header = None
 
     def __enter__(self):
         self.file = open(self.path, mode=self.mode, buffering=self.buffering)
@@ -150,8 +151,8 @@ class writer():
         self.file.write(line + '\n')
 
 
-def write_json_lines_from_queue(path, header, mode, queue):
-    with writer(path, header=header, mode=mode, buffering=1) as w:
+def write_json_lines_from_queue(path, header, append, queue):
+    with writer(path, header=header, append=append, buffering=1) as w:
         for event in iter(queue.get, None):
             w.write_event(event)
 
@@ -170,10 +171,9 @@ class async_writer():
 
     def __enter__(self):
         header = build_header(self.metadata)
-        mode = 'a' if self.append else 'w'
         self.process = Process(
             target=write_json_lines_from_queue,
-            args=(self.path, header, mode, self.queue)
+            args=(self.path, header, self.append, self.queue)
         )
         self.process.start()
         return self
