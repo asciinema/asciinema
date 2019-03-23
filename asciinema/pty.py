@@ -15,10 +15,14 @@ import time
 from asciinema.term import raw
 
 
-def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0):
+def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, notifier=None):
     master_fd = None
     start_time = None
     pause_time = None
+
+    def _notify(text):
+        if notifier:
+            notifier.notify(text)
 
     def _set_pty_size():
         '''
@@ -65,8 +69,10 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0):
             if pause_time:
                 start_time = start_time + (time.time() - pause_time)
                 pause_time = None
+                _notify('Resumed recording')
             else:
                 pause_time = time.time()
+                _notify('Paused recording')
         else:
             _write_master(data)
 
