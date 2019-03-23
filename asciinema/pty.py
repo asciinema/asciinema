@@ -15,7 +15,7 @@ import time
 from asciinema.term import raw
 
 
-def record(command, writer, env=os.environ, rec_stdin=False):
+def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0):
     master_fd = None
     start_time = None
 
@@ -131,7 +131,7 @@ def record(command, writer, env=os.environ, rec_stdin=False):
 
     _set_pty_size()
 
-    start_time = time.time()
+    start_time = time.time() - time_offset
 
     with raw(pty.STDIN_FILENO):
         try:

@@ -53,8 +53,8 @@ def record(path, command=None, append=False, idle_time_limit=None,
     if append and os.stat(path).st_size > 0:
         time_offset = v2.get_duration(path)
 
-    with async_writer(writer, path, full_metadata, append, time_offset) as w:
-        record(['sh', '-c', command], w, command_env, rec_stdin)
+    with async_writer(writer, path, full_metadata, append) as w:
+        record(['sh', '-c', command], w, command_env, rec_stdin, time_offset)
 
 
 def write_events_from_queue(writer, path, metadata, append, queue):
@@ -70,15 +70,11 @@ def write_events_from_queue(writer, path, metadata, append, queue):
 
 class async_writer():
 
-    def __init__(self, writer, path, metadata, append=False, time_offset=0):
-        if append:
-            assert time_offset > 0
-
+    def __init__(self, writer, path, metadata, append=False):
         self.writer = writer
         self.path = path
         self.metadata = metadata
         self.append = append
-        self.time_offset = time_offset
         self.queue = Queue()
 
     def __enter__(self):
@@ -94,9 +90,7 @@ class async_writer():
         self.process.join()
 
     def write_stdin(self, ts, data):
-        ts = ts + self.time_offset
         self.queue.put([ts, 'i', data])
 
     def write_stdout(self, ts, data):
-        ts = ts + self.time_offset
         self.queue.put([ts, 'o', data])
