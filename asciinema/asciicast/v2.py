@@ -121,30 +121,20 @@ class writer():
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.file.close()
 
-    def write_event(self, ts, etype=None, data=None):
-        if etype is None:
-            ts, etype, data = ts
-
-        ts = round(ts, 6)
-
-        if etype == 'o':
-            if type(data) == str:
-                data = data.encode(encoding='utf-8', errors='strict')
-            text = self.stdout_decoder.decode(data)
-            self.__write_line([ts, etype, text])
-        elif etype == 'i':
-            if type(data) == str:
-                data = data.encode(encoding='utf-8', errors='strict')
-            text = self.stdin_decoder.decode(data)
-            self.__write_line([ts, etype, text])
-        else:
-            self.__write_line([ts, etype, data])
-
     def write_stdout(self, ts, data):
-        self.write_event(ts, 'o', data)
+        if type(data) == str:
+            data = data.encode(encoding='utf-8', errors='strict')
+        data = self.stdout_decoder.decode(data)
+        self.__write_event(ts, 'o', data)
 
     def write_stdin(self, ts, data):
-        self.write_event(ts, 'i', data)
+        if type(data) == str:
+            data = data.encode(encoding='utf-8', errors='strict')
+        data = self.stdin_decoder.decode(data)
+        self.__write_event(ts, 'i', data)
+
+    def __write_event(self, ts, etype, data):
+        self.__write_line([round(ts, 6), etype, data])
 
     def __write_line(self, obj):
         line = json.dumps(obj, ensure_ascii=False, indent=None, separators=(', ', ': '))
@@ -154,7 +144,12 @@ class writer():
 def write_json_lines_from_queue(path, header, append, queue):
     with writer(path, header=header, append=append) as w:
         for event in iter(queue.get, None):
-            w.write_event(event)
+            ts, etype, data = event
+
+            if etype == 'o':
+                w.write_stdout(ts, data)
+            elif etype == 'i':
+                w.write_stdin(ts, data)
 
 
 class async_writer():
