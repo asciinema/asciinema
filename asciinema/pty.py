@@ -18,7 +18,7 @@ from asciinema.term import raw
 def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0):
     master_fd = None
     start_time = None
-    paused = False
+    pause_time = None
 
     def _set_pty_size():
         '''
@@ -43,7 +43,7 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0):
     def _handle_master_read(data):
         '''Handles new data on child process stdout.'''
 
-        if not paused:
+        if not pause_time:
             writer.write_stdout(time.time() - start_time, data)
 
         _write_stdout(data)
@@ -58,14 +58,19 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0):
     def _handle_stdin_read(data):
         '''Handles new data on child process stdin.'''
 
-        nonlocal paused
+        nonlocal pause_time
+        nonlocal start_time
 
         if data == b'\x10':  # ctrl+p
-            paused = not paused
+            if pause_time:
+                start_time = start_time + (time.time() - pause_time)
+                pause_time = None
+            else:
+                pause_time = time.time()
         else:
             _write_master(data)
 
-            if rec_stdin and not paused:
+            if rec_stdin and not pause_time:
                 writer.write_stdin(time.time() - start_time, data)
 
     def _signals(signal_list):
