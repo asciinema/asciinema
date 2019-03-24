@@ -13,5 +13,5 @@ before_install:
   - pip install pycodestyle
 
 script:
-  - find . -name \*.py -exec pycodestyle --ignore=E501,E402 {} +
+  - find . -name \*.py -exec pycodestyle --ignore=E501,E402,E722 {} +
   - make test
