@@ -1,10 +1,13 @@
 import sys
 
+from asciinema.api import Api
+
 
 class Command:
 
-    def __init__(self, quiet=False):
-        self.quiet = quiet
+    def __init__(self, args, config, env):
+        self.quiet = False
+        self.api = Api(config.api_url, env.get("USER"), config.install_id)
 
     def print(self, text, file=sys.stdout, end="\n", force=False):
         if not self.quiet or force:

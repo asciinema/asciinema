@@ -3,9 +3,8 @@ from asciinema.commands.command import Command
 
 class AuthCommand(Command):
 
-    def __init__(self, api):
-        Command.__init__(self)
-        self.api = api
+    def __init__(self, args, config, env):
+        Command.__init__(self, args, config, env)
 
     def execute(self):
         self.print('Open the following URL in a web browser to link your '

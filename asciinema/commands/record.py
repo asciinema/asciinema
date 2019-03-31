@@ -11,9 +11,9 @@ from asciinema.commands.command import Command
 
 class RecordCommand(Command):
 
-    def __init__(self, api, args, env=None):
-        Command.__init__(self, args.quiet)
-        self.api = api
+    def __init__(self, args, config, env):
+        Command.__init__(self, args, config, env)
+        self.quiet = args.quiet
         self.filename = args.filename
         self.rec_stdin = args.stdin
         self.command = args.command
@@ -25,7 +25,7 @@ class RecordCommand(Command):
         self.overwrite = args.overwrite
         self.raw = args.raw
         self.writer = raw.writer if args.raw else v2.writer
-        self.env = env if env is not None else os.environ
+        self.env = env
 
     def execute(self):
         upload = False

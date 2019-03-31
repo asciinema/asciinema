@@ -5,11 +5,11 @@ import asciinema.asciicast as asciicast
 
 class PlayCommand(Command):
 
-    def __init__(self, filename, idle_time_limit, speed, player=None):
-        Command.__init__(self)
-        self.filename = filename
-        self.idle_time_limit = idle_time_limit
-        self.speed = speed
+    def __init__(self, args, config, env, player=None):
+        Command.__init__(self, args, config, env)
+        self.filename = args.filename
+        self.idle_time_limit = args.idle_time_limit
+        self.speed = args.speed
         self.player = player if player is not None else Player()
 
     def execute(self):

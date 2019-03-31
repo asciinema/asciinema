@@ -6,9 +6,9 @@ import asciinema.asciicast as asciicast
 
 class CatCommand(Command):
 
-    def __init__(self, filename):
-        Command.__init__(self)
-        self.filename = filename
+    def __init__(self, args, config, env):
+        Command.__init__(self, args, config, env)
+        self.filename = args.filename
 
     def execute(self):
         try:
