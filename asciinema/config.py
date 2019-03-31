@@ -118,6 +118,14 @@ class Config:
     def play_speed(self):
         return self.config.getfloat('play', 'speed', fallback=1.0)
 
+    @property
+    def notifications_enabled(self):
+        return self.config.getboolean('notifications', 'enabled', fallback=True)
+
+    @property
+    def notifications_command(self):
+        return self.config.get('notifications', 'command', fallback=None)
+
 
 def get_config_home(env=os.environ):
     env_asciinema_config_home = env.get("ASCIINEMA_CONFIG_HOME")

@@ -51,16 +51,33 @@ class TerminalNotifier(Notifier):
             return ['terminal-notifier', '-title', 'asciinema', '-message', text]
 
 
+class CustomCommandNotifier(Notifier):
+    def __init__(self, command):
+        Notifier.__init__(self)
+        self.command = command
+
+    def notify(self, text):
+        args = ['/bin/sh', '-c', self.command]
+        env = os.environ.copy()
+        env['TEXT'] = text
+        env['ICON_PATH'] = self.get_icon_path()
+        subprocess.run(args, env=env, capture_output=True)
+
+
 class NoopNotifier():
     def notify(self, text):
         pass
 
 
-def get_notifier():
-    for c in [TerminalNotifier, AppleScriptNotifier, LibNotifyNotifier]:
-        n = c()
+def get_notifier(enabled=True, command=None):
+    if enabled:
+        if command is not None:
+            return CustomCommandNotifier(command)
+        else:
+            for c in [TerminalNotifier, AppleScriptNotifier, LibNotifyNotifier]:
+                n = c()
 
-        if n.is_available():
-            return n
+                if n.is_available():
+                    return n
 
     return NoopNotifier()
