@@ -20,15 +20,23 @@ class AppleScriptNotifier(Notifier):
         return ['osascript', '-e', 'display notification "{}" with title "asciinema"'.format(text)]
 
 
+class LibNotifyNotifier(Notifier):
+    cmd = "notify-send"
+
+    def args(self, text):
+        return ['notify-send', 'asciinema', text]
+
+
 class NoopNotifier():
     def notify(self, text):
         pass
 
 
 def get_notifier():
-    n = AppleScriptNotifier()
+    for c in [AppleScriptNotifier, LibNotifyNotifier]:
+        n = c()
 
-    if n.is_available():
-        return n
+        if n.is_available():
+            return n
 
     return NoopNotifier()
