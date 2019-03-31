@@ -336,6 +336,14 @@ speed = 2
 
 ; Limit replayed terminal inactivity to max n seconds, default: off
 idle_time_limit = 1
+
+[notifications]
+
+; Should desktop notifications be enabled, default: yes
+enabled = no
+
+; Custom notification command
+command = tmux display-message "$TEXT"
 ```
 
 A very minimal config file could look like that:

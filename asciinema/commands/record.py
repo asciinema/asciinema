@@ -5,6 +5,7 @@ import tempfile
 import asciinema.recorder as recorder
 import asciinema.asciicast.raw as raw
 import asciinema.asciicast.v2 as v2
+import asciinema.notifier as notifier
 from asciinema.api import APIError
 from asciinema.commands.command import Command
 
@@ -25,6 +26,7 @@ class RecordCommand(Command):
         self.overwrite = args.overwrite
         self.raw = args.raw
         self.writer = raw.writer if args.raw else v2.writer
+        self.notifier = notifier.get_notifier(config.notifications_enabled, config.notifications_command)
         self.env = env
 
     def execute(self):
@@ -75,7 +77,8 @@ class RecordCommand(Command):
                 command_env=self.env,
                 capture_env=vars,
                 rec_stdin=self.rec_stdin,
-                writer=self.writer
+                writer=self.writer,
+                notifier=self.notifier
             )
         except v2.LoadError:
             self.print_error("can only append to asciicast v2 format recordings")
