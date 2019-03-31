@@ -343,6 +343,7 @@ idle_time_limit = 1
 enabled = no
 
 ; Custom notification command
+; Environment variable $TEXT contains notification text
 command = tmux display-message "$TEXT"
 ```
 
