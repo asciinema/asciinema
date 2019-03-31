@@ -29,6 +29,7 @@ setup(
             'asciinema = asciinema.__main__:main',
         ],
     },
+    package_data={'asciinema': ['data/*.png']},
     data_files=[('share/doc/asciinema', ['CHANGELOG.md',
                                          'CODE_OF_CONDUCT.md',
                                          'CONTRIBUTING.md',
