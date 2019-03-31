@@ -71,7 +71,7 @@ class NoopNotifier():
 
 def get_notifier(enabled=True, command=None):
     if enabled:
-        if command is not None:
+        if command:
             return CustomCommandNotifier(command)
         else:
             for c in [TerminalNotifier, AppleScriptNotifier, LibNotifyNotifier]:
