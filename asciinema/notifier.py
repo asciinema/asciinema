@@ -27,13 +27,20 @@ class LibNotifyNotifier(Notifier):
         return ['notify-send', 'asciinema', text]
 
 
+class TerminalNotifier(Notifier):
+    cmd = "terminal-notifier"
+
+    def args(self, text):
+        return ['terminal-notifier', '-title', 'asciinema', '-message', text]
+
+
 class NoopNotifier():
     def notify(self, text):
         pass
 
 
 def get_notifier():
-    for c in [AppleScriptNotifier, LibNotifyNotifier]:
+    for c in [TerminalNotifier, AppleScriptNotifier, LibNotifyNotifier]:
         n = c()
 
         if n.is_available():
