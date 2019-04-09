@@ -263,7 +263,7 @@ asked to log in first.
 Install ID is a random ID ([UUID
 v4](https://en.wikipedia.org/wiki/Universally_unique_identifier)) generated
 locally when you run asciinema for the first time, and saved at
-`$HOME/.config/asciinema/install-id`. It's purpose is to connect local machine
+`$HOME/.config/asciinema/install-id`. Its purpose is to connect local machine
 with uploaded recordings, so they can later be associated with asciinema.org
 account. This way we decouple uploading from account creation, allowing them to
 happen in any order.
