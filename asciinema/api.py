@@ -27,7 +27,7 @@ class Api:
         return "{}/connect/{}".format(self.url, self.install_id)
 
     def upload_url(self):
-        return "{}/api/asciicasts".format(self.url)
+        return "{}/api/asciicasts/".format(self.url)
 
     def upload_asciicast(self, path):
         with open(path, 'rb') as f:
