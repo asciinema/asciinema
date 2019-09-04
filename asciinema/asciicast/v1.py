@@ -34,6 +34,9 @@ class Asciicast:
     def events(self):
         return self.stdout_events()
 
+    def get_size(self):
+        return (int(self.v2_header['width']), int(self.v2_header['height']))
+
     def stdout_events(self):
         return to_absolute_time(self.__stdout_events())
 

@@ -25,6 +25,9 @@ class Asciicast:
         for line in self.__file:
             yield json.loads(line)
 
+    def get_size(self):
+        return (int(self.v2_header['width']), int(self.v2_header['height']))
+
     def stdout_events(self):
         for time, type, data in self.events():
             if type == 'o':
