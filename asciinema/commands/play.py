@@ -21,7 +21,8 @@ class PlayCommand(Command):
                 if play_w < rec_w or play_h < rec_h:
                     self.print_warning("Terminal size is smaller than recording")
                     self.print_warning("Playback may not be displayed as intended")
-                    self.print_warning('Trying making terminal at least {} x {} in size'.format(rec_w, rec_h))
+                    self.print_warning('The current terminal is {} x {} in size'.format(play_w, play_h))
+                    self.print_warning('Try making the terminal at least {} x {} in size'.format(rec_w, rec_h))
 
                 self.player.play(a, self.idle_time_limit, self.speed)
 
