@@ -26,7 +26,7 @@ def maybe_str(v):
 
 
 def main():
-    if locale.nl_langinfo(locale.CODESET).upper() not in ['US-ASCII', 'UTF-8']:
+    if locale.nl_langinfo(locale.CODESET).upper() not in ['US-ASCII', 'UTF-8', 'UTF8']:
         print("asciinema needs an ASCII or UTF-8 character encoding to run. Check the output of `locale` command.")
         sys.exit(1)
 
