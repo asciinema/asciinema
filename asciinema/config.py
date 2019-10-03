@@ -85,6 +85,10 @@ class Config:
         )
 
     @property
+    def user(self):
+        return self.config.get('api', 'user', fallback=self.env.get("USER"))
+
+    @property
     def record_stdin(self):
         return self.config.getboolean('record', 'stdin', fallback=False)
 
