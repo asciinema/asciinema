@@ -1,6 +1,7 @@
 import sys
 
 from asciinema.commands.command import Command
+from asciinema.term import raw
 import asciinema.asciicast as asciicast
 
 
@@ -12,10 +13,12 @@ class CatCommand(Command):
 
     def execute(self):
         try:
-            with asciicast.open_from_url(self.filename) as a:
-                for t, _type, text in a.stdout_events():
-                    sys.stdout.write(text)
-                    sys.stdout.flush()
+            stdin = open('/dev/tty')
+            with raw(stdin.fileno()):
+                with asciicast.open_from_url(self.filename) as a:
+                    for t, _type, text in a.stdout_events():
+                        sys.stdout.write(text)
+                        sys.stdout.flush()
 
         except asciicast.LoadError as e:
             self.print_error("printing failed: %s" % str(e))
