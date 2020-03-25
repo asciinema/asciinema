@@ -15,7 +15,7 @@ def record(path, command=None, append=False, idle_time_limit=None,
 
     if command_env is None:
         command_env = os.environ.copy()
-        command_env['ASCIINEMA_REC'] = '1'
+    command_env['ASCIINEMA_REC'] = '1'
 
     if capture_env is None:
         capture_env = ['SHELL', 'TERM']
