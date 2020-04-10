@@ -10,12 +10,13 @@ class PlayCommand(Command):
         self.filename = args.filename
         self.idle_time_limit = args.idle_time_limit
         self.speed = args.speed
+        self.show_timer = args.show_timer
         self.player = player if player is not None else Player()
 
     def execute(self):
         try:
             with asciicast.open_from_url(self.filename) as a:
-                self.player.play(a, self.idle_time_limit, self.speed)
+                self.player.play(a, self.idle_time_limit, self.speed, self.show_timer)
 
         except asciicast.LoadError as e:
             self.print_error("playback failed: %s" % str(e))

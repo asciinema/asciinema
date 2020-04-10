@@ -8,15 +8,23 @@ from asciinema.term import raw, read_blocking
 
 class Player:
 
-    def play(self, asciicast, idle_time_limit=None, speed=1.0):
+    def play(self, asciicast, idle_time_limit=None, speed=1.0, show_timer=False):
         try:
             stdin = open('/dev/tty')
             with raw(stdin.fileno()):
-                self._play(asciicast, idle_time_limit, speed, stdin)
+                self._play(asciicast, idle_time_limit, speed, stdin, show_timer)
         except Exception:
-            self._play(asciicast, idle_time_limit, speed, None)
+            self._play(asciicast, idle_time_limit, speed, None, show_timer)
 
-    def _play(self, asciicast, idle_time_limit, speed, stdin):
+    def _show_timer(self, asciicast, time):
+        if hasattr(asciicast, 'v2_header'):
+            y = 1
+            x = asciicast.v2_header['width'] - 20
+            padded = '{:4.6f}'.format(time)
+            sys.stdout.write("\u001b[s\u001b[{y};{x}H\u001b[7m{padded:>20s}\u001b[m\u001b[u".format(**locals()))
+            sys.stdout.flush()
+
+    def _play(self, asciicast, idle_time_limit, speed, stdin, show_timer):
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
 
         stdout = asciicast.stdout_events()
@@ -34,6 +42,9 @@ class Player:
             delay = t - (time.time() - base_time)
 
             while stdin and not ctrl_c and delay > 0:
+                if show_timer:
+                    self._show_timer(asciicast, t)
+
                 if paused:
                     while True:
                         data = read_blocking(stdin.fileno(), 1000)
