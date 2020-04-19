@@ -329,6 +329,14 @@ yes = true
 ; Be quiet, suppress all notices/warnings, default: no
 quiet = true
 
+; Define hotkey for pausing recording (suspending capture of output),
+; default: C-\
+pause_key = C-p
+
+; Define hotkey prefix key - when defined other recording hotkeys must
+; be preceeded by it, default: no prefix
+prefix_key = C-a
+
 [play]
 
 ; Playback speed (can be fractional), default: 1
