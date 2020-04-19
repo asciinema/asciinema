@@ -345,6 +345,14 @@ speed = 2
 ; Limit replayed terminal inactivity to max n seconds, default: off
 idle_time_limit = 1
 
+; Define hotkey for pausing/resuming playback,
+; default: space
+pause_key = p
+
+; Define hotkey for stepping through playback, a frame at a time,
+; default: .
+pause_key = ]
+
 [notifications]
 
 ; Should desktop notifications be enabled, default: yes
