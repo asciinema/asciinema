@@ -119,6 +119,10 @@ class Config:
         return self.config.getfloat('play', 'speed', fallback=1.0)
 
     @property
+    def play_show_timer(self):
+        return self.config.getboolean('play', 'show_timer', fallback=False)
+
+    @property
     def notifications_enabled(self):
         return self.config.getboolean('notifications', 'enabled', fallback=True)
 
