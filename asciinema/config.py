@@ -127,6 +127,14 @@ class Config:
         return self.config.getfloat('play', 'speed', fallback=1.0)
 
     @property
+    def play_pause_key(self):
+        return self.__get_key('play', 'pause', ' ')
+
+    @property
+    def play_step_key(self):
+        return self.__get_key('play', 'step', '.')
+
+    @property
     def notifications_enabled(self):
         return self.config.getboolean('notifications', 'enabled', fallback=True)
 
