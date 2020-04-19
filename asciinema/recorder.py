@@ -9,7 +9,8 @@ from asciinema.async_worker import async_worker
 
 def record(path, command=None, append=False, idle_time_limit=None,
            rec_stdin=False, title=None, metadata=None, command_env=None,
-           capture_env=None, writer=v2.writer, record=pty.record, notifier=None):
+           capture_env=None, writer=v2.writer, record=pty.record, notifier=None,
+           key_bindings={}):
     if command is None:
         command = os.environ.get('SHELL') or 'sh'
 
@@ -53,7 +54,8 @@ def record(path, command=None, append=False, idle_time_limit=None,
                 command_env,
                 rec_stdin,
                 time_offset,
-                n
+                n,
+                key_bindings
             )
 
 

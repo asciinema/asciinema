@@ -28,6 +28,10 @@ class RecordCommand(Command):
         self.writer = raw.writer if args.raw else v2.writer
         self.notifier = notifier.get_notifier(config.notifications_enabled, config.notifications_command)
         self.env = env
+        self.key_bindings = {
+            'prefix': config.record_prefix_key,
+            'pause': config.record_pause_key
+        }
 
     def execute(self):
         upload = False
@@ -78,7 +82,8 @@ class RecordCommand(Command):
                 capture_env=vars,
                 rec_stdin=self.rec_stdin,
                 writer=self.writer,
-                notifier=self.notifier
+                notifier=self.notifier,
+                key_bindings=self.key_bindings
             )
         except v2.LoadError:
             self.print_error("can only append to asciicast v2 format recordings")

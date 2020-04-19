@@ -110,6 +110,14 @@ class Config:
         return self.config.getboolean('record', 'quiet', fallback=False)
 
     @property
+    def record_prefix_key(self):
+        return self.__get_key('record', 'prefix')
+
+    @property
+    def record_pause_key(self):
+        return self.__get_key('record', 'pause', 'C-\\')
+
+    @property
     def play_idle_time_limit(self):
         fallback = self.config.getfloat('play', 'maxwait', fallback=None)  # pre 2.0
         return self.config.getfloat('play', 'idle_time_limit', fallback=fallback)
@@ -125,6 +133,20 @@ class Config:
     @property
     def notifications_command(self):
         return self.config.get('notifications', 'command', fallback=None)
+
+    def __get_key(self, section, name, default=None):
+        key = self.config.get(section, f'{name}_key', fallback=default)
+
+        if key:
+            if len(key) == 3:
+                upper_key = key.upper()
+
+                if upper_key[0] == 'C' and upper_key[1] == '-':
+                    return bytes([ord(upper_key[2]) - 0x40])
+                else:
+                    raise ConfigError(f'invalid {name} key definition \'{key}\' - use: {name}_key = C-x (with control key modifier), or {name}_key = x (with no modifier)')
+            else:
+                return key.encode('utf-8')
 
 
 def get_config_home(env=os.environ):

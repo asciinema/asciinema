@@ -15,10 +15,13 @@ import time
 from asciinema.term import raw
 
 
-def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, notifier=None):
+def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, notifier=None, key_bindings={}):
     master_fd = None
     start_time = None
     pause_time = None
+    prefix_mode = False
+    prefix_key = key_bindings.get('prefix')
+    pause_key = key_bindings.get('pause')
 
     def _notify(text):
         if notifier:
@@ -64,20 +67,30 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
 
         nonlocal pause_time
         nonlocal start_time
+        nonlocal prefix_mode
 
-        if data == b'\x10':  # ctrl+p
-            if pause_time:
-                start_time = start_time + (time.time() - pause_time)
-                pause_time = None
-                _notify('Resumed recording')
-            else:
-                pause_time = time.time()
-                _notify('Paused recording')
-        else:
-            _write_master(data)
+        if not prefix_mode and prefix_key and data == prefix_key:
+            prefix_mode = True
+            return
 
-            if rec_stdin and not pause_time:
-                writer.write_stdin(time.time() - start_time, data)
+        if prefix_mode or (not prefix_key and data in [pause_key]):
+            prefix_mode = False
+
+            if data == pause_key:
+                if pause_time:
+                    start_time = start_time + (time.time() - pause_time)
+                    pause_time = None
+                    _notify('Resumed recording')
+                else:
+                    pause_time = time.time()
+                    _notify('Paused recording')
+
+            return
+
+        _write_master(data)
+
+        if rec_stdin and not pause_time:
+            writer.write_stdin(time.time() - start_time, data)
 
     def _signals(signal_list):
         old_handlers = []
