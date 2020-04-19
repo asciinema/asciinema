@@ -143,7 +143,7 @@ class Config:
         return self.config.get('notifications', 'command', fallback=None)
 
     def __get_key(self, section, name, default=None):
-        key = self.config.get(section, f'{name}_key', fallback=default)
+        key = self.config.get(section, name + '_key', fallback=default)
 
         if key:
             if len(key) == 3:
@@ -152,7 +152,7 @@ class Config:
                 if upper_key[0] == 'C' and upper_key[1] == '-':
                     return bytes([ord(upper_key[2]) - 0x40])
                 else:
-                    raise ConfigError(f'invalid {name} key definition \'{key}\' - use: {name}_key = C-x (with control key modifier), or {name}_key = x (with no modifier)')
+                    raise ConfigError('invalid {name} key definition \'{key}\' - use: {name}_key = C-x (with control key modifier), or {name}_key = x (with no modifier)'.format(name=name, key=key))
             else:
                 return key.encode('utf-8')
 
