@@ -21,7 +21,7 @@ class raw():
     def __exit__(self, type, value, traceback):
         if self.restore:
             # Give the terminal time to send answerbacks
-            time.sleep(0.05)
+            time.sleep(0.01)
             tty.tcsetattr(self.fd, tty.TCSAFLUSH, self.mode)
 
 
