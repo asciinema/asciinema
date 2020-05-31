@@ -56,6 +56,7 @@ class RecordCommand(Command):
 
             elif os.stat(self.filename).st_size > 0 and not append:
                 self.print_error("%s already exists, aborting" % self.filename)
+                self.print_error("use --overwrite option if you want to overwrite existing recording")
                 self.print_error("use --append option if you want to append to existing recording")
                 return 1
 
