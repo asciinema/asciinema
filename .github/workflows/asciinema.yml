@@ -39,6 +39,6 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install dependencies
-        run: python setup.py test
+        run: pip install nose
       - name: Run Asciinema tests
         run: script -e -c make test
