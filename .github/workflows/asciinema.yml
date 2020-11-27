@@ -1,0 +1,44 @@
+name: Asciinema unit tests
+
+on: [push, pull_request]
+
+jobs:
+  # Code style checks
+  health:
+    name: Code health check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Asciinema
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install dependencies
+        run: pip install pycodestyle twine setuptools>=38.6.0 cmarkgfm
+      - name: Run pycodestyle
+        run: find . -name \*.py -exec pycodestyle --ignore=E501,E402,E722 {} +
+      - name: Run twine
+        run: |
+          python setup.py --quiet sdist
+          twine check dist/*
+  # Asciinema checks
+  asciinema:
+    name: Asciinema - py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [3.4, 3.5, 3.6, 3.7, 3.8, 3.9]
+    env:
+      TERM: dumb
+    steps:
+      - name: Checkout Asciinema
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: python setup.py test
+      - name: Run Asciinema tests
+        run: script -e -c make test
