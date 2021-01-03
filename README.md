@@ -291,7 +291,7 @@ If you prefer to host the recordings yourself, you can do so by either:
 - setting up your own
   [asciinema-server](https://github.com/asciinema/asciinema-server) instance,
   and [setting API URL
-  accordingly](https://github.com/asciinema/asciinema-server/blob/master/docs/INSTALL.md#using-asciinema-recorder-with-your-instance).
+  accordingly](https://github.com/asciinema/asciinema-server/wiki/Installation-guide#using-asciinema-recorder-with-your-instance).
 
 ## Configuration file
 
