@@ -316,7 +316,7 @@ BUGS
 See GitHub Issues: <https://github.com/asciinema/asciinema/issues>
 
 
-MORE RESSOURCES
+MORE RESOURCES
 ===============
 
 More documentation is available on the asciicast.org website and its GitHub wiki:
