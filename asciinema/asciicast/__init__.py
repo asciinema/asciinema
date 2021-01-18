@@ -2,13 +2,20 @@ import sys
 import os
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse, urlunparse
+from io import StringIO
 import urllib.error
 import html.parser
 import gzip
 import codecs
+import mimetypes
+
 
 from . import v1
 from . import v2
+from .. import encodings
+
+
+encodings.setup()
 
 
 class LoadError(Exception):
@@ -76,6 +83,14 @@ def open_url(url):
             return open_url(new_url)
 
         return utf8_reader(body, errors='strict')
+
+    _, encoding = mimetypes.guess_type(url)
+    if encoding == "gzip":
+        with codecs.open(url, mode="r", encoding="gzip") as fh:
+            return StringIO(fh.read().decode("utf-8"))
+    if encoding == "bzip2":
+        with codecs.open(url, mode="r", encoding="bz2") as fh:
+            return StringIO(fh.read().decode("utf-8"))
 
     return open(url, mode='rt', encoding='utf-8')
 
