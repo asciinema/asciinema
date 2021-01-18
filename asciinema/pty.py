@@ -22,6 +22,7 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
     prefix_mode = False
     prefix_key = key_bindings.get('prefix')
     pause_key = key_bindings.get('pause')
+    breakpoint_key = key_bindings.get('breakpoint')
 
     def _notify(text):
         if notifier:
@@ -73,7 +74,7 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
             prefix_mode = True
             return
 
-        if prefix_mode or (not prefix_key and data in [pause_key]):
+        if prefix_mode or (not prefix_key and data in [pause_key, breakpoint_key]):
             prefix_mode = False
 
             if data == pause_key:
@@ -84,6 +85,9 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
                 else:
                     pause_time = time.time()
                     _notify('Paused recording')
+
+            elif data == breakpoint_key:
+                writer.write_break(time.time() - start_time)
 
             return
 

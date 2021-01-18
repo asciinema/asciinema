@@ -23,3 +23,6 @@ class writer():
 
     def write_stdin(self, ts, data):
         pass
+
+    def write_break(self, ts):
+        pass

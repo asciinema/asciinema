@@ -73,6 +73,9 @@ class async_writer(async_worker):
     def write_stdout(self, ts, data):
         self.enqueue([ts, 'o', data])
 
+    def write_break(self, ts):
+        self.enqueue([ts, 'b', None])
+
     def run(self):
         with self.writer(self.path, metadata=self.metadata, append=self.append) as w:
             for event in iter(self.queue.get, None):
@@ -82,6 +85,8 @@ class async_writer(async_worker):
                     w.write_stdout(ts, data)
                 elif etype == 'i':
                     w.write_stdin(ts, data)
+                elif etype == 'b':
+                    w.write_break(ts)
 
 
 class async_notifier(async_worker):

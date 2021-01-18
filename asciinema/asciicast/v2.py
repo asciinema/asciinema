@@ -118,6 +118,9 @@ class writer():
         data = self.stdin_decoder.decode(data)
         self.__write_event(ts, 'i', data)
 
+    def write_break(self, ts):
+        self.__write_event(ts, 'b', '')
+
     def __write_event(self, ts, etype, data):
         self.__write_line([round(ts, 6), etype, data])
 

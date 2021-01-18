@@ -30,7 +30,8 @@ class RecordCommand(Command):
         self.env = env
         self.key_bindings = {
             'prefix': config.record_prefix_key,
-            'pause': config.record_pause_key
+            'pause': config.record_pause_key,
+            'breakpoint': config.record_breakpoint_key
         }
 
     def execute(self):
