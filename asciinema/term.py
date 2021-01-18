@@ -33,8 +33,10 @@ def read_blocking(fd, timeout):
 
 
 def get_size():
-    # TODO maybe use os.get_terminal_size ?
-    return (
-        int(subprocess.check_output(['tput', 'cols'])),
-        int(subprocess.check_output(['tput', 'lines']))
-    )
+    try:
+        return os.get_terminal_size()
+    except:
+        return (
+            int(subprocess.check_output(['tput', 'cols'])),
+            int(subprocess.check_output(['tput', 'lines']))
+        )
