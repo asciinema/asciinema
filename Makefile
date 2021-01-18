@@ -19,10 +19,14 @@ tag:
 	git push --tags
 
 push:
-	python3 setup.py sdist upload -r pypi
+	python3 -m pip install --user --upgrade --quiet twine
+	python3 setup.py sdist bdist_wheel
+	python3 -m twine upload dist/*
 
 push-test:
-	python3 setup.py sdist upload -r pypitest
+	python3 -m pip install --user --upgrade --quiet twine
+	python3 setup.py sdist bdist_wheel
+	python3 -m twine upload --repository testpypi dist/*
 
 release: test tag push
 

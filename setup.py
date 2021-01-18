@@ -7,7 +7,6 @@ if sys.version_info.major < 3:
 
 url_template = 'https://github.com/asciinema/asciinema/archive/v%s.tar.gz'
 requirements = []
-test_requirements = ['nose']
 
 with open('README.md', encoding='utf8') as file:
     long_description = file.read()
@@ -38,7 +37,6 @@ setup(
                                          'doc/asciicast-v2.md']),
                 ('share/man/man1', ['man/asciinema.1'])],
     install_requires=requirements,
-    tests_require=test_requirements,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
