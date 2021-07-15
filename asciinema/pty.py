@@ -1,6 +1,10 @@
 import array
 import errno
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    # We are probably on Windows.
+    from asciinema import fcntl_stub
 import io
 import os
 import pty
