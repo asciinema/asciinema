@@ -4,7 +4,7 @@ try:
     import fcntl
 except ImportError:
     # We are probably on Windows.
-    from asciinema import fcntl_stub
+    from asciinema import fcntl_stub as fcntl
 import io
 import os
 import pty
