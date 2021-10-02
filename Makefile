@@ -28,6 +28,4 @@ push-test:
 	python3 setup.py sdist bdist_wheel
 	python3 -m twine upload --repository testpypi dist/*
 
-release: test tag push
-
 .PHONY: test test-unit test-integration release release-test tag push push-test
