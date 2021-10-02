@@ -322,8 +322,7 @@ MORE RESOURCES
 More documentation is available on the asciicast.org website and its GitHub wiki:
 
 * Web:  [asciinema.org/docs/](https://asciinema.org/docs/)
-* Wiki: [github.com/asciinema/asciinema/wiki](https://github.com/asciinema/asciinema/wiki) 
-* IRC:  [Channel on Freenode](https://webchat.freenode.net/?channels=asciinema)
+* Wiki: [github.com/asciinema/asciinema/wiki](https://github.com/asciinema/asciinema/wiki)
 * Twitter: [@asciinema](https://twitter.com/asciinema)
 
 
