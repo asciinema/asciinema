@@ -16,7 +16,7 @@ release-test: test push-test
 tag:
 	git tag | grep "v$(VERSION)" && echo "Tag v$(VERSION) exists" && exit 1 || true
 	git tag -s -m "Releasing $(VERSION)" v$(VERSION)
-	git push --tags
+	git push origin v$(VERSION)
 
 push:
 	python3 -m pip install --user --upgrade --quiet twine
