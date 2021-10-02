@@ -137,10 +137,10 @@ By running `asciinema rec [filename]` you start a new recording session. The
 command (process) that is recorded can be specified with `-c` option (see
 below), and defaults to `$SHELL` which is what you want in most cases.
 
-You can temporarily pause recording of terminal by pressing <kbd>Ctrl+P</kbd>.
+You can temporarily pause recording of terminal by pressing <kbd>Ctrl+\</kbd>.
 This is useful when you want to execute some commands during the recording
 session that should not be captured (e.g. pasting secrets). Resume by pressing
-<kbd>Ctrl+P</kbd> again.
+<kbd>Ctrl+\</kbd> again.
 
 Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
 `exit`). If the recorded process is not a shell then recording finishes when
@@ -188,11 +188,14 @@ __Replay recorded asciicast in a terminal.__
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
 
-Following keyboard shortcuts are available:
+Following keyboard shortcuts are available by default:
 
 - <kbd>Space</kbd> - toggle pause,
 - <kbd>.</kbd> - step through a recording a frame at a time (when paused),
 - <kbd>Ctrl+C</kbd> - exit.
+
+See "Configuration file" section for information on how to customize the
+keyboard shortcuts.
 
 Playing from a local file:
 
@@ -330,7 +333,7 @@ yes = true
 quiet = true
 
 ; Define hotkey for pausing recording (suspending capture of output),
-; default: C-\
+; default: C-\ (control + backslash)
 pause_key = C-p
 
 ; Define hotkey prefix key - when defined other recording hotkeys must
@@ -351,7 +354,7 @@ pause_key = p
 
 ; Define hotkey for stepping through playback, a frame at a time,
 ; default: .
-pause_key = ]
+step_key = ]
 
 [notifications]
 
