@@ -391,6 +391,6 @@ source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 ## License
 
-Copyright &copy; 2011–2019 Marcin Kulik.
+Copyright &copy; 2011–2021 Marcin Kulik.
 
 All code is licensed under the GPL, v3 or later. See LICENSE file for details.
