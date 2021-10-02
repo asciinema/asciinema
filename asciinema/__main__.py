@@ -10,7 +10,6 @@ from asciinema.commands.record import RecordCommand
 from asciinema.commands.play import PlayCommand
 from asciinema.commands.cat import CatCommand
 from asciinema.commands.upload import UploadCommand
-from asciinema.api import Api
 
 
 def positive_float(value):
@@ -21,36 +20,13 @@ def positive_float(value):
     return value
 
 
-def rec_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.install_id)
-    return RecordCommand(api, args)
-
-
-def play_command(args, config):
-    return PlayCommand(args.filename, args.idle_time_limit, args.speed)
-
-
-def cat_command(args, config):
-    return CatCommand(args.filename)
-
-
-def upload_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.install_id)
-    return UploadCommand(api, args.filename)
-
-
-def auth_command(args, config):
-    api = Api(config.api_url, os.environ.get("USER"), config.install_id)
-    return AuthCommand(api)
-
-
 def maybe_str(v):
     if v is not None:
         return str(v)
 
 
 def main():
-    if locale.nl_langinfo(locale.CODESET).upper() not in ['US-ASCII', 'UTF-8']:
+    if locale.nl_langinfo(locale.CODESET).upper() not in ['US-ASCII', 'UTF-8', 'UTF8']:
         print("asciinema needs an ASCII or UTF-8 character encoding to run. Check the output of `locale` command.")
         sys.exit(1)
 
@@ -100,34 +76,34 @@ For help on a specific command run:
     parser_rec.add_argument('-y', '--yes', help='answer "yes" to all prompts (e.g. upload confirmation)', action='store_true', default=cfg.record_yes)
     parser_rec.add_argument('-q', '--quiet', help='be quiet, suppress all notices/warnings (implies -y)', action='store_true', default=cfg.record_quiet)
     parser_rec.add_argument('filename', nargs='?', default='', help='filename/path to save the recording to')
-    parser_rec.set_defaults(func=rec_command)
+    parser_rec.set_defaults(cmd=RecordCommand)
 
     # create the parser for the "play" command
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
     parser_play.add_argument('-i', '--idle-time-limit', help='limit idle time during playback to given number of seconds', type=positive_float, default=maybe_str(cfg.play_idle_time_limit))
     parser_play.add_argument('-s', '--speed', help='playback speedup (can be fractional)', type=positive_float, default=cfg.play_speed)
     parser_play.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
-    parser_play.set_defaults(func=play_command)
+    parser_play.set_defaults(cmd=PlayCommand)
 
     # create the parser for the "cat" command
     parser_cat = subparsers.add_parser('cat', help='Print full output of terminal session')
     parser_cat.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
-    parser_cat.set_defaults(func=cat_command)
+    parser_cat.set_defaults(cmd=CatCommand)
 
     # create the parser for the "upload" command
     parser_upload = subparsers.add_parser('upload', help='Upload locally saved terminal session to asciinema.org')
     parser_upload.add_argument('filename', help='filename or path of local recording')
-    parser_upload.set_defaults(func=upload_command)
+    parser_upload.set_defaults(cmd=UploadCommand)
 
     # create the parser for the "auth" command
     parser_auth = subparsers.add_parser('auth', help='Manage recordings on asciinema.org account')
-    parser_auth.set_defaults(func=auth_command)
+    parser_auth.set_defaults(cmd=AuthCommand)
 
     # parse the args and call whatever function was selected
     args = parser.parse_args()
 
-    if hasattr(args, 'func'):
-        command = args.func(args, cfg)
+    if hasattr(args, 'cmd'):
+        command = args.cmd(args, cfg, os.environ)
         code = command.execute()
         sys.exit(code)
     else:

@@ -2,18 +2,19 @@ import os
 import sys
 import tempfile
 
-import asciinema
+import asciinema.recorder as recorder
 import asciinema.asciicast.raw as raw
 import asciinema.asciicast.v2 as v2
+import asciinema.notifier as notifier
 from asciinema.api import APIError
 from asciinema.commands.command import Command
 
 
 class RecordCommand(Command):
 
-    def __init__(self, api, args, env=None):
-        Command.__init__(self, args.quiet)
-        self.api = api
+    def __init__(self, args, config, env):
+        Command.__init__(self, args, config, env)
+        self.quiet = args.quiet
         self.filename = args.filename
         self.rec_stdin = args.stdin
         self.command = args.command
@@ -24,8 +25,13 @@ class RecordCommand(Command):
         self.append = args.append
         self.overwrite = args.overwrite
         self.raw = args.raw
-        self.writer = raw.writer if args.raw else v2.async_writer
-        self.env = env if env is not None else os.environ
+        self.writer = raw.writer if args.raw else v2.writer
+        self.notifier = notifier.get_notifier(config.notifications_enabled, config.notifications_command)
+        self.env = env
+        self.key_bindings = {
+            'prefix': config.record_prefix_key,
+            'pause': config.record_pause_key
+        }
 
     def execute(self):
         upload = False
@@ -50,6 +56,7 @@ class RecordCommand(Command):
 
             elif os.stat(self.filename).st_size > 0 and not append:
                 self.print_error("%s already exists, aborting" % self.filename)
+                self.print_error("use --overwrite option if you want to overwrite existing recording")
                 self.print_error("use --append option if you want to append to existing recording")
                 return 1
 
@@ -66,7 +73,7 @@ class RecordCommand(Command):
         vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
 
         try:
-            asciinema.record_asciicast(
+            recorder.record(
                 self.filename,
                 command=self.command,
                 append=append,
@@ -75,7 +82,9 @@ class RecordCommand(Command):
                 command_env=self.env,
                 capture_env=vars,
                 rec_stdin=self.rec_stdin,
-                writer=self.writer
+                writer=self.writer,
+                notifier=self.notifier,
+                key_bindings=self.key_bindings
             )
         except v2.LoadError:
             self.print_error("can only append to asciicast v2 format recordings")

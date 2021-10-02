@@ -1,5 +1,19 @@
 # asciinema changelog
 
+## 2.1.0 (2021-10-02)
+
+* Ability to pause/resume terminal capture with `C-\` key shortcut
+* Desktop notifications - only for the above pause feature at the moment
+* Removed dependency on tput/ncurses (thanks @arp242 / Martin Tournoij!)
+* ASCIINEMA_REC env var is back (thanks @landonb / Landon Bouma!)
+* Terminal answerbacks (CSI 6 n) in `asciinema cat` are now hidden (thanks @djpohly / Devin J. Pohly!)
+* Codeset detection works on HP-UX now (thanks @michael-o / Michael Osipov!)
+* Attempt at recording to existing file suggests use of `--overwrite` option now
+* Upload for users with very long `$USER` is fixed
+* Added official support for Python 3.8 and 3.9
+* Dropped official support for EOL-ed Python 3.4 and 3.5
+* Internal refactorings
+
 ## 2.0.2 (2019-01-12)
 
 * Official support for Python 3.7

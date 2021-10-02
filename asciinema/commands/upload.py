@@ -4,10 +4,9 @@ from asciinema.api import APIError
 
 class UploadCommand(Command):
 
-    def __init__(self, api, filename):
-        Command.__init__(self)
-        self.api = api
-        self.filename = filename
+    def __init__(self, args, config, env):
+        Command.__init__(self, args, config, env)
+        self.filename = args.filename
 
     def execute(self):
         try:

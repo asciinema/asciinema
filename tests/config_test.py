@@ -187,3 +187,22 @@ def test_play_idle_time_limit():
 
     config = create_config("[play]\nmaxwait = 2.35")
     assert_equal(2.35, config.play_idle_time_limit)
+
+
+def test_notifications_enabled():
+    config = create_config('')
+    assert_equal(True, config.notifications_enabled)
+
+    config = create_config("[notifications]\nenabled = yes")
+    assert_equal(True, config.notifications_enabled)
+
+    config = create_config("[notifications]\nenabled = no")
+    assert_equal(False, config.notifications_enabled)
+
+
+def test_notifications_command():
+    config = create_config('')
+    assert_equal(None, config.notifications_command)
+
+    config = create_config('[notifications]\ncommand = tmux display-message "$TEXT"')
+    assert_equal('tmux display-message "$TEXT"', config.notifications_command)

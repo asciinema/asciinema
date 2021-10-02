@@ -4,17 +4,6 @@ import time
 import codecs
 
 try:
-    # Importing synchronize is to detect platforms where
-    # multiprocessing does not work (python issue 3770)
-    # and cause an ImportError. Otherwise it will happen
-    # later when trying to use Queue().
-    from multiprocessing import synchronize, Process, Queue
-except ImportError:
-    from threading import Thread as Process
-    from queue import Queue
-
-
-try:
     JSONDecodeError = json.decoder.JSONDecodeError
 except AttributeError:
     JSONDecodeError = ValueError
@@ -76,10 +65,9 @@ def get_duration(path):
             return last_frame[0]
 
 
-def build_header(metadata):
-    header = {}
+def build_header(width, height, metadata):
+    header = {'version': 2, 'width': width, 'height': height}
     header.update(metadata)
-    header['version'] = 2
 
     assert 'width' in header, 'width missing in metadata'
     assert 'height' in header, 'height missing in metadata'
@@ -94,20 +82,18 @@ def build_header(metadata):
 
 class writer():
 
-    def __init__(self, path, width=None, height=None, header=None, mode='w', buffering=-1):
+    def __init__(self, path, metadata=None, append=False, buffering=1, width=None, height=None):
         self.path = path
-        self.mode = mode
         self.buffering = buffering
         self.stdin_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
         self.stdout_decoder = codecs.getincrementaldecoder('UTF-8')('replace')
 
-        if mode == 'w':
-            self.header = {'version': 2, 'width': width, 'height': height}
-            self.header.update(header or {})
-            assert type(self.header['width']) == int, 'width or header missing'
-            assert type(self.header['height']) == int, 'height or header missing'
-        else:
+        if append:
+            self.mode = 'a'
             self.header = None
+        else:
+            self.mode = 'w'
+            self.header = build_header(width, height, metadata or {})
 
     def __enter__(self):
         self.file = open(self.path, mode=self.mode, buffering=self.buffering)
@@ -120,73 +106,21 @@ class writer():
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.file.close()
 
-    def write_event(self, ts, etype=None, data=None):
-        if etype is None:
-            ts, etype, data = ts
-
-        ts = round(ts, 6)
-
-        if etype == 'o':
-            if type(data) == str:
-                data = data.encode(encoding='utf-8', errors='strict')
-            text = self.stdout_decoder.decode(data)
-            self.__write_line([ts, etype, text])
-        elif etype == 'i':
-            if type(data) == str:
-                data = data.encode(encoding='utf-8', errors='strict')
-            text = self.stdin_decoder.decode(data)
-            self.__write_line([ts, etype, text])
-        else:
-            self.__write_line([ts, etype, data])
-
     def write_stdout(self, ts, data):
-        self.write_event(ts, 'o', data)
+        if type(data) == str:
+            data = data.encode(encoding='utf-8', errors='strict')
+        data = self.stdout_decoder.decode(data)
+        self.__write_event(ts, 'o', data)
 
     def write_stdin(self, ts, data):
-        self.write_event(ts, 'i', data)
+        if type(data) == str:
+            data = data.encode(encoding='utf-8', errors='strict')
+        data = self.stdin_decoder.decode(data)
+        self.__write_event(ts, 'i', data)
+
+    def __write_event(self, ts, etype, data):
+        self.__write_line([round(ts, 6), etype, data])
 
     def __write_line(self, obj):
         line = json.dumps(obj, ensure_ascii=False, indent=None, separators=(', ', ': '))
         self.file.write(line + '\n')
-
-
-def write_json_lines_from_queue(path, header, mode, queue):
-    with writer(path, header=header, mode=mode, buffering=1) as w:
-        for event in iter(queue.get, None):
-            w.write_event(event)
-
-
-class async_writer():
-
-    def __init__(self, path, metadata, append=False, time_offset=0):
-        if append:
-            assert time_offset > 0
-
-        self.path = path
-        self.metadata = metadata
-        self.append = append
-        self.time_offset = time_offset
-        self.queue = Queue()
-
-    def __enter__(self):
-        header = build_header(self.metadata)
-        mode = 'a' if self.append else 'w'
-        self.process = Process(
-            target=write_json_lines_from_queue,
-            args=(self.path, header, mode, self.queue)
-        )
-        self.process.start()
-        self.start_time = time.time() - self.time_offset
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.queue.put(None)
-        self.process.join()
-
-    def write_stdin(self, data):
-        ts = time.time() - self.start_time
-        self.queue.put([ts, 'i', data])
-
-    def write_stdout(self, data):
-        ts = time.time() - self.start_time
-        self.queue.put([ts, 'o', data])

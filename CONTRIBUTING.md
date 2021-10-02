@@ -32,7 +32,9 @@ If you want to propose code change, either introducing a new feature or improvin
 ## Asking for help
 
 Github issue tracker is not a support forum.
-If you need help then either join #asciinema IRC channel on freenode or drop us an email at support@asciinema.org.
+
+If you need help then either join #asciinema IRC channel on libera.chat or drop
+us an email at support@asciinema.org.
 
 ## Reporting security issues
 

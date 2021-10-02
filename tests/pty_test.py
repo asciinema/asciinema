@@ -12,10 +12,10 @@ class FakeStdout:
     def __init__(self):
         self.data = []
 
-    def write_stdout(self, data):
+    def write_stdout(self, ts, data):
         self.data.append(data)
 
-    def write_stdin(self, data):
+    def write_stdin(self, ts, data):
         pass
 
 

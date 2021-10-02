@@ -10,12 +10,22 @@ import signal
 import struct
 import sys
 import termios
+import time
 
 from asciinema.term import raw
 
 
-def record(command, writer, env=os.environ, rec_stdin=False):
+def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, notifier=None, key_bindings={}):
     master_fd = None
+    start_time = None
+    pause_time = None
+    prefix_mode = False
+    prefix_key = key_bindings.get('prefix')
+    pause_key = key_bindings.get('pause')
+
+    def _notify(text):
+        if notifier:
+            notifier.notify(text)
 
     def _set_pty_size():
         '''
@@ -40,7 +50,9 @@ def record(command, writer, env=os.environ, rec_stdin=False):
     def _handle_master_read(data):
         '''Handles new data on child process stdout.'''
 
-        writer.write_stdout(data)
+        if not pause_time:
+            writer.write_stdout(time.time() - start_time, data)
+
         _write_stdout(data)
 
     def _write_master(data):
@@ -53,10 +65,32 @@ def record(command, writer, env=os.environ, rec_stdin=False):
     def _handle_stdin_read(data):
         '''Handles new data on child process stdin.'''
 
+        nonlocal pause_time
+        nonlocal start_time
+        nonlocal prefix_mode
+
+        if not prefix_mode and prefix_key and data == prefix_key:
+            prefix_mode = True
+            return
+
+        if prefix_mode or (not prefix_key and data in [pause_key]):
+            prefix_mode = False
+
+            if data == pause_key:
+                if pause_time:
+                    start_time = start_time + (time.time() - pause_time)
+                    pause_time = None
+                    _notify('Resumed recording')
+                else:
+                    pause_time = time.time()
+                    _notify('Paused recording')
+
+            return
+
         _write_master(data)
 
-        if rec_stdin:
-            writer.write_stdin(data)
+        if rec_stdin and not pause_time:
+            writer.write_stdin(time.time() - start_time, data)
 
     def _signals(signal_list):
         old_handlers = []
@@ -128,6 +162,8 @@ def record(command, writer, env=os.environ, rec_stdin=False):
                                     signal.SIGQUIT]))
 
     _set_pty_size()
+
+    start_time = time.time() - time_offset
 
     with raw(pty.STDIN_FILENO):
         try:

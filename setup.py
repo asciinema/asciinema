@@ -2,12 +2,11 @@ import asciinema
 import sys
 from setuptools import setup
 
-if sys.version_info[0] < 3:
+if sys.version_info.major < 3:
     sys.exit('Python < 3 is unsupported.')
 
 url_template = 'https://github.com/asciinema/asciinema/archive/v%s.tar.gz'
 requirements = []
-test_requirements = ['nose']
 
 with open('README.md', encoding='utf8') as file:
     long_description = file.read()
@@ -29,6 +28,7 @@ setup(
             'asciinema = asciinema.__main__:main',
         ],
     },
+    package_data={'asciinema': ['data/*.png']},
     data_files=[('share/doc/asciinema', ['CHANGELOG.md',
                                          'CODE_OF_CONDUCT.md',
                                          'CONTRIBUTING.md',
@@ -37,7 +37,6 @@ setup(
                                          'doc/asciicast-v2.md']),
                 ('share/man/man1', ['man/asciinema.1'])],
     install_requires=requirements,
-    tests_require=test_requirements,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

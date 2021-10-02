@@ -8,16 +8,18 @@ from asciinema.term import raw, read_blocking
 
 class Player:
 
-    def play(self, asciicast, idle_time_limit=None, speed=1.0):
+    def play(self, asciicast, idle_time_limit=None, speed=1.0, key_bindings={}):
         try:
             stdin = open('/dev/tty')
             with raw(stdin.fileno()):
-                self._play(asciicast, idle_time_limit, speed, stdin)
+                self._play(asciicast, idle_time_limit, speed, stdin, key_bindings)
         except Exception:
-            self._play(asciicast, idle_time_limit, speed, None)
+            self._play(asciicast, idle_time_limit, speed, None, key_bindings)
 
-    def _play(self, asciicast, idle_time_limit, speed, stdin):
+    def _play(self, asciicast, idle_time_limit, speed, stdin, key_bindings):
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
+        pause_key = key_bindings.get('pause')
+        step_key = key_bindings.get('step')
 
         stdout = asciicast.stdout_events()
         stdout = ev.to_relative_time(stdout)
@@ -42,12 +44,12 @@ class Player:
                             ctrl_c = True
                             break
 
-                        if 0x20 in data:  # space
+                        if data == pause_key:
                             paused = False
                             base_time = base_time + (time.time() - pause_time)
                             break
 
-                        if 0x2e in data:  # period (dot)
+                        if data == step_key:
                             delay = 0
                             pause_time = time.time()
                             base_time = pause_time - t
@@ -62,7 +64,7 @@ class Player:
                         ctrl_c = True
                         break
 
-                    if 0x20 in data:  # space
+                    if data == pause_key:
                         paused = True
                         pause_time = time.time()
                         slept = t - (pause_time - base_time)

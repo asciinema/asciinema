@@ -1,6 +1,7 @@
 import os
 import select
 import subprocess
+import time
 import tty
 
 
@@ -19,6 +20,8 @@ class raw():
 
     def __exit__(self, type, value, traceback):
         if self.restore:
+            # Give the terminal time to send answerbacks
+            time.sleep(0.01)
             tty.tcsetattr(self.fd, tty.TCSAFLUSH, self.mode)
 
 
@@ -30,8 +33,10 @@ def read_blocking(fd, timeout):
 
 
 def get_size():
-    # TODO maybe use os.get_terminal_size ?
-    return (
-        int(subprocess.check_output(['tput', 'cols'])),
-        int(subprocess.check_output(['tput', 'lines']))
-    )
+    try:
+        return os.get_terminal_size()
+    except:
+        return (
+            int(subprocess.check_output(['tput', 'cols'])),
+            int(subprocess.check_output(['tput', 'lines']))
+        )

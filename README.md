@@ -1,6 +1,6 @@
 # asciinema
 
-[![Build Status](https://travis-ci.org/asciinema/asciinema.svg?branch=master)](https://travis-ci.org/asciinema/asciinema)
+[![Build Status](https://github.com/asciinema/asciinema/actions/workflows/asciinema.yml/badge.svg)](https://github.com/asciinema/asciinema/actions/workflows/asciinema.yml)
 [![PyPI](https://img.shields.io/pypi/v/asciinema.svg)](https://pypi.org/project/asciinema/)
 [![license](http://img.shields.io/badge/license-GNU-blue.svg)](https://raw.githubusercontent.com/asciinema/asciinema/master/LICENSE)
 
@@ -71,34 +71,10 @@ asciinema is included in repositories of most popular package managers on Mac OS
 X, Linux and FreeBSD. Look for package named `asciinema`. See the
 [list of available packages](https://asciinema.org/docs/installation).
 
-### Docker image
-
-asciinema Docker image is based on Ubuntu 16.04 and has the latest version of
-asciinema recorder pre-installed.
-
-    docker pull asciinema/asciinema
-
-When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
-(`-i`) and mount config directory volume (`-v`):
-
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema
-
-Default command run in a container is `asciinema rec`.
-
-There's not much software installed in this image though. In most cases you may
-want to install extra programs before recording. One option is to derive new
-image from this one (start your custom Dockerfile with `FROM
-asciinema/asciinema`). Another option is to start the container with `/bin/bash`
-as the command, install extra packages and manually start `asciinema rec`:
-
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema /bin/bash
-    root@6689517d99a1:~# apt-get install foobar
-    root@6689517d99a1:~# asciinema rec
-
 ### Running latest version from source code checkout
 
-If none of the above works for you just clone the repo and run asciinema
-straight from the checkout.
+If you can't use Python package or native package for your OS is outdated you
+can clone the repo and run asciinema straight from the checkout.
 
 Clone the repo:
 
@@ -117,6 +93,32 @@ Then run it with:
 
     python3 -m asciinema --version
 
+### Docker image
+
+asciinema Docker image is based on Ubuntu 18.04 and has the latest version of
+asciinema recorder pre-installed.
+
+    docker pull asciinema/asciinema
+
+When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
+(`-i`) and mount config directory volume (`-v`):
+
+    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema rec
+
+Container's entrypoint is set to `/usr/local/bin/asciinema` so you can run the
+container with any arguments you would normally pass to `asciinema` binary (see
+Usage section for commands and options).
+
+There's not much software installed in this image though. In most cases you may
+want to install extra programs before recording. One option is to derive new
+image from this one (start your custom Dockerfile with `FROM
+asciinema/asciinema`). Another option is to start the container with `/bin/bash`
+as the entrypoint, install extra packages and manually start `asciinema rec`:
+
+    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema --entrypoint=/bin/bash asciinema/asciinema
+    root@6689517d99a1:~# apt-get install foobar
+    root@6689517d99a1:~# asciinema rec
+
 ## Usage
 
 asciinema is composed of multiple commands, similar to `git`, `apt-get` or
@@ -132,6 +134,13 @@ __Record terminal session.__
 By running `asciinema rec [filename]` you start a new recording session. The
 command (process) that is recorded can be specified with `-c` option (see
 below), and defaults to `$SHELL` which is what you want in most cases.
+
+You can temporarily pause the capture of your terminal by pressing
+<kbd>Ctrl+\</kbd>.  This is useful when you want to execute some commands during
+the recording session that should not be captured (e.g. pasting secrets). Resume
+by pressing <kbd>Ctrl+\</kbd> again. When pausing desktop notification is
+displayed so you're sure the sensitive output won't be captured in the
+recording.
 
 Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
 `exit`). If the recorded process is not a shell then recording finishes when
@@ -179,11 +188,14 @@ __Replay recorded asciicast in a terminal.__
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
 
-Following keyboard shortcuts are available:
+Following keyboard shortcuts are available by default:
 
 - <kbd>Space</kbd> - toggle pause,
 - <kbd>.</kbd> - step through a recording a frame at a time (when paused),
 - <kbd>Ctrl+C</kbd> - exit.
+
+See "Configuration file" section for information on how to customize the
+keyboard shortcuts.
 
 Playing from a local file:
 
@@ -254,7 +266,7 @@ asked to log in first.
 Install ID is a random ID ([UUID
 v4](https://en.wikipedia.org/wiki/Universally_unique_identifier)) generated
 locally when you run asciinema for the first time, and saved at
-`$HOME/.config/asciinema/install-id`. It's purpose is to connect local machine
+`$HOME/.config/asciinema/install-id`. Its purpose is to connect local machine
 with uploaded recordings, so they can later be associated with asciinema.org
 account. This way we decouple uploading from account creation, allowing them to
 happen in any order.
@@ -282,7 +294,7 @@ If you prefer to host the recordings yourself, you can do so by either:
 - setting up your own
   [asciinema-server](https://github.com/asciinema/asciinema-server) instance,
   and [setting API URL
-  accordingly](https://github.com/asciinema/asciinema-server/blob/master/docs/INSTALL.md#using-asciinema-recorder-with-your-instance).
+  accordingly](https://github.com/asciinema/asciinema-server/wiki/Installation-guide#using-asciinema-recorder-with-your-instance).
 
 ## Configuration file
 
@@ -320,6 +332,14 @@ yes = true
 ; Be quiet, suppress all notices/warnings, default: no
 quiet = true
 
+; Define hotkey for pausing recording (suspending capture of output),
+; default: C-\ (control + backslash)
+pause_key = C-p
+
+; Define hotkey prefix key - when defined other recording hotkeys must
+; be preceeded by it, default: no prefix
+prefix_key = C-a
+
 [play]
 
 ; Playback speed (can be fractional), default: 1
@@ -327,6 +347,29 @@ speed = 2
 
 ; Limit replayed terminal inactivity to max n seconds, default: off
 idle_time_limit = 1
+
+; Define hotkey for pausing/resuming playback,
+; default: space
+pause_key = p
+
+; Define hotkey for stepping through playback, a frame at a time,
+; default: .
+step_key = ]
+
+[notifications]
+; Desktop notifications are displayed on certain occasions, e.g. when
+; pausing/resuming the capture of terminal with C-\ keyboard shortcut.
+
+; Should desktop notifications be enabled, default: yes
+enabled = no
+
+; Custom notification command
+; asciinema automatically detects available desktop notification system
+; (notify-send on GNU/Linux, osacript/terminal-notifier on macOS). Custom
+; command can be used if needed.
+; When invoked, environment variable $TEXT contains notification text, while
+; $ICON_PATH contains path to the asciinema logo image.
+command = tmux display-message "$TEXT"
 ```
 
 A very minimal config file could look like that:
@@ -357,6 +400,6 @@ source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 ## License
 
-Copyright &copy; 2011–2018 Marcin Kulik.
+Copyright &copy; 2011–2021 Marcin Kulik.
 
 All code is licensed under the GPL, v3 or later. See LICENSE file for details.
