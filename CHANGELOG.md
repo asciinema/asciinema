@@ -4,7 +4,7 @@
 
 * Ability to pause/resume terminal capture with `C-\` key shortcut
 * Desktop notifications - only for the above pause feature at the moment
-* Removed dependecy on tput/ncurses (thanks @arp242 / Martin Tournoij!)
+* Removed dependency on tput/ncurses (thanks @arp242 / Martin Tournoij!)
 * ASCIINEMA_REC env var is back (thanks @landonb / Landon Bouma!)
 * Terminal answerbacks (CSI 6 n) in `asciinema cat` are now hidden (thanks @djpohly / Devin J. Pohly!)
 * Codeset detection works on HP-UX now (thanks @michael-o / Michael Osipov!)
