@@ -136,9 +136,9 @@ command (process) that is recorded can be specified with `-c` option (see
 below), and defaults to `$SHELL` which is what you want in most cases.
 
 You can temporarily pause the capture of your terminal by pressing
-<kbd>Ctrl+\</kbd>.  This is useful when you want to execute some commands during
+<kbd>Ctrl+\\</kbd>.  This is useful when you want to execute some commands during
 the recording session that should not be captured (e.g. pasting secrets). Resume
-by pressing <kbd>Ctrl+\</kbd> again. When pausing desktop notification is
+by pressing <kbd>Ctrl+\\</kbd> again. When pausing desktop notification is
 displayed so you're sure the sensitive output won't be captured in the
 recording.
 
