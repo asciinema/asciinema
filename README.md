@@ -2,7 +2,7 @@ _Note: This is README for `development` branch. [See the version for latest stab
 
 # asciinema
 
-[![Build Status](https://travis-ci.org/asciinema/asciinema.svg?branch=develop)](https://travis-ci.org/asciinema/asciinema)
+[![Build Status](https://github.com/asciinema/asciinema/actions/workflows/asciinema.yml/badge.svg)](https://github.com/asciinema/asciinema/actions/workflows/asciinema.yml)
 [![PyPI](https://img.shields.io/pypi/v/asciinema.svg)](https://pypi.org/project/asciinema/)
 [![license](http://img.shields.io/badge/license-GNU-blue.svg)](https://raw.githubusercontent.com/asciinema/asciinema/master/LICENSE)
 
