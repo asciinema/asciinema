@@ -140,7 +140,8 @@ below), and defaults to `$SHELL` which is what you want in most cases.
 You can temporarily pause recording of terminal by pressing <kbd>Ctrl+\</kbd>.
 This is useful when you want to execute some commands during the recording
 session that should not be captured (e.g. pasting secrets). Resume by pressing
-<kbd>Ctrl+\</kbd> again.
+<kbd>Ctrl+\</kbd> again. When pausing desktop notification is displayed so
+you're sure the sensitive output is not captured in the recording.
 
 Recording finishes when you exit the shell (hit <kbd>Ctrl+D</kbd> or type
 `exit`). If the recorded process is not a shell then recording finishes when
@@ -357,12 +358,18 @@ pause_key = p
 step_key = ]
 
 [notifications]
+; Desktop notifications are displayed on certain occasions, e.g. when
+; pausing/resuming the capture of terminal with C-\ keyboard shortcut.
 
 ; Should desktop notifications be enabled, default: yes
 enabled = no
 
 ; Custom notification command
-; Environment variable $TEXT contains notification text
+; asciinema automatically detects available desktop notification system
+; (notify-send on GNU/Linux, osacript/terminal-notifier on macOS). Custom
+; command can be used if needed.
+; When invoked, environment variable $TEXT contains notification text, while
+; $ICON_PATH contains path to the asciinema logo image.
 command = tmux display-message "$TEXT"
 ```
 
