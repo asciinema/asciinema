@@ -67,7 +67,7 @@ class URLLibHttpAdapter:
 
         if password:
             auth = "%s:%s" % (username, password)
-            encoded_auth = base64.encodebytes(auth.encode('utf-8'))[:-1]
+            encoded_auth = base64.b64encode(bytes(auth, "utf-8"))
             headers["Authorization"] = b"Basic " + encoded_auth
 
         request = Request(url, data=body, headers=headers, method="POST")
