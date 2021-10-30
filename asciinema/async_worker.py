@@ -3,14 +3,13 @@ try:
     # multiprocessing does not work (python issue 3770)
     # and cause an ImportError. Otherwise it will happen
     # later when trying to use Queue().
-    from multiprocessing import synchronize, Process, Queue
+    from multiprocessing import Process, Queue
 except ImportError:
-    from threading import Thread as Process
     from queue import Queue
+    from threading import Thread as Process
 
 
-class async_worker():
-
+class async_worker:
     def __init__(self):
         self.queue = Queue()
 

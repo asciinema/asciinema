@@ -1,10 +1,9 @@
+import asciinema.asciicast as asciicast
 from asciinema.commands.command import Command
 from asciinema.player import Player
-import asciinema.asciicast as asciicast
 
 
 class PlayCommand(Command):
-
     def __init__(self, args, config, env, player=None):
         Command.__init__(self, args, config, env)
         self.filename = args.filename
@@ -12,14 +11,16 @@ class PlayCommand(Command):
         self.speed = args.speed
         self.player = player if player is not None else Player()
         self.key_bindings = {
-            'pause': config.play_pause_key,
-            'step': config.play_step_key
+            "pause": config.play_pause_key,
+            "step": config.play_step_key,
         }
 
     def execute(self):
         try:
             with asciicast.open_from_url(self.filename) as a:
-                self.player.play(a, self.idle_time_limit, self.speed, self.key_bindings)
+                self.player.play(
+                    a, self.idle_time_limit, self.speed, self.key_bindings
+                )
 
         except asciicast.LoadError as e:
             self.print_error("playback failed: %s" % str(e))

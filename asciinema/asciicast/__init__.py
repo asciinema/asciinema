@@ -1,14 +1,13 @@
-import sys
-import os
-from urllib.request import Request, urlopen
-from urllib.parse import urlparse, urlunparse
-import urllib.error
-import html.parser
-import gzip
 import codecs
+import gzip
+import html.parser
+import os
+import sys
+import urllib.error
+from urllib.parse import urlparse, urlunparse
+from urllib.request import Request, urlopen
 
-from . import v1
-from . import v2
+from . import v1, v2
 
 
 class LoadError(Exception):
@@ -22,15 +21,18 @@ class Parser(html.parser.HTMLParser):
 
     def handle_starttag(self, tag, attrs_list):
         # look for <link rel="alternate" type="application/x-asciicast" href="https://...cast">
-        if tag == 'link':
+        if tag == "link":
             attrs = {}
             for k, v in attrs_list:
                 attrs[k] = v
 
-            if attrs.get('rel') == 'alternate':
-                type = attrs.get('type')
-                if type == 'application/asciicast+json' or type == 'application/x-asciicast':
-                    self.url = attrs.get('href')
+            if attrs.get("rel") == "alternate":
+                type = attrs.get("type")
+                if (
+                    type == "application/asciicast+json"
+                    or type == "application/x-asciicast"
+                ):
+                    self.url = attrs.get("href")
 
 
 def open_url(url):
@@ -44,43 +46,49 @@ def open_url(url):
 
     if url.startswith("http:") or url.startswith("https:"):
         req = Request(url)
-        req.add_header('Accept-Encoding', 'gzip')
+        req.add_header("Accept-Encoding", "gzip")
         response = urlopen(req)
         body = response
         url = response.geturl()  # final URL after redirects
 
-        if response.headers['Content-Encoding'] == 'gzip':
+        if response.headers["Content-Encoding"] == "gzip":
             body = gzip.open(body)
 
-        utf8_reader = codecs.getreader('utf-8')
-        content_type = response.headers['Content-Type']
+        utf8_reader = codecs.getreader("utf-8")
+        content_type = response.headers["Content-Type"]
 
-        if content_type and content_type.startswith('text/html'):
-            html = utf8_reader(body, errors='replace').read()
+        if content_type and content_type.startswith("text/html"):
+            html = utf8_reader(body, errors="replace").read()
             parser = Parser()
             parser.feed(html)
             new_url = parser.url
 
             if not new_url:
-                raise LoadError("""<link rel="alternate" type="application/x-asciicast" href="..."> not found in fetched HTML document""")
+                raise LoadError(
+                    """<link rel="alternate" type="application/x-asciicast" href="..."> not found in fetched HTML document"""
+                )
 
             if "://" not in new_url:
                 base_url = urlparse(url)
 
                 if new_url.startswith("/"):
-                    new_url = urlunparse((base_url[0], base_url[1], new_url, '', '', ''))
+                    new_url = urlunparse(
+                        (base_url[0], base_url[1], new_url, "", "", "")
+                    )
                 else:
-                    path = os.path.dirname(base_url[2]) + '/' + new_url
-                    new_url = urlunparse((base_url[0], base_url[1], path, '', '', ''))
+                    path = os.path.dirname(base_url[2]) + "/" + new_url
+                    new_url = urlunparse(
+                        (base_url[0], base_url[1], path, "", "", "")
+                    )
 
             return open_url(new_url)
 
-        return utf8_reader(body, errors='strict')
+        return utf8_reader(body, errors="strict")
 
-    return open(url, mode='rt', encoding='utf-8')
+    return open(url, mode="rt", encoding="utf-8")
 
 
-class open_from_url():
+class open_from_url:
     FORMAT_ERROR = "only asciicast v1 and v2 formats can be opened"
 
     def __init__(self, url):
