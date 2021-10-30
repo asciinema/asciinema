@@ -2,7 +2,8 @@
 
 FROM docker.io/library/alpine:3.14
 
-RUN apk --no-cache add bash ca-certificates python3
+# https://github.com/actions/runner/issues/241
+RUN apk --no-cache add bash ca-certificates make python3 util-linux
 
 WORKDIR /usr/src/app
 

@@ -3,7 +3,7 @@
 FROM docker.io/library/archlinux:latest
 
 RUN pacman-key --init \
-    && pacman --sync --refresh --sysupgrade --noconfirm python3 \
+    && pacman --sync --refresh --sysupgrade --noconfirm make python3 \
     && printf "LANG=en_US.UTF-8\n" > /etc/locale.conf \
     && locale-gen \
     && pacman --sync --clean --clean --noconfirm
