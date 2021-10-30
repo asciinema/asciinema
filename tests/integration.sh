@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -eExuo pipefail
 
 if ! command -v "pkill" >/dev/null 2>&1; then
     printf "error: pkill not installed\n"
