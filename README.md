@@ -18,19 +18,27 @@ them in a terminal as well as in a web browser.
 
 Install latest version ([other installation options](#installation)):
 
-    sudo pip3 install asciinema
+```sh
+pip3 install asciinema
+```
 
 Record your first session:
 
-    asciinema rec first.cast
+```sh
+asciinema rec first.cast
+```
 
 Now replay it with double speed:
 
-    asciinema play -s 2 first.cast
+```sh
+asciinema play -s 2 first.cast
+```
 
 Or with normal speed but with idle time limited to 2 seconds:
 
-    asciinema play -i 2 first.cast
+```sh
+asciinema play -i 2 first.cast
+```
 
 You can pass `-i 2` to `asciinema rec` as well, to set it permanently on a
 recording. Idle time limiting makes the recordings much more interesting to
@@ -38,7 +46,9 @@ watch. Try it.
 
 If you want to watch and share it on the web, upload it:
 
-    asciinema upload first.cast
+```sh
+asciinema upload first.cast
+```
 
 The above uploads it to [asciinema.org](https://asciinema.org), which is a
 default [asciinema-server](https://github.com/asciinema/asciinema-server)
@@ -47,13 +57,16 @@ browser.
 
 You can record and upload in one step by omitting the filename:
 
-    asciinema rec
+```sh
+asciinema rec
+```
 
 You'll be asked to confirm the upload when the recording is done. Nothing is
 sent anywhere without your consent.
 
 These are the basics, but there's much more you can do. The following sections
 cover installation, usage and hosting of the recordings in more detail.
+
 
 ## Installation
 
@@ -62,7 +75,9 @@ cover installation, usage and hosting of the recordings in more detail.
 asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
 be installed with pip (Python 3 with setuptools required):
 
-    sudo pip3 install asciinema
+```sh
+pip3 install asciinema
+```
 
 This is the recommended way of installation, which gives you the latest released
 version.
@@ -80,32 +95,45 @@ can clone the repo and run asciinema straight from the checkout.
 
 Clone the repo:
 
-    git clone https://github.com/asciinema/asciinema.git
-    cd asciinema
+```sh
+git clone https://github.com/asciinema/asciinema.git
+cd asciinema
+```
 
 If you want latest stable version:
 
-    git checkout master
+```sh
+git checkout master
+```
 
 If you want current development version:
 
-    git checkout develop
+```sh
+git checkout develop
+```
 
 Then run it with:
 
-    python3 -m asciinema --version
+```sh
+python3 -m asciinema --version
+```
 
 ### Docker image
 
-asciinema Docker image is based on Ubuntu 18.04 and has the latest version of
+asciinema Docker image is based on [Ubuntu
+20.04](https://releases.ubuntu.com/20.04/) and has the latest version of
 asciinema recorder pre-installed.
 
-    docker pull asciinema/asciinema
+```sh
+docker pull docker.io/asciinema/asciinema
+```
 
 When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
 (`-i`) and mount config directory volume (`-v`):
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema rec
+```sh
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" docker.io/asciinema/asciinema rec
+```
 
 Container's entrypoint is set to `/usr/local/bin/asciinema` so you can run the
 container with any arguments you would normally pass to `asciinema` binary (see
@@ -117,9 +145,26 @@ image from this one (start your custom Dockerfile with `FROM
 asciinema/asciinema`). Another option is to start the container with `/bin/bash`
 as the entrypoint, install extra packages and manually start `asciinema rec`:
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema --entrypoint=/bin/bash asciinema/asciinema
-    root@6689517d99a1:~# apt-get install foobar
-    root@6689517d99a1:~# asciinema rec
+```console
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" --entrypoint=/bin/bash docker.io/asciinema/asciinema rec
+root@6689517d99a1:~# apt-get install foobar
+root@6689517d99a1:~# asciinema rec
+```
+
+It is also possible to run the docker container as a non-root user, which has
+security benefits. You can specify a user and group id at runtime to give the
+application permission similar to the calling user on your host.
+
+```sh
+docker run --rm -it \
+    --env=ASCIINEMA_CONFIG_HOME="/run/user/$(id -u)/.config/asciinema" \
+    --user="$(id -u):$(id -g)" \
+    --volume="${HOME}/.config/asciinema:/run/user/$(id -u)/.config/asciinema:rw" \
+    --volume="${PWD}:/data:rw" \
+    --workdir='/data' \
+    docker.io/asciinema/asciinema rec
+```
+
 
 ## Usage
 
@@ -196,27 +241,37 @@ Following keyboard shortcuts are available:
 
 Playing from a local file:
 
-    asciinema play /path/to/asciicast.cast
+```sh
+asciinema play /path/to/asciicast.cast
+```
 
 Playing from HTTP(S) URL:
 
-    asciinema play https://asciinema.org/a/22124.cast
-    asciinema play http://example.com/demo.cast
+```sh
+asciinema play https://asciinema.org/a/22124.cast
+asciinema play http://example.com/demo.cast
+```
 
 Playing from asciicast page URL (requires `<link rel="alternate"
 type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
 
-    asciinema play https://asciinema.org/a/22124
-    asciinema play http://example.com/blog/post.html
+```sh
+asciinema play https://asciinema.org/a/22124
+asciinema play http://example.com/blog/post.html
+```
 
 Playing from stdin:
 
-    cat /path/to/asciicast.cast | asciinema play -
-    ssh user@host cat asciicast.cast | asciinema play -
+```sh
+cat /path/to/asciicast.cast | asciinema play -
+ssh user@host cat asciicast.cast | asciinema play -
+```
 
 Playing from IPFS:
 
-    asciinema play dweb:/ipfs/QmNe7FsYaHc9SaDEAEXbaagAzNw9cH7YbzN4xV7jV1MCzK/ascii.cast
+```sh
+asciinema play dweb:/ipfs/QmNe7FsYaHc9SaDEAEXbaagAzNw9cH7YbzN4xV7jV1MCzK/ascii.cast
+```
 
 Available options:
 
@@ -391,6 +446,7 @@ source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 ## License
 
-Copyright &copy; 2011–2019 Marcin Kulik.
+Copyright &copy; 2011–2021 Marcin Kulik.
 
-All code is licensed under the GPL, v3 or later. See LICENSE file for details.
+All code is licensed under the GPL, v3 or later. See [LICENSE](./LICENSE) file
+for details.
