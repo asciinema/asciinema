@@ -12,6 +12,10 @@ test.unit:
 test.integration:
 	tests/integration.sh
 
+.PHONY: test.distros
+test.distros:
+	tests/distros.sh
+
 .PHONY: release
 release: test tag push
 
