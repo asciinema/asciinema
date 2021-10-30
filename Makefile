@@ -8,7 +8,7 @@ test: test.unit test.integration
 
 .PHONY: test.unit
 test.unit:
-	nosetests
+	pytest
 
 .PHONY: test.integration
 test.integration:
