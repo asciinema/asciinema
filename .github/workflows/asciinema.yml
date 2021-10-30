@@ -1,6 +1,8 @@
 name: build
 
-on: [push, pull_request]
+on:
+  - push
+  - pull_request
 
 jobs:
   # Code style checks
@@ -13,14 +15,15 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: "3.9"
       - name: Install dependencies
-        run: pip install pycodestyle twine setuptools>=38.6.0 cmarkgfm
+        run: pip install build cmarkgfm pycodestyle twine
       - name: Run pycodestyle
-        run: find . -name \*.py -exec pycodestyle --ignore=E501,E402,E722 {} +
+        run: >
+          find . -name '*\.py' -exec pycodestyle --ignore=E501,E402,E722 "{}" \+
       - name: Run twine
         run: |
-          python setup.py --quiet sdist
+          python3 -m build
           twine check dist/*
   # Asciinema checks
   asciinema:
@@ -28,7 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [3.6, 3.7, 3.8, 3.9]
+        python:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
     env:
       TERM: dumb
     steps:
@@ -39,6 +47,6 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install dependencies
-        run: pip install nose
+        run: pip install pytest
       - name: Run Asciinema tests
         run: script -e -c make test
