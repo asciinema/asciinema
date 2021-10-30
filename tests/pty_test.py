@@ -1,14 +1,12 @@
 import os
 import pty
 
-from nose.tools import assert_equal
-from .test_helper import Test
-
 import asciinema.pty
+
+from .test_helper import Test
 
 
 class FakeStdout:
-
     def __init__(self):
         self.data = []
 
@@ -20,7 +18,6 @@ class FakeStdout:
 
 
 class TestRecord(Test):
-
     def setUp(self):
         self.real_os_write = os.write
         os.write = self.os_write
@@ -35,7 +32,18 @@ class TestRecord(Test):
     def test_record_command_writes_to_stdout(self):
         output = FakeStdout()
 
-        command = ['python3', '-c', "import sys; import time; sys.stdout.write(\'foo\'); sys.stdout.flush(); time.sleep(0.01); sys.stdout.write(\'bar\')"]
+        command = [
+            "python3",
+            "-c",
+            (
+                "import sys"
+                "; import time"
+                "; sys.stdout.write('foo')"
+                "; sys.stdout.flush()"
+                "; time.sleep(0.01)"
+                "; sys.stdout.write('bar')"
+            ),
+        ]
         asciinema.pty.record(command, output)
 
-        assert_equal([b'foo', b'bar'], output.data)
+        assert output.data == [b"foo", b"bar"]
