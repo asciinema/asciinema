@@ -1,11 +1,9 @@
-from nose.tools import assert_equal, assert_raises
-
-import os
-import os.path as path
-import tempfile
 import re
+import tempfile
+from os import path
 
 import asciinema.config as cfg
+from nose.tools import assert_equal, assert_raises
 
 
 def create_config(content=None, env={}):
