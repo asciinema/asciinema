@@ -1,22 +1,21 @@
+---
 name: build
-
 on:
   - push
   - pull_request
-
 jobs:
   # Code style checks
   health:
-    name: Code health check
+    name: code health check
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Asciinema
+      - name: checkout asciinema
         uses: actions/checkout@v2
-      - name: Setup Python
+      - name: setup Python
         uses: actions/setup-python@v2
         with:
           python-version: "3.9"
-      - name: Install dependencies
+      - name: install dependencies
         run: pip install build cmarkgfm pycodestyle twine
       - name: Run pycodestyle
         run: >
@@ -27,7 +26,7 @@ jobs:
           twine check dist/*
   # Asciinema checks
   asciinema:
-    name: Asciinema - py${{ matrix.python }}
+    name: Asciinema
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -40,13 +39,70 @@ jobs:
     env:
       TERM: dumb
     steps:
-      - name: Checkout Asciinema
+      - name: checkout Asciinema
         uses: actions/checkout@v2
-      - name: Setup Python
+      - name: setup Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-      - name: Install dependencies
+      - name: install dependencies
         run: pip install pytest
-      - name: Run Asciinema tests
+      - name: run Asciinema tests
         run: script -e -c make test
+  build_distros:
+    name: build distro images
+    strategy:
+      matrix:
+        distros:
+          - alpine
+          - arch
+          - centos
+          - debian
+          - fedora
+          - ubuntu
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Authenticate to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GITHUB_TOKEN }}"
+      - name: "Build ${{ matrix.distros }} image"
+        uses: docker/build-push-action@v2
+        with:
+          file: "tests/distros/Dockerfile.${{ matrix.distros }}"
+          tags: |
+            "ghcr.io/${{ github.repository }}:${{ matrix.distros }}"
+          push: true
+  test_distros:
+    name: integration test distro images
+    needs: build_distros
+    strategy:
+      matrix:
+        distros:
+          - alpine
+          - arch
+          - centos
+          - debian
+          - fedora
+          - ubuntu
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/${{ github.repository }}:${{ matrix.distros }}"
+      credentials:
+        username: "${{ github.actor }}"
+        password: "${{ secrets.GITHUB_TOKEN }}"
+      # https://github.community/t/permission-problems-when-checking-out-code-as-part-of-github-action/202263
+      options: "--interactive --tty --user=1001:121"  
+    steps:
+      - name: checkout Asciinema
+        uses: actions/checkout@v2
+      - name: run integration tests
+        env:
+          TERM: dumb
+        shell: 'script --return --quiet --command "bash {0}"'
+        run: make test.integration

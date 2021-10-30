@@ -4,7 +4,7 @@
 # https://www.mail-archive.com/ubuntu-bugs@lists.ubuntu.com/msg5971024.html
 FROM registry.fedoraproject.org/fedora:34
 
-RUN dnf install -y python3 procps && dnf clean all
+RUN dnf install -y make python3 procps && dnf clean all
 
 WORKDIR /usr/src/app
 

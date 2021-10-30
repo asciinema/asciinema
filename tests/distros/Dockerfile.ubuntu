@@ -8,6 +8,7 @@ RUN apt-get update \
     && apt-get install -y \
         ca-certificates \
         locales \
+        make \
         python3 \
     && localedef \
         -i en_US \
