@@ -19,7 +19,9 @@ jobs:
         run: pip install build cmarkgfm pycodestyle twine
       - name: Run pycodestyle
         run: >
-          find . -name '*\.py' -exec pycodestyle --ignore=E501,E402,E722 "{}" \+
+          find .
+          -name '*\.py'
+          -exec pycodestyle --ignore=E402,E501,E722,W503 "{}" \+
       - name: Run twine
         run: |
           python3 -m build
@@ -97,7 +99,7 @@ jobs:
         username: "${{ github.actor }}"
         password: "${{ secrets.GITHUB_TOKEN }}"
       # https://github.community/t/permission-problems-when-checking-out-code-as-part-of-github-action/202263
-      options: "--interactive --tty --user=1001:121"  
+      options: "--interactive --tty --user=1001:121"
     steps:
       - name: checkout Asciinema
         uses: actions/checkout@v2
