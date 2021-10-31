@@ -1,45 +1,54 @@
 import os
 import time
 
-import asciinema.asciicast.v2 as v2
-import asciinema.pty as pty
-import asciinema.term as term
-from asciinema.async_worker import async_worker
+from . import pty_ as pty  # avoid
+from . import term
+from .asciicast import v2
+from .async_worker import async_worker
 
 
-def record(path, command=None, append=False, idle_time_limit=None,
-           rec_stdin=False, title=None, metadata=None, command_env=None,
-           capture_env=None, writer=v2.writer, record=pty.record, notifier=None,
-           key_bindings={}):
+def record(
+    path,
+    command=None,
+    append=False,
+    idle_time_limit=None,
+    rec_stdin=False,
+    title=None,
+    metadata=None,
+    command_env=None,
+    capture_env=None,
+    writer=v2.writer,
+    record=pty.record,
+    notifier=None,
+    key_bindings={},
+):
     if command is None:
-        command = os.environ.get('SHELL') or 'sh'
+        command = os.environ.get("SHELL") or "sh"
 
     if command_env is None:
         command_env = os.environ.copy()
 
-    command_env['ASCIINEMA_REC'] = '1'
+    command_env["ASCIINEMA_REC"] = "1"
 
     if capture_env is None:
-        capture_env = ['SHELL', 'TERM']
+        capture_env = ["SHELL", "TERM"]
 
     w, h = term.get_size()
 
-    full_metadata = {
-        'width': w,
-        'height': h,
-        'timestamp': int(time.time())
-    }
+    full_metadata = {"width": w, "height": h, "timestamp": int(time.time())}
 
     full_metadata.update(metadata or {})
 
     if idle_time_limit is not None:
-        full_metadata['idle_time_limit'] = idle_time_limit
+        full_metadata["idle_time_limit"] = idle_time_limit
 
     if capture_env:
-        full_metadata['env'] = {var: command_env.get(var) for var in capture_env}
+        full_metadata["env"] = {
+            var: command_env.get(var) for var in capture_env
+        }
 
     if title:
-        full_metadata['title'] = title
+        full_metadata["title"] = title
 
     time_offset = 0
 
@@ -49,13 +58,13 @@ def record(path, command=None, append=False, idle_time_limit=None,
     with async_writer(writer, path, full_metadata, append) as w:
         with async_notifier(notifier) as n:
             record(
-                ['sh', '-c', command],
+                ["sh", "-c", command],
                 w,
                 command_env,
                 rec_stdin,
                 time_offset,
                 n,
-                key_bindings
+                key_bindings,
             )
 
 
@@ -68,19 +77,21 @@ class async_writer(async_worker):
         self.append = append
 
     def write_stdin(self, ts, data):
-        self.enqueue([ts, 'i', data])
+        self.enqueue([ts, "i", data])
 
     def write_stdout(self, ts, data):
-        self.enqueue([ts, 'o', data])
+        self.enqueue([ts, "o", data])
 
     def run(self):
-        with self.writer(self.path, metadata=self.metadata, append=self.append) as w:
+        with self.writer(
+            self.path, metadata=self.metadata, append=self.append
+        ) as w:
             for event in iter(self.queue.get, None):
                 ts, etype, data = event
 
-                if etype == 'o':
+                if etype == "o":
                     w.write_stdout(ts, data)
-                elif etype == 'i':
+                elif etype == "i":
                     w.write_stdin(ts, data)
 
 
