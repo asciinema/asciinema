@@ -172,9 +172,9 @@ class Config:
                     return bytes([ord(upper_key[2]) - 0x40])
                 else:
                     raise ConfigError(
-                        "invalid {name} key definition '{key}' - use: {name}_key = C-x (with control key modifier), or {name}_key = x (with no modifier)".format(
-                            name=name, key=key
-                        )
+                        f"invalid {name} key definition '{key}' - use"
+                        f": {name}_key = C-x (with control key modifier)"
+                        f", or {name}_key = x (with no modifier)"
                     )
             else:
                 return key.encode("utf-8")

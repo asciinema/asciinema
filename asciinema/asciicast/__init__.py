@@ -40,9 +40,9 @@ def open_url(url):
         return sys.stdin
 
     if url.startswith("ipfs://"):
-        url = "https://ipfs.io/ipfs/%s" % url[7:]
+        url = f"https://ipfs.io/ipfs/{url[7:]}"
     elif url.startswith("dweb:/ipfs/"):
-        url = "https://ipfs.io/%s" % url[5:]
+        url = f"https://ipfs.io/{url[5:]}"
 
     if url.startswith("http:") or url.startswith("https:"):
         req = Request(url)

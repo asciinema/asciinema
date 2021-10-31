@@ -17,13 +17,13 @@ class UploadCommand(Command):
             self.print(result.get("message") or result["url"])
 
         except OSError as e:
-            self.print_error("upload failed: %s" % str(e))
+            self.print_error(f"upload failed: {str(e)}")
             return 1
 
         except APIError as e:
-            self.print_error("upload failed: %s" % str(e))
+            self.print_error(f"upload failed: {str(e)}")
             self.print_error(
-                "retry later by running: asciinema upload %s" % self.filename
+                f"retry later by running: asciinema upload {self.filename}"
             )
             return 1
 
