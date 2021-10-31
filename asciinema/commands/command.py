@@ -4,7 +4,6 @@ from asciinema.api import Api
 
 
 class Command:
-
     def __init__(self, args, config, env):
         self.quiet = False
         self.api = Api(config.api_url, env.get("USER"), config.install_id)
@@ -14,10 +13,12 @@ class Command:
             print(text, file=file, end=end)
 
     def print_info(self, text):
-        self.print("\x1b[0;32masciinema: %s\x1b[0m" % text)
+        self.print(f"[0;32masciinema: {text}[0m")
 
     def print_warning(self, text):
-        self.print("\x1b[0;33masciinema: %s\x1b[0m" % text)
+        self.print(f"[0;33masciinema: {text}[0m")
 
     def print_error(self, text):
-        self.print("\x1b[0;31masciinema: %s\x1b[0m" % text, file=sys.stderr, force=True)
+        self.print(
+            f"[0;31masciinema: {text}[0m", file=sys.stderr, force=True
+        )

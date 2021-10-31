@@ -13,9 +13,7 @@ from .http_adapter import HTTPConnectionError
 class MultipartFormdataEncoder:
     def __init__(self):
         self.boundary = uuid.uuid4().hex
-        self.content_type = "multipart/form-data; boundary={}".format(
-            self.boundary
-        )
+        self.content_type = f"multipart/form-data; boundary={self.boundary}"
 
     @classmethod
     def u(cls, s):
@@ -32,11 +30,9 @@ class MultipartFormdataEncoder:
         encoder = codecs.getencoder("utf-8")
         for (key, value) in fields.items():
             key = self.u(key)
-            yield encoder("--{}\r\n".format(self.boundary))
+            yield encoder(f"--{self.boundary}\r\n")
             yield encoder(
-                self.u('Content-Disposition: form-data; name="{}"\r\n').format(
-                    key
-                )
+                self.u(f'Content-Disposition: form-data; name="{key}"\r\n')
             )
             yield encoder("\r\n")
             if isinstance(value, int) or isinstance(value, float):
@@ -47,18 +43,18 @@ class MultipartFormdataEncoder:
             filename, f = filename_and_f
             key = self.u(key)
             filename = self.u(filename)
-            yield encoder("--{}\r\n".format(self.boundary))
+            yield encoder(f"--{self.boundary}\r\n")
             yield encoder(
                 self.u(
-                    'Content-Disposition: form-data; name="{}"; filename="{}"\r\n'
-                ).format(key, filename)
+                    f'Content-Disposition: form-data; name="{key}"; filename="{filename}"\r\n'
+                )
             )
             yield encoder("Content-Type: application/octet-stream\r\n")
             yield encoder("\r\n")
             data = f.read()
             yield (data, len(data))
             yield encoder("\r\n")
-        yield encoder("--{}--\r\n".format(self.boundary))
+        yield encoder(f"--{self.boundary}--\r\n")
 
     def encode(self, fields, files):
         body = io.BytesIO()
@@ -83,7 +79,7 @@ class URLLibHttpAdapter:
         headers["Content-Type"] = content_type
 
         if password:
-            auth = "%s:%s" % (username, password)
+            auth = f"{username}:{password}"
             encoded_auth = base64.b64encode(bytes(auth, "utf-8"))
             headers["Authorization"] = b"Basic " + encoded_auth
 

@@ -23,7 +23,7 @@ class PlayCommand(Command):
                 )
 
         except asciicast.LoadError as e:
-            self.print_error("playback failed: %s" % str(e))
+            self.print_error(f"playback failed: {str(e)}")
             return 1
         except KeyboardInterrupt:
             return 1

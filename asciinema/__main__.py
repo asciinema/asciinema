@@ -66,7 +66,7 @@ For help on a specific command run:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--version", action="version", version="asciinema %s" % __version__
+        "--version", action="version", version=f"asciinema {__version__}"
     )
 
     subparsers = parser.add_subparsers()
