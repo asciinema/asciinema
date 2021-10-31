@@ -29,4 +29,6 @@ warn_unused_ignores = true
 exclude = []
 
 [tool.pylint."MESSAGES CONTROL"]
-disable = []
+disable = [
+    "invalid-name",
+]
