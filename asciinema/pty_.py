@@ -1,54 +1,59 @@
 import array
 import errno
 import fcntl
-import io
 import os
 import pty
 import select
-import shlex
 import signal
 import struct
-import sys
 import termios
 import time
 
-from asciinema.term import raw
+from .term import raw
 
 
-def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, notifier=None, key_bindings={}):
+def record(
+    command,
+    writer,
+    env=os.environ,
+    rec_stdin=False,
+    time_offset=0,
+    notifier=None,
+    key_bindings={},
+):
     master_fd = None
     start_time = None
     pause_time = None
     prefix_mode = False
-    prefix_key = key_bindings.get('prefix')
-    pause_key = key_bindings.get('pause')
+    prefix_key = key_bindings.get("prefix")
+    pause_key = key_bindings.get("pause")
 
     def _notify(text):
         if notifier:
             notifier.notify(text)
 
     def _set_pty_size():
-        '''
+        """
         Sets the window size of the child pty based on the window size
         of our own controlling terminal.
-        '''
+        """
 
         # Get the terminal size of the real terminal, set it on the pseudoterminal.
         if os.isatty(pty.STDOUT_FILENO):
-            buf = array.array('h', [0, 0, 0, 0])
+            buf = array.array("h", [0, 0, 0, 0])
             fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
         else:
-            buf = array.array('h', [24, 80, 0, 0])
+            buf = array.array("h", [24, 80, 0, 0])
 
         fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
     def _write_stdout(data):
-        '''Writes to stdout as if the child process had written the data.'''
+        """Writes to stdout as if the child process had written the data."""
 
         os.write(pty.STDOUT_FILENO, data)
 
     def _handle_master_read(data):
-        '''Handles new data on child process stdout.'''
+        """Handles new data on child process stdout."""
 
         if not pause_time:
             writer.write_stdout(time.time() - start_time, data)
@@ -56,14 +61,14 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
         _write_stdout(data)
 
     def _write_master(data):
-        '''Writes to the child process from its controlling terminal.'''
+        """Writes to the child process from its controlling terminal."""
 
         while data:
             n = os.write(master_fd, data)
             data = data[n:]
 
     def _handle_stdin_read(data):
-        '''Handles new data on child process stdin.'''
+        """Handles new data on child process stdin."""
 
         nonlocal pause_time
         nonlocal start_time
@@ -80,10 +85,10 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
                 if pause_time:
                     start_time = start_time + (time.time() - pause_time)
                     pause_time = None
-                    _notify('Resumed recording')
+                    _notify("Resumed recording")
                 else:
                     pause_time = time.time()
-                    _notify('Paused recording')
+                    _notify("Paused recording")
 
             return
 
@@ -99,11 +104,11 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
         return old_handlers
 
     def _copy(signal_fd):
-        '''Main select loop.
+        """Main select loop.
 
         Passes control to _master_read() or _stdin_read()
         when new data arrives.
-        '''
+        """
 
         fds = [master_fd, pty.STDIN_FILENO, signal_fd]
 
@@ -134,9 +139,14 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
             if signal_fd in rfds:
                 data = os.read(signal_fd, 1024)
                 if data:
-                    signals = struct.unpack('%uB' % len(data), data)
+                    signals = struct.unpack("%uB" % len(data), data)
                     for sig in signals:
-                        if sig in [signal.SIGCHLD, signal.SIGHUP, signal.SIGTERM, signal.SIGQUIT]:
+                        if sig in [
+                            signal.SIGCHLD,
+                            signal.SIGHUP,
+                            signal.SIGTERM,
+                            signal.SIGQUIT,
+                        ]:
                             os.close(master_fd)
                             return
                         elif sig == signal.SIGWINCH:
@@ -154,12 +164,18 @@ def record(command, writer, env=os.environ, rec_stdin=False, time_offset=0, noti
 
     signal.set_wakeup_fd(pipe_w)
 
-    old_handlers = _signals(map(lambda s: (s, lambda signal, frame: None),
-                                [signal.SIGWINCH,
-                                    signal.SIGCHLD,
-                                    signal.SIGHUP,
-                                    signal.SIGTERM,
-                                    signal.SIGQUIT]))
+    old_handlers = _signals(
+        map(
+            lambda s: (s, lambda signal, frame: None),
+            [
+                signal.SIGWINCH,
+                signal.SIGCHLD,
+                signal.SIGHUP,
+                signal.SIGTERM,
+                signal.SIGQUIT,
+            ],
+        )
+    )
 
     _set_pty_size()
 
