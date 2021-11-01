@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.3
 
-FROM docker.io/library/centos:7
+FROM docker.io/library/centos:8
 
-RUN yum install -y epel-release && yum install -y make python36 && yum clean all
+RUN yum install -y epel-release && yum install -y make python39 && yum clean all
 
 WORKDIR /usr/src/app
 
