@@ -1,7 +1,7 @@
 import os
 import pty
 
-import asciinema.pty
+import asciinema.pty_
 
 from .test_helper import Test
 
@@ -44,6 +44,6 @@ class TestRecord(Test):
                 "; sys.stdout.write('bar')"
             ),
         ]
-        asciinema.pty.record(command, output)
+        asciinema.pty_.record(command, output)
 
         assert output.data == [b"foo", b"bar"]
