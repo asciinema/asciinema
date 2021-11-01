@@ -46,3 +46,10 @@ push: .pip build
 push.test: .pip build
 	python3 -m twine upload --repository testpypi dist/*
 
+
+.PHONY: clean
+clean:
+	rm -rf dist *.egg-info
+
+clean.all: clean
+	find . -type d -name __pycache__ -o -name .pytest_cache -exec rm -r "{}" +
