@@ -2,45 +2,47 @@ import argparse
 import locale
 import os
 import sys
+from typing import Any, Optional
 
-import asciinema.config as config
-from asciinema import __version__
-from asciinema.commands.auth import AuthCommand
-from asciinema.commands.cat import CatCommand
-from asciinema.commands.play import PlayCommand
-from asciinema.commands.record import RecordCommand
-from asciinema.commands.upload import UploadCommand
+from . import __version__, config
+from .commands.auth import AuthCommand
+from .commands.cat import CatCommand
+from .commands.play import PlayCommand
+from .commands.record import RecordCommand
+from .commands.upload import UploadCommand
 
 
-def positive_float(value):
-    value = float(value)
-    if value <= 0.0:
+def positive_float(value: str) -> float:
+    _value = float(value)
+    if _value <= 0.0:
         raise argparse.ArgumentTypeError("must be positive")
 
-    return value
+    return _value
 
 
-def maybe_str(v):
+def maybe_str(v: Any) -> Optional[str]:
     if v is not None:
         return str(v)
+    return None
 
 
-def main():
+def main() -> Any:
     if locale.nl_langinfo(locale.CODESET).upper() not in [
         "US-ASCII",
         "UTF-8",
         "UTF8",
     ]:
-        print(
-            "asciinema needs an ASCII or UTF-8 character encoding to run. Check the output of `locale` command."
+        sys.stderr.write(
+            "asciinema needs an ASCII or UTF-8 character encoding to run. "
+            "Check the output of `locale` command.\n"
         )
-        sys.exit(1)
+        return 1
 
     try:
         cfg = config.load()
     except config.ConfigError as e:
-        sys.stderr.write(str(e) + "\n")
-        sys.exit(1)
+        sys.stderr.write(f"{e}\n")
+        return 1
 
     # create the top-level parser
     parser = argparse.ArgumentParser(
@@ -62,7 +64,7 @@ def main():
     \x1b[1masciinema cat demo.cast\x1b[0m
 
 For help on a specific command run:
-  \x1b[1masciinema <command> -h\x1b[0m""",
+  \x1b[1masciinema <command> -h\x1b[0m""",  # noqa: E501
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -71,7 +73,7 @@ For help on a specific command run:
 
     subparsers = parser.add_subparsers()
 
-    # create the parser for the "rec" command
+    # create the parser for the `rec` command
     parser_rec = subparsers.add_parser("rec", help="Record terminal session")
     parser_rec.add_argument(
         "--stdin",
@@ -140,7 +142,7 @@ For help on a specific command run:
     )
     parser_rec.set_defaults(cmd=RecordCommand)
 
-    # create the parser for the "play" command
+    # create the parser for the `play` command
     parser_play = subparsers.add_parser("play", help="Replay terminal session")
     parser_play.add_argument(
         "-i",
@@ -161,7 +163,7 @@ For help on a specific command run:
     )
     parser_play.set_defaults(cmd=PlayCommand)
 
-    # create the parser for the "cat" command
+    # create the parser for the `cat` command
     parser_cat = subparsers.add_parser(
         "cat", help="Print full output of terminal session"
     )
@@ -170,7 +172,7 @@ For help on a specific command run:
     )
     parser_cat.set_defaults(cmd=CatCommand)
 
-    # create the parser for the "upload" command
+    # create the parser for the `upload` command
     parser_upload = subparsers.add_parser(
         "upload", help="Upload locally saved terminal session to asciinema.org"
     )
@@ -179,7 +181,7 @@ For help on a specific command run:
     )
     parser_upload.set_defaults(cmd=UploadCommand)
 
-    # create the parser for the "auth" command
+    # create the parser for the `auth` command
     parser_auth = subparsers.add_parser(
         "auth", help="Manage recordings on asciinema.org account"
     )
@@ -191,11 +193,11 @@ For help on a specific command run:
     if hasattr(args, "cmd"):
         command = args.cmd(args, cfg, os.environ)
         code = command.execute()
-        sys.exit(code)
-    else:
-        parser.print_help()
-        sys.exit(1)
+        return code
+
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
