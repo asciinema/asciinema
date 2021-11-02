@@ -8,37 +8,44 @@ import signal
 import struct
 import termios
 import time
+from typing import Any, Dict, List, Optional, Tuple
 
 from .term import raw
 
 
+# pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 def record(
-    command,
-    writer,
-    env=os.environ,
-    rec_stdin=False,
-    time_offset=0,
-    notifier=None,
-    key_bindings={},
-):
-    master_fd = None
-    start_time = None
-    pause_time = None
-    prefix_mode = False
+    command: Any,
+    writer: Any,
+    env: Any = None,
+    rec_stdin: bool = False,
+    time_offset: float = 0,
+    notifier: Any = None,
+    key_bindings: Optional[Dict[str, Any]] = None,
+) -> None:
+    if env is None:
+        env = os.environ
+    if key_bindings is None:
+        key_bindings = {}
+    master_fd: Any = None
+    start_time: Optional[float] = None
+    pause_time: Optional[float] = None
+    prefix_mode: bool = False
     prefix_key = key_bindings.get("prefix")
     pause_key = key_bindings.get("pause")
 
-    def _notify(text):
+    def _notify(text: str) -> None:
         if notifier:
             notifier.notify(text)
 
-    def _set_pty_size():
+    def _set_pty_size() -> None:
         """
         Sets the window size of the child pty based on the window size
         of our own controlling terminal.
         """
 
-        # Get the terminal size of the real terminal, set it on the pseudoterminal.
+        # 1. Get the terminal size of the real terminal.
+        # 2. Set the same size on the pseudoterminal.
         if os.isatty(pty.STDOUT_FILENO):
             buf = array.array("h", [0, 0, 0, 0])
             fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
@@ -47,27 +54,28 @@ def record(
 
         fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
-    def _write_stdout(data):
+    def _write_stdout(data: Any) -> None:
         """Writes to stdout as if the child process had written the data."""
 
         os.write(pty.STDOUT_FILENO, data)
 
-    def _handle_master_read(data):
+    def _handle_master_read(data: Any) -> None:
         """Handles new data on child process stdout."""
 
         if not pause_time:
+            assert start_time is not None
             writer.write_stdout(time.time() - start_time, data)
 
         _write_stdout(data)
 
-    def _write_master(data):
+    def _write_master(data: Any) -> None:
         """Writes to the child process from its controlling terminal."""
 
         while data:
             n = os.write(master_fd, data)
             data = data[n:]
 
-    def _handle_stdin_read(data):
+    def _handle_stdin_read(data: Any) -> None:
         """Handles new data on child process stdin."""
 
         nonlocal pause_time
@@ -83,7 +91,8 @@ def record(
 
             if data == pause_key:
                 if pause_time:
-                    start_time = start_time + (time.time() - pause_time)
+                    assert start_time is not None
+                    start_time += time.time() - pause_time
                     pause_time = None
                     _notify("Resumed recording")
                 else:
@@ -95,15 +104,16 @@ def record(
         _write_master(data)
 
         if rec_stdin and not pause_time:
+            assert start_time is not None
             writer.write_stdin(time.time() - start_time, data)
 
-    def _signals(signal_list):
+    def _signals(signal_list: Any) -> List[Tuple[Any, Any]]:
         old_handlers = []
         for sig, handler in signal_list:
             old_handlers.append((sig, signal.signal(sig, handler)))
         return old_handlers
 
-    def _copy(signal_fd):
+    def _copy(signal_fd: int) -> None:  # pylint: disable=too-many-branches
         """Main select loop.
 
         Passes control to _master_read() or _stdin_read()
@@ -114,11 +124,13 @@ def record(
 
         while True:
             try:
-                rfds, wfds, xfds = select.select(fds, [], [])
+                rfds, _, _ = select.select(fds, [], [])
             except OSError as e:  # Python >= 3.3
                 if e.errno == errno.EINTR:
                     continue
-            except select.error as e:  # Python < 3.3
+            # TODO: remove this if Python 3.7+ required
+            # Python < 3.3
+            except select.error as e:  # pylint: disable=duplicate-except
                 if e.args[0] == 4:
                     continue
 
@@ -139,7 +151,7 @@ def record(
             if signal_fd in rfds:
                 data = os.read(signal_fd, 1024)
                 if data:
-                    signals = struct.unpack("%uB" % len(data), data)
+                    signals = struct.unpack(f"{len(data)}B", data)
                     for sig in signals:
                         if sig in [
                             signal.SIGCHLD,
@@ -149,7 +161,7 @@ def record(
                         ]:
                             os.close(master_fd)
                             return
-                        elif sig == signal.SIGWINCH:
+                        if sig == signal.SIGWINCH:
                             _set_pty_size()
 
     pid, master_fd = pty.fork()
