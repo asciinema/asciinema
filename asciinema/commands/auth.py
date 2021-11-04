@@ -1,11 +1,14 @@
-from asciinema.commands.command import Command
+from typing import Any, Dict
+
+from ..config import Config
+from .command import Command
 
 
 class AuthCommand(Command):
-    def __init__(self, args, config, env):
+    def __init__(self, args: Any, config: Config, env: Dict[str, str]) -> None:
         Command.__init__(self, args, config, env)
 
-    def execute(self):
+    def execute(self) -> None:
         self.print(
             f"Open the following URL in a web browser to link your install ID "
             f"with your {self.api.hostname()} user account:\n\n"
