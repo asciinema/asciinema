@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from os import path, stat
 from typing import IO, Any, Optional
 
@@ -23,7 +21,7 @@ class writer:
         self.file: Optional[IO[Any]] = None
         self.metadata = metadata
 
-    def __enter__(self) -> writer:
+    def __enter__(self) -> Any:
         self.file = open(self.path, mode=self.mode, buffering=self.buffering)
         return self
 
