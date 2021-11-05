@@ -1,17 +1,17 @@
 import os
 import sys
-import tempfile
+from tempfile import NamedTemporaryFile
+from typing import Any, Dict, Optional
 
-import asciinema.asciicast.raw as raw
-import asciinema.asciicast.v2 as v2
-import asciinema.notifier as notifier
-import asciinema.recorder as recorder
-from asciinema.api import APIError
-from asciinema.commands.command import Command
+from .. import notifier, recorder
+from ..api import APIError
+from ..asciicast import raw, v2
+from ..commands.command import Command
+from ..config import Config
 
 
-class RecordCommand(Command):
-    def __init__(self, args, config, env):
+class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
+    def __init__(self, args: Any, config: Config, env: Dict[str, str]) -> None:
         Command.__init__(self, args, config, env)
         self.quiet = args.quiet
         self.filename = args.filename
@@ -34,7 +34,10 @@ class RecordCommand(Command):
             "pause": config.record_pause_key,
         }
 
-    def execute(self):
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-statements
+    def execute(self) -> int:
         upload = False
         append = self.append
 
@@ -44,9 +47,8 @@ class RecordCommand(Command):
                     "filename required when recording in raw mode"
                 )
                 return 1
-            else:
-                self.filename = _tmp_path()
-                upload = True
+            self.filename = _tmp_path()
+            upload = True
 
         if os.path.exists(self.filename):
             if not os.access(self.filename, os.W_OK):
@@ -60,10 +62,12 @@ class RecordCommand(Command):
             elif os.stat(self.filename).st_size > 0 and not append:
                 self.print_error(f"{self.filename} already exists, aborting")
                 self.print_error(
-                    "use --overwrite option if you want to overwrite existing recording"
+                    "use --overwrite option "
+                    "if you want to overwrite existing recording"
                 )
                 self.print_error(
-                    "use --append option if you want to append to existing recording"
+                    "use --append option "
+                    "if you want to append to existing recording"
                 )
                 return 1
 
@@ -79,8 +83,12 @@ class RecordCommand(Command):
                 """press <ctrl-d> or type "exit" when you're done"""
             )
 
-        vars = filter(
-            None, map((lambda var: var.strip()), self.env_whitelist.split(","))
+        vars_: Any = filter(
+            None,
+            map(
+                (lambda var: var.strip()),  # type: ignore
+                self.env_whitelist.split(","),
+            ),
         )
 
         try:
@@ -91,7 +99,7 @@ class RecordCommand(Command):
                 title=self.title,
                 idle_time_limit=self.idle_time_limit,
                 command_env=self.env,
-                capture_env=vars,
+                capture_env=vars_,
                 rec_stdin=self.rec_stdin,
                 writer=self.writer,
                 notifier=self.notifier,
@@ -140,7 +148,5 @@ class RecordCommand(Command):
         return 0
 
 
-def _tmp_path():
-    fd, path = tempfile.mkstemp(suffix="-ascii.cast")
-    os.close(fd)
-    return path
+def _tmp_path() -> Optional[str]:
+    return NamedTemporaryFile(suffix="-ascii.cast", delete=False).name
