@@ -7,18 +7,18 @@ if sys.version_info < (3, 7):
     raise ImportError("Python < 3.7 is unsupported.")
 
 # pylint: disable=wrong-import-position
-from typing import Any
+from typing import Any, Optional
 
 from .recorder import record
 
 
-def record_asciicast(
-    path_,
-    command=None,
-    append=False,
-    idle_time_limit=None,
-    rec_stdin=False,
-    title=None,
+def record_asciicast(  # pylint: disable=too-many-arguments
+    path_: str,
+    command: Any = None,
+    append: bool = False,
+    idle_time_limit: Optional[int] = None,
+    rec_stdin: bool = False,
+    title: Optional[str] = None,
     metadata: Any = None,
     command_env: Any = None,
     capture_env: Any = None,
