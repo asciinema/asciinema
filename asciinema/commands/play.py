@@ -1,10 +1,19 @@
-import asciinema.asciicast as asciicast
-from asciinema.commands.command import Command
-from asciinema.player import Player
+from typing import Any, Dict, Optional
+
+from .. import asciicast
+from ..commands.command import Command
+from ..config import Config
+from ..player import Player
 
 
 class PlayCommand(Command):
-    def __init__(self, args, config, env, player=None):
+    def __init__(
+        self,
+        args: Any,
+        config: Config,
+        env: Dict[str, str],
+        player: Optional[Player] = None,
+    ) -> None:
         Command.__init__(self, args, config, env)
         self.filename = args.filename
         self.idle_time_limit = args.idle_time_limit
@@ -15,7 +24,7 @@ class PlayCommand(Command):
             "step": config.play_step_key,
         }
 
-    def execute(self):
+    def execute(self) -> int:
         try:
             with asciicast.open_from_url(self.filename) as a:
                 self.player.play(
