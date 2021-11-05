@@ -1,6 +1,8 @@
 NAME    := asciinema
 VERSION := $(shell python3 -c "import asciinema; print(asciinema.__version__)")
 
+VIRTUAL_ENV ?= .venv
+
 .PHONY: test
 test: test.unit test.integration
 
@@ -30,13 +32,22 @@ tag: .tag.exists
 	git tag -s -m "Releasing $(VERSION)" v$(VERSION)
 	git push origin v$(VERSION)
 
+.PHONY: .venv
+.venv:
+	python3 -m venv $(VIRTUAL_ENV)
 
 .PHONY: .pip
-.pip:
-	python3 -m pip install --user --upgrade --quiet build twine
+.pip: .venv
+	. $(VIRTUAL_ENV)/bin/activate \
+		&& python3 -m pip install --upgrade build twine
 
-build:
-	python3 -m build .
+build: .pip
+	. $(VIRTUAL_ENV)/bin/activate \
+		&& python3 -m build .
+
+install: build
+	. $(VIRTUAL_ENV)/bin/activate \
+		&& python3 -m pip install .
 
 .PHONY: push
 push: .pip build
