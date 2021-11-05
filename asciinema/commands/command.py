@@ -1,24 +1,32 @@
 import sys
+from typing import Any, Dict, TextIO
 
-from asciinema.api import Api
+from ..api import Api
+from ..config import Config
 
 
 class Command:
-    def __init__(self, args, config, env):
-        self.quiet = False
+    def __init__(self, _args: Any, config: Config, env: Dict[str, str]):
+        self.quiet: bool = False
         self.api = Api(config.api_url, env.get("USER"), config.install_id)
 
-    def print(self, text, file=sys.stdout, end="\n", force=False):
+    def print(
+        self,
+        text: str,
+        file_: TextIO = sys.stdout,
+        end: str = "\n",
+        force: bool = False,
+    ) -> None:
         if not self.quiet or force:
-            print(text, file=file, end=end)
+            print(text, file=file_, end=end)
 
-    def print_info(self, text):
+    def print_info(self, text: str) -> None:
         self.print(f"[0;32masciinema: {text}[0m")
 
-    def print_warning(self, text):
+    def print_warning(self, text: str) -> None:
         self.print(f"[0;33masciinema: {text}[0m")
 
-    def print_error(self, text):
+    def print_error(self, text: str) -> None:
         self.print(
-            f"[0;31masciinema: {text}[0m", file=sys.stderr, force=True
+            f"[0;31masciinema: {text}[0m", file_=sys.stderr, force=True
         )
