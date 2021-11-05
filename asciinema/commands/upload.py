@@ -1,13 +1,16 @@
-from asciinema.api import APIError
-from asciinema.commands.command import Command
+from typing import Any
+
+from ..api import APIError
+from ..config import Config
+from .command import Command
 
 
 class UploadCommand(Command):
-    def __init__(self, args, config, env):
+    def __init__(self, args: Any, config: Config, env: Any) -> None:
         Command.__init__(self, args, config, env)
         self.filename = args.filename
 
-    def execute(self):
+    def execute(self) -> int:
         try:
             result, warn = self.api.upload_asciicast(self.filename)
 
