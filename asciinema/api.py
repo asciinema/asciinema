@@ -61,7 +61,7 @@ class Api:
         return result, headers.get("Warning")
 
     def _headers(self) -> Dict[str, Union[Callable[[], str], str]]:
-        return {"user-Agent": self._user_agent, "accept": "application/json"}
+        return {"user-agent": self._user_agent, "accept": "application/json"}
 
     @property
     @staticmethod
