@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import codecs
 import json
 from codecs import StreamReader
@@ -112,7 +110,7 @@ class writer:
             self.mode = "w"
             self.header = build_header(width, height, metadata or {})
 
-    def __enter__(self) -> writer:
+    def __enter__(self) -> Any:
         self.file = open(
             self.path,
             mode=self.mode,

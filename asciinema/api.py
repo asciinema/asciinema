@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import platform
 import re
@@ -30,17 +28,17 @@ class Api:
             http_adapter if http_adapter is not None else URLLibHttpAdapter()
         )
 
-    def hostname(self: Api) -> Optional[str]:
+    def hostname(self) -> Optional[str]:
         return urlparse(self.url).hostname
 
-    def auth_url(self: Api) -> str:
+    def auth_url(self) -> str:
         return f"{self.url}/connect/{self.install_id}"
 
-    def upload_url(self: Api) -> str:
+    def upload_url(self) -> str:
         return f"{self.url}/api/asciicasts"
 
-    def upload_asciicast(self: Api, path: str) -> Tuple[Any, Any]:
-        with open(path, "rb") as f:
+    def upload_asciicast(self, path_: str) -> Tuple[Any, Any]:
+        with open(path_, "rb") as f:
             try:
                 status, headers, body = self.http_adapter.post(
                     self.upload_url(),

@@ -1,22 +1,17 @@
-from __future__ import annotations
+from typing import Any, Optional
 
-from typing import TYPE_CHECKING, Any, Optional
+try:
+    # Importing synchronize is to detect platforms where
+    # multiprocessing does not work (python issue 3770)
+    # and cause an ImportError. Otherwise it will happen
+    # later when trying to use Queue().
+    from multiprocessing import Process, Queue, synchronize
 
-if TYPE_CHECKING:
-    from multiprocessing import Process, Queue
-else:
-    try:
-        # Importing synchronize is to detect platforms where
-        # multiprocessing does not work (python issue 3770)
-        # and cause an ImportError. Otherwise it will happen
-        # later when trying to use Queue().
-        from multiprocessing import Process, Queue, synchronize
-
-        # pylint: disable=pointless-statement
-        lambda _=synchronize: None  # avoid pruning import
-    except ImportError:
-        from queue import Queue
-        from threading import Thread as Process
+    # pylint: disable=pointless-statement
+    lambda _=synchronize: None  # avoid pruning import
+except ImportError:
+    from queue import Queue  # type: ignore
+    from threading import Thread as Process  # type: ignore
 
 
 class async_worker:
@@ -24,7 +19,7 @@ class async_worker:
         self.queue: Queue[Any] = Queue()
         self.process: Optional[Process] = None
 
-    def __enter__(self) -> async_worker:
+    def __enter__(self) -> Any:
         self.process = Process(target=self.run)
         self.process.start()
         return self
