@@ -59,6 +59,10 @@ class RecordCommand(Command):
                 self.print_error("use --overwrite option if you want to overwrite existing recording")
                 self.print_error("use --append option if you want to append to existing recording")
                 return 1
+        elif append:
+            self.print_warning("%s does not exist, not appending" % self.filename)
+
+            append = False
 
         if append:
             self.print_info("appending to asciicast at %s" % self.filename)
