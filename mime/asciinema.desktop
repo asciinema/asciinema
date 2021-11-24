@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Play Asciinema recording
+Name[de]=Asciinema-Aufnahme abspielen
+Comment=Play an Asciinema recording
+Comment[de]=Eine Asciinema-Aufnahme abspielen
+Icon=application-x-asciinema
+Exec=python3 -m asciinema play %u
+Terminal=true
+NoDisplay=true
+MimeType=application/x-asciinema
+Categories=ConsoleOnly;Viewer
