@@ -222,6 +222,7 @@ Available options:
 
 * `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 * `-s, --speed=<factor>` - Playback speed (can be fractional)
+* `-b, --begin-at=<ts>` - Begin at relative time when playing (can be fractional)
 
 > For the best playback experience it is recommended to run `asciinema play` in
 > a terminal of dimensions not smaller than the one used for recording, as

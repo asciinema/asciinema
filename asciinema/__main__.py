@@ -82,6 +82,7 @@ For help on a specific command run:
     parser_play = subparsers.add_parser('play', help='Replay terminal session')
     parser_play.add_argument('-i', '--idle-time-limit', help='limit idle time during playback to given number of seconds', type=positive_float, default=maybe_str(cfg.play_idle_time_limit))
     parser_play.add_argument('-s', '--speed', help='playback speedup (can be fractional)', type=positive_float, default=cfg.play_speed)
+    parser_play.add_argument('-b', '--begin-at', help='begin at relative time when playing', type=positive_float, default=0)
     parser_play.add_argument('filename', help='local path, http/ipfs URL or "-" (read from stdin)')
     parser_play.set_defaults(cmd=PlayCommand)
 

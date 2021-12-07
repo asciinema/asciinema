@@ -26,3 +26,10 @@ def cap_relative_time(events, time_limit):
 
 def adjust_speed(events, speed):
     return ([delay / speed, type, data] for delay, type, data in events)
+
+
+def begin_at(events, begin_at_time=0):
+    for frame in events:
+        time, type, data = frame
+        if time >= begin_at_time:
+            yield [time - begin_at_time, type, data]

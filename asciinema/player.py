@@ -8,20 +8,21 @@ from asciinema.term import raw, read_blocking
 
 class Player:
 
-    def play(self, asciicast, idle_time_limit=None, speed=1.0, key_bindings={}):
+    def play(self, asciicast, idle_time_limit=None, speed=1.0, begin_at=0, key_bindings={}):
         try:
             stdin = open('/dev/tty')
             with raw(stdin.fileno()):
-                self._play(asciicast, idle_time_limit, speed, stdin, key_bindings)
+                self._play(asciicast, idle_time_limit, speed, begin_at, stdin, key_bindings)
         except Exception:
-            self._play(asciicast, idle_time_limit, speed, None, key_bindings)
+            self._play(asciicast, idle_time_limit, speed, begin_at, None, key_bindings)
 
-    def _play(self, asciicast, idle_time_limit, speed, stdin, key_bindings):
+    def _play(self, asciicast, idle_time_limit, speed, begin_at, stdin, key_bindings):
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get('pause')
         step_key = key_bindings.get('step')
 
         stdout = asciicast.stdout_events()
+        stdout = ev.begin_at(stdout, begin_at)
         stdout = ev.to_relative_time(stdout)
         stdout = ev.cap_relative_time(stdout, idle_time_limit)
         stdout = ev.to_absolute_time(stdout)
