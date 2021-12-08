@@ -17,8 +17,12 @@ class TestWriter(Test):
 
         with open(path, 'r') as f:
             lines = list(map(json.loads, f.read().strip().split('\n')))
-            assert lines == [{"version": 2, "width": 80, "height": 24},
+            self.assertEqual(lines, [{"version": 2, "width": 80, "height": 24},
                              [1, "o", "x"],
                              [2, "o", "xżó"],
                              [3, "o", "łć"],
-                             [4, "o", "xx"]], 'got:\n\n%s' % lines
+                             [4, "o", "xx"]], 'got:\n\n%s' % lines)
+
+
+if __name__ == "__main__":
+    unittest.main()

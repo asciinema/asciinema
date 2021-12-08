@@ -9,8 +9,8 @@ test() {
     printf "\e[1;32mTesting on $1...\e[0m\n"
     echo
 
-    docker build -t asciinema/asciinema:$1 -f tests/distros/Dockerfile.$1 .
-    docker run --rm -ti asciinema/asciinema:$1 tests/integration.sh
+    docker build -t asciinema/asciinema:$1 -f asciinema/tests/distros/Dockerfile.$1 .
+    docker run --rm -ti asciinema/asciinema:$1 asciinema/tests/integration.sh
 }
 
 test ubuntu

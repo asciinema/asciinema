@@ -4,6 +4,7 @@ try:
 except ImportError:
     from io import StringIO
 
+import unittest
 
 stdout = None
 
@@ -18,7 +19,7 @@ def assert_not_printed(expected):
     assert success, 'not expected text "%s" printed' % expected
 
 
-class Test:
+class Test(unittest.TestCase):
 
     def setUp(self):
         global stdout

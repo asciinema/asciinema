@@ -4,10 +4,10 @@ VERSION=`python3 -c "import asciinema; print(asciinema.__version__)"`
 test: test-unit test-integration
 
 test-unit:
-	nosetests
+	python3 -m unittest discover -v
 
 test-integration:
-	tests/integration.sh
+	asciinema/tests/integration.sh
 
 release: test tag push
 

@@ -1,7 +1,6 @@
 import os
 import pty
 
-from nose.tools import assert_equal
 from .test_helper import Test
 
 import asciinema.pty
@@ -38,4 +37,8 @@ class TestRecord(Test):
         command = ['python3', '-c', "import sys; import time; sys.stdout.write(\'foo\'); sys.stdout.flush(); time.sleep(0.01); sys.stdout.write(\'bar\')"]
         asciinema.pty.record(command, output)
 
-        assert_equal([b'foo', b'bar'], output.data)
+        self.assertEqual([b'foo', b'bar'], output.data)
+
+
+if __name__ == "__main__":
+    unittest.main()
