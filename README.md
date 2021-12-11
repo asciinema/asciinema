@@ -16,9 +16,14 @@ Terminal session recorder and the best companion of
 asciinema lets you easily record terminal sessions and replay
 them in a terminal as well as in a web browser.
 
-Install latest version ([other installation options](#installation)):
+Install latest version ([other installation options](#installation))
+using [pipx](https://pypa.github.io/pipx/) (if you have it):
 
-    sudo pip3 install asciinema
+    pipx install asciinema
+
+If you don't have pipx, install using pip with your preferred Python version:
+
+    python3 -m pip install asciinema
 
 Record your first session:
 
@@ -57,15 +62,21 @@ cover installation, usage and hosting of the recordings in more detail.
 
 ## Installation
 
-### Python package
+### Python package from PyPI
 
-asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
-be installed with pip (Python 3 with setuptools required):
+[PyPI]: https://pypi.python.org/pypi/asciinema
 
-    sudo pip3 install asciinema
+asciinema is available on [PyPI] and can
+be installed with [pipx](https://pypa.github.io/pipx/) (if you have it)
+or with pip (Python 3 with setuptools required):
 
-This is the recommended way of installation, which gives you the latest released
-version.
+    pipx install asciinema
+
+Or with pip (using your preferred Python version):
+
+    python3 -m pip install asciinema
+
+Installing from [PyPI] is the recommended way of installation, which gives you the latest released version.
 
 ### Native packages
 
