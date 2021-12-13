@@ -61,7 +61,6 @@ class RecordCommand(Command):
                 return 1
         elif append:
             self.print_warning("%s does not exist, not appending" % self.filename)
-
             append = False
 
         if append:
