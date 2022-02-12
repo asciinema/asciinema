@@ -27,12 +27,12 @@ However, as this is an open-source project maintained by a small team of volunte
 
 ## Proposing features/changes (pull requests)
 
-If you want to propose code change, either introducing a new feature or improving an existing one, please first discuss this with asciinema team. You can simply open a separate issue for a discussion or join #asciinema IRC channel on freenode.
+If you want to propose code change, either introducing a new feature or improving an existing one, please first discuss this with asciinema team. You can simply open a separate issue for a discussion or join #asciinema IRC channel on Libera.Chat.
 
 ## Asking for help
 
 Github issue tracker is not a support forum.
-If you need help then either join #asciinema IRC channel on freenode or drop us an email at support@asciinema.org.
+If you need help then either join #asciinema IRC channel on Libera.Chat or drop us an email at support@asciinema.org.
 
 ## Reporting security issues
 

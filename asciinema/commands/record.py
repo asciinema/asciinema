@@ -70,6 +70,11 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                     "if you want to append to existing recording"
                 )
                 return 1
+        elif append:
+            self.print_warning(
+                "%s does not exist, not appending" % self.filename
+            )
+            append = False
 
         if append:
             self.print_info(f"appending to asciicast at {self.filename}")
