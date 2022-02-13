@@ -62,7 +62,6 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     time_offset: float = 0
 
     if append and os.stat(path_).st_size > 0:
-        assert time_offset is not None
         time_offset = v2.get_duration(path_)
 
     with async_writer(writer, path_, full_metadata, append) as _writer:
