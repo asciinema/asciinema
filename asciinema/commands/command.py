@@ -21,12 +21,12 @@ class Command:
             print(text, file=file_, end=end)
 
     def print_info(self, text: str) -> None:
-        self.print(f"[0;32masciinema: {text}[0m")
+        self.print(f"\x1b[0;32masciinema: {text}\x1b[0m")
 
     def print_warning(self, text: str) -> None:
-        self.print(f"[0;33masciinema: {text}[0m")
+        self.print(f"\x1b[0;33masciinema: {text}\x1b[0m")
 
     def print_error(self, text: str) -> None:
         self.print(
-            f"[0;31masciinema: {text}[0m", file_=sys.stderr, force=True
+            f"\x1b[0;31masciinema: {text}\x1b[0m", file_=sys.stderr, force=True
         )
