@@ -1,13 +1,9 @@
 import json
 from codecs import StreamReader
+from json.decoder import JSONDecodeError
 from typing import Any, Dict, Generator, List, Optional, TextIO, Union
 
 from .events import to_absolute_time
-
-try:
-    from json.decoder import JSONDecodeError
-except ImportError:
-    JSONDecodeError = ValueError  # type: ignore
 
 
 class LoadError(Exception):
