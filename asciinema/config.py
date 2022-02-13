@@ -168,7 +168,7 @@ class Config:
         return self.config.get("notifications", "command", fallback=None)
 
     def __get_key(self, section: str, name: str, default: Any = None) -> Any:
-        key = self.config.get(section, name + "_key", fallback=default)
+        key = self.config.get(section, f"{name}_key", fallback=default)
 
         if key:
             if len(key) == 3:
