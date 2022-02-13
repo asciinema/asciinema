@@ -31,8 +31,7 @@ class writer:
         assert self.file is not None
         self.file.close()
 
-    def write_stdout(self, ts: float, data: Any) -> None:
-        _ = ts
+    def write_stdout(self, _ts: float, data: Any) -> None:
         assert self.file is not None
         self.file.write(data)
 
