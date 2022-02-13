@@ -1,8 +1,8 @@
-import base64
 import codecs
 import http
 import io
 import sys
+from base64 import b64encode
 from http.client import HTTPResponse
 from typing import Any, Dict, Generator, Optional, Tuple
 from urllib.error import HTTPError, URLError
@@ -96,9 +96,10 @@ class URLLibHttpAdapter:  # pylint: disable=too-few-public-methods
         headers["content-type"] = content_type
 
         if password:
-            auth = f"{username}:{password}"
-            encoded_auth = base64.b64encode(bytes(auth, "utf-8"))
-            headers["authorization"] = f"Basic {encoded_auth!r}"
+            encoded_auth = b64encode(
+                f"{username}:{password}".encode("utf_8")
+            ).decode("utf_8")
+            headers["authorization"] = f"Basic {encoded_auth}"
 
         request = Request(url, data=body, headers=headers, method="POST")
 
