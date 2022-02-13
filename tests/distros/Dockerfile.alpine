@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.3
 
-FROM docker.io/library/alpine:3.14
+FROM docker.io/library/alpine:3.15
 
 # https://github.com/actions/runner/issues/241
 RUN apk --no-cache add bash ca-certificates make python3 util-linux
