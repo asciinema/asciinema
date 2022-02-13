@@ -44,7 +44,7 @@ class open_from_file:
         self.first_line = first_line
         self.file = file
 
-    def __enter__(self) -> Optional[Asciicast]:
+    def __enter__(self) -> Asciicast:
         try:
             v2_header: Dict[str, Any] = json.loads(self.first_line)
             if v2_header.get("version") == 2:
