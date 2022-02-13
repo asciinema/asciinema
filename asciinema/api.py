@@ -50,7 +50,7 @@ class Api:
             except HTTPConnectionError as e:
                 raise APIError(str(e)) from e
 
-        if status in (200, 201):
+        if status not in (200, 201):
             self._handle_error(status, body)
 
         if (headers.get("content-type") or "")[0:16] == "application/json":
