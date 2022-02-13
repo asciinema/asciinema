@@ -63,7 +63,6 @@ def get_duration(path_: str) -> Any:
     with open(path_, mode="rt", encoding="utf-8") as f:
         first_line = f.readline()
         with open_from_file(first_line, f) as a:
-            assert isinstance(a, Asciicast)
             last_frame = None
             for last_frame in a.stdout_events():
                 pass
