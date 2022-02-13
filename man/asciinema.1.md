@@ -322,7 +322,7 @@ MORE RESOURCES
 More documentation is available on the asciicast.org website and its GitHub wiki:
 
 * Web:  [asciinema.org/docs/](https://asciinema.org/docs/)
-* Wiki: [github.com/asciinema/asciinema/wiki](https://github.com/asciinema/asciinema/wiki) 
+* Wiki: [github.com/asciinema/asciinema/wiki](https://github.com/asciinema/asciinema/wiki)
 * IRC:  [Channel on Libera.Chat](https://web.libera.chat/gamja/#asciinema)
 * Twitter: [@asciinema](https://twitter.com/asciinema)
 
@@ -335,4 +335,3 @@ asciinema's lead developer is Marcin Kulik.
 For a list of all contributors look here: <https://github.com/asciinema/asciinema/contributors>
 
 This Manual Page was written by Marcin Kulik with help from Kurt Pfeifle.
-
