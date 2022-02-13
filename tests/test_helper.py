@@ -1,4 +1,5 @@
 import sys
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -19,7 +20,6 @@ def assert_not_printed(expected):
 
 
 class Test:
-
     def setUp(self):
         global stdout
         self.real_stdout = sys.stdout
@@ -30,7 +30,6 @@ class Test:
 
 
 class FakeClock:
-
     def __init__(self, values):
         self.values = values
         self.n = 0
@@ -43,7 +42,6 @@ class FakeClock:
 
 
 class FakeAsciicast:
-
     def __init__(self, cmd=None, title=None, stdout=None, meta_data=None):
         self.cmd = cmd
         self.title = title

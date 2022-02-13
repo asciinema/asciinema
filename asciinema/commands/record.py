@@ -1,18 +1,17 @@
 import os
 import sys
-import tempfile
+from tempfile import NamedTemporaryFile
+from typing import Any, Dict, Optional
 
-import asciinema.recorder as recorder
-import asciinema.asciicast.raw as raw
-import asciinema.asciicast.v2 as v2
-import asciinema.notifier as notifier
-from asciinema.api import APIError
-from asciinema.commands.command import Command
+from .. import notifier, recorder
+from ..api import APIError
+from ..asciicast import raw, v2
+from ..commands.command import Command
+from ..config import Config
 
 
-class RecordCommand(Command):
-
-    def __init__(self, args, config, env):
+class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
+    def __init__(self, args: Any, config: Config, env: Dict[str, str]) -> None:
         Command.__init__(self, args, config, env)
         self.quiet = args.quiet
         self.filename = args.filename
@@ -26,28 +25,34 @@ class RecordCommand(Command):
         self.overwrite = args.overwrite
         self.raw = args.raw
         self.writer = raw.writer if args.raw else v2.writer
-        self.notifier = notifier.get_notifier(config.notifications_enabled, config.notifications_command)
+        self.notifier = notifier.get_notifier(
+            config.notifications_enabled, config.notifications_command
+        )
         self.env = env
         self.key_bindings = {
-            'prefix': config.record_prefix_key,
-            'pause': config.record_pause_key
+            "prefix": config.record_prefix_key,
+            "pause": config.record_pause_key,
         }
 
-    def execute(self):
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-statements
+    def execute(self) -> int:
         upload = False
         append = self.append
 
         if self.filename == "":
             if self.raw:
-                self.print_error("filename required when recording in raw mode")
+                self.print_error(
+                    "filename required when recording in raw mode"
+                )
                 return 1
-            else:
-                self.filename = _tmp_path()
-                upload = True
+            self.filename = _tmp_path()
+            upload = True
 
         if os.path.exists(self.filename):
             if not os.access(self.filename, os.W_OK):
-                self.print_error("can't write to %s" % self.filename)
+                self.print_error(f"can't write to {self.filename}")
                 return 1
 
             if os.stat(self.filename).st_size > 0 and self.overwrite:
@@ -55,25 +60,41 @@ class RecordCommand(Command):
                 append = False
 
             elif os.stat(self.filename).st_size > 0 and not append:
-                self.print_error("%s already exists, aborting" % self.filename)
-                self.print_error("use --overwrite option if you want to overwrite existing recording")
-                self.print_error("use --append option if you want to append to existing recording")
+                self.print_error(f"{self.filename} already exists, aborting")
+                self.print_error(
+                    "use --overwrite option "
+                    "if you want to overwrite existing recording"
+                )
+                self.print_error(
+                    "use --append option "
+                    "if you want to append to existing recording"
+                )
                 return 1
         elif append:
-            self.print_warning("%s does not exist, not appending" % self.filename)
+            self.print_warning(
+                f"{self.filename} does not exist, not appending"
+            )
             append = False
 
         if append:
-            self.print_info("appending to asciicast at %s" % self.filename)
+            self.print_info(f"appending to asciicast at {self.filename}")
         else:
-            self.print_info("recording asciicast to %s" % self.filename)
+            self.print_info(f"recording asciicast to {self.filename}")
 
         if self.command:
             self.print_info("""exit opened program when you're done""")
         else:
-            self.print_info("""press <ctrl-d> or type "exit" when you're done""")
+            self.print_info(
+                """press <ctrl-d> or type "exit" when you're done"""
+            )
 
-        vars = filter(None, map((lambda var: var.strip()), self.env_whitelist.split(',')))
+        vars_: Any = filter(
+            None,
+            map(
+                (lambda var: var.strip()),  # type: ignore
+                self.env_whitelist.split(","),
+            ),
+        )
 
         try:
             recorder.record(
@@ -83,27 +104,31 @@ class RecordCommand(Command):
                 title=self.title,
                 idle_time_limit=self.idle_time_limit,
                 command_env=self.env,
-                capture_env=vars,
+                capture_env=vars_,
                 rec_stdin=self.rec_stdin,
                 writer=self.writer,
                 notifier=self.notifier,
-                key_bindings=self.key_bindings
+                key_bindings=self.key_bindings,
             )
         except v2.LoadError:
-            self.print_error("can only append to asciicast v2 format recordings")
+            self.print_error(
+                "can only append to asciicast v2 format recordings"
+            )
             return 1
 
         self.print_info("recording finished")
 
         if upload:
             if not self.assume_yes:
-                self.print_info("press <enter> to upload to %s, <ctrl-c> to save locally"
-                                % self.api.hostname())
+                self.print_info(
+                    f"press <enter> to upload to {self.api.hostname()}"
+                    ", <ctrl-c> to save locally"
+                )
                 try:
                     sys.stdin.readline()
                 except KeyboardInterrupt:
                     self.print("\r", end="")
-                    self.print_info("asciicast saved to %s" % self.filename)
+                    self.print_info(f"asciicast saved to {self.filename}")
                     return 0
 
             try:
@@ -113,20 +138,20 @@ class RecordCommand(Command):
                     self.print_warning(warn)
 
                 os.remove(self.filename)
-                self.print(result.get('message') or result['url'])
+                self.print(result.get("message") or result["url"])
 
             except APIError as e:
                 self.print("\r\x1b[A", end="")
-                self.print_error("upload failed: %s" % str(e))
-                self.print_error("retry later by running: asciinema upload %s" % self.filename)
+                self.print_error(f"upload failed: {str(e)}")
+                self.print_error(
+                    f"retry later by running: asciinema upload {self.filename}"
+                )
                 return 1
         else:
-            self.print_info("asciicast saved to %s" % self.filename)
+            self.print_info(f"asciicast saved to {self.filename}")
 
         return 0
 
 
-def _tmp_path():
-    fd, path = tempfile.mkstemp(suffix='-ascii.cast')
-    os.close(fd)
-    return path
+def _tmp_path() -> Optional[str]:
+    return NamedTemporaryFile(suffix="-ascii.cast", delete=False).name
