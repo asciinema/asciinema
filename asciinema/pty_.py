@@ -128,11 +128,6 @@ def record(
             except OSError as e:  # Python >= 3.3
                 if e.errno == errno.EINTR:
                     continue
-            # TODO: remove this if Python 3.7+ required
-            # Python < 3.3
-            except select.error as e:  # pylint: disable=duplicate-except
-                if e.args[0] == 4:
-                    continue
 
             if master_fd in rfds:
                 data = os.read(master_fd, 1024)
