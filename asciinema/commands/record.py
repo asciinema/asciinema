@@ -72,7 +72,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 return 1
         elif append:
             self.print_warning(
-                "%s does not exist, not appending" % self.filename
+                f"{self.filename} does not exist, not appending"
             )
             append = False
 
