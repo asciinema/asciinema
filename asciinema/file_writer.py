@@ -28,17 +28,16 @@ class file_writer:
 
     def _write(self, data: Any) -> None:
         try:
-            self.file.write(data)
+            self.file.write(data)  # type: ignore
         except BrokenPipeError as e:
             if stat.S_ISFIFO(os.stat(self.path).st_mode):
                 if self.on_error:
                     self.on_error("Broken pipe, reopening...")
-
-                self._open_file()
-
-                if self.on_error:
+                    self._open_file()
                     self.on_error("Output pipe reopened successfully")
+                else:
+                    self._open_file()
 
-                self.file.write(data)
+                self.file.write(data)  # type: ignore
             else:
                 raise e
