@@ -1,9 +1,19 @@
 import codecs
 import json
 from codecs import StreamReader
-from io import IOBase
 from json.decoder import JSONDecodeError
-from typing import IO, Any, Dict, Generator, List, Optional, TextIO, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TextIO,
+    Union,
+)
+
+from ..file_writer import file_writer
 
 
 class LoadError(Exception):
@@ -86,21 +96,22 @@ def build_header(
     return header
 
 
-class writer:
+class writer(file_writer):
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        path: str,
+        path_: str,
         metadata: Any = None,
         append: bool = False,
         buffering: int = 1,
         width: Optional[int] = None,
         height: Optional[int] = None,
+        on_error: Optional[Callable[[str], None]] = None,
     ) -> None:
-        self.path = path
+        super().__init__(path_, on_error)
+
         self.buffering = buffering
         self.stdin_decoder = codecs.getincrementaldecoder("UTF-8")("replace")
         self.stdout_decoder = codecs.getincrementaldecoder("UTF-8")("replace")
-        self.file: Optional[IO[Any]] = None
 
         if append:
             self.mode = "a"
@@ -110,23 +121,12 @@ class writer:
             self.header = build_header(width, height, metadata or {})
 
     def __enter__(self) -> Any:
-        self.file = open(
-            self.path,
-            mode=self.mode,
-            buffering=self.buffering,
-            encoding="utf-8",
-        )
+        self._open_file()
 
         if self.header:
             self.__write_line(self.header)
 
         return self
-
-    def __exit__(
-        self, exc_type: str, exc_value: str, exc_traceback: str
-    ) -> None:
-        assert isinstance(self.file, IOBase)
-        self.file.close()
 
     def write_stdout(self, ts: float, data: Union[str, bytes]) -> None:
         if isinstance(data, str):
@@ -140,6 +140,14 @@ class writer:
         data = self.stdin_decoder.decode(data)
         self.__write_event(ts, "i", data)
 
+    def _open_file(self) -> None:
+        self.file = open(
+            self.path,
+            mode=self.mode,
+            buffering=self.buffering,
+            encoding="utf-8",
+        )
+
     def __write_event(self, ts: float, etype: str, data: str) -> None:
         self.__write_line([round(ts, 6), etype, data])
 
@@ -147,5 +155,5 @@ class writer:
         line = json.dumps(
             obj, ensure_ascii=False, indent=None, separators=(", ", ": ")
         )
-        assert isinstance(self.file, IOBase)
-        self.file.write(f"{line}\n")
+
+        self._write(f"{line}\n")

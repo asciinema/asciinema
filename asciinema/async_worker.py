@@ -31,6 +31,11 @@ class async_worker:
         assert isinstance(self.process, Process)
         self.process.join()
 
+        if self.process.exitcode != 0:
+            raise RuntimeError(
+                f"worker process exited with code {self.process.exitcode}"
+            )
+
     def enqueue(self, payload: Any) -> None:
         self.queue.put(payload)
 
