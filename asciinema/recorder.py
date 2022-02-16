@@ -3,7 +3,6 @@ import time
 from typing import Any, Callable, Dict, Optional, Tuple, Type
 
 from . import pty_ as pty  # avoid collisions with standard library `pty`
-from . import term
 from .asciicast import v2
 from .asciicast.v2 import writer as w2
 from .async_worker import async_worker
@@ -23,6 +22,8 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     record_: Callable[..., None] = pty.record,
     notifier: Any = None,
     key_bindings: Optional[Dict[str, Any]] = None,
+    cols_override: Optional[int] = None,
+    rows_override: Optional[int] = None,
 ) -> None:
     if command is None:
         command = os.environ.get("SHELL", "sh")
@@ -38,11 +39,16 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     if capture_env is None:
         capture_env = ["SHELL", "TERM"]
 
-    w, h = term.get_size()
+    tty_stdin_fd = 0
+    tty_stdout_fd = 1
+
+    get_tty_size = _get_tty_size(tty_stdout_fd, cols_override, rows_override)
+
+    cols, rows = get_tty_size()
 
     full_metadata: Dict[str, Any] = {
-        "width": w,
-        "height": h,
+        "width": cols,
+        "height": rows,
         "timestamp": int(time.time()),
     }
 
@@ -75,11 +81,14 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
             record_(
                 ["sh", "-c", command],
                 _writer,
+                get_tty_size,
                 command_env,
                 rec_stdin,
                 time_offset,
                 _notifier,
                 key_bindings,
+                tty_stdin_fd=tty_stdin_fd,
+                tty_stdout_fd=tty_stdout_fd,
             )
 
 
@@ -143,3 +152,27 @@ class async_notifier(async_worker):
             # we catch *ALL* exceptions here because we don't want failed
             # notification to crash the recording session
             pass
+
+
+def _get_tty_size(
+    fd: int, cols_override: Optional[int], rows_override: Optional[int]
+) -> Callable[[], Tuple[int, int]]:
+    if cols_override is not None and rows_override is not None:
+
+        def fixed_size() -> Tuple[int, int]:
+            return (cols_override, rows_override)  # type: ignore
+
+        return fixed_size
+
+    if not os.isatty(fd):
+
+        def fallback_size() -> Tuple[int, int]:
+            return (cols_override or 80, rows_override or 24)
+
+        return fallback_size
+
+    def size() -> Tuple[int, int]:
+        cols, rows = os.get_terminal_size(fd)
+        return (cols_override or cols, rows_override or rows)
+
+    return size

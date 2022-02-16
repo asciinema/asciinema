@@ -1,10 +1,9 @@
 import os
 import select
-import subprocess
 import termios as tty  # avoid `Module "tty" has no attribute ...` errors
 from time import sleep
 from tty import setraw
-from typing import IO, Any, List, Optional, Tuple, Union
+from typing import IO, Any, List, Optional, Union
 
 
 class raw:
@@ -33,13 +32,3 @@ def read_blocking(fd: int, timeout: Any) -> bytes:
         return os.read(fd, 1024)
 
     return b""
-
-
-def get_size() -> Tuple[int, int]:
-    try:
-        return os.get_terminal_size()
-    except:  # pylint: disable=bare-except  # noqa: E722
-        return (
-            int(subprocess.check_output(["tput", "cols"])),
-            int(subprocess.check_output(["tput", "lines"])),
-        )
