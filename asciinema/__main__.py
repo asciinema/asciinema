@@ -12,6 +12,14 @@ from .commands.record import RecordCommand
 from .commands.upload import UploadCommand
 
 
+def positive_int(value: str) -> int:
+    _value = int(value)
+    if _value <= 0:
+        raise argparse.ArgumentTypeError("must be positive")
+
+    return _value
+
+
 def positive_float(value: str) -> float:
     _value = float(value)
     if _value <= 0.0:
@@ -119,6 +127,18 @@ For help on a specific command run:
         help="limit recorded idle time to given number of seconds",
         type=positive_float,
         default=maybe_str(cfg.record_idle_time_limit),
+    )
+    parser_rec.add_argument(
+        "--cols",
+        help="override terminal columns for recorded process",
+        type=positive_int,
+        default=None,
+    )
+    parser_rec.add_argument(
+        "--rows",
+        help="override terminal rows for recorded process",
+        type=positive_int,
+        default=None,
     )
     parser_rec.add_argument(
         "-y",

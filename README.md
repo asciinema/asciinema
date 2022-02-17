@@ -228,6 +228,8 @@ Available options:
   to `SHELL,TERM`
 - `-t, --title=<title>` - Specify the title of the asciicast
 - `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
+- `--cols=<n>` - Override terminal columns for recorded process
+- `--rows=<n>` - Override terminal rows for recorded process
 - `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
 - `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
 

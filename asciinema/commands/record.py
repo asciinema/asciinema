@@ -21,6 +21,8 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
         self.title = args.title
         self.assume_yes = args.yes or args.quiet
         self.idle_time_limit = args.idle_time_limit
+        self.cols_override = args.cols
+        self.rows_override = args.rows
         self.append = args.append
         self.overwrite = args.overwrite
         self.raw = args.raw
@@ -109,6 +111,8 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 writer=self.writer,
                 notifier=self.notifier,
                 key_bindings=self.key_bindings,
+                cols_override=self.cols_override,
+                rows_override=self.rows_override,
             )
         except v2.LoadError:
             self.print_error(

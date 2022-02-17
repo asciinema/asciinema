@@ -44,6 +44,6 @@ class TestRecord(Test):
                 "; sys.stdout.write('bar')"
             ),
         ]
-        asciinema.pty_.record(command, output)
+        asciinema.pty_.record(command, output, lambda: (80, 24))
 
         assert output.data == [b"foo", b"bar"]

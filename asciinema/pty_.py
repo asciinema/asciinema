@@ -8,7 +8,7 @@ import signal
 import struct
 import termios
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .term import raw
 
@@ -17,11 +17,14 @@ from .term import raw
 def record(
     command: Any,
     writer: Any,
+    get_tty_size: Callable[[], Tuple[int, int]],
     env: Any = None,
     rec_stdin: bool = False,
     time_offset: float = 0,
     notifier: Any = None,
     key_bindings: Optional[Dict[str, Any]] = None,
+    tty_stdin_fd: int = pty.STDIN_FILENO,
+    tty_stdout_fd: int = pty.STDOUT_FILENO,
 ) -> None:
     if env is None:
         env = os.environ
@@ -46,18 +49,15 @@ def record(
 
         # 1. Get the terminal size of the real terminal.
         # 2. Set the same size on the pseudoterminal.
-        if os.isatty(pty.STDOUT_FILENO):
-            buf = array.array("h", [0, 0, 0, 0])
-            fcntl.ioctl(pty.STDOUT_FILENO, termios.TIOCGWINSZ, buf, True)
-        else:
-            buf = array.array("h", [24, 80, 0, 0])
 
+        cols, rows = get_tty_size()
+        buf = array.array("h", [rows, cols, 0, 0])
         fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
 
     def _write_stdout(data: Any) -> None:
         """Writes to stdout as if the child process had written the data."""
 
-        os.write(pty.STDOUT_FILENO, data)
+        os.write(tty_stdout_fd, data)
 
     def _handle_master_read(data: Any) -> None:
         """Handles new data on child process stdout."""
@@ -120,7 +120,7 @@ def record(
         when new data arrives.
         """
 
-        fds = [master_fd, pty.STDIN_FILENO, signal_fd]
+        fds = [master_fd, tty_stdin_fd, signal_fd]
 
         while True:
             try:
@@ -136,10 +136,10 @@ def record(
                 else:
                     _handle_master_read(data)
 
-            if pty.STDIN_FILENO in rfds:
-                data = os.read(pty.STDIN_FILENO, 1024)
+            if tty_stdin_fd in rfds:
+                data = os.read(tty_stdin_fd, 1024)
                 if not data:
-                    fds.remove(pty.STDIN_FILENO)
+                    fds.remove(tty_stdin_fd)
                 else:
                     _handle_stdin_read(data)
 
@@ -188,7 +188,7 @@ def record(
 
     start_time = time.time() - time_offset
 
-    with raw(pty.STDIN_FILENO):
+    with raw(tty_stdin_fd):
         try:
             _copy(pipe_r)
         except (IOError, OSError):
