@@ -20,7 +20,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     capture_env: Any = None,
     writer: Type[w2] = v2.writer,
     record_: Callable[..., None] = pty.record,
-    notifier: Any = None,
+    notify: Callable[[str], None] = lambda _: None,
     key_bindings: Optional[Dict[str, Any]] = None,
     cols_override: Optional[int] = None,
     rows_override: Optional[int] = None,
@@ -70,7 +70,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     if append and os.stat(path_).st_size > 0:
         time_offset = v2.get_duration(path_)
 
-    with async_notifier(notifier) as _notifier:
+    with async_notifier(notify) as _notifier:
         sync_writer = writer(
             path_, full_metadata, append, on_error=_notifier.queue.put
         )
@@ -78,10 +78,10 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
         with async_writer(sync_writer, time_offset, record_stdin) as _writer:
             record_(
                 ["sh", "-c", command],
+                command_env,
                 _writer,
                 get_tty_size,
-                command_env,
-                _notifier,
+                _notifier.notify,
                 key_bindings,
                 tty_stdin_fd=tty_stdin_fd,
                 tty_stdout_fd=tty_stdout_fd,
@@ -118,17 +118,16 @@ class async_writer(async_worker):
 
 
 class async_notifier(async_worker):
-    def __init__(self, notifier: Any) -> None:
+    def __init__(self, notify: Callable[[str], None]) -> None:
         async_worker.__init__(self)
-        self.notifier = notifier
+        self._notify = notify
 
     def notify(self, text: str) -> None:
         self.enqueue(text)
 
     def perform(self, text: str) -> None:
         try:
-            if self.notifier:
-                self.notifier.notify(text)
+            self._notify(text)
         except:  # pylint: disable=bare-except # noqa: E722
             # we catch *ALL* exceptions here because we don't want failed
             # notification to crash the recording session

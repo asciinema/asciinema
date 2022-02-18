@@ -102,7 +102,7 @@ class CustomCommandNotifier(Notifier):
 
 
 class NoopNotifier:  # pylint: disable=too-few-public-methods
-    def notify(self) -> None:
+    def notify(self, text: str) -> None:
         pass
 
 
