@@ -15,7 +15,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
         Command.__init__(self, args, config, env)
         self.quiet = args.quiet
         self.filename = args.filename
-        self.rec_stdin = args.stdin
+        self.record_stdin = args.stdin
         self.command = args.command
         self.env_whitelist = args.env
         self.title = args.title
@@ -107,7 +107,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 idle_time_limit=self.idle_time_limit,
                 command_env=self.env,
                 capture_env=vars_,
-                rec_stdin=self.rec_stdin,
+                record_stdin=self.record_stdin,
                 writer=self.writer,
                 notifier=self.notifier,
                 key_bindings=self.key_bindings,

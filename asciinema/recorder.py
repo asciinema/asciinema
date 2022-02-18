@@ -13,7 +13,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     command: Any = None,
     append: bool = False,
     idle_time_limit: Optional[int] = None,
-    rec_stdin: bool = False,
+    record_stdin: bool = False,
     title: Optional[str] = None,
     metadata: Any = None,
     command_env: Optional[Dict[Any, Any]] = None,
@@ -75,13 +75,12 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
             path_, full_metadata, append, on_error=_notifier.queue.put
         )
 
-        with async_writer(sync_writer, time_offset) as _writer:
+        with async_writer(sync_writer, time_offset, record_stdin) as _writer:
             record_(
                 ["sh", "-c", command],
                 _writer,
                 get_tty_size,
                 command_env,
-                rec_stdin,
                 _notifier,
                 key_bindings,
                 tty_stdin_fd=tty_stdin_fd,
@@ -90,13 +89,17 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
 
 
 class async_writer(async_worker):
-    def __init__(self, writer: w2, time_offset: float) -> None:
+    def __init__(
+        self, writer: w2, time_offset: float, record_stdin: bool
+    ) -> None:
         async_worker.__init__(self)
         self.writer = writer
         self.time_offset = time_offset
+        self.record_stdin = record_stdin
 
     def write_stdin(self, ts: float, data: Any) -> None:
-        self.enqueue([ts, "i", data])
+        if self.record_stdin:
+            self.enqueue([ts, "i", data])
 
     def write_stdout(self, ts: float, data: Any) -> None:
         self.enqueue([ts, "o", data])

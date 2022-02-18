@@ -19,7 +19,6 @@ def record(
     writer: Any,
     get_tty_size: Callable[[], Tuple[int, int]],
     env: Any = None,
-    rec_stdin: bool = False,
     notifier: Any = None,
     key_bindings: Optional[Dict[str, Any]] = None,
     tty_stdin_fd: int = pty.STDIN_FILENO,
@@ -102,7 +101,7 @@ def record(
 
         _write_master(data)
 
-        if rec_stdin and not pause_time:
+        if not pause_time:
             assert start_time is not None
             writer.write_stdin(time.time() - start_time, data)
 
