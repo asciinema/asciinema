@@ -20,7 +20,6 @@ def record(
     get_tty_size: Callable[[], Tuple[int, int]],
     env: Any = None,
     rec_stdin: bool = False,
-    time_offset: float = 0,
     notifier: Any = None,
     key_bindings: Optional[Dict[str, Any]] = None,
     tty_stdin_fd: int = pty.STDIN_FILENO,
@@ -186,7 +185,7 @@ def record(
 
     _set_pty_size()
 
-    start_time = time.time() - time_offset
+    start_time = time.time()
 
     with raw(tty_stdin_fd):
         try:

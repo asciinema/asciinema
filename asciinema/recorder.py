@@ -75,14 +75,13 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
             path_, full_metadata, append, on_error=_notifier.queue.put
         )
 
-        with async_writer(sync_writer) as _writer:
+        with async_writer(sync_writer, time_offset) as _writer:
             record_(
                 ["sh", "-c", command],
                 _writer,
                 get_tty_size,
                 command_env,
                 rec_stdin,
-                time_offset,
                 _notifier,
                 key_bindings,
                 tty_stdin_fd=tty_stdin_fd,
@@ -91,9 +90,10 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
 
 
 class async_writer(async_worker):
-    def __init__(self, writer: w2) -> None:
+    def __init__(self, writer: w2, time_offset: float) -> None:
         async_worker.__init__(self)
         self.writer = writer
+        self.time_offset = time_offset
 
     def write_stdin(self, ts: float, data: Any) -> None:
         self.enqueue([ts, "i", data])
@@ -109,9 +109,9 @@ class async_writer(async_worker):
                 ts, etype, data = event
 
                 if etype == "o":
-                    w.write_stdout(ts, data)
+                    w.write_stdout(self.time_offset + ts, data)
                 elif etype == "i":
-                    w.write_stdin(ts, data)
+                    w.write_stdin(self.time_offset + ts, data)
 
 
 class async_notifier(async_worker):
