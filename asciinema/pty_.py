@@ -16,30 +16,20 @@ from .term import raw
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 def record(
     command: Any,
+    env: Dict[str, str],
     writer: Any,
     get_tty_size: Callable[[], Tuple[int, int]],
-    env: Any = None,
-    rec_stdin: bool = False,
-    time_offset: float = 0,
-    notifier: Any = None,
-    key_bindings: Optional[Dict[str, Any]] = None,
+    notify: Callable[[str], None],
+    key_bindings: Dict[str, Any],
     tty_stdin_fd: int = pty.STDIN_FILENO,
     tty_stdout_fd: int = pty.STDOUT_FILENO,
 ) -> None:
-    if env is None:
-        env = os.environ
-    if key_bindings is None:
-        key_bindings = {}
     master_fd: Any = None
     start_time: Optional[float] = None
     pause_time: Optional[float] = None
     prefix_mode: bool = False
     prefix_key = key_bindings.get("prefix")
     pause_key = key_bindings.get("pause")
-
-    def _notify(text: str) -> None:
-        if notifier:
-            notifier.notify(text)
 
     def _set_pty_size() -> None:
         """
@@ -94,16 +84,16 @@ def record(
                     assert start_time is not None
                     start_time += time.time() - pause_time
                     pause_time = None
-                    _notify("Resumed recording")
+                    notify("Resumed recording")
                 else:
                     pause_time = time.time()
-                    _notify("Paused recording")
+                    notify("Paused recording")
 
             return
 
         _write_master(data)
 
-        if rec_stdin and not pause_time:
+        if not pause_time:
             assert start_time is not None
             writer.write_stdin(time.time() - start_time, data)
 
@@ -186,7 +176,7 @@ def record(
 
     _set_pty_size()
 
-    start_time = time.time() - time_offset
+    start_time = time.time()
 
     with raw(tty_stdin_fd):
         try:

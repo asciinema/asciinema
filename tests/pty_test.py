@@ -6,7 +6,7 @@ import asciinema.pty_
 from .test_helper import Test
 
 
-class FakeStdout:
+class Writer:
     def __init__(self):
         self.data = []
 
@@ -30,7 +30,7 @@ class TestRecord(Test):
             self.real_os_write(fd, data)
 
     def test_record_command_writes_to_stdout(self):
-        output = FakeStdout()
+        writer = Writer()
 
         command = [
             "python3",
@@ -44,6 +44,9 @@ class TestRecord(Test):
                 "; sys.stdout.write('bar')"
             ),
         ]
-        asciinema.pty_.record(command, output, lambda: (80, 24))
 
-        assert output.data == [b"foo", b"bar"]
+        asciinema.pty_.record(
+            command, {}, writer, lambda: (80, 24), lambda s: None, {}
+        )
+
+        assert writer.data == [b"foo", b"bar"]
