@@ -41,37 +41,22 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     tty_stdin_fd = 0
     tty_stdout_fd = 1
 
-    get_tty_size = _get_tty_size(tty_stdout_fd, cols_override, rows_override)
-
-    cols, rows = get_tty_size()
-
-    full_metadata: Dict[str, Any] = {
-        "width": cols,
-        "height": rows,
-        "timestamp": int(time.time()),
-    }
-
-    full_metadata.update(metadata or {})
-
-    if idle_time_limit is not None:
-        full_metadata["idle_time_limit"] = idle_time_limit
-
-    if capture_env:
-        full_metadata["env"] = {
-            var: command_env.get(var) for var in capture_env
-        }
-
-    if title:
-        full_metadata["title"] = title
-
     time_offset: float = 0
 
     if append and os.stat(path_).st_size > 0:
         time_offset = v2.get_duration(path_)
 
     with async_notifier(notify) as _notifier:
+        get_tty_size = _get_tty_size(
+            tty_stdout_fd, cols_override, rows_override
+        )
+        cols, rows = get_tty_size()
+        metadata = build_metadata(
+            cols, rows, idle_time_limit, capture_env, command_env, title
+        )
+
         sync_writer = writer(
-            path_, full_metadata, append, on_error=_notifier.notify
+            path_, metadata, append, on_error=_notifier.notify
         )
 
         with async_writer(sync_writer, time_offset, record_stdin) as _writer:
@@ -85,6 +70,31 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
                 tty_stdin_fd=tty_stdin_fd,
                 tty_stdout_fd=tty_stdout_fd,
             )
+
+
+def build_metadata(
+    cols: int,
+    rows: int,
+    idle_time_limit: Optional[float],
+    capture_env: List[str],
+    env: Dict[str, str],
+    title: Optional[str],
+) -> Dict[str, Any]:
+    metadata: Dict[str, Any] = {
+        "width": cols,
+        "height": rows,
+        "timestamp": int(time.time()),
+    }
+
+    if idle_time_limit is not None:
+        metadata["idle_time_limit"] = idle_time_limit
+
+    metadata["env"] = {var: env.get(var) for var in capture_env}
+
+    if title:
+        metadata["title"] = title
+
+    return metadata
 
 
 class async_writer(async_worker):
