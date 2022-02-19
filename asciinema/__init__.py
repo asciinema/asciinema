@@ -19,7 +19,6 @@ def record_asciicast(  # pylint: disable=too-many-arguments
     idle_time_limit: Optional[int] = None,
     record_stdin: bool = False,
     title: Optional[str] = None,
-    metadata: Any = None,
     command_env: Any = None,
     capture_env: Any = None,
 ) -> None:
@@ -30,7 +29,6 @@ def record_asciicast(  # pylint: disable=too-many-arguments
         idle_time_limit=idle_time_limit,
         record_stdin=record_stdin,
         title=title,
-        metadata=metadata,
         command_env=command_env,
         capture_env=capture_env,
     )

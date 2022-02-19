@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any, Callable, Dict, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from . import pty_ as pty  # avoid collisions with standard library `pty`
 from .asciicast import v2
@@ -10,14 +10,13 @@ from .async_worker import async_worker
 
 def record(  # pylint: disable=too-many-arguments,too-many-locals
     path_: str,
-    command: Any = None,
+    command: Optional[str] = None,
     append: bool = False,
-    idle_time_limit: Optional[int] = None,
+    idle_time_limit: Optional[float] = None,
     record_stdin: bool = False,
     title: Optional[str] = None,
-    metadata: Any = None,
-    command_env: Optional[Dict[Any, Any]] = None,
-    capture_env: Any = None,
+    command_env: Optional[Dict[str, str]] = None,
+    capture_env: Optional[List[str]] = None,
     writer: Type[w2] = v2.writer,
     record_: Callable[..., None] = pty.record,
     notify: Callable[[str], None] = lambda _: None,
