@@ -1,3 +1,4 @@
+import os
 import sys
 from typing import Any, Dict, TextIO
 
@@ -21,12 +22,23 @@ class Command:
             print(text, file=file_, end=end)
 
     def print_info(self, text: str) -> None:
-        self.print(f"\x1b[0;32masciinema: {text}\x1b[0m")
+        if os.isatty(sys.stdout.fileno()):
+            self.print(f"\x1b[0;32masciinema: {text}\x1b[0m")
+        else:
+            self.print(f"asciinema: {text}")
 
     def print_warning(self, text: str) -> None:
-        self.print(f"\x1b[0;33masciinema: {text}\x1b[0m")
+        if os.isatty(sys.stdout.fileno()):
+            self.print(f"\x1b[0;33masciinema: {text}\x1b[0m")
+        else:
+            self.print(f"asciinema: {text}")
 
     def print_error(self, text: str) -> None:
-        self.print(
-            f"\x1b[0;31masciinema: {text}\x1b[0m", file_=sys.stderr, force=True
-        )
+        if os.isatty(sys.stderr.fileno()):
+            self.print(
+                f"\x1b[0;31masciinema: {text}\x1b[0m",
+                file_=sys.stderr,
+                force=True,
+            )
+        else:
+            self.print(f"asciinema: {text}", file_=sys.stderr, force=True)
