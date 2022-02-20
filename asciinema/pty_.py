@@ -112,6 +112,11 @@ def record(
 
         fds = [master_fd, tty_stdin_fd, signal_fd]
 
+        stdin_fd = pty.STDIN_FILENO
+
+        if not os.isatty(stdin_fd):
+            fds.append(stdin_fd)
+
         while True:
             try:
                 rfds, _, _ = select.select(fds, [], [])
@@ -130,6 +135,13 @@ def record(
                 data = os.read(tty_stdin_fd, 1024)
                 if not data:
                     fds.remove(tty_stdin_fd)
+                else:
+                    _handle_stdin_read(data)
+
+            if stdin_fd in rfds:
+                data = os.read(stdin_fd, 1024)
+                if not data:
+                    fds.remove(stdin_fd)
                 else:
                     _handle_stdin_read(data)
 
