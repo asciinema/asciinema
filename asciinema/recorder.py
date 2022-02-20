@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any, Callable, Dict, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple, Type
 
 from . import pty_ as pty  # avoid collisions with standard library `pty`
 from .asciicast import v2
@@ -10,14 +10,13 @@ from .async_worker import async_worker
 
 def record(  # pylint: disable=too-many-arguments,too-many-locals
     path_: str,
-    command: Any = None,
+    command: Optional[str] = None,
     append: bool = False,
-    idle_time_limit: Optional[int] = None,
+    idle_time_limit: Optional[float] = None,
     record_stdin: bool = False,
     title: Optional[str] = None,
-    metadata: Any = None,
-    command_env: Optional[Dict[Any, Any]] = None,
-    capture_env: Any = None,
+    command_env: Optional[Dict[str, str]] = None,
+    capture_env: Optional[List[str]] = None,
     writer: Type[w2] = v2.writer,
     record_: Callable[..., None] = pty.record,
     notify: Callable[[str], None] = lambda _: None,
@@ -39,40 +38,24 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     if capture_env is None:
         capture_env = ["SHELL", "TERM"]
 
-    tty_stdin_fd = 0
-    tty_stdout_fd = 1
-
-    get_tty_size = _get_tty_size(tty_stdout_fd, cols_override, rows_override)
-
-    cols, rows = get_tty_size()
-
-    full_metadata: Dict[str, Any] = {
-        "width": cols,
-        "height": rows,
-        "timestamp": int(time.time()),
-    }
-
-    full_metadata.update(metadata or {})
-
-    if idle_time_limit is not None:
-        full_metadata["idle_time_limit"] = idle_time_limit
-
-    if capture_env:
-        full_metadata["env"] = {
-            var: command_env.get(var) for var in capture_env
-        }
-
-    if title:
-        full_metadata["title"] = title
-
     time_offset: float = 0
 
     if append and os.stat(path_).st_size > 0:
         time_offset = v2.get_duration(path_)
 
-    with async_notifier(notify) as _notifier:
+    with tty_fds() as (tty_stdin_fd, tty_stdout_fd), async_notifier(
+        notify
+    ) as _notifier:
+        get_tty_size = _get_tty_size(
+            tty_stdout_fd, cols_override, rows_override
+        )
+        cols, rows = get_tty_size()
+        metadata = build_metadata(
+            cols, rows, idle_time_limit, capture_env, command_env, title
+        )
+
         sync_writer = writer(
-            path_, full_metadata, append, on_error=_notifier.notify
+            path_, metadata, append, on_error=_notifier.notify
         )
 
         with async_writer(sync_writer, time_offset, record_stdin) as _writer:
@@ -86,6 +69,56 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
                 tty_stdin_fd=tty_stdin_fd,
                 tty_stdout_fd=tty_stdout_fd,
             )
+
+
+class tty_fds:
+    def __init__(self) -> None:
+        self.stdin_file: Optional[TextIO] = None
+        self.stdout_file: Optional[TextIO] = None
+
+    def __enter__(self) -> Tuple[int, int]:
+        try:
+            self.stdin_file = open("/dev/tty", "r")
+        except OSError:
+            self.stdin_file = open("/dev/null", "r")
+
+        try:
+            self.stdout_file = open("/dev/tty", "w")
+        except OSError:
+            self.stdout_file = open("/dev/null", "w")
+
+        return (self.stdin_file.fileno(), self.stdout_file.fileno())
+
+    def __exit__(self, type_: str, value: str, traceback: str) -> None:
+        assert self.stdin_file is not None
+        assert self.stdout_file is not None
+        self.stdin_file.close()
+        self.stdout_file.close()
+
+
+def build_metadata(
+    cols: int,
+    rows: int,
+    idle_time_limit: Optional[float],
+    capture_env: List[str],
+    env: Dict[str, str],
+    title: Optional[str],
+) -> Dict[str, Any]:
+    metadata: Dict[str, Any] = {
+        "width": cols,
+        "height": rows,
+        "timestamp": int(time.time()),
+    }
+
+    if idle_time_limit is not None:
+        metadata["idle_time_limit"] = idle_time_limit
+
+    metadata["env"] = {var: env.get(var) for var in capture_env}
+
+    if title:
+        metadata["title"] = title
+
+    return metadata
 
 
 class async_writer(async_worker):
