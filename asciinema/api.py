@@ -61,9 +61,8 @@ class Api:
         return result, headers.get("Warning")
 
     def _headers(self) -> Dict[str, Union[Callable[[], str], str]]:
-        return {"user-agent": self._user_agent, "accept": "application/json"}
+        return {"user-agent": self._user_agent(), "accept": "application/json"}
 
-    @property
     @staticmethod
     def _user_agent() -> str:
         os = re.sub("([^-]+)-(.*)", "\\1/\\2", platform.platform())
@@ -74,9 +73,9 @@ class Api:
         )
 
     @staticmethod
-    def _handle_error(status: int, body: str) -> None:
+    def _handle_error(status: int, body: bytes) -> None:
         errors = {
-            400: f"Invalid request: {body}",
+            400: f"Invalid request: {body.decode('utf-8', 'replace')}",
             401: "Invalid or revoked install ID",
             404: (
                 "API endpoint not found. "
@@ -84,7 +83,7 @@ class Api:
                 "Please upgrade to the latest version."
             ),
             413: "Sorry, your asciicast is too big.",
-            422: f"Invalid asciicast: {body}",
+            422: f"Invalid asciicast: {body.decode('utf-8', 'replace')}",
             503: "The server is down for maintenance. Try again in a minute.",
         }
 
