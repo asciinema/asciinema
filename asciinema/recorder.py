@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple, Type
 
 from . import pty_ as pty  # avoid collisions with standard library `pty`
 from .asciicast import v2
@@ -38,15 +38,14 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     if capture_env is None:
         capture_env = ["SHELL", "TERM"]
 
-    tty_stdin_fd = 0
-    tty_stdout_fd = 1
-
     time_offset: float = 0
 
     if append and os.stat(path_).st_size > 0:
         time_offset = v2.get_duration(path_)
 
-    with async_notifier(notify) as _notifier:
+    with tty_fds() as (tty_stdin_fd, tty_stdout_fd), async_notifier(
+        notify
+    ) as _notifier:
         get_tty_size = _get_tty_size(
             tty_stdout_fd, cols_override, rows_override
         )
@@ -70,6 +69,31 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
                 tty_stdin_fd=tty_stdin_fd,
                 tty_stdout_fd=tty_stdout_fd,
             )
+
+
+class tty_fds:
+    def __init__(self) -> None:
+        self.stdin_file: Optional[TextIO] = None
+        self.stdout_file: Optional[TextIO] = None
+
+    def __enter__(self) -> Tuple[int, int]:
+        try:
+            self.stdin_file = open("/dev/tty", "r")
+        except OSError:
+            self.stdin_file = open("/dev/null", "r")
+
+        try:
+            self.stdout_file = open("/dev/tty", "w")
+        except OSError:
+            self.stdout_file = open("/dev/null", "w")
+
+        return (self.stdin_file.fileno(), self.stdout_file.fileno())
+
+    def __exit__(self, type_: str, value: str, traceback: str) -> None:
+        assert self.stdin_file is not None
+        assert self.stdout_file is not None
+        self.stdin_file.close()
+        self.stdout_file.close()
 
 
 def build_metadata(
