@@ -12,6 +12,12 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .term import raw
 
+EXIT_SIGNALS = [
+    signal.SIGHUP,
+    signal.SIGTERM,
+    signal.SIGQUIT,
+]
+
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 def record(
@@ -24,50 +30,26 @@ def record(
     tty_stdin_fd: int = pty.STDIN_FILENO,
     tty_stdout_fd: int = pty.STDOUT_FILENO,
 ) -> None:
-    master_fd: Any = None
+    pty_fd: Any = None
     start_time: Optional[float] = None
     pause_time: Optional[float] = None
     prefix_mode: bool = False
     prefix_key = key_bindings.get("prefix")
     pause_key = key_bindings.get("pause")
 
-    def _set_pty_size() -> None:
-        """
-        Sets the window size of the child pty based on the window size
-        of our own controlling terminal.
-        """
-
-        # 1. Get the terminal size of the real terminal.
-        # 2. Set the same size on the pseudoterminal.
-
+    def set_pty_size() -> None:
         cols, rows = get_tty_size()
         buf = array.array("h", [rows, cols, 0, 0])
-        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, buf)
+        fcntl.ioctl(pty_fd, termios.TIOCSWINSZ, buf)
 
-    def _write_stdout(data: Any) -> None:
-        """Writes to stdout as if the child process had written the data."""
-
+    def handle_master_read(data: Any) -> None:
         os.write(tty_stdout_fd, data)
-
-    def _handle_master_read(data: Any) -> None:
-        """Handles new data on child process stdout."""
 
         if not pause_time:
             assert start_time is not None
             writer.write_stdout(time.time() - start_time, data)
 
-        _write_stdout(data)
-
-    def _write_master(data: Any) -> None:
-        """Writes to the child process from its controlling terminal."""
-
-        while data:
-            n = os.write(master_fd, data)
-            data = data[n:]
-
-    def _handle_stdin_read(data: Any) -> None:
-        """Handles new data on child process stdin."""
-
+    def handle_stdin_read(data: Any) -> None:
         nonlocal pause_time
         nonlocal start_time
         nonlocal prefix_mode
@@ -91,27 +73,16 @@ def record(
 
             return
 
-        _write_master(data)
+        while data:
+            n = os.write(pty_fd, data)
+            data = data[n:]
 
         if not pause_time:
             assert start_time is not None
             writer.write_stdin(time.time() - start_time, data)
 
-    def _signals(signal_list: Any) -> List[Tuple[Any, Any]]:
-        old_handlers = []
-        for sig, handler in signal_list:
-            old_handlers.append((sig, signal.signal(sig, handler)))
-        return old_handlers
-
-    def _copy(signal_fd: int) -> None:  # pylint: disable=too-many-branches
-        """Main select loop.
-
-        Passes control to _master_read() or _stdin_read()
-        when new data arrives.
-        """
-
-        fds = [master_fd, tty_stdin_fd, signal_fd]
-
+    def copy(signal_fd: int) -> None:  # pylint: disable=too-many-branches
+        fds = [pty_fd, tty_stdin_fd, signal_fd]
         stdin_fd = pty.STDIN_FILENO
 
         if not os.isatty(stdin_fd):
@@ -124,78 +95,87 @@ def record(
                 if e.errno == errno.EINTR:
                     continue
 
-            if master_fd in rfds:
-                data = os.read(master_fd, 1024)
+            if pty_fd in rfds:
+                data = os.read(pty_fd, 1024)
+
                 if not data:  # Reached EOF.
-                    fds.remove(master_fd)
+                    fds.remove(pty_fd)
                 else:
-                    _handle_master_read(data)
+                    handle_master_read(data)
 
             if tty_stdin_fd in rfds:
                 data = os.read(tty_stdin_fd, 1024)
+
                 if not data:
                     fds.remove(tty_stdin_fd)
                 else:
-                    _handle_stdin_read(data)
+                    handle_stdin_read(data)
 
             if stdin_fd in rfds:
                 data = os.read(stdin_fd, 1024)
+
                 if not data:
                     fds.remove(stdin_fd)
                 else:
-                    _handle_stdin_read(data)
+                    handle_stdin_read(data)
 
             if signal_fd in rfds:
                 data = os.read(signal_fd, 1024)
+
                 if data:
                     signals = struct.unpack(f"{len(data)}B", data)
-                    for sig in signals:
-                        if sig in [
-                            signal.SIGCHLD,
-                            signal.SIGHUP,
-                            signal.SIGTERM,
-                            signal.SIGQUIT,
-                        ]:
-                            os.close(master_fd)
-                            return
-                        if sig == signal.SIGWINCH:
-                            _set_pty_size()
 
-    pid, master_fd = pty.fork()
+                    for sig in signals:
+                        if sig in EXIT_SIGNALS:
+                            os.close(pty_fd)
+                            return
+                        elif sig == signal.SIGWINCH:
+                            set_pty_size()
+
+    pid, pty_fd = pty.fork()
 
     if pid == pty.CHILD:
         os.execvpe(command[0], command, env)
 
-    pipe_r, pipe_w = os.pipe()
-    flags = fcntl.fcntl(pipe_w, fcntl.F_GETFL, 0)
-    flags = flags | os.O_NONBLOCK
-    flags = fcntl.fcntl(pipe_w, fcntl.F_SETFL, flags)
-
-    signal.set_wakeup_fd(pipe_w)
-
-    old_handlers = _signals(
-        map(
-            lambda s: (s, lambda signal, frame: None),
-            [
-                signal.SIGWINCH,
-                signal.SIGCHLD,
-                signal.SIGHUP,
-                signal.SIGTERM,
-                signal.SIGQUIT,
-            ],
-        )
-    )
-
-    _set_pty_size()
-
     start_time = time.time()
+    set_pty_size()
 
-    with raw(tty_stdin_fd):
-        try:
-            _copy(pipe_r)
-        except (IOError, OSError):
-            pass
-
-    _signals(old_handlers)
+    with signal_fd(EXIT_SIGNALS + [signal.SIGWINCH]) as sig_fd:
+        with raw(tty_stdin_fd):
+            try:
+                copy(sig_fd)
+            except (IOError, OSError):
+                pass
 
     os.waitpid(pid, 0)
+
+
+class signal_fd:
+    def __init__(self, signals: List[signal.Signals]) -> None:
+        self.signals = signals
+        self.orig_handlers: List[Tuple[signal.Signals, Any]] = []
+        self.orig_wakeup_fd: Optional[int] = None
+
+    def __enter__(self) -> int:
+        r, w = os.pipe()
+        flags = fcntl.fcntl(w, fcntl.F_GETFL, 0) | os.O_NONBLOCK
+        fcntl.fcntl(w, fcntl.F_SETFL, flags)
+        self.orig_wakeup_fd = signal.set_wakeup_fd(w)
+
+        for sig, handler in self._noop_handlers(self.signals):
+            self.orig_handlers.append((sig, signal.signal(sig, handler)))
+
+        return r
+
+    def __exit__(self, type_: str, value: str, traceback: str) -> None:
+        assert self.orig_wakeup_fd is not None
+        signal.set_wakeup_fd(self.orig_wakeup_fd)
+
+        for sig, handler in self.orig_handlers:
+            signal.signal(sig, handler)
+
+    @staticmethod
+    def _noop_handlers(
+        signals: List[signal.Signals],
+    ) -> List[Tuple[signal.Signals, Any]]:
+        return list(map(lambda s: (s, lambda signal, frame: None), signals))
