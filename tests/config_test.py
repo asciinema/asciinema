@@ -1,11 +1,15 @@
 import re
 import tempfile
 from os import path
+from typing import Dict, Optional
 
 import asciinema.config as cfg
+from asciinema.config import Config
 
 
-def create_config(content=None, env={}):
+def create_config(
+    content: Optional[str] = None, env: Optional[Dict[str, str]] = None
+) -> Config:
     # avoid redefining `dir` builtin
     dir_ = tempfile.mkdtemp()
 
@@ -18,12 +22,12 @@ def create_config(content=None, env={}):
     return cfg.Config(dir_, env)
 
 
-def read_install_id(install_id_path):
+def read_install_id(install_id_path: str) -> str:
     with open(install_id_path, "rt", encoding="utf_8") as f:
         return f.read().strip()
 
 
-def test_upgrade_no_config_file():
+def test_upgrade_no_config_file() -> None:
     config = create_config()
     config.upgrade()
     install_id = read_install_id(config.install_id_path)
@@ -39,7 +43,7 @@ def test_upgrade_no_config_file():
     assert read_install_id(config.install_id_path) == install_id
 
 
-def test_upgrade_config_file_with_api_token():
+def test_upgrade_config_file_with_api_token() -> None:
     config = create_config("[api]\ntoken = foo-bar-baz")
     config.upgrade()
 
@@ -52,7 +56,7 @@ def test_upgrade_config_file_with_api_token():
     assert read_install_id(config.install_id_path) == "foo-bar-baz"
 
 
-def test_upgrade_config_file_with_api_token_and_more():
+def test_upgrade_config_file_with_api_token_and_more() -> None:
     config = create_config(
         "[api]\ntoken = foo-bar-baz\nurl = http://example.com"
     )
@@ -68,7 +72,7 @@ def test_upgrade_config_file_with_api_token_and_more():
     assert read_install_id(config.install_id_path) == "foo-bar-baz"
 
 
-def test_upgrade_config_file_with_user_token():
+def test_upgrade_config_file_with_user_token() -> None:
     config = create_config("[user]\ntoken = foo-bar-baz")
     config.upgrade()
 
@@ -81,7 +85,7 @@ def test_upgrade_config_file_with_user_token():
     assert read_install_id(config.install_id_path) == "foo-bar-baz"
 
 
-def test_upgrade_config_file_with_user_token_and_more():
+def test_upgrade_config_file_with_user_token_and_more() -> None:
     config = create_config(
         "[user]\ntoken = foo-bar-baz\n[api]\nurl = http://example.com"
     )
@@ -97,75 +101,75 @@ def test_upgrade_config_file_with_user_token_and_more():
     assert read_install_id(config.install_id_path) == "foo-bar-baz"
 
 
-def test_default_api_url():
+def test_default_api_url() -> None:
     config = create_config("")
     assert config.api_url == "https://asciinema.org"
 
 
-def test_default_record_stdin():
+def test_default_record_stdin() -> None:
     config = create_config("")
     assert config.record_stdin is False
 
 
-def test_default_record_command():
+def test_default_record_command() -> None:
     config = create_config("")
     assert config.record_command is None
 
 
-def test_default_record_env():
+def test_default_record_env() -> None:
     config = create_config("")
     assert config.record_env == "SHELL,TERM"
 
 
-def test_default_record_idle_time_limit():
+def test_default_record_idle_time_limit() -> None:
     config = create_config("")
     assert config.record_idle_time_limit is None
 
 
-def test_default_record_yes():
+def test_default_record_yes() -> None:
     config = create_config("")
     assert config.record_yes is False
 
 
-def test_default_record_quiet():
+def test_default_record_quiet() -> None:
     config = create_config("")
     assert config.record_quiet is False
 
 
-def test_default_play_idle_time_limit():
+def test_default_play_idle_time_limit() -> None:
     config = create_config("")
     assert config.play_idle_time_limit is None
 
 
-def test_api_url():
+def test_api_url() -> None:
     config = create_config("[api]\nurl = http://the/url")
     assert config.api_url == "http://the/url"
 
 
-def test_api_url_when_override_set():
+def test_api_url_when_override_set() -> None:
     config = create_config(
         "[api]\nurl = http://the/url", {"ASCIINEMA_API_URL": "http://the/url2"}
     )
     assert config.api_url == "http://the/url2"
 
 
-def test_record_command():
+def test_record_command() -> None:
     command = "bash -l"
-    config = create_config("[record]\ncommand = %s" % command)
+    config = create_config(f"[record]\ncommand = {command}")
     assert config.record_command == command
 
 
-def test_record_stdin():
+def test_record_stdin() -> None:
     config = create_config("[record]\nstdin = yes")
     assert config.record_stdin is True
 
 
-def test_record_env():
+def test_record_env() -> None:
     config = create_config("[record]\nenv = FOO,BAR")
     assert config.record_env == "FOO,BAR"
 
 
-def test_record_idle_time_limit():
+def test_record_idle_time_limit() -> None:
     config = create_config("[record]\nidle_time_limit = 2.35")
     assert config.record_idle_time_limit == 2.35
 
@@ -173,19 +177,19 @@ def test_record_idle_time_limit():
     assert config.record_idle_time_limit == 2.35
 
 
-def test_record_yes():
+def test_record_yes() -> None:
     yes = "yes"
-    config = create_config("[record]\nyes = %s" % yes)
+    config = create_config(f"[record]\nyes = {yes}")
     assert config.record_yes is True
 
 
-def test_record_quiet():
+def test_record_quiet() -> None:
     quiet = "yes"
-    config = create_config("[record]\nquiet = %s" % quiet)
+    config = create_config(f"[record]\nquiet = {quiet}")
     assert config.record_quiet is True
 
 
-def test_play_idle_time_limit():
+def test_play_idle_time_limit() -> None:
     config = create_config("[play]\nidle_time_limit = 2.35")
     assert config.play_idle_time_limit == 2.35
 
@@ -193,7 +197,7 @@ def test_play_idle_time_limit():
     assert config.play_idle_time_limit == 2.35
 
 
-def test_notifications_enabled():
+def test_notifications_enabled() -> None:
     config = create_config("")
     assert config.notifications_enabled is True
 
@@ -204,7 +208,7 @@ def test_notifications_enabled():
     assert config.notifications_enabled is False
 
 
-def test_notifications_command():
+def test_notifications_command() -> None:
     config = create_config("")
     assert config.notifications_command is None
 
