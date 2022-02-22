@@ -78,14 +78,14 @@ class tty_fds:
 
     def __enter__(self) -> Tuple[int, int]:
         try:
-            self.stdin_file = open("/dev/tty", "r")
+            self.stdin_file = open("/dev/tty", "rt", encoding="utf_8")
         except OSError:
-            self.stdin_file = open("/dev/null", "r")
+            self.stdin_file = open("/dev/null", "rt", encoding="utf_8")
 
         try:
-            self.stdout_file = open("/dev/tty", "w")
+            self.stdout_file = open("/dev/tty", "wt", encoding="utf_8")
         except OSError:
-            self.stdout_file = open("/dev/null", "w")
+            self.stdout_file = open("/dev/null", "wt", encoding="utf_8")
 
         return (self.stdin_file.fileno(), self.stdout_file.fileno())
 
@@ -96,7 +96,7 @@ class tty_fds:
         self.stdout_file.close()
 
 
-def build_metadata(
+def build_metadata(  # pylint: disable=too-many-arguments
     cols: int,
     rows: int,
     idle_time_limit: Optional[float],
