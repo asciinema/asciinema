@@ -128,8 +128,8 @@ def record(
                     for sig in signals:
                         if sig in EXIT_SIGNALS:
                             os.close(pty_fd)
-                            return
-                        elif sig == signal.SIGWINCH:
+                            return None
+                        if sig == signal.SIGWINCH:
                             set_pty_size()
 
     pid, pty_fd = pty.fork()
@@ -140,7 +140,7 @@ def record(
     start_time = time.time()
     set_pty_size()
 
-    with signal_fd(EXIT_SIGNALS + [signal.SIGWINCH]) as sig_fd:
+    with SignalFD(EXIT_SIGNALS + [signal.SIGWINCH]) as sig_fd:
         with raw(tty_stdin_fd):
             try:
                 copy(sig_fd)
@@ -150,7 +150,7 @@ def record(
     os.waitpid(pid, 0)
 
 
-class signal_fd:
+class SignalFD:
     def __init__(self, signals: List[signal.Signals]) -> None:
         self.signals = signals
         self.orig_handlers: List[Tuple[signal.Signals, Any]] = []
