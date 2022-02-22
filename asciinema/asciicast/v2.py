@@ -140,6 +140,7 @@ class writer(file_writer):
         data = self.stdin_decoder.decode(data)
         self.__write_event(ts, "i", data)
 
+    # pylint: disable=consider-using-with
     def _open_file(self) -> None:
         self.file = open(
             self.path,

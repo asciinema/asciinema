@@ -35,3 +35,4 @@ disable = [
     "missing-function-docstring",
     "missing-module-docstring",
 ]
+min-similarity-lines = 7
