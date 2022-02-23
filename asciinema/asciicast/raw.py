@@ -6,7 +6,7 @@ from ..file_writer import file_writer
 
 
 class writer(file_writer):
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         path_: str,
         metadata: Any = None,
@@ -32,5 +32,6 @@ class writer(file_writer):
     def write_stdin(self, ts: float, data: Any) -> None:
         pass
 
+    # pylint: disable=consider-using-with
     def _open_file(self) -> None:
         self.file = open(self.path, mode=self.mode, buffering=self.buffering)
