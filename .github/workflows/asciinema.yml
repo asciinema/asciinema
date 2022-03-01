@@ -12,7 +12,7 @@ jobs:
       - name: checkout asciinema
         uses: actions/checkout@v2
       - name: setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: "3.10"
       - name: install dependencies
@@ -44,7 +44,7 @@ jobs:
       - name: checkout Asciinema
         uses: actions/checkout@v2
       - name: setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python }}
       - name: install dependencies
