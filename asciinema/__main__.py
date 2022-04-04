@@ -114,6 +114,12 @@ For help on a specific command run:
         default=cfg.record_command,
     )
     parser_rec.add_argument(
+        "--exit",
+        # help="...",
+        action="store_true",
+        default=False,
+    )
+    parser_rec.add_argument(
         "-e",
         "--env",
         help="list of environment variables to capture, defaults to "

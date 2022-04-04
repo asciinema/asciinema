@@ -23,7 +23,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     key_bindings: Optional[Dict[str, Any]] = None,
     cols_override: Optional[int] = None,
     rows_override: Optional[int] = None,
-) -> None:
+) -> int:
     if command is None:
         command = os.environ.get("SHELL", "sh")
 
@@ -59,7 +59,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
         )
 
         with async_writer(sync_writer, time_offset, record_stdin) as _writer:
-            record_(
+            return record_(
                 ["sh", "-c", command],
                 command_env,
                 _writer,

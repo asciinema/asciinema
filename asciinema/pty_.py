@@ -149,7 +149,7 @@ def record(
             except (IOError, OSError):
                 pass
 
-    os.waitpid(pid, 0)
+    return wait_for_exit_code(pid)
 
 
 class SignalFD:
@@ -181,3 +181,16 @@ class SignalFD:
         signals: List[signal.Signals],
     ) -> List[Tuple[signal.Signals, Any]]:
         return list(map(lambda s: (s, lambda signal, frame: None), signals))
+
+
+def wait_for_exit_code(pid: int) -> int:
+    _, status = os.waitpid(pid, 0)
+
+    if os.WIFSIGNALED(status):
+        return 128 + os.WTERMSIG(status)
+    elif os.WIFEXITED(status):
+        return os.WEXITSTATUS(status)
+    elif os.WIFSTOPPED(status):
+        return 128 + os.WSTOPSIG(status)
+    else:
+        return 0

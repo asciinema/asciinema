@@ -26,6 +26,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
         self.append = args.append
         self.overwrite = args.overwrite
         self.raw = args.raw
+        self.return_exit_code = args.exit
         self.writer = raw.writer if args.raw else v2.writer
         self.notifier = notifier.get_notifier(
             config.notifications_enabled, config.notifications_command
@@ -102,8 +103,10 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
             ),
         )
 
+        code: int = 0
+
         try:
-            recorder.record(
+            code_ = recorder.record(
                 self.filename,
                 command=self.command,
                 append=append,
@@ -118,6 +121,10 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 cols_override=self.cols_override,
                 rows_override=self.rows_override,
             )
+
+            if self.return_exit_code:
+                code = code_
+
         except v2.LoadError:
             self.print_error(
                 "can only append to asciicast v2 format recordings"
@@ -158,7 +165,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
         else:
             self.print_info(f"asciicast saved to {self.filename}")
 
-        return 0
+        return code
 
 
 def _tmp_path() -> Optional[str]:
