@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any, Dict, TextIO
+from typing import Any, Dict
 
 from ..api import Api
 from ..config import Config
@@ -14,21 +14,20 @@ class Command:
     def print(
         self,
         text: str,
-        file_: TextIO = sys.stdout,
         end: str = "\n",
         force: bool = False,
     ) -> None:
         if not self.quiet or force:
-            print(text, file=file_, end=end)
+            print(text, file=sys.stderr, end=end)
 
     def print_info(self, text: str) -> None:
-        if os.isatty(sys.stdout.fileno()):
+        if os.isatty(sys.stderr.fileno()):
             self.print(f"\x1b[0;32masciinema: {text}\x1b[0m")
         else:
             self.print(f"asciinema: {text}")
 
     def print_warning(self, text: str) -> None:
-        if os.isatty(sys.stdout.fileno()):
+        if os.isatty(sys.stderr.fileno()):
             self.print(f"\x1b[0;33masciinema: {text}\x1b[0m")
         else:
             self.print(f"asciinema: {text}")
@@ -37,8 +36,7 @@ class Command:
         if os.isatty(sys.stderr.fileno()):
             self.print(
                 f"\x1b[0;31masciinema: {text}\x1b[0m",
-                file_=sys.stderr,
                 force=True,
             )
         else:
-            self.print(f"asciinema: {text}", file_=sys.stderr, force=True)
+            self.print(f"asciinema: {text}", force=True)
