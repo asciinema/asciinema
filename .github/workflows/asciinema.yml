@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout asciinema
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: setup Python
         uses: actions/setup-python@v2
         with:
@@ -42,7 +42,7 @@ jobs:
       TERM: dumb
     steps:
       - name: checkout Asciinema
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: setup Python
         uses: actions/setup-python@v2
         with:
@@ -102,7 +102,7 @@ jobs:
       options: "--interactive --tty --user=1001:121"
     steps:
       - name: checkout Asciinema
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: run integration tests
         env:
           TERM: dumb
