@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from .. import asciicast
 from ..config import Config
-from ..term import raw
+from ..tty_ import raw
 from .command import Command
 
 

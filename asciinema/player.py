@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, TextIO, Union
 from .asciicast import events as ev
 from .asciicast.v1 import Asciicast as v1
 from .asciicast.v2 import Asciicast as v2
-from .term import raw, read_blocking
+from .tty_ import raw, read_blocking
 
 
 class Player:  # pylint: disable=too-few-public-methods

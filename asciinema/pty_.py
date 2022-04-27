@@ -10,7 +10,7 @@ import termios
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .term import raw
+from .tty_ import raw
 
 EXIT_SIGNALS = [
     signal.SIGHUP,
