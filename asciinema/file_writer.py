@@ -30,7 +30,7 @@ class file_writer:
         try:
             self.file.write(data)  # type: ignore
         except BrokenPipeError as e:
-            if stat.S_ISFIFO(os.stat(self.path).st_mode):
+            if self.path != "-" and stat.S_ISFIFO(os.stat(self.path).st_mode):
                 self.on_error("Broken pipe, reopening...")
                 self._open_file()
                 self.on_error("Output pipe reopened successfully")

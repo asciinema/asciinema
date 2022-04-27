@@ -1,4 +1,5 @@
 import os
+import sys
 from os import path
 from typing import Any, Callable, Optional
 
@@ -34,4 +35,14 @@ class writer(file_writer):
 
     # pylint: disable=consider-using-with
     def _open_file(self) -> None:
-        self.file = open(self.path, mode=self.mode, buffering=self.buffering)
+        if self.path == "-":
+            self.file = os.fdopen(
+                sys.stdout.fileno(),
+                mode=self.mode,
+                buffering=self.buffering,
+                closefd=False,
+            )
+        else:
+            self.file = open(
+                self.path, mode=self.mode, buffering=self.buffering
+            )
