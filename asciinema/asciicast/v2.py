@@ -1,5 +1,7 @@
 import codecs
 import json
+import os
+import sys
 from codecs import StreamReader
 from json.decoder import JSONDecodeError
 from typing import (
@@ -142,12 +144,21 @@ class writer(file_writer):
 
     # pylint: disable=consider-using-with
     def _open_file(self) -> None:
-        self.file = open(
-            self.path,
-            mode=self.mode,
-            buffering=self.buffering,
-            encoding="utf-8",
-        )
+        if self.path == "-":
+            self.file = os.fdopen(
+                sys.stdout.fileno(),
+                mode=self.mode,
+                buffering=self.buffering,
+                encoding="utf-8",
+                closefd=False,
+            )
+        else:
+            self.file = open(
+                self.path,
+                mode=self.mode,
+                buffering=self.buffering,
+                encoding="utf-8",
+            )
 
     def __write_event(self, ts: float, etype: str, data: str) -> None:
         self.__write_line([round(ts, 6), etype, data])

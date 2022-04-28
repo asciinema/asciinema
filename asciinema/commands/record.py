@@ -52,7 +52,10 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
             self.filename = _tmp_path()
             upload = True
 
-        if os.path.exists(self.filename):
+        if self.filename == "-":
+            append = False
+
+        elif os.path.exists(self.filename):
             if not os.access(self.filename, os.W_OK):
                 self.print_error(f"can't write to {self.filename}")
                 return 1
@@ -72,6 +75,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                     "if you want to append to existing recording"
                 )
                 return 1
+
         elif append:
             self.print_warning(
                 f"{self.filename} does not exist, not appending"

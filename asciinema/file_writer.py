@@ -11,7 +11,7 @@ class file_writer:
     ) -> None:
         self.path = path
         self.file: Optional[IO[Any]] = None
-        self.on_error = on_error
+        self.on_error = on_error or (lambda _x: None)
 
     def __enter__(self) -> Any:
         self._open_file()
@@ -30,14 +30,11 @@ class file_writer:
         try:
             self.file.write(data)  # type: ignore
         except BrokenPipeError as e:
-            if stat.S_ISFIFO(os.stat(self.path).st_mode):
-                if self.on_error:
-                    self.on_error("Broken pipe, reopening...")
-                    self._open_file()
-                    self.on_error("Output pipe reopened successfully")
-                else:
-                    self._open_file()
-
+            if self.path != "-" and stat.S_ISFIFO(os.stat(self.path).st_mode):
+                self.on_error("Broken pipe, reopening...")
+                self._open_file()
+                self.on_error("Output pipe reopened successfully")
                 self.file.write(data)  # type: ignore
             else:
+                self.on_error("Output pipe broken")
                 raise e
