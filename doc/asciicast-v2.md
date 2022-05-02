@@ -177,8 +177,7 @@ easily fixed in the old format:
 Due to file structure change (standard JSON => newline-delimited JSON) version 2
 is not backwards compatible with version 1. Support for v2 has been added in:
 
-* [asciinema terminal recorder](https://github.com/asciinema/asciinema) - 2.0
-  (to be released, currently on development branch)
+* [asciinema terminal recorder](https://github.com/asciinema/asciinema) - 2.0.0
 * [asciinema web player](https://github.com/asciinema/asciinema-player) - 2.6.0
 * [asciinema server](https://github.com/asciinema/asciinema-server) - v20171105
   tag in git repository
