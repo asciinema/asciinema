@@ -11,7 +11,7 @@ class file_writer:
     ) -> None:
         self.path = path
         self.file: Optional[IO[Any]] = None
-        self.on_error = on_error or (lambda _x: None)
+        self.on_error = on_error or noop
 
     def __enter__(self) -> Any:
         self._open_file()
@@ -38,3 +38,7 @@ class file_writer:
             else:
                 self.on_error("Output pipe broken")
                 raise e
+
+
+def noop(_: Any) -> None:
+    return None

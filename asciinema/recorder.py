@@ -55,7 +55,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
         )
 
         sync_writer = writer(
-            path_, metadata, append, on_error=_notifier.notify
+            path_, metadata, append, on_error=_notifier.queue.put
         )
 
         with async_writer(sync_writer, time_offset, record_stdin) as _writer:
