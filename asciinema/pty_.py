@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from .tty_ import raw
 
 EXIT_SIGNALS = [
+    signal.SIGCHLD,
     signal.SIGHUP,
     signal.SIGTERM,
     signal.SIGQUIT,
