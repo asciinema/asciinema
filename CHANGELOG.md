@@ -4,7 +4,7 @@
 
 ## 2.1.0 (2021-10-02)
 
-* Ability to pause/unpause recording with ctrl+p
+* Ability to pause/unpause recording session with ctrl+\
 * Desktop notifications (for pause/unpause)
 * Configurable hotkeys for recording and playback
 * Fixed ASCIINEMA_REC env var setting for recording session
