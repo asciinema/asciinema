@@ -1,5 +1,19 @@
 # asciinema changelog
 
+## 2.2.0 (unreleased)
+
+## 2.1.0 (2021-10-02)
+
+* Ability to pause/unpause recording with ctrl+p
+* Desktop notifications (for pause/unpause)
+* Configurable hotkeys for recording and playback
+* Fixed ASCIINEMA_REC env var setting for recording session
+* Fixed codeset detection on HP-UX
+* Fixed encoding of basic auth header for upload to asciinema server
+* `--overwrite` option is now suggested when dest file exists
+* Terminal answerbacks are now captured by `asciinema cat`
+* Internal refactorings
+
 ## 2.0.2 (2019-01-12)
 
 * Official support for Python 3.7
