@@ -68,7 +68,7 @@ asciinema rec -c 'bash -c "echo t3st; sleep 2; echo ok"' "${TMP_DATA_DIR}/1a.cas
 grep '"o",' "${TMP_DATA_DIR}/1a.cast"
 
 # very quickly exiting program
-asciinema rec -c who "${TMP_DATA_DIR}/1b.cast"
+asciinema rec -c whoami "${TMP_DATA_DIR}/1b.cast"
 grep '"o",' "${TMP_DATA_DIR}/1b.cast"
 
 # signal handling
