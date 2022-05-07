@@ -1,31 +1,75 @@
-NAME=asciinema
-VERSION=`python3 -c "import asciinema; print(asciinema.__version__)"`
+NAME    := asciinema
+VERSION := $(shell python3 -c "import asciinema; print(asciinema.__version__)")
 
-test: test-unit test-integration
+VIRTUAL_ENV ?= .venv
 
-test-unit:
-	nosetests
+.PHONY: test
+test: test.unit test.integration
 
-test-integration:
+.PHONY: test.unit
+test.unit:
+	pytest
+
+.PHONY: test.integration
+test.integration:
 	tests/integration.sh
 
+.PHONY: test.distros
+test.distros:
+	tests/distros.sh
+
+.PHONY: release
 release: test tag push
 
-release-test: test push-test
+.PHONY: release.test
+release.test: test push.test
 
-tag:
-	git tag | grep "v$(VERSION)" && echo "Tag v$(VERSION) exists" && exit 1 || true
+.PHONY: .tag.exists
+.tag.exists:
+	@git tag \
+		| grep -q "v$(VERSION)" \
+		&& echo "Tag v$(VERSION) exists" \
+		&& exit 1
+
+.PHONY: tag
+tag: .tag.exists
 	git tag -s -m "Releasing $(VERSION)" v$(VERSION)
 	git push origin v$(VERSION)
 
-push:
-	python3 -m pip install --user --upgrade --quiet twine
-	python3 setup.py sdist bdist_wheel
+.PHONY: .venv
+.venv:
+	python3 -m venv $(VIRTUAL_ENV)
+
+.PHONY: .pip
+.pip: .venv
+	. $(VIRTUAL_ENV)/bin/activate \
+		&& python3 -m pip install --upgrade build twine
+
+build: .pip
+	. $(VIRTUAL_ENV)/bin/activate \
+		&& python3 -m build .
+
+install: build
+	. $(VIRTUAL_ENV)/bin/activate \
+		&& python3 -m pip install .
+
+.PHONY: push
+push: .pip build
 	python3 -m twine upload dist/*
 
-push-test:
-	python3 -m pip install --user --upgrade --quiet twine
-	python3 setup.py sdist bdist_wheel
+.PHONY: push.test
+push.test: .pip build
 	python3 -m twine upload --repository testpypi dist/*
 
-.PHONY: test test-unit test-integration release release-test tag push push-test
+
+.PHONY: clean
+clean:
+	rm -rf dist *.egg-info
+
+clean.all: clean
+	find .  \
+		-type d \
+		-name __pycache__ \
+		-o -name .pytest_cache \
+		-o -name .mypy_cache \
+		-exec rm -r "{}" +

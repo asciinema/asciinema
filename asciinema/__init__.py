@@ -1,25 +1,34 @@
 import sys
 
-__author__ = 'Marcin Kulik'
-__version__ = '2.1.0'
+__author__ = "Marcin Kulik"
+__version__ = "2.2.0"
 
-if sys.version_info[0] < 3:
-    raise ImportError('Python < 3 is unsupported.')
+if sys.version_info < (3, 6):
+    raise ImportError("Python < 3.6 is unsupported.")
 
-import asciinema.recorder
+# pylint: disable=wrong-import-position
+from typing import Any, Optional
+
+from .recorder import record
 
 
-def record_asciicast(path, command=None, append=False, idle_time_limit=None,
-                     rec_stdin=False, title=None, metadata=None,
-                     command_env=None, capture_env=None):
-    asciinema.recorder.record(
-        path,
+def record_asciicast(  # pylint: disable=too-many-arguments
+    path_: str,
+    command: Any = None,
+    append: bool = False,
+    idle_time_limit: Optional[int] = None,
+    record_stdin: bool = False,
+    title: Optional[str] = None,
+    command_env: Any = None,
+    capture_env: Any = None,
+) -> None:
+    record(
+        path_,
         command=command,
         append=append,
         idle_time_limit=idle_time_limit,
-        rec_stdin=rec_stdin,
+        record_stdin=record_stdin,
         title=title,
-        metadata=metadata,
         command_env=command_env,
-        capture_env=capture_env
+        capture_env=capture_env,
     )

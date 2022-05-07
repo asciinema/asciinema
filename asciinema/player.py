@@ -1,25 +1,43 @@
-import os
 import sys
 import time
+from typing import Any, Dict, Optional, TextIO, Union
 
-import asciinema.asciicast.events as ev
-from asciinema.term import raw, read_blocking
+from .asciicast import events as ev
+from .asciicast.v1 import Asciicast as v1
+from .asciicast.v2 import Asciicast as v2
+from .tty_ import raw, read_blocking
 
 
-class Player:
-
-    def play(self, asciicast, idle_time_limit=None, speed=1.0, key_bindings={}):
+class Player:  # pylint: disable=too-few-public-methods
+    def play(
+        self,
+        asciicast: Union[v1, v2],
+        idle_time_limit: Optional[int] = None,
+        speed: float = 1.0,
+        key_bindings: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if key_bindings is None:
+            key_bindings = {}
         try:
-            stdin = open('/dev/tty')
-            with raw(stdin.fileno()):
-                self._play(asciicast, idle_time_limit, speed, stdin, key_bindings)
-        except Exception:
+            with open("/dev/tty", "rt", encoding="utf-8") as stdin:
+                with raw(stdin.fileno()):
+                    self._play(
+                        asciicast, idle_time_limit, speed, stdin, key_bindings
+                    )
+        except Exception:  # pylint: disable=broad-except
             self._play(asciicast, idle_time_limit, speed, None, key_bindings)
 
-    def _play(self, asciicast, idle_time_limit, speed, stdin, key_bindings):
+    @staticmethod
+    def _play(  # pylint: disable=too-many-locals
+        asciicast: Union[v1, v2],
+        idle_time_limit: Optional[int],
+        speed: float,
+        stdin: Optional[TextIO],
+        key_bindings: Dict[str, Any],
+    ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
-        pause_key = key_bindings.get('pause')
-        step_key = key_bindings.get('step')
+        pause_key = key_bindings.get("pause")
+        step_key = key_bindings.get("step")
 
         stdout = asciicast.stdout_events()
         stdout = ev.to_relative_time(stdout)
@@ -30,7 +48,7 @@ class Player:
         base_time = time.time()
         ctrl_c = False
         paused = False
-        pause_time = None
+        pause_time: Optional[float] = None
 
         for t, _type, text in stdout:
             delay = t - (time.time() - base_time)
@@ -46,7 +64,8 @@ class Player:
 
                         if data == pause_key:
                             paused = False
-                            base_time = base_time + (time.time() - pause_time)
+                            assert pause_time is not None
+                            base_time += time.time() - pause_time
                             break
 
                         if data == step_key:

@@ -43,9 +43,9 @@ command (process) that is recorded can be specified with **-c** option (see
 below), and defaults to **$SHELL** which is what you want in most cases.
 
 You can temporarily pause the capture of your terminal by pressing
-<kbd>Ctrl+\</kbd>.  This is useful when you want to execute some commands during
+<kbd>Ctrl+\\</kbd>.  This is useful when you want to execute some commands during
 the recording session that should not be captured (e.g. pasting secrets). Resume
-by pressing <kbd>Ctrl+\</kbd> again. When pausing desktop notification is
+by pressing <kbd>Ctrl+\\</kbd> again. When pausing desktop notification is
 displayed so you're sure the sensitive output won't be captured in the
 recording.
 
@@ -94,6 +94,12 @@ Available options:
 
     `-i, --idle-time-limit=<sec>`
     :   Limit recorded terminal inactivity to max `<sec>` seconds
+
+    `--cols=<n>`
+    :   Override terminal columns for recorded process
+
+    `--rows=<n>`
+    :   Override terminal rows for recorded process
 
     `-y, --yes`
     :   Answer "yes" to all prompts (e.g. upload confirmation)
@@ -325,6 +331,10 @@ More documentation is available on the asciicast.org website and its GitHub wiki
 
 * Web:  [asciinema.org/docs/](https://asciinema.org/docs/)
 * Wiki: [github.com/asciinema/asciinema/wiki](https://github.com/asciinema/asciinema/wiki)
+<<<<<<< HEAD
+=======
+* IRC:  [Channel on Libera.Chat](https://web.libera.chat/gamja/#asciinema)
+>>>>>>> develop
 * Twitter: [@asciinema](https://twitter.com/asciinema)
 
 
@@ -336,4 +346,3 @@ asciinema's lead developer is Marcin Kulik.
 For a list of all contributors look here: <https://github.com/asciinema/asciinema/contributors>
 
 This Manual Page was written by Marcin Kulik with help from Kurt Pfeifle.
-

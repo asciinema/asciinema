@@ -14,21 +14,36 @@ Terminal session recorder and the best companion of
 asciinema lets you easily record terminal sessions and replay
 them in a terminal as well as in a web browser.
 
-Install latest version ([other installation options](#installation)):
+Install latest version ([other installation options](#installation))
+using [pipx](https://pypa.github.io/pipx/) (if you have it):
 
-    sudo pip3 install asciinema
+```sh
+pipx install asciinema
+```
+
+If you don't have pipx, install using pip with your preferred Python version:
+
+```sh
+python3 -m pip install asciinema
+```
 
 Record your first session:
 
-    asciinema rec first.cast
+```sh
+asciinema rec first.cast
+```
 
 Now replay it with double speed:
 
-    asciinema play -s 2 first.cast
+```sh
+asciinema play -s 2 first.cast
+```
 
 Or with normal speed but with idle time limited to 2 seconds:
 
-    asciinema play -i 2 first.cast
+```sh
+asciinema play -i 2 first.cast
+```
 
 You can pass `-i 2` to `asciinema rec` as well, to set it permanently on a
 recording. Idle time limiting makes the recordings much more interesting to
@@ -36,7 +51,9 @@ watch. Try it.
 
 If you want to watch and share it on the web, upload it:
 
-    asciinema upload first.cast
+```sh
+asciinema upload first.cast
+```
 
 The above uploads it to [asciinema.org](https://asciinema.org), which is a
 default [asciinema-server](https://github.com/asciinema/asciinema-server)
@@ -45,7 +62,9 @@ browser.
 
 You can record and upload in one step by omitting the filename:
 
-    asciinema rec
+```sh
+asciinema rec
+```
 
 You'll be asked to confirm the upload when the recording is done. Nothing is
 sent anywhere without your consent.
@@ -55,15 +74,25 @@ cover installation, usage and hosting of the recordings in more detail.
 
 ## Installation
 
-### Python package
+### Python package from PyPI
 
-asciinema is available on [PyPI](https://pypi.python.org/pypi/asciinema) and can
-be installed with pip (Python 3 with setuptools required):
+[pypi]: https://pypi.python.org/pypi/asciinema
 
-    sudo pip3 install asciinema
+asciinema is available on [PyPI] and can be installed with
+[pipx](https://pypa.github.io/pipx/) (if you have it) or with pip (Python 3
+with setuptools required):
 
-This is the recommended way of installation, which gives you the latest released
-version.
+```sh
+pipx install asciinema
+```
+
+Or with pip (using your preferred Python version):
+
+```sh
+python3 -m pip install asciinema
+```
+
+Installing from [PyPI] is the recommended way of installation, which gives you the latest released version.
 
 ### Native packages
 
@@ -78,32 +107,45 @@ can clone the repo and run asciinema straight from the checkout.
 
 Clone the repo:
 
-    git clone https://github.com/asciinema/asciinema.git
-    cd asciinema
+```sh
+git clone https://github.com/asciinema/asciinema.git
+cd asciinema
+```
 
 If you want latest stable version:
 
-    git checkout master
+```sh
+git checkout master
+```
 
 If you want current development version:
 
-    git checkout develop
+```sh
+git checkout develop
+```
 
 Then run it with:
 
-    python3 -m asciinema --version
+```sh
+python3 -m asciinema --version
+```
 
 ### Docker image
 
-asciinema Docker image is based on Ubuntu 18.04 and has the latest version of
+asciinema Docker image is based on [Ubuntu
+20.04](https://releases.ubuntu.com/20.04/) and has the latest version of
 asciinema recorder pre-installed.
 
-    docker pull asciinema/asciinema
+```sh
+docker pull docker.io/asciinema/asciinema
+```
 
 When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
 (`-i`) and mount config directory volume (`-v`):
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema asciinema/asciinema rec
+```sh
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" docker.io/asciinema/asciinema rec
+```
 
 Container's entrypoint is set to `/usr/local/bin/asciinema` so you can run the
 container with any arguments you would normally pass to `asciinema` binary (see
@@ -111,13 +153,28 @@ Usage section for commands and options).
 
 There's not much software installed in this image though. In most cases you may
 want to install extra programs before recording. One option is to derive new
-image from this one (start your custom Dockerfile with `FROM
-asciinema/asciinema`). Another option is to start the container with `/bin/bash`
+image from this one (start your custom Dockerfile with `FROM asciinema/asciinema`). Another option is to start the container with `/bin/bash`
 as the entrypoint, install extra packages and manually start `asciinema rec`:
 
-    docker run --rm -ti -v "$HOME/.config/asciinema":/root/.config/asciinema --entrypoint=/bin/bash asciinema/asciinema
-    root@6689517d99a1:~# apt-get install foobar
-    root@6689517d99a1:~# asciinema rec
+```console
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" --entrypoint=/bin/bash docker.io/asciinema/asciinema rec
+root@6689517d99a1:~# apt-get install foobar
+root@6689517d99a1:~# asciinema rec
+```
+
+It is also possible to run the docker container as a non-root user, which has
+security benefits. You can specify a user and group id at runtime to give the
+application permission similar to the calling user on your host.
+
+```sh
+docker run --rm -it \
+    --env=ASCIINEMA_CONFIG_HOME="/run/user/$(id -u)/.config/asciinema" \
+    --user="$(id -u):$(id -g)" \
+    --volume="${HOME}/.config/asciinema:/run/user/$(id -u)/.config/asciinema:rw" \
+    --volume="${PWD}:/data:rw" \
+    --workdir='/data' \
+    docker.io/asciinema/asciinema rec
+```
 
 ## Usage
 
@@ -129,7 +186,7 @@ all available commands with their options.
 
 ### `rec [filename]`
 
-__Record terminal session.__
+**Record terminal session.**
 
 By running `asciinema rec [filename]` you start a new recording session. The
 command (process) that is recorded can be specified with `-c` option (see
@@ -162,17 +219,19 @@ prompt or play a sound when the shell is being recorded.
 
 Available options:
 
-* `--stdin` - Enable stdin (keyboard) recording (see below)
-* `--append` - Append to existing recording
-* `--raw` - Save raw STDOUT output, without timing information or other metadata
-* `--overwrite` - Overwrite the recording if it already exists
-* `-c, --command=<command>` - Specify command to record, defaults to $SHELL
-* `-e, --env=<var-names>` - List of environment variables to capture, defaults
+- `--stdin` - Enable stdin (keyboard) recording (see below)
+- `--append` - Append to existing recording
+- `--raw` - Save raw STDOUT output, without timing information or other metadata
+- `--overwrite` - Overwrite the recording if it already exists
+- `-c, --command=<command>` - Specify command to record, defaults to $SHELL
+- `-e, --env=<var-names>` - List of environment variables to capture, defaults
   to `SHELL,TERM`
-* `-t, --title=<title>` - Specify the title of the asciicast
-* `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
-* `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
-* `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
+- `-t, --title=<title>` - Specify the title of the asciicast
+- `-i, --idle-time-limit=<sec>` - Limit recorded terminal inactivity to max `<sec>` seconds
+- `--cols=<n>` - Override terminal columns for recorded process
+- `--rows=<n>` - Override terminal rows for recorded process
+- `-y, --yes` - Answer "yes" to all prompts (e.g. upload confirmation)
+- `-q, --quiet` - Be quiet, suppress all notices/warnings (implies -y)
 
 Stdin recording allows for capturing of all characters typed in by the user in
 the currently recorded shell. This may be used by a player (e.g.
@@ -183,7 +242,7 @@ instance), it's disabled by default, and has to be explicitly enabled via
 
 ### `play <filename>`
 
-__Replay recorded asciicast in a terminal.__
+**Replay recorded asciicast in a terminal.**
 
 This command replays given asciicast (as recorded by `rec` command) directly in
 your terminal.
@@ -199,32 +258,41 @@ keyboard shortcuts.
 
 Playing from a local file:
 
-    asciinema play /path/to/asciicast.cast
+```sh
+asciinema play /path/to/asciicast.cast
+```
 
 Playing from HTTP(S) URL:
 
-    asciinema play https://asciinema.org/a/22124.cast
-    asciinema play http://example.com/demo.cast
+```sh
+asciinema play https://asciinema.org/a/22124.cast
+asciinema play http://example.com/demo.cast
+```
 
-Playing from asciicast page URL (requires `<link rel="alternate"
-type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
+Playing from asciicast page URL (requires `<link rel="alternate" type="application/x-asciicast" href="/my/ascii.cast">` in page's HTML):
 
-    asciinema play https://asciinema.org/a/22124
-    asciinema play http://example.com/blog/post.html
+```sh
+asciinema play https://asciinema.org/a/22124
+asciinema play http://example.com/blog/post.html
+```
 
 Playing from stdin:
 
-    cat /path/to/asciicast.cast | asciinema play -
-    ssh user@host cat asciicast.cast | asciinema play -
+```sh
+cat /path/to/asciicast.cast | asciinema play -
+ssh user@host cat asciicast.cast | asciinema play -
+```
 
 Playing from IPFS:
 
-    asciinema play dweb:/ipfs/QmNe7FsYaHc9SaDEAEXbaagAzNw9cH7YbzN4xV7jV1MCzK/ascii.cast
+```sh
+asciinema play dweb:/ipfs/QmNe7FsYaHc9SaDEAEXbaagAzNw9cH7YbzN4xV7jV1MCzK/ascii.cast
+```
 
 Available options:
 
-* `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
-* `-s, --speed=<factor>` - Playback speed (can be fractional)
+- `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
+- `-s, --speed=<factor>` - Playback speed (can be fractional)
 
 > For the best playback experience it is recommended to run `asciinema play` in
 > a terminal of dimensions not smaller than the one used for recording, as
@@ -232,7 +300,7 @@ Available options:
 
 ### `cat <filename>`
 
-__Print full output of recorded asciicast to a terminal.__
+**Print full output of recorded asciicast to a terminal.**
 
 While `asciinema play <filename>` replays the recorded session using timing
 information saved in the asciicast, `asciinema cat <filename>` dumps the full
@@ -243,18 +311,17 @@ output (including all escape sequences) to a terminal immediately.
 
 ### `upload <filename>`
 
-__Upload recorded asciicast to asciinema.org site.__
+**Upload recorded asciicast to asciinema.org site.**
 
 This command uploads given asciicast (recorded by `rec` command) to
 asciinema.org, where it can be watched and shared.
 
-`asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload
-demo.cast` is a nice combo if you want to review an asciicast before
+`asciinema rec demo.cast` + `asciinema play demo.cast` + `asciinema upload demo.cast` is a nice combo if you want to review an asciicast before
 publishing it on asciinema.org.
 
 ### `auth`
 
-__Link your install ID with your asciinema.org user account.__
+**Link your install ID with your asciinema.org user account.**
 
 If you want to manage your recordings (change title/theme, delete) at
 asciinema.org you need to link your "install ID" with asciinema.org user
@@ -402,4 +469,5 @@ source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 Copyright &copy; 2011–2021 Marcin Kulik.
 
-All code is licensed under the GPL, v3 or later. See LICENSE file for details.
+All code is licensed under the GPL, v3 or later. See [LICENSE](./LICENSE) file
+for details.

@@ -1,25 +1,48 @@
 import os
+import sys
+from os import path
+from typing import Any, Callable, Optional
+
+from ..file_writer import file_writer
 
 
-class writer():
+class writer(file_writer):
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        path_: str,
+        metadata: Any = None,
+        append: bool = False,
+        buffering: int = 0,
+        on_error: Optional[Callable[[str], None]] = None,
+    ) -> None:
+        super().__init__(path_, on_error)
 
-    def __init__(self, path, metadata=None, append=False, buffering=0):
-        if append and os.path.exists(path) and os.stat(path).st_size == 0:  # true for pipes
+        if (
+            append and path.exists(path_) and os.stat(path_).st_size == 0
+        ):  # true for pipes
             append = False
 
-        self.path = path
         self.buffering = buffering
-        self.mode = 'ab' if append else 'wb'
+        self.mode: str = "ab" if append else "wb"
+        self.metadata = metadata
 
-    def __enter__(self):
-        self.file = open(self.path, mode=self.mode, buffering=self.buffering)
-        return self
+    def write_stdout(self, _ts: float, data: Any) -> None:
+        self._write(data)
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.file.close()
-
-    def write_stdout(self, ts, data):
-        self.file.write(data)
-
-    def write_stdin(self, ts, data):
+    # pylint: disable=no-self-use
+    def write_stdin(self, ts: float, data: Any) -> None:
         pass
+
+    # pylint: disable=consider-using-with
+    def _open_file(self) -> None:
+        if self.path == "-":
+            self.file = os.fdopen(
+                sys.stdout.fileno(),
+                mode=self.mode,
+                buffering=self.buffering,
+                closefd=False,
+            )
+        else:
+            self.file = open(
+                self.path, mode=self.mode, buffering=self.buffering
+            )

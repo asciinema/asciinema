@@ -1,22 +1,38 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-path_to_self="${BASH_SOURCE[0]}"
-tests_dir="$(cd "$(dirname "$path_to_self")" && pwd)"
+readonly DISTROS=(
+    'arch'
+    'alpine'
+    'centos'
+    'debian'
+    'fedora'
+    'ubuntu'
+)
 
-test() {
-    printf "\e[1;32mTesting on $1...\e[0m\n"
-    echo
+readonly DOCKER='docker'
 
-    docker build -t asciinema/asciinema:$1 -f tests/distros/Dockerfile.$1 .
-    docker run --rm -ti asciinema/asciinema:$1 tests/integration.sh
+# do not redefine builtin `test`
+test_() {
+    local -r tag="${1}"
+
+    local -ra docker_opts=(
+        "--tag=asciinema/asciinema:${tag}"
+        "--file=tests/distros/Dockerfile.${tag}"
+    )
+
+    printf "\e[1;32mTesting on %s...\e[0m\n\n" "${tag}"
+
+    # shellcheck disable=SC2068
+    "${DOCKER}" build ${docker_opts[@]} .
+
+    "${DOCKER}" run --rm -it "asciinema/asciinema:${tag}" tests/integration.sh
 }
 
-test ubuntu
-test debian
-test fedora
-test centos
 
-echo
-printf "\e[1;32mAll tests passed.\e[0m\n"
+for distro in "${DISTROS[@]}"; do
+    test_ "${distro}"
+done
+
+printf "\n\e[1;32mAll tests passed.\e[0m\n"

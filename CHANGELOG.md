@@ -1,5 +1,19 @@
 # asciinema changelog
 
+## 2.2.0 (2022-05-07)
+
+* Added official support for Python 3.8, 3.9, 3.10
+* Dropped official support for Python 3.5
+* Added `--cols` / `--rows` options for overriding size of pseudo-terminal reported to recorded program
+* Improved behaviour of `--append` when output file doesn't exist
+* Keyboard input is now explicitly read from a TTY device in addition to stdin (when stdin != TTY)
+* Recorded program output is now explicitly written to a TTY device instead of stdout
+* Dash char (`-`) can now be passed as output filename to write asciicast to stdout
+* Diagnostic messages are now printed to stderr (without colors when stderr != TTY)
+* Improved robustness of writing asciicast to named pipes
+* Lots of codebase modernizations (many thanks to Davis @djds Schirmer!)
+* Many other internal refactorings
+
 ## 2.1.0 (2021-10-02)
 
 * Ability to pause/resume terminal capture with `C-\` key shortcut
@@ -12,7 +26,6 @@
 * Upload for users with very long `$USER` is fixed
 * Added official support for Python 3.8 and 3.9
 * Dropped official support for EOL-ed Python 3.4 and 3.5
-* Internal refactorings
 
 ## 2.0.2 (2019-01-12)
 
