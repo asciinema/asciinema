@@ -4,7 +4,7 @@
 
 * Added official support for Python 3.8, 3.9, 3.10
 * Dropped official support for Python 3.5
-* Added `--cols` / `--rows` options for overriding size of pseudo-terminal
+* Added `--cols` / `--rows` options for overriding size of pseudo-terminal reported to recorded program
 * Improved behaviour of `--append` when output file doesn't exist
 * Keyboard input is now explicitly read from a TTY device in addition to stdin (when stdin != TTY)
 * Recorded program output is now explicitly written to a TTY device instead of stdout
