@@ -74,9 +74,10 @@ def record(
 
             return
 
-        while data:
-            n = os.write(pty_fd, data)
-            data = data[n:]
+        remaining_data = data
+        while remaining_data:
+            n = os.write(pty_fd, remaining_data)
+            remaining_data = remaining_data[n:]
 
         if not pause_time:
             assert start_time is not None
