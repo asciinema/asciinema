@@ -79,7 +79,10 @@ def record(
             n = os.write(pty_fd, remaining_data)
             remaining_data = remaining_data[n:]
 
-        if not pause_time:
+        # save stdin unless paused or data is OSC response (e.g. \x1b]11;?\x07)
+        if not pause_time and not (
+            data[0] == 0x1B and data[1] == 0x5D and data[-1] == 0x07
+        ):
             assert start_time is not None
             writer.write_stdin(time.time() - start_time, data)
 
