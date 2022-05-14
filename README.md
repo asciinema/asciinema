@@ -293,11 +293,19 @@ Available options:
 
 - `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 - `-s, --speed=<factor>` - Playback speed (can be fractional)
-- `--stream=<stream>` - Recorded stream to play (see below)
+- `--stream=<stream>` - Select stream to play (see below)
+- `--out-fmt=<format>` - Select output format (see below)
 
 By default the output stream (`o`) is played. This is what you want in most
 cases.  If you recorded the input stream (`i`) with `asciinema rec --stdin` then
 you can replay it with `asciinema play --stream=i <filename>`.
+
+By default the selected stream is written to stdout in original, raw data form.
+This is also what you want in majority of cases. However you can change the
+output format to asciicast (newline delimited JSON) with `asciinema play
+--out-fmt=asciicast <filename>`. This allows delegating actual rendering to
+another place (e.g. outside of your terminal) by piping output of `asciinema
+play` to a tool of your choice.
 
 > For the best playback experience it is recommended to run `asciinema play` in
 > a terminal of dimensions not smaller than the one used for recording, as

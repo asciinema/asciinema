@@ -18,6 +18,7 @@ class PlayCommand(Command):
         self.filename = args.filename
         self.idle_time_limit = args.idle_time_limit
         self.speed = args.speed
+        self.out_fmt = args.out_fmt
         self.stream = args.stream
         self.player = player if player is not None else Player()
         self.key_bindings = {
@@ -33,6 +34,7 @@ class PlayCommand(Command):
                     idle_time_limit=self.idle_time_limit,
                     speed=self.speed,
                     key_bindings=self.key_bindings,
+                    out_fmt=self.out_fmt,
                     stream=self.stream,
                 )
 

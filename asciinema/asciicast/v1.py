@@ -35,7 +35,7 @@ class Asciicast:
         }
         return header
 
-    def events(self, type_: Optional[str]) -> Iterable[List[Any]]:
+    def events(self, type_: Optional[str] = None) -> Iterable[List[Any]]:
         if type_ in [None, "o"]:
             return to_absolute_time(self.__stdout_events())
         else:

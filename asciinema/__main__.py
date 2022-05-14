@@ -179,6 +179,12 @@ For help on a specific command run:
         default=cfg.play_speed,
     )
     parser_play.add_argument(
+        "--out-fmt",
+        help="output format",
+        choices=["raw", "asciicast"],
+        default="raw",
+    )
+    parser_play.add_argument(
         "--stream",
         help="recorded stream to play (o, i)",
         default="o",

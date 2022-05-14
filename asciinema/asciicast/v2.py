@@ -31,7 +31,9 @@ class Asciicast:
         self.v2_header = header
         self.idle_time_limit = header.get("idle_time_limit")
 
-    def events(self, type_: Optional[str]) -> Generator[List[Any], None, None]:
+    def events(
+        self, type_: Optional[str] = None
+    ) -> Generator[List[Any], None, None]:
         if type_ is None:
             for line in self.__file:
                 yield json.loads(line)

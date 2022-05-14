@@ -1,3 +1,4 @@
+import json
 import sys
 import time
 from typing import Any, Dict, Optional, TextIO, Union
@@ -7,6 +8,44 @@ from .asciicast.v1 import Asciicast as v1
 from .asciicast.v2 import Asciicast as v2
 from .tty_ import raw, read_blocking
 
+Header = Dict[str, Any]
+
+
+class RawOutput:
+    def __init__(self, stream: Optional[str]) -> None:
+        self.stream = stream or "o"
+
+    def start(self, _header: Header) -> None:
+        pass
+
+    def write(self, _time: float, event_type: str, data: str) -> None:
+        if event_type == self.stream:
+            sys.stdout.write(data)
+            sys.stdout.flush()
+
+
+class AsciicastOutput:
+    def __init__(self, stream: Optional[str]) -> None:
+        self.stream = stream
+
+    def start(self, header: Header) -> None:
+        self.__write_line(header)
+
+    def write(self, time: float, event_type: str, data: str) -> None:
+        if self.stream in [None, event_type]:
+            self.__write_line([time, event_type, data])
+
+    def __write_line(self, obj: Any) -> None:
+        line = json.dumps(
+            obj, ensure_ascii=False, indent=None, separators=(", ", ": ")
+        )
+
+        sys.stdout.write(f"{line}\r\n")
+        sys.stdout.flush()
+
+
+Output = Union[RawOutput, AsciicastOutput]
+
 
 class Player:  # pylint: disable=too-few-public-methods
     def play(
@@ -15,10 +54,16 @@ class Player:  # pylint: disable=too-few-public-methods
         idle_time_limit: Optional[int] = None,
         speed: float = 1.0,
         key_bindings: Optional[Dict[str, Any]] = None,
-        stream: str = "o",
+        out_fmt: str = "raw",
+        stream: Optional[str] = None,
     ) -> None:
         if key_bindings is None:
             key_bindings = {}
+
+        output: Output = (
+            RawOutput(stream) if out_fmt == "raw" else AsciicastOutput(stream)
+        )
+
         try:
             with open("/dev/tty", "rt", encoding="utf-8") as stdin:
                 with raw(stdin.fileno()):
@@ -29,10 +74,17 @@ class Player:  # pylint: disable=too-few-public-methods
                         stdin,
                         key_bindings,
                         stream,
+                        output,
                     )
         except Exception:  # pylint: disable=broad-except
             self._play(
-                asciicast, idle_time_limit, speed, None, key_bindings, stream
+                asciicast,
+                idle_time_limit,
+                speed,
+                None,
+                key_bindings,
+                stream,
+                output,
             )
 
     @staticmethod
@@ -42,24 +94,27 @@ class Player:  # pylint: disable=too-few-public-methods
         speed: float,
         stdin: Optional[TextIO],
         key_bindings: Dict[str, Any],
-        stream: str,
+        stream: Optional[str],
+        output: Output,
     ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get("pause")
         step_key = key_bindings.get("step")
 
-        events = asciicast.events(stream)
+        events = asciicast.events()
         events = ev.to_relative_time(events)
         events = ev.cap_relative_time(events, idle_time_limit)
         events = ev.to_absolute_time(events)
         events = ev.adjust_speed(events, speed)
+
+        output.start(asciicast.v2_header)
 
         base_time = time.time()
         ctrl_c = False
         paused = False
         pause_time: Optional[float] = None
 
-        for t, _type, text in events:
+        for t, event_type, text in events:
             delay = t - (time.time() - base_time)
 
             while stdin and not ctrl_c and delay > 0:
@@ -101,5 +156,4 @@ class Player:  # pylint: disable=too-few-public-methods
             if ctrl_c:
                 break
 
-            sys.stdout.write(text)
-            sys.stdout.flush()
+            output.write(t, event_type, text)
