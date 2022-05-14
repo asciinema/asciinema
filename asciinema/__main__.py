@@ -174,20 +174,21 @@ For help on a specific command run:
     parser_play.add_argument(
         "-s",
         "--speed",
-        help="playback speedup (can be fractional)",
+        help="set playback speed (can be fractional)",
         type=positive_float,
         default=cfg.play_speed,
     )
     parser_play.add_argument(
         "--out-fmt",
-        help="output format",
+        help="select output format",
         choices=["raw", "asciicast"],
         default="raw",
     )
     parser_play.add_argument(
         "--stream",
-        help="recorded stream to play (o, i)",
-        default="o",
+        help="select stream to play",
+        choices=["o", "i"],
+        default=None,
     )
     parser_play.add_argument(
         "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
