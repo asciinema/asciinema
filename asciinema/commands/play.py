@@ -18,6 +18,7 @@ class PlayCommand(Command):
         self.filename = args.filename
         self.idle_time_limit = args.idle_time_limit
         self.speed = args.speed
+        self.stream = args.stream
         self.player = player if player is not None else Player()
         self.key_bindings = {
             "pause": config.play_pause_key,
@@ -28,7 +29,11 @@ class PlayCommand(Command):
         try:
             with asciicast.open_from_url(self.filename) as a:
                 self.player.play(
-                    a, self.idle_time_limit, self.speed, self.key_bindings
+                    a,
+                    idle_time_limit=self.idle_time_limit,
+                    speed=self.speed,
+                    key_bindings=self.key_bindings,
+                    stream=self.stream,
                 )
 
         except asciicast.LoadError as e:

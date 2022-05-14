@@ -17,7 +17,7 @@ class CatCommand(Command):
             with open("/dev/tty", "rt", encoding="utf-8") as stdin:
                 with raw(stdin.fileno()):
                     with asciicast.open_from_url(self.filename) as a:
-                        for _, _type, text in a.stdout_events():
+                        for _, _type, text in a.events("o"):
                             sys.stdout.write(text)
                             sys.stdout.flush()
 

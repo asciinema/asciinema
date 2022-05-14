@@ -15,6 +15,7 @@ class Player:  # pylint: disable=too-few-public-methods
         idle_time_limit: Optional[int] = None,
         speed: float = 1.0,
         key_bindings: Optional[Dict[str, Any]] = None,
+        stream: str = "o",
     ) -> None:
         if key_bindings is None:
             key_bindings = {}
@@ -22,10 +23,17 @@ class Player:  # pylint: disable=too-few-public-methods
             with open("/dev/tty", "rt", encoding="utf-8") as stdin:
                 with raw(stdin.fileno()):
                     self._play(
-                        asciicast, idle_time_limit, speed, stdin, key_bindings
+                        asciicast,
+                        idle_time_limit,
+                        speed,
+                        stdin,
+                        key_bindings,
+                        stream,
                     )
         except Exception:  # pylint: disable=broad-except
-            self._play(asciicast, idle_time_limit, speed, None, key_bindings)
+            self._play(
+                asciicast, idle_time_limit, speed, None, key_bindings, stream
+            )
 
     @staticmethod
     def _play(  # pylint: disable=too-many-locals
@@ -34,23 +42,24 @@ class Player:  # pylint: disable=too-few-public-methods
         speed: float,
         stdin: Optional[TextIO],
         key_bindings: Dict[str, Any],
+        stream: str,
     ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get("pause")
         step_key = key_bindings.get("step")
 
-        stdout = asciicast.stdout_events()
-        stdout = ev.to_relative_time(stdout)
-        stdout = ev.cap_relative_time(stdout, idle_time_limit)
-        stdout = ev.to_absolute_time(stdout)
-        stdout = ev.adjust_speed(stdout, speed)
+        events = asciicast.events(stream)
+        events = ev.to_relative_time(events)
+        events = ev.cap_relative_time(events, idle_time_limit)
+        events = ev.to_absolute_time(events)
+        events = ev.adjust_speed(events, speed)
 
         base_time = time.time()
         ctrl_c = False
         paused = False
         pause_time: Optional[float] = None
 
-        for t, _type, text in stdout:
+        for t, _type, text in events:
             delay = t - (time.time() - base_time)
 
             while stdin and not ctrl_c and delay > 0:
