@@ -31,14 +31,15 @@ class Asciicast:
         self.v2_header = header
         self.idle_time_limit = header.get("idle_time_limit")
 
-    def events(self) -> Generator[Any, None, None]:
-        for line in self.__file:
-            yield json.loads(line)
-
-    def stdout_events(self) -> Generator[List[Any], None, None]:
-        for time, type_, data in self.events():
-            if type_ == "o":
-                yield [time, type_, data]
+    def events(self, type_: Optional[str]) -> Generator[List[Any], None, None]:
+        if type_ is None:
+            for line in self.__file:
+                yield json.loads(line)
+        else:
+            for line in self.__file:
+                event = json.loads(line)
+                if event[1] == type_:
+                    yield event
 
 
 def build_from_header_and_file(
@@ -76,7 +77,7 @@ def get_duration(path_: str) -> Any:
         first_line = f.readline()
         with open_from_file(first_line, f) as a:
             last_frame = None
-            for last_frame in a.stdout_events():
+            for last_frame in a.events("o"):
                 pass
             return last_frame[0]
 

@@ -179,6 +179,11 @@ For help on a specific command run:
         default=cfg.play_speed,
     )
     parser_play.add_argument(
+        "--stream",
+        help="recorded stream to play (o, i)",
+        default="o",
+    )
+    parser_play.add_argument(
         "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
     )
     parser_play.set_defaults(cmd=PlayCommand)

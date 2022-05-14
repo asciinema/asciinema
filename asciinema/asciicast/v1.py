@@ -1,7 +1,16 @@
 import json
 from codecs import StreamReader
 from json.decoder import JSONDecodeError
-from typing import Any, Dict, Generator, List, Optional, TextIO, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    TextIO,
+    Union,
+)
 
 from .events import to_absolute_time
 
@@ -26,15 +35,15 @@ class Asciicast:
         }
         return header
 
+    def events(self, type_: Optional[str]) -> Iterable[List[Any]]:
+        if type_ in [None, "o"]:
+            return to_absolute_time(self.__stdout_events())
+        else:
+            return []
+
     def __stdout_events(self) -> Generator[List[Any], None, None]:
         for time, data in self.__attrs["stdout"]:
             yield [time, "o", data]
-
-    def events(self) -> Any:
-        return self.stdout_events()
-
-    def stdout_events(self) -> Generator[List[Any], None, None]:
-        return to_absolute_time(self.__stdout_events())
 
 
 class open_from_file:

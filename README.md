@@ -236,7 +236,7 @@ Available options:
 Stdin recording allows for capturing of all characters typed in by the user in
 the currently recorded shell. This may be used by a player (e.g.
 [asciinema-player](https://github.com/asciinema/asciinema-player)) to display
-pressed keys. Because it's basically a key-logging (scoped to a single shell
+pressed keys. Because it's basically key-logging (scoped to a single shell
 instance), it's disabled by default, and has to be explicitly enabled via
 `--stdin` option.
 
@@ -293,6 +293,11 @@ Available options:
 
 - `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 - `-s, --speed=<factor>` - Playback speed (can be fractional)
+- `--stream=<stream>` - Recorded stream to play (see below)
+
+By default the output stream (`o`) is played. This is what you want in most
+cases.  If you recorded the input stream (`i`) with `asciinema rec --stdin` then
+you can replay it with `asciinema play --stream=i <filename>`.
 
 > For the best playback experience it is recommended to run `asciinema play` in
 > a terminal of dimensions not smaller than the one used for recording, as
