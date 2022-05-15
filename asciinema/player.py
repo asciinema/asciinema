@@ -154,6 +154,6 @@ class Player:  # pylint: disable=too-few-public-methods
                         delay = delay - slept
 
             if ctrl_c:
-                break
+                raise KeyboardInterrupt()
 
             output.write(t, event_type, text)

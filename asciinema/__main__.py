@@ -179,6 +179,13 @@ For help on a specific command run:
         default=cfg.play_speed,
     )
     parser_play.add_argument(
+        "-l",
+        "--loop",
+        help="loop loop loop loop",
+        action="store_true",
+        default=False,
+    )
+    parser_play.add_argument(
         "--out-fmt",
         help="select output format",
         choices=["raw", "asciicast"],
