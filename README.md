@@ -293,6 +293,7 @@ Available options:
 
 - `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 - `-s, --speed=<factor>` - Playback speed (can be fractional)
+- `-l, --loop` - Play in a loop
 - `--stream=<stream>` - Select stream to play (see below)
 - `--out-fmt=<format>` - Select output format (see below)
 

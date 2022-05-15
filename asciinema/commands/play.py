@@ -18,6 +18,7 @@ class PlayCommand(Command):
         self.filename = args.filename
         self.idle_time_limit = args.idle_time_limit
         self.speed = args.speed
+        self.loop = args.loop
         self.out_fmt = args.out_fmt
         self.stream = args.stream
         self.player = player if player is not None else Player()
@@ -27,6 +28,15 @@ class PlayCommand(Command):
         }
 
     def execute(self) -> int:
+        code = self.play()
+
+        if self.loop:
+            while code == 0:
+                code = self.play()
+
+        return code
+
+    def play(self) -> int:
         try:
             with asciicast.open_from_url(self.filename) as a:
                 self.player.play(
