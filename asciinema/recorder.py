@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple, Type
 
@@ -78,21 +79,14 @@ class tty_fds:
 
     def __enter__(self) -> Tuple[int, int]:
         try:
-            self.stdin_file = open("/dev/tty", "rt", encoding="utf_8")
-        except OSError:
-            self.stdin_file = open("/dev/null", "rt", encoding="utf_8")
-
-        try:
             self.stdout_file = open("/dev/tty", "wt", encoding="utf_8")
         except OSError:
             self.stdout_file = open("/dev/null", "wt", encoding="utf_8")
 
-        return (self.stdin_file.fileno(), self.stdout_file.fileno())
+        return (sys.stdin.fileno(), self.stdout_file.fileno())
 
     def __exit__(self, type_: str, value: str, traceback: str) -> None:
-        assert self.stdin_file is not None
         assert self.stdout_file is not None
-        self.stdin_file.close()
         self.stdout_file.close()
 
 
