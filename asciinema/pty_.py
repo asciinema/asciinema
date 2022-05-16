@@ -1,5 +1,4 @@
 import array
-import errno
 import fcntl
 import os
 import pty
@@ -91,23 +90,24 @@ def record(
 
     def copy(signal_fd: int) -> None:  # pylint: disable=too-many-branches
         fds = [pty_fd, tty_stdin_fd, signal_fd]
-        stdin_fd = pty.STDIN_FILENO
-
-        if not os.isatty(stdin_fd):
-            fds.append(stdin_fd)
 
         while True:
             try:
                 rfds, _, _ = select.select(fds, [], [])
-            except OSError as e:  # Python >= 3.3
-                if e.errno == errno.EINTR:
-                    continue
+            except KeyboardInterrupt:
+                if tty_stdin_fd in fds:
+                    fds.remove(tty_stdin_fd)
+
+                break
 
             if pty_fd in rfds:
-                data = os.read(pty_fd, 1024)
+                try:
+                    data = os.read(pty_fd, 1024)
+                except OSError as e:
+                    data = b""
 
                 if not data:  # Reached EOF.
-                    fds.remove(pty_fd)
+                    break
                 else:
                     handle_master_read(data)
 
@@ -115,15 +115,8 @@ def record(
                 data = os.read(tty_stdin_fd, 1024)
 
                 if not data:
-                    fds.remove(tty_stdin_fd)
-                else:
-                    handle_stdin_read(data)
-
-            if stdin_fd in rfds:
-                data = os.read(stdin_fd, 1024)
-
-                if not data:
-                    fds.remove(stdin_fd)
+                    if tty_stdin_fd in fds:
+                        fds.remove(tty_stdin_fd)
                 else:
                     handle_stdin_read(data)
 
@@ -135,8 +128,7 @@ def record(
 
                     for sig in signals:
                         if sig in EXIT_SIGNALS:
-                            os.close(pty_fd)
-                            return None
+                            fds.remove(signal_fd)
                         if sig == signal.SIGWINCH:
                             set_pty_size()
 
@@ -152,6 +144,7 @@ def record(
         with raw(tty_stdin_fd):
             try:
                 copy(sig_fd)
+                os.close(pty_fd)
             except (IOError, OSError):
                 pass
 
