@@ -20,11 +20,11 @@ class async_worker:
         self.process: Optional[Process] = None
 
     def __enter__(self) -> Any:
-        self.process = Process(target=self.__run)
+        self.process = Process(target=self._run)
         self.process.start()
         return self
 
-    def __run(self) -> None:
+    def _run(self) -> None:
         try:
             self.run()
         except KeyboardInterrupt:
