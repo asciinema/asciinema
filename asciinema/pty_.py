@@ -1,12 +1,10 @@
 import array
-import errno
 import fcntl
 import os
 import pty
 import select
 import signal
 import struct
-import sys
 import termios
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
