@@ -12,6 +12,16 @@ from .commands.record import RecordCommand
 from .commands.upload import UploadCommand
 
 
+def valid_encoding() -> bool:
+    def _locales() -> str:
+        try:
+            return locale.nl_langinfo(locale.CODESET)
+        except AttributeError:
+            return locale.getlocale()[-1]
+
+    return _locales().upper() in ("US-ASCII", "UTF-8", "UTF8")
+
+
 def positive_int(value: str) -> int:
     _value = int(value)
     if _value <= 0:
@@ -35,11 +45,7 @@ def maybe_str(v: Any) -> Optional[str]:
 
 
 def main() -> Any:
-    if locale.nl_langinfo(locale.CODESET).upper() not in [
-        "US-ASCII",
-        "UTF-8",
-        "UTF8",
-    ]:
+    if not valid_encoding():
         sys.stderr.write(
             "asciinema needs an ASCII or UTF-8 character encoding to run. "
             "Check the output of `locale` command.\n"
