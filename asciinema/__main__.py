@@ -2,6 +2,7 @@ import argparse
 import locale
 import os
 import sys
+from copy import copy
 from typing import Any, Optional
 
 from . import __version__, config
@@ -10,6 +11,16 @@ from .commands.cat import CatCommand
 from .commands.play import PlayCommand
 from .commands.record import RecordCommand
 from .commands.upload import UploadCommand
+
+try:
+    import shtab
+except ImportError:
+    from . import _shtab as shtab
+
+FILE_URL = copy(shtab.FILE)
+FILE_URL.update({"zsh": "{_alternative 'files: :_files' 'urls: :_urls'}"})
+COMMAND = {"zsh": "{_command_names -e}"}
+ENVIRONMENT = {"zsh": "_parameters"}
 
 
 def valid_encoding() -> bool:
@@ -60,6 +71,7 @@ def main() -> Any:
 
     # create the top-level parser
     parser = argparse.ArgumentParser(
+        "asciinema",
         description="Record and share your terminal sessions, the right way.",
         epilog="""example usage:
   Record terminal and upload it to asciinema.org:
@@ -81,6 +93,7 @@ For help on a specific command run:
   \x1b[1masciinema <command> -h\x1b[0m""",  # noqa: E501
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    shtab.add_argument_to(parser)
     parser.add_argument(
         "--version", action="version", version=f"asciinema {__version__}"
     )
@@ -118,14 +131,14 @@ For help on a specific command run:
         "--command",
         help="command to record, defaults to $SHELL",
         default=cfg.record_command,
-    )
+    ).complete = COMMAND  # type: ignore
     parser_rec.add_argument(
         "-e",
         "--env",
         help="list of environment variables to capture, defaults to "
         + config.DEFAULT_RECORD_ENV,
         default=cfg.record_env,
-    )
+    ).complete = ENVIRONMENT  # type: ignore
     parser_rec.add_argument("-t", "--title", help="title of the asciicast")
     parser_rec.add_argument(
         "-i",
@@ -165,7 +178,7 @@ For help on a specific command run:
         nargs="?",
         default="",
         help="filename/path to save the recording to",
-    )
+    ).complete = shtab.FILE  # type: ignore
     parser_rec.set_defaults(cmd=RecordCommand)
 
     # create the parser for the `play` command
@@ -205,7 +218,7 @@ For help on a specific command run:
     )
     parser_play.add_argument(
         "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
-    )
+    ).complete = FILE_URL  # type: ignore
     parser_play.set_defaults(cmd=PlayCommand)
 
     # create the parser for the `cat` command
@@ -214,7 +227,7 @@ For help on a specific command run:
     )
     parser_cat.add_argument(
         "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
-    )
+    ).complete = FILE_URL  # type: ignore
     parser_cat.set_defaults(cmd=CatCommand)
 
     # create the parser for the `upload` command
@@ -223,7 +236,7 @@ For help on a specific command run:
     )
     parser_upload.add_argument(
         "filename", help="filename or path of local recording"
-    )
+    ).complete = shtab.FILE  # type: ignore
     parser_upload.set_defaults(cmd=UploadCommand)
 
     # create the parser for the `auth` command
