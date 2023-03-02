@@ -13,13 +13,18 @@ from .commands.upload import UploadCommand
 
 
 def valid_encoding() -> bool:
-    def _locales() -> str:
+    def _locales() -> Optional[str]:
         try:
             return locale.nl_langinfo(locale.CODESET)
         except AttributeError:
             return locale.getlocale()[-1]
 
-    return _locales().upper() in ("US-ASCII", "UTF-8", "UTF8")
+    loc = _locales()
+
+    if loc is None:
+        return False
+    else:
+        return loc.upper() in ("US-ASCII", "UTF-8", "UTF8")
 
 
 def positive_int(value: str) -> int:
