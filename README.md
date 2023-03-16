@@ -133,18 +133,18 @@ python3 -m asciinema --version
 ### Docker image
 
 asciinema Docker image is based on [Ubuntu
-20.04](https://releases.ubuntu.com/20.04/) and has the latest version of
+22.04](https://releases.ubuntu.com/22.04/) and has the latest version of
 asciinema recorder pre-installed.
 
 ```sh
-docker pull docker.io/asciinema/asciinema
+docker pull ghcr.io/asciinema/asciinema
 ```
 
 When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
 (`-i`) and mount config directory volume (`-v`):
 
 ```sh
-docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" docker.io/asciinema/asciinema rec
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" ghcr.io/asciinema/asciinema rec
 ```
 
 Container's entrypoint is set to `/usr/local/bin/asciinema` so you can run the
@@ -153,11 +153,13 @@ Usage section for commands and options).
 
 There's not much software installed in this image though. In most cases you may
 want to install extra programs before recording. One option is to derive new
-image from this one (start your custom Dockerfile with `FROM asciinema/asciinema`). Another option is to start the container with `/bin/bash`
-as the entrypoint, install extra packages and manually start `asciinema rec`:
+image from this one (start your custom Dockerfile with `FROM
+ghcr.io/asciinema/asciinema`). Another option is to start the container with
+`/bin/bash` as the entrypoint, install extra packages and manually start
+`asciinema rec`:
 
 ```console
-docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" --entrypoint=/bin/bash docker.io/asciinema/asciinema rec
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" --entrypoint=/bin/bash ghcr.io/asciinema/asciinema rec
 root@6689517d99a1:~# apt-get install foobar
 root@6689517d99a1:~# asciinema rec
 ```
@@ -173,7 +175,7 @@ docker run --rm -it \
     --volume="${HOME}/.config/asciinema:/run/user/$(id -u)/.config/asciinema:rw" \
     --volume="${PWD}:/data:rw" \
     --workdir='/data' \
-    docker.io/asciinema/asciinema rec
+    ghcr.io/asciinema/asciinema rec
 ```
 
 ## Usage
