@@ -53,6 +53,12 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
             upload = True
 
         if self.filename == "-":
+            if sys.stdout.isatty():
+                self.print_error(
+                    f"when recording to stdout it must not be TTY - forgot to pipe?"
+                )
+                return 1
+
             append = False
 
         elif os.path.exists(self.filename):
@@ -76,16 +82,30 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 )
                 return 1
 
-        elif append:
-            self.print_warning(
-                f"{self.filename} does not exist, not appending"
-            )
-            append = False
+        else:
+            dir_path = os.path.dirname(self.filename)
+
+            if not os.path.exists(dir_path):
+                self.print_error(f"directory {dir_path} doesn't exist")
+                return 1
+
+            if not os.access(dir_path, os.W_OK):
+                self.print_error(f"directory {dir_path} is not writable")
+                return 1
+
+            if append:
+                self.print_warning(
+                    f"{self.filename} does not exist, not appending"
+                )
+                append = False
 
         if append:
             self.print_info(f"appending to asciicast at {self.filename}")
         else:
-            self.print_info(f"recording asciicast to {self.filename}")
+            if self.filename == "-":
+                self.print_info(f"recording asciicast to stdout")
+            else:
+                self.print_info(f"recording asciicast to {self.filename}")
 
         if self.command:
             self.print_info("""exit opened program when you're done""")
@@ -118,6 +138,9 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 cols_override=self.cols_override,
                 rows_override=self.rows_override,
             )
+        except IOError as e:
+            self.print_error(f"I/O error: {str(e)}")
+            return 1
         except v2.LoadError:
             self.print_error(
                 "can only append to asciicast v2 format recordings"
@@ -155,7 +178,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                     f"retry later by running: asciinema upload {self.filename}"
                 )
                 return 1
-        else:
+        elif self.filename != "-":
             self.print_info(f"asciicast saved to {self.filename}")
 
         return 0

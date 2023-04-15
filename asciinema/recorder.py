@@ -132,16 +132,20 @@ class async_writer(async_worker):
         self.enqueue([ts, "o", data])
 
     def run(self) -> None:
-        with self.writer as w:
-            event: Tuple[float, str, Any]
-            for event in iter(self.queue.get, None):
-                assert event is not None
-                ts, etype, data = event
+        try:
+            with self.writer as w:
+                event: Tuple[float, str, Any]
+                for event in iter(self.queue.get, None):
+                    assert event is not None
+                    ts, etype, data = event
 
-                if etype == "o":
-                    w.write_stdout(self.time_offset + ts, data)
-                elif etype == "i":
-                    w.write_stdin(self.time_offset + ts, data)
+                    if etype == "o":
+                        w.write_stdout(self.time_offset + ts, data)
+                    elif etype == "i":
+                        w.write_stdin(self.time_offset + ts, data)
+        except IOError:
+            for event in iter(self.queue.get, None):
+                pass
 
 
 class async_notifier(async_worker):
