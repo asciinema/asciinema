@@ -85,7 +85,10 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
         if append:
             self.print_info(f"appending to asciicast at {self.filename}")
         else:
-            self.print_info(f"recording asciicast to {self.filename}")
+            if self.filename == "-":
+                self.print_info(f"recording asciicast to stdout")
+            else:
+                self.print_info(f"recording asciicast to {self.filename}")
 
         if self.command:
             self.print_info("""exit opened program when you're done""")
@@ -155,7 +158,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                     f"retry later by running: asciinema upload {self.filename}"
                 )
                 return 1
-        else:
+        elif self.filename != "-":
             self.print_info(f"asciicast saved to {self.filename}")
 
         return 0
