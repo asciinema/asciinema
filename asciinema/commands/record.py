@@ -53,6 +53,12 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
             upload = True
 
         if self.filename == "-":
+            if sys.stdout.isatty():
+                self.print_error(
+                    f"when recording to stdout it must not be TTY - forgot to pipe?"
+                )
+                return 1
+
             append = False
 
         elif os.path.exists(self.filename):
