@@ -36,8 +36,11 @@ class file_writer:
                 self.on_error("Output pipe reopened successfully")
                 self.file.write(data)  # type: ignore
             else:
-                self.on_error("Output pipe broken")
+                self.on_error("Output pipe broken, recording suspended")
                 raise e
+        except IOError as e:
+            self.on_error("Write error, recording suspended")
+            raise e
 
 
 def noop(_: Any) -> None:
