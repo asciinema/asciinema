@@ -83,7 +83,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 return 1
 
         else:
-            dir_path = os.path.dirname(self.filename)
+            dir_path = os.path.dirname(os.path.abspath(self.filename))
 
             if not os.path.exists(dir_path):
                 self.print_error(f"directory {dir_path} doesn't exist")
