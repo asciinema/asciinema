@@ -419,6 +419,9 @@ quiet = true
 ; default: C-\ (control + backslash)
 pause_key = C-p
 
+; Define hotkey for adding a breakpoint, default: None
+add_breakpoint_key = C-b
+
 ; Define hotkey prefix key - when defined other recording hotkeys must
 ; be preceeded by it, default: no prefix
 prefix_key = C-a

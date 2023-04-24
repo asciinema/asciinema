@@ -137,6 +137,10 @@ class Config:
         return self.__get_key("record", "pause", "C-\\")
 
     @property
+    def record_add_breakpoint_key(self) -> Any:
+        return self.__get_key("record", "add_breakpoint")
+
+    @property
     def play_idle_time_limit(self) -> Optional[float]:
         fallback = self.config.getfloat(
             "play", "maxwait", fallback=None

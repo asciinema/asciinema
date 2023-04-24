@@ -145,6 +145,9 @@ class writer(file_writer):
         data = self.stdin_decoder.decode(data)
         self.__write_event(ts, "i", data)
 
+    def write_breakpoint(self, ts: float) -> None:
+        self.__write_event(ts, "b", "")
+
     # pylint: disable=consider-using-with
     def _open_file(self) -> None:
         if self.path == "-":

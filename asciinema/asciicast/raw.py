@@ -33,6 +33,9 @@ class writer(file_writer):
     def write_stdin(self, ts: float, data: Any) -> None:
         pass
 
+    def write_breakpoint(self, ts: float) -> None:
+        pass
+
     # pylint: disable=consider-using-with
     def _open_file(self) -> None:
         if self.path == "-":
