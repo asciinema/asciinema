@@ -9,7 +9,7 @@ assignees: ''
 
 To make life of the project maintainers easier please submit bug reports only.
 
-This is bug tracker for asciinema cli (aka recorder). If your issue seems to be with another component (player, server) then open an issue in related repository.
+This is bug tracker for asciinema cli (aka recorder). If your issue seems to be with another component (js player, server) then open an issue in related repository. If you're experiencing issue with asciinema server running at asciinema.org then contact admin@asciinema.org.
 
 Ideas, feature requests, help requests, questions and general discussions should be discussed in project's Discussions instead: https://github.com/orgs/asciinema/discussions
 
