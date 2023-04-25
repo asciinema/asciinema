@@ -13,7 +13,7 @@ This is bug tracker for asciinema cli (aka recorder). If your issue seems to be 
 
 Ideas, feature requests, help requests, questions and general discussions should be discussed in project's Discussions instead: https://github.com/orgs/asciinema/discussions
 
-If you believe you've found a bug or a regression then go ahead - remove this message and fill in the details below.
+If you think you've found a bug or regression, go ahead and delete this message and fill in the details below.
 
 -----
 
