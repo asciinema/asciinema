@@ -23,6 +23,10 @@ asciinema() {
     python3 -m asciinema "${@}"
 }
 
+## disable notifications
+
+printf "[notifications]\nenabled = no\n" >> "${ASCIINEMA_CONFIG_HOME}/config"
+
 ## test help message
 
 asciinema -h
@@ -93,3 +97,8 @@ asciinema rec --raw -c 'bash -c "echo t3st; sleep 1; echo ok"' "${TMP_DATA_DIR}/
 # appending to existing recording
 asciinema rec -c 'echo allright!; sleep 0.1' "${TMP_DATA_DIR}/7.cast"
 asciinema rec --append -c uptime "${TMP_DATA_DIR}/7.cast"
+
+# adding a breakpoint
+printf "[record]\nadd_breakpoint_key = C-b\n" >> "${ASCIINEMA_CONFIG_HOME}/config"
+(sh -c "sleep 1; printf '.'; sleep 0.5; printf '\x08'; sleep 0.5; printf '\x02'; sleep 0.5; printf '\x04'") | asciinema rec -c /bin/sh "${TMP_DATA_DIR}/8.cast"
+grep '"b",' "${TMP_DATA_DIR}/8.cast"
