@@ -106,16 +106,17 @@ class Player:  # pylint: disable=too-few-public-methods
 
         output.start(asciicast.v2_header)
 
-        base_time = time.time()
+        start_time = time.time()
         ctrl_c = False
-        paused = False
-        pause_time: Optional[float] = None
+        pause_elapsed_time: Optional[float] = None
 
-        for t, event_type, text in events:
-            delay = t - (time.time() - base_time)
+        for time_, event_type, text in events:
+            elapsed_wall_time = time.time() - start_time
+            delay = time_ - elapsed_wall_time
+            sleep = delay > 0
 
-            while stdin and not ctrl_c and delay > 0:
-                if paused:
+            while stdin and sleep and not ctrl_c:
+                if pause_elapsed_time:
                     while True:
                         data = read_blocking(stdin.fileno(), 1000)
 
@@ -124,15 +125,14 @@ class Player:  # pylint: disable=too-few-public-methods
                             break
 
                         if data == pause_key:
-                            paused = False
-                            assert pause_time is not None
-                            base_time += time.time() - pause_time
+                            assert pause_elapsed_time is not None
+                            start_time = time.time() - pause_elapsed_time
+                            pause_elapsed_time = None
                             break
 
                         if data == step_key:
-                            delay = 0
-                            pause_time = time.time()
-                            base_time = pause_time - t
+                            pause_elapsed_time = time_
+                            sleep = False
                             break
                 else:
                     data = read_blocking(stdin.fileno(), delay)
@@ -145,12 +145,9 @@ class Player:  # pylint: disable=too-few-public-methods
                         break
 
                     if data == pause_key:
-                        paused = True
-                        pause_time = time.time()
-                        slept = t - (pause_time - base_time)
-                        delay = delay - slept
+                        pause_elapsed_time = time.time() - start_time
 
             if ctrl_c:
                 raise KeyboardInterrupt()
 
-            output.write(t, event_type, text)
+            output.write(time_, event_type, text)
