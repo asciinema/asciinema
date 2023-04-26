@@ -73,7 +73,6 @@ class Player:  # pylint: disable=too-few-public-methods
                         speed,
                         stdin,
                         key_bindings,
-                        stream,
                         output,
                     )
         except Exception:  # pylint: disable=broad-except
@@ -83,7 +82,6 @@ class Player:  # pylint: disable=too-few-public-methods
                 speed,
                 None,
                 key_bindings,
-                stream,
                 output,
             )
 
@@ -94,7 +92,6 @@ class Player:  # pylint: disable=too-few-public-methods
         speed: float,
         stdin: Optional[TextIO],
         key_bindings: Dict[str, Any],
-        stream: Optional[str],
         output: Output,
     ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
