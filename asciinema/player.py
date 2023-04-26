@@ -113,9 +113,9 @@ class Player:  # pylint: disable=too-few-public-methods
         for time_, event_type, text in events:
             elapsed_wall_time = time.time() - start_time
             delay = time_ - elapsed_wall_time
-            sleep = delay > 0
+            wait = delay > 0 or pause_elapsed_time
 
-            while stdin and sleep and not ctrl_c:
+            while stdin and wait and not ctrl_c:
                 if pause_elapsed_time:
                     while True:
                         data = read_blocking(stdin.fileno(), 1000)
@@ -132,7 +132,7 @@ class Player:  # pylint: disable=too-few-public-methods
 
                         if data == step_key:
                             pause_elapsed_time = time_
-                            sleep = False
+                            wait = False
                             break
                 else:
                     data = read_blocking(stdin.fileno(), delay)
@@ -151,3 +151,6 @@ class Player:  # pylint: disable=too-few-public-methods
                 raise KeyboardInterrupt()
 
             output.write(time_, event_type, text)
+
+            if event_type == "b":
+                pause_elapsed_time = time_
