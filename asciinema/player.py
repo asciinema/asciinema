@@ -75,7 +75,7 @@ class Player:  # pylint: disable=too-few-public-methods
                         key_bindings,
                         output,
                     )
-        except Exception:  # pylint: disable=broad-except
+        except IOError:
             self._play(
                 asciicast,
                 idle_time_limit,
