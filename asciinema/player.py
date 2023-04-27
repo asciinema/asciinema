@@ -56,6 +56,7 @@ class Player:  # pylint: disable=too-few-public-methods
         key_bindings: Optional[Dict[str, Any]] = None,
         out_fmt: str = "raw",
         stream: Optional[str] = None,
+        pause_on_breakpoints: bool = False,
     ) -> None:
         if key_bindings is None:
             key_bindings = {}
@@ -74,6 +75,7 @@ class Player:  # pylint: disable=too-few-public-methods
                         stdin,
                         key_bindings,
                         output,
+                        pause_on_breakpoints,
                     )
         except IOError:
             self._play(
@@ -83,6 +85,7 @@ class Player:  # pylint: disable=too-few-public-methods
                 None,
                 key_bindings,
                 output,
+                False,
             )
 
     @staticmethod
@@ -93,6 +96,7 @@ class Player:  # pylint: disable=too-few-public-methods
         stdin: Optional[TextIO],
         key_bindings: Dict[str, Any],
         output: Output,
+        pause_on_breakpoints: bool,
     ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get("pause")
@@ -152,5 +156,5 @@ class Player:  # pylint: disable=too-few-public-methods
 
             output.write(time_, event_type, text)
 
-            if event_type == "b":
+            if event_type == "b" and pause_on_breakpoints:
                 pause_elapsed_time = time_

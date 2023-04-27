@@ -197,6 +197,13 @@ For help on a specific command run:
         default=False,
     )
     parser_play.add_argument(
+        "-b",
+        "--breakpoints",
+        help="automatically pause on breakpoints",
+        action="store_true",
+        default=False,
+    )
+    parser_play.add_argument(
         "--out-fmt",
         help="select output format",
         choices=["raw", "asciicast"],
