@@ -35,6 +35,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
             "prefix": config.record_prefix_key,
             "pause": config.record_pause_key,
         }
+        self.suppress_output = args.suppress_output
 
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-return-statements
@@ -137,6 +138,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 key_bindings=self.key_bindings,
                 cols_override=self.cols_override,
                 rows_override=self.rows_override,
+                suppress_output=self.suppress_output,
             )
         except IOError as e:
             self.print_error(f"I/O error: {str(e)}")

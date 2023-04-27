@@ -24,6 +24,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
     key_bindings: Optional[Dict[str, Any]] = None,
     cols_override: Optional[int] = None,
     rows_override: Optional[int] = None,
+    suppress_output: Optional[bool] = False,
 ) -> None:
     if command is None:
         command = os.environ.get("SHELL", "sh")
@@ -69,6 +70,7 @@ def record(  # pylint: disable=too-many-arguments,too-many-locals
                 key_bindings,
                 tty_stdin_fd=tty_stdin_fd,
                 tty_stdout_fd=tty_stdout_fd,
+                suppress_output=suppress_output,
             )
 
 

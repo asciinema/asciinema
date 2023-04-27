@@ -167,6 +167,10 @@ class Config:
     def notifications_command(self) -> Optional[str]:
         return self.config.get("notifications", "command", fallback=None)
 
+    @property
+    def suppress_output(self) -> bool:
+        return self.config.getboolean("record", "suppress_output", fallback=False)
+
     def __get_key(self, section: str, name: str, default: Any = None) -> Any:
         key = self.config.get(section, f"{name}_key", fallback=default)
 

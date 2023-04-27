@@ -21,6 +21,7 @@ def record_asciicast(  # pylint: disable=too-many-arguments
     title: Optional[str] = None,
     command_env: Any = None,
     capture_env: Any = None,
+    suppress_output: Optional[bool] = False,
 ) -> None:
     record(
         path_,
@@ -31,4 +32,5 @@ def record_asciicast(  # pylint: disable=too-many-arguments
         title=title,
         command_env=command_env,
         capture_env=capture_env,
+        suppress_output=suppress_output,
     )

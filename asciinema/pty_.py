@@ -29,6 +29,7 @@ def record(
     key_bindings: Dict[str, Any],
     tty_stdin_fd: int = pty.STDIN_FILENO,
     tty_stdout_fd: int = pty.STDOUT_FILENO,
+    suppress_output: Optional[bool] = False,
 ) -> None:
     pty_fd: Any = None
     start_time: Optional[float] = None
@@ -43,7 +44,8 @@ def record(
         fcntl.ioctl(pty_fd, termios.TIOCSWINSZ, buf)
 
     def handle_master_read(data: Any) -> None:
-        os.write(tty_stdout_fd, data)
+        if not suppress_output:
+            os.write(tty_stdout_fd, data)
 
         if not pause_time:
             assert start_time is not None

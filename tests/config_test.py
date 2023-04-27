@@ -216,3 +216,14 @@ def test_notifications_command() -> None:
         '[notifications]\ncommand = tmux display-message "$TEXT"'
     )
     assert config.notifications_command == 'tmux display-message "$TEXT"'
+
+
+def test_record_suppress_yes() -> None:
+    yes = "yes"
+    config = create_config(f"[record]\nsuppress_output = {yes}")
+    assert config.suppress_output is True
+
+
+def test_default_record_supress() -> None:
+    config = create_config("")
+    assert config.suppress_output is False

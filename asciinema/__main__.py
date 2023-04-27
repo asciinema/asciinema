@@ -166,6 +166,12 @@ For help on a specific command run:
         default=cfg.record_quiet,
     )
     parser_rec.add_argument(
+        "--suppress-output",
+        help="suppress output from the recorded session",
+        action="store_true",
+        default=cfg.suppress_output,
+    )
+    parser_rec.add_argument(
         "filename",
         nargs="?",
         default="",
