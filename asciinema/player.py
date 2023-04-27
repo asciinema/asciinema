@@ -101,6 +101,7 @@ class Player:  # pylint: disable=too-few-public-methods
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get("pause")
         step_key = key_bindings.get("step")
+        next_breakpoint_key = key_bindings.get("next_breakpoint")
 
         events = asciicast.events()
         events = ev.to_relative_time(events)
@@ -148,6 +149,16 @@ class Player:  # pylint: disable=too-few-public-methods
                         pause_elapsed_time = time_
                         output.write(time_, event_type, text)
                         time_, event_type, text = next_event()
+
+                    elif key == next_breakpoint_key:
+                        while time_ is not None and event_type != "b":
+                            output.write(time_, event_type, text)
+                            time_, event_type, text = next_event()
+
+                        if time_ is not None:
+                            output.write(time_, event_type, text)
+                            pause_elapsed_time = time_
+                            time_, event_type, text = next_event()
             else:
                 while time_ is not None:
                     elapsed_wall_time = time.time() - start_time

@@ -26,6 +26,7 @@ class PlayCommand(Command):
         self.key_bindings = {
             "pause": config.play_pause_key,
             "step": config.play_step_key,
+            "next_breakpoint": config.play_next_breakpoint_key,
         }
 
     def execute(self) -> int:

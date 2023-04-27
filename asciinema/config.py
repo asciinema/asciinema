@@ -162,6 +162,10 @@ class Config:
         return self.__get_key("play", "step", ".")
 
     @property
+    def play_next_breakpoint_key(self) -> Any:
+        return self.__get_key("play", "next_breakpoint", "]")
+
+    @property
     def notifications_enabled(self) -> bool:
         return self.config.getboolean(
             "notifications", "enabled", fallback=True
