@@ -110,51 +110,70 @@ class Player:  # pylint: disable=too-few-public-methods
 
         output.start(asciicast.v2_header)
 
-        start_time = time.time()
         ctrl_c = False
         pause_elapsed_time: Optional[float] = None
+        events_iter = iter(events)
+        start_time = time.time()
 
-        for time_, event_type, text in events:
-            elapsed_wall_time = time.time() - start_time
-            delay = time_ - elapsed_wall_time
-            wait = delay > 0 or pause_elapsed_time
+        def wait(timeout: int) -> bytes:
+            if stdin is not None:
+                return read_blocking(stdin.fileno(), timeout)
 
-            while stdin and wait and not ctrl_c:
-                if pause_elapsed_time:
-                    while True:
-                        data = read_blocking(stdin.fileno(), 1000)
+            return b""
 
-                        if 0x03 in data:  # ctrl-c
-                            ctrl_c = True
-                            break
+        def next_event() -> Any:
+            try:
+                return events_iter.__next__()
+            except StopIteration:
+                return (None, None, None)
 
-                        if data == pause_key:
-                            assert pause_elapsed_time is not None
-                            start_time = time.time() - pause_elapsed_time
-                            pause_elapsed_time = None
-                            break
+        time_, event_type, text = next_event()
 
-                        if data == step_key:
-                            pause_elapsed_time = time_
-                            wait = False
-                            break
-                else:
-                    data = read_blocking(stdin.fileno(), delay)
+        while time_ is not None and not ctrl_c:
+            if pause_elapsed_time:
+                while time_ is not None:
+                    key = wait(1000)
 
-                    if not data:
-                        break
-
-                    if 0x03 in data:  # ctrl-c
+                    if 0x03 in key:  # ctrl-c
                         ctrl_c = True
                         break
 
-                    if data == pause_key:
+                    if key == pause_key:
+                        assert pause_elapsed_time is not None
+                        start_time = time.time() - pause_elapsed_time
+                        pause_elapsed_time = None
+                        break
+
+                    if key == step_key:
+                        pause_elapsed_time = time_
+                        output.write(time_, event_type, text)
+                        time_, event_type, text = next_event()
+            else:
+                while time_ is not None:
+                    elapsed_wall_time = time.time() - start_time
+                    delay = time_ - elapsed_wall_time
+                    key = b""
+
+                    if delay > 0:
+                        key = wait(delay)
+
+                    if 0x03 in key:  # ctrl-c
+                        ctrl_c = True
+                        break
+
+                    elif key == pause_key:
                         pause_elapsed_time = time.time() - start_time
+                        break
 
-            if ctrl_c:
-                raise KeyboardInterrupt()
+                    else:
+                        output.write(time_, event_type, text)
 
-            output.write(time_, event_type, text)
+                        if event_type == "b" and pause_on_breakpoints:
+                            pause_elapsed_time = time_
+                            time_, event_type, text = next_event()
+                            break
 
-            if event_type == "b" and pause_on_breakpoints:
-                pause_elapsed_time = time_
+                        time_, event_type, text = next_event()
+
+        if ctrl_c:
+            raise KeyboardInterrupt()
