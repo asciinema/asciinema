@@ -167,15 +167,14 @@ non-printable Unicode codepoints encoded as `\uXXXX`.
 
 #### "b" - breakpoint
 
-Event of type `"b"` represents a playback breakpoint.
+Event of type `"b"` represents a breakpoint.
 
 When breakpoint is encountered in the event stream and "pause on breakpoint"
 functionality of the player is enabled, the playback should pause, and wait for
 the user to resume.
 
 `event-data` can be used to annotate (comment) a breakpoint. Annotations may be
-used to show a list of "chapters" (players that load whole recording into
-memory only).
+used to e.g. show a list of "chapters".
 
 ## Notes on compatibility
 
