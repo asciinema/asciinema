@@ -36,6 +36,7 @@ def record(
     prefix_mode: bool = False
     prefix_key = key_bindings.get("prefix")
     pause_key = key_bindings.get("pause")
+    add_breakpoint_key = key_bindings.get("add_breakpoint")
 
     def set_pty_size() -> None:
         cols, rows = get_tty_size()
@@ -58,7 +59,9 @@ def record(
             prefix_mode = True
             return
 
-        if prefix_mode or (not prefix_key and data in [pause_key]):
+        if prefix_mode or (
+            not prefix_key and data in [pause_key, add_breakpoint_key]
+        ):
             prefix_mode = False
 
             if data == pause_key:
@@ -70,6 +73,11 @@ def record(
                 else:
                     pause_time = time.time()
                     notify("Paused recording")
+
+            elif data == add_breakpoint_key:
+                assert start_time is not None
+                writer.write_breakpoint(time.time() - start_time)
+                notify("Breakpoint added")
 
             return
 

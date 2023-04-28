@@ -131,6 +131,9 @@ class async_writer(async_worker):
     def write_stdout(self, ts: float, data: Any) -> None:
         self.enqueue([ts, "o", data])
 
+    def write_breakpoint(self, ts: float) -> None:
+        self.enqueue([ts, "b", None])
+
     def run(self) -> None:
         try:
             with self.writer as w:
@@ -143,6 +146,8 @@ class async_writer(async_worker):
                         w.write_stdout(self.time_offset + ts, data)
                     elif etype == "i":
                         w.write_stdin(self.time_offset + ts, data)
+                    elif etype == "b":
+                        w.write_breakpoint(self.time_offset + ts)
         except IOError:
             for event in iter(self.queue.get, None):
                 pass

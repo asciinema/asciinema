@@ -21,10 +21,12 @@ class PlayCommand(Command):
         self.loop = args.loop
         self.out_fmt = args.out_fmt
         self.stream = args.stream
+        self.breakpoints = args.breakpoints
         self.player = player if player is not None else Player()
         self.key_bindings = {
             "pause": config.play_pause_key,
             "step": config.play_step_key,
+            "next_breakpoint": config.play_next_breakpoint_key,
         }
 
     def execute(self) -> int:
@@ -46,6 +48,7 @@ class PlayCommand(Command):
                     key_bindings=self.key_bindings,
                     out_fmt=self.out_fmt,
                     stream=self.stream,
+                    pause_on_breakpoints=self.breakpoints,
                 )
 
         except asciicast.LoadError as e:
