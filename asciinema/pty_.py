@@ -77,7 +77,7 @@ def record(
             elif data == add_breakpoint_key:
                 assert start_time is not None
                 writer.write_breakpoint(time.time() - start_time)
-                notify("Added breakpoint")
+                notify("Breakpoint added")
 
             return
 

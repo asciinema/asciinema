@@ -174,7 +174,7 @@ functionality of the player is enabled, the playback should pause, and wait for
 the user to resume.
 
 `event-data` can be used to annotate (comment) a breakpoint. Annotations may be
-used to e.g. show a list of "chapters".
+used to e.g. show a list of named "chapters".
 
 ## Notes on compatibility
 

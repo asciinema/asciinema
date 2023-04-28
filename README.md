@@ -469,7 +469,7 @@ pause_key = p
 ; default: . (dot)
 step_key = s
 
-; Define hotkey for jumping to next breakpoint,
+; Define hotkey for jumping to the next breakpoint,
 ; default: ]
 next_breakpoint_key = b
 
