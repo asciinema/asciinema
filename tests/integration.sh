@@ -100,5 +100,5 @@ asciinema rec --append -c uptime "${TMP_DATA_DIR}/7.cast"
 
 # adding a breakpoint
 printf "[record]\nadd_breakpoint_key = C-b\n" >> "${ASCIINEMA_CONFIG_HOME}/config"
-(sh -c "sleep 1; printf '.'; sleep 0.5; printf '\x08'; sleep 0.5; printf '\x02'; sleep 0.5; printf '\x04'") | asciinema rec -c /bin/sh "${TMP_DATA_DIR}/8.cast"
+(bash -c "sleep 1; printf '.'; sleep 0.5; printf '\x08'; sleep 0.5; printf '\x02'; sleep 0.5; printf '\x04'") | asciinema rec -c /bin/bash "${TMP_DATA_DIR}/8.cast"
 grep '"b",' "${TMP_DATA_DIR}/8.cast"
