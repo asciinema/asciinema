@@ -98,7 +98,7 @@ asciinema rec --raw -c 'bash -c "echo t3st; sleep 1; echo ok"' "${TMP_DATA_DIR}/
 asciinema rec -c 'echo allright!; sleep 0.1' "${TMP_DATA_DIR}/7.cast"
 asciinema rec --append -c uptime "${TMP_DATA_DIR}/7.cast"
 
-# adding a breakpoint
-printf "[record]\nadd_breakpoint_key = C-b\n" >> "${ASCIINEMA_CONFIG_HOME}/config"
+# adding a marker
+printf "[record]\nadd_marker_key = C-b\n" >> "${ASCIINEMA_CONFIG_HOME}/config"
 (bash -c "sleep 1; printf '.'; sleep 0.5; printf '\x08'; sleep 0.5; printf '\x02'; sleep 0.5; printf '\x04'") | asciinema rec -c /bin/bash "${TMP_DATA_DIR}/8.cast"
-grep '"b",' "${TMP_DATA_DIR}/8.cast"
+grep '"m",' "${TMP_DATA_DIR}/8.cast"

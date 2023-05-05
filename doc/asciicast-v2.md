@@ -13,7 +13,7 @@ Example file:
 {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
 [0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
 [1.001376, "o", "That was ok\rThis is better."]
-[1.500000, "b", ""]
+[1.500000, "m", ""]
 [2.143733, "o", "Now... "]
 [6.541828, "o", "Bye!"]
 ```
@@ -115,7 +115,7 @@ Where:
 
 * `time` (float) - indicates when this event happened, represented as the number
   of seconds since the beginning of the recording session,
-* `event-type` (string) - one of: `"o"`, `"i"`, `"b"`
+* `event-type` (string) - one of: `"o"`, `"i"`, `"m"`
 * `event-data` (any) - event specific data, described separately for each event
   type.
 
@@ -165,16 +165,16 @@ non-printable Unicode codepoints encoded as `\uXXXX`.
 > implementations of asciicast-compatible terminal recorder should not capture
 > it either unless explicitly permitted by the user.
 
-#### "b" - breakpoint
+#### "m" - marker
 
-Event of type `"b"` represents a breakpoint.
+Event of type `"m"` represents a marker.
 
-When breakpoint is encountered in the event stream and "pause on breakpoint"
+When marker is encountered in the event stream and "pause on markers"
 functionality of the player is enabled, the playback should pause, and wait for
 the user to resume.
 
-`event-data` can be used to annotate a breakpoint. Annotations may be used to
-e.g. show a list of named "chapters".
+`event-data` can be used to annotate a marker. Annotations may be used to e.g.
+show a list of named "chapters".
 
 ## Notes on compatibility
 

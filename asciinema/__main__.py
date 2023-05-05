@@ -197,9 +197,9 @@ For help on a specific command run:
         default=False,
     )
     parser_play.add_argument(
-        "-b",
-        "--breakpoints",
-        help="automatically pause on breakpoints",
+        "-m",
+        "--pause-on-markers",
+        help="automatically pause on markers",
         action="store_true",
         default=False,
     )

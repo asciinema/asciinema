@@ -34,7 +34,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
         self.key_bindings = {
             "prefix": config.record_prefix_key,
             "pause": config.record_pause_key,
-            "add_breakpoint": config.record_add_breakpoint_key,
+            "add_marker": config.record_add_marker_key,
         }
 
     # pylint: disable=too-many-branches

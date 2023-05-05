@@ -137,8 +137,8 @@ class Config:
         return self.__get_key("record", "pause", "C-\\")
 
     @property
-    def record_add_breakpoint_key(self) -> Any:
-        return self.__get_key("record", "add_breakpoint")
+    def record_add_marker_key(self) -> Any:
+        return self.__get_key("record", "add_marker")
 
     @property
     def play_idle_time_limit(self) -> Optional[float]:
@@ -162,8 +162,8 @@ class Config:
         return self.__get_key("play", "step", ".")
 
     @property
-    def play_next_breakpoint_key(self) -> Any:
-        return self.__get_key("play", "next_breakpoint", "]")
+    def play_next_marker_key(self) -> Any:
+        return self.__get_key("play", "next_marker", "]")
 
     @property
     def notifications_enabled(self) -> bool:

@@ -296,7 +296,7 @@ Available options:
 - `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 - `-s, --speed=<factor>` - Playback speed (can be fractional)
 - `-l, --loop` - Play in a loop
-- `-b, --breakpoints` - Automatically pause on [breakpoints](#breakpoints)
+- `-m, --pause-on-markers` - Automatically pause on [markers](#markers)
 - `--stream=<stream>` - Select stream to play (see below)
 - `--out-fmt=<format>` - Select output format (see below)
 
@@ -362,31 +362,28 @@ happen in any order.
 > asciinema versions prior to 2.0 confusingly referred to install ID as "API
 > token".
 
-## Breakpoints
+## Markers
 
-Breakpoints are markers that you can set in a recording to pause the playback at
-a specific point.
+Markers allow marking specific time locations in a recording, which can be used
+for navigation, as well as for automatic pausing of the playback.
 
-When a breakpoint is reached, the playback automatically pauses and can be
-resumed by pressing space bar key. The playback continues until next breakpoint
-is encountered.
+Markers can be added to a recording in several ways:
 
-To enable auto-pause-on-breakpoint behaviour when replaying with `asciinema
-play` use `-b`/`--breakpoints` option. It's off by default.
+- while you are recording, by pressing a configured hotkey, see [add_marker_key
+  config option](#configuration-file)
+- for existing recording, by inserting marker events (`"m"`) in the asciicast
+  file, see [marker event](doc/asciicast-v2.md#m---marker)
 
-Breakpoints can be added to a recording in several ways:
+When replaying a recording with `asciinema play` you can enable
+auto-pause-on-marker behaviour with `-m`/`--pause-on-markers` option (it's off
+by default). When a marker is encountered, the playback automatically pauses and
+can be resumed by pressing space bar key. The playback continues until next
+marker is encountered. You can also fast-forward to the next marker by pressing
+`]` key (when paused).
 
-- during recording session, by pressing a configured hotkey, see
-  [add_breakpoint_key config option](#configuration-file)
-- for existing recording, by inserting breakpoint events (`"b"`) in the
-  asciicast file, see [breakpoint event](doc/asciicast-v2.md#b---breakpoint)
-
-When replaying a recording with `asciinema play` you can fast-forward to the
-next breakpoint by pressing `]` key (when paused).
-
-Breakpoints can be useful in e.g. live demos: you can create a recording with
-breakpoints, then play it back during presentation, and have it stop wherever
-you want to explain terminal contents in more detail.
+Markers can be useful in e.g. live demos: you can create a recording with
+markers, then play it back during presentation, and have it stop wherever you
+want to explain terminal contents in more detail.
 
 ## Hosting the recordings on the web
 
@@ -446,8 +443,8 @@ quiet = true
 ; default: C-\ (control + backslash)
 pause_key = C-p
 
-; Define hotkey for adding a breakpoint, default: none
-add_breakpoint_key = C-b
+; Define hotkey for adding a marker, default: none
+add_marker_key = C-x
 
 ; Define hotkey prefix key - when defined other recording hotkeys must
 ; be preceeded by it, default: no prefix
@@ -469,9 +466,9 @@ pause_key = p
 ; default: . (dot)
 step_key = s
 
-; Define hotkey for jumping to the next breakpoint,
+; Define hotkey for jumping to the next marker,
 ; default: ]
-next_breakpoint_key = b
+next_marker_key = m
 
 [notifications]
 ; Desktop notifications are displayed on certain occasions, e.g. when

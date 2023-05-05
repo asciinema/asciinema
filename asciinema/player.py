@@ -56,7 +56,7 @@ class Player:  # pylint: disable=too-few-public-methods
         key_bindings: Optional[Dict[str, Any]] = None,
         out_fmt: str = "raw",
         stream: Optional[str] = None,
-        pause_on_breakpoints: bool = False,
+        pause_on_markers: bool = False,
     ) -> None:
         if key_bindings is None:
             key_bindings = {}
@@ -75,7 +75,7 @@ class Player:  # pylint: disable=too-few-public-methods
                         stdin,
                         key_bindings,
                         output,
-                        pause_on_breakpoints,
+                        pause_on_markers,
                     )
         except IOError:
             self._play(
@@ -96,12 +96,12 @@ class Player:  # pylint: disable=too-few-public-methods
         stdin: Optional[TextIO],
         key_bindings: Dict[str, Any],
         output: Output,
-        pause_on_breakpoints: bool,
+        pause_on_markers: bool,
     ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get("pause")
         step_key = key_bindings.get("step")
-        next_breakpoint_key = key_bindings.get("next_breakpoint")
+        next_marker_key = key_bindings.get("next_marker")
 
         events = asciicast.events()
         events = ev.to_relative_time(events)
@@ -150,8 +150,8 @@ class Player:  # pylint: disable=too-few-public-methods
                         output.write(time_, event_type, text)
                         time_, event_type, text = next_event()
 
-                    elif key == next_breakpoint_key:
-                        while time_ is not None and event_type != "b":
+                    elif key == next_marker_key:
+                        while time_ is not None and event_type != "m":
                             output.write(time_, event_type, text)
                             time_, event_type, text = next_event()
 
@@ -179,7 +179,7 @@ class Player:  # pylint: disable=too-few-public-methods
                     else:
                         output.write(time_, event_type, text)
 
-                        if event_type == "b" and pause_on_breakpoints:
+                        if event_type == "m" and pause_on_markers:
                             pause_elapsed_time = time_
                             time_, event_type, text = next_event()
                             break
