@@ -16,10 +16,16 @@ class CatCommand(Command):
         try:
             with open("/dev/tty", "rt", encoding="utf-8") as stdin:
                 with raw(stdin.fileno()):
-                    with asciicast.open_from_url(self.filename) as a:
-                        for _, _type, text in a.events("o"):
-                            sys.stdout.write(text)
-                            sys.stdout.flush()
+                    return self.cat()
+        except OSError:
+            return self.cat()
+
+    def cat(self) -> int:
+        try:
+            with asciicast.open_from_url(self.filename) as a:
+                for _, _type, text in a.events("o"):
+                    sys.stdout.write(text)
+                    sys.stdout.flush()
 
         except asciicast.LoadError as e:
             self.print_error(f"printing failed: {str(e)}")
