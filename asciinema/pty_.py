@@ -44,7 +44,7 @@ def record(
         fcntl.ioctl(pty_fd, termios.TIOCSWINSZ, buf)
 
     def handle_master_read(data: Any) -> None:
-        remaining_data = data
+        remaining_data = memoryview(data)
         while remaining_data:
             n = os.write(tty_stdout_fd, remaining_data)
             remaining_data = remaining_data[n:]
@@ -84,7 +84,7 @@ def record(
 
             return
 
-        remaining_data = data
+        remaining_data = memoryview(data)
         while remaining_data:
             n = os.write(pty_fd, remaining_data)
             remaining_data = remaining_data[n:]
