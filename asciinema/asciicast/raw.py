@@ -23,8 +23,23 @@ class writer(file_writer):
             append = False
 
         self.buffering = buffering
-        self.mode: str = "ab" if append else "wb"
-        self.metadata = metadata
+
+        if append:
+            self.mode = "ab"
+            self.header = None
+        else:
+            self.mode = "wb"
+            width = metadata["width"]
+            height = metadata["height"]
+            self.header = f"\x1b[8;{height};{width}t".encode("utf-8")
+
+    def __enter__(self) -> Any:
+        super().__enter__()
+
+        if self.header:
+            self._write(self.header)
+
+        return self
 
     def write_stdout(self, _ts: float, data: Any) -> None:
         self._write(data)
