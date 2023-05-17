@@ -44,7 +44,10 @@ def record(
         fcntl.ioctl(pty_fd, termios.TIOCSWINSZ, buf)
 
     def handle_master_read(data: Any) -> None:
-        os.write(tty_stdout_fd, data)
+        remaining_data = data
+        while remaining_data:
+            n = os.write(tty_stdout_fd, remaining_data)
+            remaining_data = remaining_data[n:]
 
         if not pause_time:
             assert start_time is not None
