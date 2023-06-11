@@ -114,7 +114,7 @@ class Player:  # pylint: disable=too-few-public-methods
         ctrl_c = False
         pause_elapsed_time: Optional[float] = None
         events_iter = iter(events)
-        start_time = time.time()
+        start_time = time.perf_counter()
 
         def wait(timeout: int) -> bytes:
             if stdin is not None:
@@ -141,7 +141,7 @@ class Player:  # pylint: disable=too-few-public-methods
 
                     if key == pause_key:
                         assert pause_elapsed_time is not None
-                        start_time = time.time() - pause_elapsed_time
+                        start_time = time.perf_counter() - pause_elapsed_time
                         pause_elapsed_time = None
                         break
 
@@ -161,7 +161,7 @@ class Player:  # pylint: disable=too-few-public-methods
                             time_, event_type, text = next_event()
             else:
                 while time_ is not None:
-                    elapsed_wall_time = time.time() - start_time
+                    elapsed_wall_time = time.perf_counter() - start_time
                     delay = time_ - elapsed_wall_time
                     key = b""
 
@@ -173,7 +173,7 @@ class Player:  # pylint: disable=too-few-public-methods
                         break
 
                     elif key == pause_key:
-                        pause_elapsed_time = time.time() - start_time
+                        pause_elapsed_time = time.perf_counter() - start_time
                         break
 
                     else:

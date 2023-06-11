@@ -51,7 +51,7 @@ def record(
 
         if not pause_time:
             assert start_time is not None
-            writer.write_stdout(time.time() - start_time, data)
+            writer.write_stdout(time.perf_counter() - start_time, data)
 
     def handle_stdin_read(data: Any) -> None:
         nonlocal pause_time
@@ -70,16 +70,16 @@ def record(
             if data == pause_key:
                 if pause_time:
                     assert start_time is not None
-                    start_time += time.time() - pause_time
+                    start_time += time.perf_counter() - pause_time
                     pause_time = None
                     notify("Resumed recording")
                 else:
-                    pause_time = time.time()
+                    pause_time = time.perf_counter()
                     notify("Paused recording")
 
             elif data == add_marker_key:
                 assert start_time is not None
-                writer.write_marker(time.time() - start_time)
+                writer.write_marker(time.perf_counter() - start_time)
                 notify("Marker added")
 
             return
@@ -97,7 +97,7 @@ def record(
             and data[-1] == 0x07
         ):
             assert start_time is not None
-            writer.write_stdin(time.time() - start_time, data)
+            writer.write_stdin(time.perf_counter() - start_time, data)
 
     def copy(signal_fd: int) -> None:  # pylint: disable=too-many-branches
         fds = [pty_fd, tty_stdin_fd, signal_fd]
@@ -148,7 +148,7 @@ def record(
     if pid == pty.CHILD:
         os.execvpe(command[0], command, env)
 
-    start_time = time.time()
+    start_time = time.perf_counter()
     set_pty_size()
 
     with SignalFD(EXIT_SIGNALS + [signal.SIGWINCH]) as sig_fd:
