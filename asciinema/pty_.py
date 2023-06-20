@@ -37,6 +37,7 @@ def record(
     prefix_key = key_bindings.get("prefix")
     pause_key = key_bindings.get("pause")
     add_marker_key = key_bindings.get("add_marker")
+    input_data = bytes()
 
     def set_pty_size() -> None:
         cols, rows = get_tty_size()
@@ -54,6 +55,7 @@ def record(
             writer.write_stdout(time.perf_counter() - start_time, data)
 
     def handle_stdin_read(data: Any) -> None:
+        nonlocal input_data
         nonlocal pause_time
         nonlocal start_time
         nonlocal prefix_mode
@@ -84,10 +86,7 @@ def record(
 
             return
 
-        remaining_data = memoryview(data)
-        while remaining_data:
-            n = os.write(pty_fd, remaining_data)
-            remaining_data = remaining_data[n:]
+        input_data += memoryview(data)
 
         # save stdin unless paused or data is OSC response (e.g. \x1b]11;?\x07)
         if not pause_time and not (
@@ -100,14 +99,21 @@ def record(
             writer.write_stdin(time.perf_counter() - start_time, data)
 
     def copy(signal_fd: int) -> None:  # pylint: disable=too-many-branches
-        fds = [pty_fd, tty_stdin_fd, signal_fd]
+        nonlocal input_data
+
+        crfds = [pty_fd, tty_stdin_fd, signal_fd]
 
         while True:
+            if len(input_data) > 0:
+                cwfds = [pty_fd]
+            else:
+                cwfds = []
+
             try:
-                rfds, _, _ = select.select(fds, [], [])
+                rfds, wfds, _ = select.select(crfds, cwfds, [])
             except KeyboardInterrupt:
-                if tty_stdin_fd in fds:
-                    fds.remove(tty_stdin_fd)
+                if tty_stdin_fd in crfds:
+                    crfds.remove(tty_stdin_fd)
 
                 break
 
@@ -126,7 +132,7 @@ def record(
                 data = os.read(tty_stdin_fd, 1024)
 
                 if not data:
-                    if tty_stdin_fd in fds:
+                    if tty_stdin_fd in crfds:
                         fds.remove(tty_stdin_fd)
                 else:
                     handle_stdin_read(data)
@@ -139,14 +145,21 @@ def record(
 
                     for sig in signals:
                         if sig in EXIT_SIGNALS:
-                            fds.remove(signal_fd)
+                            crfds.remove(signal_fd)
                         if sig == signal.SIGWINCH:
                             set_pty_size()
+
+            if pty_fd in wfds:
+                n = os.write(pty_fd, input_data)
+                input_data = input_data[n:]
 
     pid, pty_fd = pty.fork()
 
     if pid == pty.CHILD:
         os.execvpe(command[0], command, env)
+
+    flags = fcntl.fcntl(pty_fd, fcntl.F_GETFL, 0) | os.O_NONBLOCK
+    fcntl.fcntl(pty_fd, fcntl.F_SETFL, flags)
 
     start_time = time.perf_counter()
     set_pty_size()
