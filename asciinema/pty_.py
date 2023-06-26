@@ -18,6 +18,8 @@ EXIT_SIGNALS = [
     signal.SIGQUIT,
 ]
 
+READ_LEN = 64 * 1024
+
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
 def record(
@@ -113,7 +115,7 @@ def record(
 
             if pty_fd in rfds:
                 try:
-                    data = os.read(pty_fd, 1024)
+                    data = os.read(pty_fd, READ_LEN)
                 except OSError as e:
                     data = b""
 
@@ -123,7 +125,7 @@ def record(
                     handle_master_read(data)
 
             if tty_stdin_fd in rfds:
-                data = os.read(tty_stdin_fd, 1024)
+                data = os.read(tty_stdin_fd, READ_LEN)
 
                 if not data:
                     if tty_stdin_fd in fds:
@@ -132,7 +134,7 @@ def record(
                     handle_stdin_read(data)
 
             if signal_fd in rfds:
-                data = os.read(signal_fd, 1024)
+                data = os.read(signal_fd, READ_LEN)
 
                 if data:
                     signals = struct.unpack(f"{len(data)}B", data)
