@@ -10,7 +10,7 @@ from .command import Command
 class CatCommand(Command):
     def __init__(self, args: Any, config: Config, env: Dict[str, str]):
         Command.__init__(self, args, config, env)
-        self.filename = args.filename
+        self.filenames = args.filename
 
     def execute(self) -> int:
         try:
@@ -22,10 +22,11 @@ class CatCommand(Command):
 
     def cat(self) -> int:
         try:
-            with asciicast.open_from_url(self.filename) as a:
-                for _, _type, text in a.events("o"):
-                    sys.stdout.write(text)
-                    sys.stdout.flush()
+            for filename in self.filenames:
+                with asciicast.open_from_url(filename) as a:
+                    for _, _type, text in a.events("o"):
+                        sys.stdout.write(text)
+                        sys.stdout.flush()
 
         except asciicast.LoadError as e:
             self.print_error(f"printing failed: {str(e)}")

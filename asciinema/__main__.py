@@ -222,10 +222,10 @@ For help on a specific command run:
 
     # create the parser for the `cat` command
     parser_cat = subparsers.add_parser(
-        "cat", help="Print full output of terminal session"
+        "cat", help="Print full output of terminal sessions"
     )
     parser_cat.add_argument(
-        "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
+        "filename", nargs="+", help='local path, http/ipfs URL or "-" (read from stdin)'
     )
     parser_cat.set_defaults(cmd=CatCommand)
 
