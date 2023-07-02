@@ -10,7 +10,9 @@ from .urllib_http_adapter import URLLibHttpAdapter
 
 
 class APIError(Exception):
-    pass
+    def __init__(self, e: str, retryable: bool):
+        super().__init__(e)
+        self.retryable = retryable
 
 
 class Api:
@@ -48,7 +50,7 @@ class Api:
                     password=self.install_id,
                 )
             except HTTPConnectionError as e:
-                raise APIError(str(e)) from e
+                raise APIError(str(e), True) from e
 
         if status not in (200, 201):
             self._handle_error(status, body)
@@ -98,4 +100,4 @@ class Api:
             else:
                 error = f"HTTP status: {status}"
 
-        raise APIError(error)
+        raise APIError(error, status >= 500)

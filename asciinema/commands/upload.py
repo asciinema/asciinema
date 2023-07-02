@@ -25,9 +25,12 @@ class UploadCommand(Command):
 
         except APIError as e:
             self.print_error(f"upload failed: {str(e)}")
-            self.print_error(
-                f"retry later by running: asciinema upload {self.filename}"
-            )
+
+            if e.retryable:
+                self.print_error(
+                    f"retry later by running: asciinema upload {self.filename}"
+                )
+
             return 1
 
         return 0
