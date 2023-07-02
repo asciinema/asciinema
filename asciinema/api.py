@@ -84,9 +84,9 @@ class Api:
                 "This asciinema version may no longer be supported. "
                 "Please upgrade to the latest version."
             ),
-            413: "Sorry, your asciicast is too big.",
+            413: "Sorry, the size of your recording exceeds the server-configured limit.",
             422: f"Invalid asciicast: {body.decode('utf-8', 'replace')}",
-            503: "The server is down for maintenance. Try again in a minute.",
+            503: "The server is down for maintenance.",
         }
 
         error = errors.get(status)
