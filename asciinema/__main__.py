@@ -225,7 +225,9 @@ For help on a specific command run:
         "cat", help="Print full output of terminal sessions"
     )
     parser_cat.add_argument(
-        "filename", nargs="+", help='local path, http/ipfs URL or "-" (read from stdin)'
+        "filename",
+        nargs="+",
+        help='local path, http/ipfs URL or "-" (read from stdin)',
     )
     parser_cat.set_defaults(cmd=CatCommand)
 
