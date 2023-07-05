@@ -1,5 +1,25 @@
 # asciinema changelog
 
+## 2.3.0 (2023-07-05)
+
+* Added official support for Python 3.11
+* Dropped official support for Python 3.6
+* Implemented markers in `rec` and `play -m` commands
+* Added `--loop` option for looped playback in `play` command
+* Added `--stream` and `--out-fmt` option for customizing output of `play` command
+* Improved terminal charset detection (thanks @djds)
+* Extended `cat` command to support multiple files (thanks @Low-power)
+* Improved upload error messages
+* Fixed direct playback from URL
+* Made raw output start with terminal size sequence (`\e[8;H;Wt`)
+* Prevented recording to stdout when it's a TTY
+* Added target file permission checks to avoid ugly errors
+* Removed named pipe re-opening, which was causing hangs in certain scenarios
+* Improved PTY/TTY data reading - it goes in bigger chunks now (256 kb)
+* Fixed deadlock in PTY writes (thanks @Low-power)
+* Improved input forwarding from stdin
+* Ignored OSC responses in recorded stdin stream
+
 ## 2.2.0 (2022-05-07)
 
 * Added official support for Python 3.8, 3.9, 3.10
