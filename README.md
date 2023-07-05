@@ -133,18 +133,18 @@ python3 -m asciinema --version
 ### Docker image
 
 asciinema Docker image is based on [Ubuntu
-20.04](https://releases.ubuntu.com/20.04/) and has the latest version of
+22.04](https://releases.ubuntu.com/22.04/) and has the latest version of
 asciinema recorder pre-installed.
 
 ```sh
-docker pull docker.io/asciinema/asciinema
+docker pull ghcr.io/asciinema/asciinema
 ```
 
 When running it don't forget to allocate a pseudo-TTY (`-t`), keep STDIN open
 (`-i`) and mount config directory volume (`-v`):
 
 ```sh
-docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" docker.io/asciinema/asciinema rec
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" ghcr.io/asciinema/asciinema rec
 ```
 
 Container's entrypoint is set to `/usr/local/bin/asciinema` so you can run the
@@ -153,11 +153,13 @@ Usage section for commands and options).
 
 There's not much software installed in this image though. In most cases you may
 want to install extra programs before recording. One option is to derive new
-image from this one (start your custom Dockerfile with `FROM asciinema/asciinema`). Another option is to start the container with `/bin/bash`
-as the entrypoint, install extra packages and manually start `asciinema rec`:
+image from this one (start your custom Dockerfile with `FROM
+ghcr.io/asciinema/asciinema`). Another option is to start the container with
+`/bin/bash` as the entrypoint, install extra packages and manually start
+`asciinema rec`:
 
 ```console
-docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" --entrypoint=/bin/bash docker.io/asciinema/asciinema rec
+docker run --rm -it -v "${HOME}/.config/asciinema:/root/.config/asciinema" --entrypoint=/bin/bash ghcr.io/asciinema/asciinema rec
 root@6689517d99a1:~# apt-get install foobar
 root@6689517d99a1:~# asciinema rec
 ```
@@ -173,7 +175,7 @@ docker run --rm -it \
     --volume="${HOME}/.config/asciinema:/run/user/$(id -u)/.config/asciinema:rw" \
     --volume="${PWD}:/data:rw" \
     --workdir='/data' \
-    docker.io/asciinema/asciinema rec
+    ghcr.io/asciinema/asciinema rec
 ```
 
 ## Usage
@@ -236,7 +238,7 @@ Available options:
 Stdin recording allows for capturing of all characters typed in by the user in
 the currently recorded shell. This may be used by a player (e.g.
 [asciinema-player](https://github.com/asciinema/asciinema-player)) to display
-pressed keys. Because it's basically a key-logging (scoped to a single shell
+pressed keys. Because it's basically key-logging (scoped to a single shell
 instance), it's disabled by default, and has to be explicitly enabled via
 `--stdin` option.
 
@@ -293,6 +295,21 @@ Available options:
 
 - `-i, --idle-time-limit=<sec>` - Limit replayed terminal inactivity to max `<sec>` seconds
 - `-s, --speed=<factor>` - Playback speed (can be fractional)
+- `-l, --loop` - Play in a loop
+- `-m, --pause-on-markers` - Automatically pause on [markers](#markers)
+- `--stream=<stream>` - Select stream to play (see below)
+- `--out-fmt=<format>` - Select output format (see below)
+
+By default the output stream (`o`) is played. This is what you want in most
+cases.  If you recorded the input stream (`i`) with `asciinema rec --stdin` then
+you can replay it with `asciinema play --stream=i <filename>`.
+
+By default the selected stream is written to stdout in original, raw data form.
+This is also what you want in majority of cases. However you can change the
+output format to asciicast (newline delimited JSON) with `asciinema play
+--out-fmt=asciicast <filename>`. This allows delegating actual rendering to
+another place (e.g. outside of your terminal) by piping output of `asciinema
+play` to a tool of your choice.
 
 > For the best playback experience it is recommended to run `asciinema play` in
 > a terminal of dimensions not smaller than the one used for recording, as
@@ -344,6 +361,29 @@ happen in any order.
 
 > asciinema versions prior to 2.0 confusingly referred to install ID as "API
 > token".
+
+## Markers
+
+Markers allow marking specific time locations in a recording, which can be used
+for navigation, as well as for automatic pausing of the playback.
+
+Markers can be added to a recording in several ways:
+
+- while you are recording, by pressing a configured hotkey, see [add_marker_key
+  config option](#configuration-file)
+- for existing recording, by inserting marker events (`"m"`) in the asciicast
+  file, see [marker event](doc/asciicast-v2.md#m---marker)
+
+When replaying a recording with `asciinema play` you can enable
+auto-pause-on-marker behaviour with `-m`/`--pause-on-markers` option (it's off
+by default). When a marker is encountered, the playback automatically pauses and
+can be resumed by pressing space bar key. The playback continues until next
+marker is encountered. You can also fast-forward to the next marker by pressing
+`]` key (when paused).
+
+Markers can be useful in e.g. live demos: you can create a recording with
+markers, then play it back during presentation, and have it stop wherever you
+want to explain terminal contents in more detail.
 
 ## Hosting the recordings on the web
 
@@ -403,6 +443,9 @@ quiet = true
 ; default: C-\ (control + backslash)
 pause_key = C-p
 
+; Define hotkey for adding a marker, default: none
+add_marker_key = C-x
+
 ; Define hotkey prefix key - when defined other recording hotkeys must
 ; be preceeded by it, default: no prefix
 prefix_key = C-a
@@ -420,8 +463,12 @@ idle_time_limit = 1
 pause_key = p
 
 ; Define hotkey for stepping through playback, a frame at a time,
-; default: .
-step_key = ]
+; default: . (dot)
+step_key = s
+
+; Define hotkey for jumping to the next marker,
+; default: ]
+next_marker_key = m
 
 [notifications]
 ; Desktop notifications are displayed on certain occasions, e.g. when
@@ -455,6 +502,10 @@ If `$XDG_CONFIG_HOME` is set on Linux then asciinema uses
 > asciinema versions prior to 1.1 used `$HOME/.asciinema`. If you have it
 > there you should `mv $HOME/.asciinema $HOME/.config/asciinema`.
 
+## Consulting
+
+I offer consulting services for asciinema project. See https://asciinema.org/consulting for more information.
+
 ## Contributing
 
 If you want to contribute to this project check out
@@ -467,7 +518,7 @@ source [contributors](https://github.com/asciinema/asciinema/contributors).
 
 ## License
 
-Copyright &copy; 2011–2021 Marcin Kulik.
+© 2011 Marcin Kulik.
 
 All code is licensed under the GPL, v3 or later. See [LICENSE](./LICENSE) file
 for details.

@@ -13,7 +13,8 @@ Example file:
 {"version": 2, "width": 80, "height": 24, "timestamp": 1504467315, "title": "Demo", "env": {"TERM": "xterm-256color", "SHELL": "/bin/zsh"}}
 [0.248848, "o", "\u001b[1;31mHello \u001b[32mWorld!\u001b[0m\n"]
 [1.001376, "o", "That was ok\rThis is better."]
-[2.143733, "o", " "]
+[1.500000, "m", ""]
+[2.143733, "o", "Now... "]
 [6.541828, "o", "Bye!"]
 ```
 
@@ -114,7 +115,7 @@ Where:
 
 * `time` (float) - indicates when this event happened, represented as the number
   of seconds since the beginning of the recording session,
-* `event-type` (string) - one of: `"o"`, `"i"`,
+* `event-type` (string) - one of: `"o"`, `"i"`, `"m"`
 * `event-data` (any) - event specific data, described separately for each event
   type.
 
@@ -125,7 +126,7 @@ For example, let's look at the following line:
 It represents the event which:
 
 * happened 1.001376 sec after the start of the recording session,
-* is of type `"o"` (print to stdout, see below),
+* is of type `"o"` (output, write to a terminal, see below),
 * has data `"Hello world"`.
 
 ### Supported event types
@@ -140,28 +141,40 @@ A tool which interprets the event stream (web/cli player, post-processor) should
 ignore (or pass through) event types it doesn't understand or doesn't care
 about.
 
-#### "o" - data written to stdout
+#### "o" - output, data written to the terminal
 
 Event of type `"o"` represents printing new data to terminal's stdout.
 
-`event-data` is a string containing the data that was printed to a terminal. It
-has to be valid, UTF-8 encoded JSON string as described
-in [JSON RFC section 2.5](http://www.ietf.org/rfc/rfc4627.txt), with all
+`event-data` is a string containing the data that was printed. It must be valid,
+UTF-8 encoded JSON string as described in [JSON RFC section
+2.5](http://www.ietf.org/rfc/rfc4627.txt), with any non-printable Unicode
+codepoints encoded as `\uXXXX`.
+
+#### "i" - input, data read from the terminal
+
+Event of type `"i"` represents character typed in by the user, or more
+specifically, raw data sent from a terminal emulator to stdin of the recorded
+program (usually shell).
+
+`event-data` is a string containing captured ASCII character representing a key,
+or a control character like `"\r"` (enter), `"\u0001"` (ctrl-a), `"\u0003"`
+(ctrl-c), etc. Like with `"o"` event, it's UTF-8 encoded JSON string, with any
 non-printable Unicode codepoints encoded as `\uXXXX`.
 
-#### "i" - data read from stdin
-
-Event of type `"i"` represents character(s) typed in by the user, or
-more specifically, data sent from terminal emulator to stdin of the recorded
-shell.
-
-`event-data` is a string containing the captured character(s). Like with `"o"`
-event, it's UTF-8 encoded JSON string, with all non-printable Unicode codepoints
-encoded as `\uXXXX`.
-
-> Official asciinema recorder doesn't capture stdin by default. All
+> Official asciinema recorder doesn't capture keyboard input by default. All
 > implementations of asciicast-compatible terminal recorder should not capture
 > it either unless explicitly permitted by the user.
+
+#### "m" - marker
+
+Event of type `"m"` represents a marker.
+
+When marker is encountered in the event stream and "pause on markers"
+functionality of the player is enabled, the playback should pause, and wait for
+the user to resume.
+
+`event-data` can be used to annotate a marker. Annotations may be used to e.g.
+show a list of named "chapters".
 
 ## Notes on compatibility
 

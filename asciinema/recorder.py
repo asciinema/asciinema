@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple, Type
 
@@ -78,21 +79,14 @@ class tty_fds:
 
     def __enter__(self) -> Tuple[int, int]:
         try:
-            self.stdin_file = open("/dev/tty", "rt", encoding="utf_8")
-        except OSError:
-            self.stdin_file = open("/dev/null", "rt", encoding="utf_8")
-
-        try:
             self.stdout_file = open("/dev/tty", "wt", encoding="utf_8")
         except OSError:
             self.stdout_file = open("/dev/null", "wt", encoding="utf_8")
 
-        return (self.stdin_file.fileno(), self.stdout_file.fileno())
+        return (sys.stdin.fileno(), self.stdout_file.fileno())
 
     def __exit__(self, type_: str, value: str, traceback: str) -> None:
-        assert self.stdin_file is not None
         assert self.stdout_file is not None
-        self.stdin_file.close()
         self.stdout_file.close()
 
 
@@ -137,17 +131,26 @@ class async_writer(async_worker):
     def write_stdout(self, ts: float, data: Any) -> None:
         self.enqueue([ts, "o", data])
 
-    def run(self) -> None:
-        with self.writer as w:
-            event: Tuple[float, str, Any]
-            for event in iter(self.queue.get, None):
-                assert event is not None
-                ts, etype, data = event
+    def write_marker(self, ts: float) -> None:
+        self.enqueue([ts, "m", None])
 
-                if etype == "o":
-                    w.write_stdout(self.time_offset + ts, data)
-                elif etype == "i":
-                    w.write_stdin(self.time_offset + ts, data)
+    def run(self) -> None:
+        try:
+            with self.writer as w:
+                event: Tuple[float, str, Any]
+                for event in iter(self.queue.get, None):
+                    assert event is not None
+                    ts, etype, data = event
+
+                    if etype == "o":
+                        w.write_stdout(self.time_offset + ts, data)
+                    elif etype == "i":
+                        w.write_stdin(self.time_offset + ts, data)
+                    elif etype == "m":
+                        w.write_marker(self.time_offset + ts)
+        except IOError:
+            for event in iter(self.queue.get, None):
+                pass
 
 
 class async_notifier(async_worker):

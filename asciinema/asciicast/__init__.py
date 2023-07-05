@@ -5,6 +5,7 @@ import sys
 import urllib.error
 from codecs import StreamReader
 from html.parser import HTMLParser
+from io import BytesIO
 from typing import Any, List, TextIO, Union
 from urllib.parse import urlparse, urlunparse
 from urllib.request import Request, urlopen
@@ -58,46 +59,50 @@ def open_url(url: str) -> Union[StreamReader, TextIO]:
     if url.startswith("http:") or url.startswith("https:"):
         req = Request(url)
         req.add_header("Accept-Encoding", "gzip")
+        body = None
+        content_type = None
+        utf8_reader = codecs.getreader("utf-8")
+
         with urlopen(req) as response:
             body = response
+            content_type = response.headers["Content-Type"]
             url = response.geturl()  # final URL after redirects
 
             if response.headers["Content-Encoding"] == "gzip":
                 body = gzip.open(body)
 
-            utf8_reader = codecs.getreader("utf-8")
-            content_type = response.headers["Content-Type"]
+            body = BytesIO(body.read())
 
-            if content_type and content_type.startswith("text/html"):
-                html = utf8_reader(body, errors="replace").read()
-                parser = Parser()
-                parser.feed(html)
-                new_url = parser.url
+        if content_type and content_type.startswith("text/html"):
+            html = utf8_reader(body, errors="replace").read()
+            parser = Parser()
+            parser.feed(html)
+            new_url = parser.url
 
-                if not new_url:
-                    raise LoadError(
-                        '<link rel="alternate" '
-                        'type="application/x-asciicast" '
-                        'href="..."> '
-                        "not found in fetched HTML document"
+            if not new_url:
+                raise LoadError(
+                    '<link rel="alternate" '
+                    'type="application/x-asciicast" '
+                    'href="..."> '
+                    "not found in fetched HTML document"
+                )
+
+            if "://" not in new_url:
+                base_url = urlparse(url)
+
+                if new_url.startswith("/"):
+                    new_url = urlunparse(
+                        (base_url[0], base_url[1], new_url, "", "", "")
+                    )
+                else:
+                    path = f"{os.path.dirname(base_url[2])}/{new_url}"
+                    new_url = urlunparse(
+                        (base_url[0], base_url[1], path, "", "", "")
                     )
 
-                if "://" not in new_url:
-                    base_url = urlparse(url)
+            return open_url(new_url)
 
-                    if new_url.startswith("/"):
-                        new_url = urlunparse(
-                            (base_url[0], base_url[1], new_url, "", "", "")
-                        )
-                    else:
-                        path = f"{os.path.dirname(base_url[2])}/{new_url}"
-                        new_url = urlunparse(
-                            (base_url[0], base_url[1], path, "", "", "")
-                        )
-
-                return open_url(new_url)
-
-            return utf8_reader(body, errors="strict")
+        return utf8_reader(body, errors="strict")
 
     return open(url, mode="rt", encoding="utf-8")
 

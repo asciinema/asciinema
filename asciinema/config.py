@@ -137,6 +137,10 @@ class Config:
         return self.__get_key("record", "pause", "C-\\")
 
     @property
+    def record_add_marker_key(self) -> Any:
+        return self.__get_key("record", "add_marker")
+
+    @property
     def play_idle_time_limit(self) -> Optional[float]:
         fallback = self.config.getfloat(
             "play", "maxwait", fallback=None
@@ -156,6 +160,10 @@ class Config:
     @property
     def play_step_key(self) -> Any:
         return self.__get_key("play", "step", ".")
+
+    @property
+    def play_next_marker_key(self) -> Any:
+        return self.__get_key("play", "next_marker", "]")
 
     @property
     def notifications_enabled(self) -> bool:

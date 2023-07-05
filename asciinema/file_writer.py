@@ -1,5 +1,3 @@
-import os
-import stat
 from typing import IO, Any, Callable, Optional
 
 
@@ -29,15 +27,9 @@ class file_writer:
     def _write(self, data: Any) -> None:
         try:
             self.file.write(data)  # type: ignore
-        except BrokenPipeError as e:
-            if self.path != "-" and stat.S_ISFIFO(os.stat(self.path).st_mode):
-                self.on_error("Broken pipe, reopening...")
-                self._open_file()
-                self.on_error("Output pipe reopened successfully")
-                self.file.write(data)  # type: ignore
-            else:
-                self.on_error("Output pipe broken")
-                raise e
+        except IOError as e:
+            self.on_error("Write error, recording suspended")
+            raise e
 
 
 def noop(_: Any) -> None:

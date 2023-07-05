@@ -14,7 +14,7 @@ class Command:
     def print(
         self,
         text: str,
-        end: str = "\n",
+        end: str = "\r\n",
         color: Optional[int] = None,
         force: bool = False,
     ) -> None:

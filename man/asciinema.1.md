@@ -331,10 +331,7 @@ More documentation is available on the asciicast.org website and its GitHub wiki
 
 * Web:  [asciinema.org/docs/](https://asciinema.org/docs/)
 * Wiki: [github.com/asciinema/asciinema/wiki](https://github.com/asciinema/asciinema/wiki)
-<<<<<<< HEAD
-=======
 * IRC:  [Channel on Libera.Chat](https://web.libera.chat/gamja/#asciinema)
->>>>>>> develop
 * Twitter: [@asciinema](https://twitter.com/asciinema)
 
 

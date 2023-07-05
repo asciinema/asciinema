@@ -1,8 +1,8 @@
-from typing import Any, Generator, List, Optional
+from typing import Any, Generator, Iterable, List, Optional
 
 
 def to_relative_time(
-    events: Generator[List[Any], None, None]
+    events: Iterable[Any],
 ) -> Generator[List[Any], None, None]:
     prev_time = 0
 
@@ -14,7 +14,7 @@ def to_relative_time(
 
 
 def to_absolute_time(
-    events: Generator[List[Any], None, None]
+    events: Iterable[Any],
 ) -> Generator[List[Any], None, None]:
     time = 0
 
@@ -25,8 +25,8 @@ def to_absolute_time(
 
 
 def cap_relative_time(
-    events: Generator[List[Any], None, None], time_limit: Optional[float]
-) -> Generator[List[Any], None, None]:
+    events: Iterable[Any], time_limit: Optional[float]
+) -> Iterable[Any]:
     if time_limit:
         return (
             [min(delay, time_limit), type_, data]
@@ -36,6 +36,6 @@ def cap_relative_time(
 
 
 def adjust_speed(
-    events: Generator[List[Any], None, None], speed: Any
+    events: Iterable[Any], speed: Any
 ) -> Generator[List[Any], None, None]:
     return ([delay / speed, type_, data] for delay, type_, data in events)

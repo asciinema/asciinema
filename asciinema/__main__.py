@@ -12,6 +12,21 @@ from .commands.record import RecordCommand
 from .commands.upload import UploadCommand
 
 
+def valid_encoding() -> bool:
+    def _locales() -> Optional[str]:
+        try:
+            return locale.nl_langinfo(locale.CODESET)
+        except AttributeError:
+            return locale.getlocale()[-1]
+
+    loc = _locales()
+
+    if loc is None:
+        return False
+    else:
+        return loc.upper() in ("US-ASCII", "UTF-8", "UTF8")
+
+
 def positive_int(value: str) -> int:
     _value = int(value)
     if _value <= 0:
@@ -35,11 +50,7 @@ def maybe_str(v: Any) -> Optional[str]:
 
 
 def main() -> Any:
-    if locale.nl_langinfo(locale.CODESET).upper() not in [
-        "US-ASCII",
-        "UTF-8",
-        "UTF8",
-    ]:
+    if not valid_encoding():
         sys.stderr.write(
             "asciinema needs an ASCII or UTF-8 character encoding to run. "
             "Check the output of `locale` command.\n"
@@ -174,9 +185,35 @@ For help on a specific command run:
     parser_play.add_argument(
         "-s",
         "--speed",
-        help="playback speedup (can be fractional)",
+        help="set playback speed (can be fractional)",
         type=positive_float,
         default=cfg.play_speed,
+    )
+    parser_play.add_argument(
+        "-l",
+        "--loop",
+        help="loop loop loop loop",
+        action="store_true",
+        default=False,
+    )
+    parser_play.add_argument(
+        "-m",
+        "--pause-on-markers",
+        help="automatically pause on markers",
+        action="store_true",
+        default=False,
+    )
+    parser_play.add_argument(
+        "--out-fmt",
+        help="select output format",
+        choices=["raw", "asciicast"],
+        default="raw",
+    )
+    parser_play.add_argument(
+        "--stream",
+        help="select stream to play",
+        choices=["o", "i"],
+        default=None,
     )
     parser_play.add_argument(
         "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
@@ -185,10 +222,12 @@ For help on a specific command run:
 
     # create the parser for the `cat` command
     parser_cat = subparsers.add_parser(
-        "cat", help="Print full output of terminal session"
+        "cat", help="Print full output of terminal sessions"
     )
     parser_cat.add_argument(
-        "filename", help='local path, http/ipfs URL or "-" (read from stdin)'
+        "filename",
+        nargs="+",
+        help='local path, http/ipfs URL or "-" (read from stdin)',
     )
     parser_cat.set_defaults(cmd=CatCommand)
 

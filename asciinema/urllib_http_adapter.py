@@ -33,7 +33,7 @@ class MultipartFormdataEncoder:
         yield body's chunk as bytes
         """
         encoder = codecs.getencoder("utf-8")
-        for (key, value) in fields.items():
+        for key, value in fields.items():
             key = self.u(key)
             yield encoder(f"--{self.boundary}\r\n")
             yield encoder(
@@ -44,7 +44,7 @@ class MultipartFormdataEncoder:
                 value = str(value)
             yield encoder(self.u(value))
             yield encoder("\r\n")
-        for (key, filename_and_f) in files.items():
+        for key, filename_and_f in files.items():
             filename, f = filename_and_f
             key = self.u(key)
             filename = self.u(filename)

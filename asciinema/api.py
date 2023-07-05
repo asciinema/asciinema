@@ -10,7 +10,9 @@ from .urllib_http_adapter import URLLibHttpAdapter
 
 
 class APIError(Exception):
-    pass
+    def __init__(self, e: str, retryable: bool):
+        super().__init__(e)
+        self.retryable = retryable
 
 
 class Api:
@@ -48,7 +50,7 @@ class Api:
                     password=self.install_id,
                 )
             except HTTPConnectionError as e:
-                raise APIError(str(e)) from e
+                raise APIError(str(e), True) from e
 
         if status not in (200, 201):
             self._handle_error(status, body)
@@ -82,9 +84,9 @@ class Api:
                 "This asciinema version may no longer be supported. "
                 "Please upgrade to the latest version."
             ),
-            413: "Sorry, your asciicast is too big.",
+            413: "Sorry, the size of your recording exceeds the server-configured limit.",
             422: f"Invalid asciicast: {body.decode('utf-8', 'replace')}",
-            503: "The server is down for maintenance. Try again in a minute.",
+            503: "The server is down for maintenance.",
         }
 
         error = errors.get(status)
@@ -98,4 +100,4 @@ class Api:
             else:
                 error = f"HTTP status: {status}"
 
-        raise APIError(error)
+        raise APIError(error, status >= 500)
