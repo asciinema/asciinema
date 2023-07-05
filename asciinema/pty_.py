@@ -88,7 +88,7 @@ def record(
 
             return
 
-        input_data += memoryview(data)
+        input_data += data
 
         # save stdin unless paused or data is OSC response (e.g. \x1b]11;?\x07)
         if not pause_time and not (
