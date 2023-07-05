@@ -135,7 +135,7 @@ def record(
 
                 if not data:
                     if tty_stdin_fd in crfds:
-                        fds.remove(tty_stdin_fd)
+                        crfds.remove(tty_stdin_fd)
                 else:
                     handle_stdin_read(data)
 
