@@ -18,7 +18,7 @@ EXIT_SIGNALS = [
     signal.SIGQUIT,
 ]
 
-READ_LEN = 64 * 1024
+READ_LEN = 256 * 1024
 
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-statements
