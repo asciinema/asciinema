@@ -55,11 +55,13 @@ install: build
 
 .PHONY: push
 push: .pip build
-	python3 -m twine upload dist/*
+	. $(VIRTUAL_ENV)/bin/activate \
+	    && python3 -m twine upload dist/*
 
 .PHONY: push.test
 push.test: .pip build
-	python3 -m twine upload --repository testpypi dist/*
+	. $(VIRTUAL_ENV)/bin/activate \
+	    && python3 -m twine upload --repository testpypi dist/*
 
 
 .PHONY: clean
