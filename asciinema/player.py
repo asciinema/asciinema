@@ -57,6 +57,7 @@ class Player:  # pylint: disable=too-few-public-methods
         out_fmt: str = "raw",
         stream: Optional[str] = None,
         pause_on_markers: bool = False,
+        fast_forward_step: int = 10,
     ) -> None:
         if key_bindings is None:
             key_bindings = {}
@@ -76,6 +77,7 @@ class Player:  # pylint: disable=too-few-public-methods
                         key_bindings,
                         output,
                         pause_on_markers,
+                        fast_forward_step
                     )
         except IOError:
             self._play(
@@ -86,6 +88,7 @@ class Player:  # pylint: disable=too-few-public-methods
                 key_bindings,
                 output,
                 False,
+                fast_forward_step
             )
 
     @staticmethod
@@ -97,11 +100,13 @@ class Player:  # pylint: disable=too-few-public-methods
         key_bindings: Dict[str, Any],
         output: Output,
         pause_on_markers: bool,
+        fast_forward_step: int,
     ) -> None:
         idle_time_limit = idle_time_limit or asciicast.idle_time_limit
         pause_key = key_bindings.get("pause")
         step_key = key_bindings.get("step")
         next_marker_key = key_bindings.get("next_marker")
+        fast_forward_key = key_bindings.get("fast_forward")
 
         events = asciicast.events()
         events = ev.to_relative_time(events)
@@ -159,6 +164,14 @@ class Player:  # pylint: disable=too-few-public-methods
                             output.write(time_, event_type, text)
                             pause_elapsed_time = time_
                             time_, event_type, text = next_event()
+
+                    elif key == fast_forward_key:
+                        for x in range(fast_forward_step):
+                            time_, event_type, text = next_event()
+                            if time_ is None:
+                                break
+                            output.write(time_, event_type, text)
+                            pause_elapsed_time = time_
             else:
                 while time_ is not None:
                     elapsed_wall_time = time.perf_counter() - start_time

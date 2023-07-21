@@ -27,7 +27,9 @@ class PlayCommand(Command):
             "pause": config.play_pause_key,
             "step": config.play_step_key,
             "next_marker": config.play_next_marker_key,
+            "fast_forward": config.play_fast_forward,
         }
+        self.fast_forward_step = config.play_fast_forward_step
 
     def execute(self) -> int:
         code = self.play()
@@ -49,6 +51,7 @@ class PlayCommand(Command):
                     out_fmt=self.out_fmt,
                     stream=self.stream,
                     pause_on_markers=self.pause_on_markers,
+                    fast_forward_step=self.fast_forward_step
                 )
 
         except asciicast.LoadError as e:

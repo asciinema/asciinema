@@ -254,6 +254,7 @@ Following keyboard shortcuts are available by default:
 - <kbd>Space</kbd> - toggle pause,
 - <kbd>.</kbd> - step through a recording a frame at a time (when paused),
 - <kbd>Ctrl+C</kbd> - exit.
+- <kbd>}</kbd> - fast forward (10 frames)
 
 See "Configuration file" section for information on how to customize the
 keyboard shortcuts.
