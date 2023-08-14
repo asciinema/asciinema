@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     TextIO,
+    Tuple,
     Union,
 )
 
@@ -147,6 +148,10 @@ class writer(file_writer):
 
     def write_marker(self, ts: float) -> None:
         self.__write_event(ts, "m", "")
+
+    def write_resize(self, ts: float, size: Tuple[int, int]) -> None:
+        cols, rows = size
+        self.__write_event(ts, "r", f"{cols}x{rows}")
 
     # pylint: disable=consider-using-with
     def _open_file(self) -> None:

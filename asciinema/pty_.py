@@ -41,8 +41,14 @@ def record(
     add_marker_key = key_bindings.get("add_marker")
     input_data = bytes()
 
-    def set_pty_size() -> None:
-        cols, rows = get_tty_size()
+    def handle_resize() -> None:
+        size = get_tty_size()
+        set_pty_size(size)
+        assert start_time is not None
+        writer.write_resize(time.perf_counter() - start_time, size)
+
+    def set_pty_size(size: Tuple[int, int]) -> None:
+        cols, rows = size
         buf = array.array("h", [rows, cols, 0, 0])
         fcntl.ioctl(pty_fd, termios.TIOCSWINSZ, buf)
 
@@ -149,7 +155,7 @@ def record(
                         if sig in EXIT_SIGNALS:
                             crfds.remove(signal_fd)
                         if sig == signal.SIGWINCH:
-                            set_pty_size()
+                            handle_resize()
 
             if pty_fd in wfds:
                 n = os.write(pty_fd, input_data)
@@ -164,7 +170,7 @@ def record(
     fcntl.fcntl(pty_fd, fcntl.F_SETFL, flags)
 
     start_time = time.perf_counter()
-    set_pty_size()
+    set_pty_size(get_tty_size())
 
     with SignalFD(EXIT_SIGNALS + [signal.SIGWINCH]) as sig_fd:
         with raw(tty_stdin_fd):
