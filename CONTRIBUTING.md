@@ -42,21 +42,14 @@ improving an existing one, please first discuss this with asciinema team. You
 can simply open a separate issue for a discussion or join #asciinema IRC
 channel on Libera.Chat.
 
-## Asking for help
-
-GitHub issue tracker is not a support forum.
-
-If you need help then either join #asciinema IRC channel on Libera.Chat or
-drop us an email at <support@asciinema.org>.
-
 ## Reporting security issues
 
 If you found a security issue in asciinema please contact us at
-support@asciinema.org. For the benefit of all asciinema users please **do
+admin@asciinema.org. For the benefit of all asciinema users please **do
 not** publish details of the vulnerability in a GitHub issue.
 
 The PGP key below (1eb33a8760dec34b) can be used when sending encrypted email
-to or verifying responses from support@asciinema.org.
+to or verifying responses from admin@asciinema.org.
 
 ```Public Key
 -----BEGIN PGP PUBLIC KEY BLOCK-----
