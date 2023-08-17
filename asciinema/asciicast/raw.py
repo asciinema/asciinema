@@ -1,7 +1,7 @@
 import os
 import sys
 from os import path
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Tuple
 
 from ..file_writer import file_writer
 
@@ -44,12 +44,15 @@ class writer(file_writer):
     def write_stdout(self, _ts: float, data: Any) -> None:
         self._write(data)
 
-    # pylint: disable=no-self-use
     def write_stdin(self, ts: float, data: Any) -> None:
         pass
 
     def write_marker(self, ts: float) -> None:
         pass
+
+    def write_resize(self, ts: float, size: Tuple[int, int]) -> None:
+        cols, rows = size
+        self._write(f"\x1b[8;{rows};{cols}t".encode("utf-8"))
 
     # pylint: disable=consider-using-with
     def _open_file(self) -> None:

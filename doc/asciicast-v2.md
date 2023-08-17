@@ -15,6 +15,7 @@ Example file:
 [1.001376, "o", "That was ok\rThis is better."]
 [1.500000, "m", ""]
 [2.143733, "o", "Now... "]
+[4.050000, "r", "80x24"]
 [6.541828, "o", "Bye!"]
 ```
 
@@ -115,7 +116,7 @@ Where:
 
 * `time` (float) - indicates when this event happened, represented as the number
   of seconds since the beginning of the recording session,
-* `event-type` (string) - one of: `"o"`, `"i"`, `"m"`
+* `event-type` (string) - one of: `"o"`, `"i"`, `"m"`, `"r"`
 * `event-data` (any) - event specific data, described separately for each event
   type.
 
@@ -175,6 +176,13 @@ the user to resume.
 
 `event-data` can be used to annotate a marker. Annotations may be used to e.g.
 show a list of named "chapters".
+
+#### "r" - resize
+
+Event of type `"r"` represents terminal resize.
+
+`event-data` contains new terminal size (columns + rows) formatted as
+`"{COLS}x{ROWS}"`, e.g. `"80x24"`.
 
 ## Notes on compatibility
 

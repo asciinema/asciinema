@@ -134,6 +134,9 @@ class async_writer(async_worker):
     def write_marker(self, ts: float) -> None:
         self.enqueue([ts, "m", None])
 
+    def write_resize(self, ts: float, size: Tuple[int, int]) -> None:
+        self.enqueue([ts, "r", size])
+
     def run(self) -> None:
         try:
             with self.writer as w:
@@ -148,6 +151,8 @@ class async_writer(async_worker):
                         w.write_stdin(self.time_offset + ts, data)
                     elif etype == "m":
                         w.write_marker(self.time_offset + ts)
+                    elif etype == "r":
+                        w.write_resize(self.time_offset + ts, data)
         except IOError:
             for event in iter(self.queue.get, None):
                 pass
