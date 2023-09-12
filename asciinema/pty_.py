@@ -158,8 +158,11 @@ def record(
                             handle_resize()
 
             if pty_fd in wfds:
-                n = os.write(pty_fd, input_data)
-                input_data = input_data[n:]
+                try:
+                    n = os.write(pty_fd, input_data)
+                    input_data = input_data[n:]
+                except BlockingIOError:
+                    pass
 
     pid, pty_fd = pty.fork()
 
