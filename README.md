@@ -502,6 +502,12 @@ If `$XDG_CONFIG_HOME` is set on Linux then asciinema uses
 > asciinema versions prior to 1.1 used `$HOME/.asciinema`. If you have it
 > there you should `mv $HOME/.asciinema $HOME/.config/asciinema`.
 
+## Sponsors
+
+asciinema is sponsored by:
+
+- [Brightbox](https://www.brightbox.com/)
+
 ## Consulting
 
 I offer consulting services for asciinema project. See https://asciinema.org/consulting for more information.
