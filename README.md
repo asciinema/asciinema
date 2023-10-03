@@ -9,6 +9,14 @@ Terminal session recorder and the best companion of
 
 [![demo](https://asciinema.org/a/335480.svg)](https://asciinema.org/a/335480?autoplay=1)
 
+asciinema _[as-kee-nuh-muh]_ is a free and open source solution for recording
+terminal sessions and sharing them on the web.
+
+Shout-out to our Platinum [sponsors](https://github.com/sponsors/ku1ik), whose
+financial support helps keep the project alive:
+
+[<img src="./.github/sponsor-logos/dashcam/logo-on-light.png" width="200" />](https://dashcam.io?utm_source=asciinemagithub)
+
 ## Quick intro
 
 asciinema lets you easily record terminal sessions and replay
@@ -506,6 +514,7 @@ If `$XDG_CONFIG_HOME` is set on Linux then asciinema uses
 
 asciinema is sponsored by:
 
+- [**Dashcam**](https://dashcam.io?utm_source=asciinemagithub)
 - [Brightbox](https://www.brightbox.com/)
 
 ## Consulting
