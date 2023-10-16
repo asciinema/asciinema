@@ -78,7 +78,8 @@ You'll be asked to confirm the upload when the recording is done. Nothing is
 sent anywhere without your consent.
 
 These are the basics, but there's much more you can do. The following sections
-cover installation, usage and hosting of the recordings in more detail.
+cover installation, usage and hosting of the recordings in more detail. Also,
+checkout [agg](https://github.com/asciinema/agg) if you're interested in GIF generation.
 
 ## Installation
 
