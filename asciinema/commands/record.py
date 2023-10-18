@@ -41,7 +41,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-return-statements
     # pylint: disable=too-many-statements
     def execute(self) -> int:
-        upload = False
+        interactive = False
         append = self.append
 
         if self.filename == "":
@@ -51,7 +51,7 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
                 )
                 return 1
             self.filename = _tmp_path()
-            upload = True
+            interactive = True
 
         if self.filename == "-":
             if sys.stdout.isatty():
@@ -150,18 +150,33 @@ class RecordCommand(Command):  # pylint: disable=too-many-instance-attributes
 
         self.print_info("recording finished")
 
-        if upload:
+        if interactive:
             if not self.assume_yes:
-                self.print_info(
-                    f"press <enter> to upload to {self.api.hostname()}"
-                    ", <ctrl-c> to save locally"
-                )
-                try:
-                    sys.stdin.readline()
-                except KeyboardInterrupt:
-                    self.print("\r", end="")
-                    self.print_info(f"asciicast saved to {self.filename}")
-                    return 0
+                while True:
+                    self.print(
+                        f"(\x1b[1ms\x1b[0m)ave locally, (\x1b[1mu\x1b[0m)pload to {self.api.hostname()}, (\x1b[1md\x1b[0m)iscard\r\n[s,u,d]? ",
+                        end="",
+                        force=True,
+                        flush=True,
+                    )
+
+                    try:
+                        answer = sys.stdin.readline().strip().lower()
+                    except KeyboardInterrupt:
+                        self.print("")
+                        answer = "s"
+
+                    if answer == "s" or answer == "save":
+                        self.print_info(f"asciicast saved to {self.filename}")
+                        return 0
+
+                    elif answer == "u" or answer == "upload":
+                        break
+
+                    elif answer == "d" or answer == "discard":
+                        os.remove(self.filename)
+                        self.print_info(f"asciicast discarded")
+                        return 0
 
             try:
                 result, warn = self.api.upload_asciicast(self.filename)
