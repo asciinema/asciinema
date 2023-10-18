@@ -110,78 +110,80 @@ Example theme:
 
 Each element of the event stream is a 3-tuple encoded as JSON array:
 
-    [time, event-type, event-data]
+    [time, code, data]
 
 Where:
 
-* `time` (float) - indicates when this event happened, represented as the number
+* `time` (float) - indicates when the event happened, represented as the number
   of seconds since the beginning of the recording session,
-* `event-type` (string) - one of: `"o"`, `"i"`, `"m"`, `"r"`
-* `event-data` (any) - event specific data, described separately for each event
-  type.
+* `code` (string) - specifies type of event, one of: `"o"`, `"i"`, `"m"`, `"r"`
+* `data` (any) - event specific data, described separately for each event
+  code.
 
 For example, let's look at the following line:
 
     [1.001376, "o", "Hello world"]
 
-It represents the event which:
+It represents:
 
-* happened 1.001376 sec after the start of the recording session,
-* is of type `"o"` (output, write to a terminal, see below),
-* has data `"Hello world"`.
+* output (code `o`),
+* of text `Hello world`,
+* which happened `1.001376` sec after the start of the recording session.
 
-### Supported event types
+### Supported event codes
 
-This section describes the event types supported in asciicast v2 format.
+This section describes the event codes supported in asciicast v2 format.
 
-The list is open to extension, and new event types may be added in both the
+The list is open to extension, and new event codes may be added in both the
 current and future versions of the format. For example, we may add new event
-type for text overlay (subtitles display).
+code for text overlay (subtitles display).
 
 A tool which interprets the event stream (web/cli player, post-processor) should
-ignore (or pass through) event types it doesn't understand or doesn't care
+ignore (or pass through) event codes it doesn't understand or doesn't care
 about.
 
-#### "o" - output, data written to the terminal
+#### "o" - output, data written to a terminal
 
-Event of type `"o"` represents printing new data to terminal's stdout.
+Event of code `"o"` represents printing new data to a terminal.
 
-`event-data` is a string containing the data that was printed. It must be valid,
-UTF-8 encoded JSON string as described in [JSON RFC section
+`data` is a string containing the data that was printed. It must be valid, UTF-8
+encoded JSON string as described in [JSON RFC section
 2.5](http://www.ietf.org/rfc/rfc4627.txt), with any non-printable Unicode
 codepoints encoded as `\uXXXX`.
 
-#### "i" - input, data read from the terminal
+#### "i" - input, data read from a terminal
 
-Event of type `"i"` represents character typed in by the user, or more
+Event of code `"i"` represents character typed in by the user, or more
 specifically, raw data sent from a terminal emulator to stdin of the recorded
 program (usually shell).
 
-`event-data` is a string containing captured ASCII character representing a key,
-or a control character like `"\r"` (enter), `"\u0001"` (ctrl-a), `"\u0003"`
-(ctrl-c), etc. Like with `"o"` event, it's UTF-8 encoded JSON string, with any
+`data` is a string containing captured ASCII character representing a key, or a
+control character like `"\r"` (enter), `"\u0001"` (ctrl-a), `"\u0003"` (ctrl-c),
+etc. Like with `"o"` event, it's UTF-8 encoded JSON string, with any
 non-printable Unicode codepoints encoded as `\uXXXX`.
 
 > Official asciinema recorder doesn't capture keyboard input by default. All
 > implementations of asciicast-compatible terminal recorder should not capture
-> it either unless explicitly permitted by the user.
+> it either unless explicitly requested by the user.
 
 #### "m" - marker
 
-Event of type `"m"` represents a marker.
+Event of code `"m"` represents a marker.
 
 When marker is encountered in the event stream and "pause on markers"
 functionality of the player is enabled, the playback should pause, and wait for
 the user to resume.
 
-`event-data` can be used to annotate a marker. Annotations may be used to e.g.
+`data` can be used to annotate a marker. Annotations may be used to e.g.
 show a list of named "chapters".
 
 #### "r" - resize
 
-Event of type `"r"` represents terminal resize.
+Event of code `"r"` represents terminal resize.
 
-`event-data` contains new terminal size (columns + rows) formatted as
+Those are captured in response to `SIGWINCH` signal.
+
+`data` contains new terminal size (columns + rows) formatted as
 `"{COLS}x{ROWS}"`, e.g. `"80x24"`.
 
 ## Notes on compatibility
