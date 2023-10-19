@@ -58,7 +58,6 @@ jobs:
         distros:
           - alpine
           - arch
-          - centos
           - debian
           - fedora
           - ubuntu
@@ -88,7 +87,6 @@ jobs:
         distros:
           - alpine
           - arch
-          - centos
           - debian
           - fedora
           - ubuntu
