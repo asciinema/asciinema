@@ -49,11 +49,8 @@ fn handle_parent(master_fd: RawFd, tty: fs::File, child: unistd::Pid) -> anyhow:
 
     match wait_result {
         Ok(wait::WaitStatus::Exited(_pid, status)) => Ok(status),
-
         Ok(wait::WaitStatus::Signaled(_pid, signal, ..)) => Ok(128 + signal as i32),
-
         Ok(_) => Ok(1),
-
         Err(e) => Err(anyhow::anyhow!(e)),
     }
 }
