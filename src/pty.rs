@@ -1,5 +1,5 @@
 use mio::unix::SourceFd;
-use nix::{fcntl, libc, pty, unistd, unistd::ForkResult};
+use nix::{fcntl, libc, pty, sys::wait, unistd, unistd::ForkResult};
 use std::fs;
 use std::io::{self, Read, Write};
 use std::ops::Deref;
@@ -7,23 +7,19 @@ use std::os::fd::RawFd;
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use termion::raw::IntoRawMode;
 
-pub fn exec<S: AsRef<str>>(args: &[S]) -> anyhow::Result<()> {
+pub fn exec<S: AsRef<str>>(args: &[S]) -> anyhow::Result<i32> {
     let tty = open_tty()?;
     let winsize = get_tty_size(tty.as_raw_fd());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
-        ForkResult::Parent { .. } => {
-            handle_parent(result.master.as_raw_fd(), tty)?;
-        }
+        ForkResult::Parent { child } => handle_parent(result.master.as_raw_fd(), tty, child),
 
         ForkResult::Child => {
             handle_child(args)?;
-            // TODO wait for child pid
+            unreachable!();
         }
     }
-
-    Ok(())
 }
 
 fn open_tty() -> io::Result<fs::File> {
@@ -46,11 +42,27 @@ fn get_tty_size(tty_fd: i32) -> pty::Winsize {
     winsize
 }
 
+fn handle_parent(master_fd: RawFd, tty: fs::File, child: unistd::Pid) -> anyhow::Result<i32> {
+    let copy_result = copy(master_fd, tty);
+    let wait_result = wait::waitpid(child, None);
+    copy_result?;
+
+    match wait_result {
+        Ok(wait::WaitStatus::Exited(_pid, status)) => Ok(status),
+
+        Ok(wait::WaitStatus::Signaled(_pid, signal, ..)) => Ok(128 + signal as i32),
+
+        Ok(_) => Ok(1),
+
+        Err(e) => Err(anyhow::anyhow!(e)),
+    }
+}
+
 const MASTER: mio::Token = mio::Token(0);
 const TTY: mio::Token = mio::Token(1);
 const BUF_SIZE: usize = 128 * 1024;
 
-fn handle_parent(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
+fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
     let mut master_file = unsafe { fs::File::from_raw_fd(master_fd) };
     let mut poll = mio::Poll::new()?;
     let mut events = mio::Events::with_capacity(128);
