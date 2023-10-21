@@ -155,7 +155,7 @@ fn handle_child<S: AsRef<str>>(args: &[S]) -> anyhow::Result<()> {
     unsafe { libc::_exit(1) }
 }
 
-fn set_non_blocking(fd: &i32) -> Result<(), io::Error> {
+fn set_non_blocking(fd: &RawFd) -> Result<(), io::Error> {
     use fcntl::{fcntl, FcntlArg::*, OFlag};
 
     let flags = fcntl(*fd, F_GETFL)?;
