@@ -63,7 +63,7 @@ const TTY: mio::Token = mio::Token(1);
 const BUF_SIZE: usize = 128 * 1024;
 
 fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
-    let mut master_file = unsafe { fs::File::from_raw_fd(master_fd) };
+    let mut master = unsafe { fs::File::from_raw_fd(master_fd) };
     let mut poll = mio::Poll::new()?;
     let mut events = mio::Events::with_capacity(128);
     let mut master_source = SourceFd(&master_fd);
@@ -90,9 +90,9 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
             match event.token() {
                 MASTER => {
                     if event.is_readable() {
-                        let read = read_all(&mut master_file, &mut buf, &mut output)?;
+                        let n = read_all(&mut master, &mut buf, &mut output)?;
 
-                        if read > 0 {
+                        if n > 0 {
                             poll.registry().reregister(
                                 &mut tty_source,
                                 TTY,
@@ -102,14 +102,15 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
                     }
 
                     if event.is_writable() {
-                        master_file.write_all(&input).unwrap();
-                        input.clear();
+                        let n = write_all(&mut master, &mut input)?;
 
-                        poll.registry().reregister(
-                            &mut master_source,
-                            MASTER,
-                            mio::Interest::READABLE,
-                        )?;
+                        if n == 0 {
+                            poll.registry().reregister(
+                                &mut master_source,
+                                MASTER,
+                                mio::Interest::READABLE,
+                            )?;
+                        }
                     }
 
                     if event.is_read_closed() {
@@ -120,20 +121,21 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
 
                 TTY => {
                     if event.is_writable() {
-                        tty.write_all(&output)?;
-                        output.clear();
+                        let n = write_all(&mut tty, &mut output)?;
 
-                        poll.registry().reregister(
-                            &mut tty_source,
-                            TTY,
-                            mio::Interest::READABLE,
-                        )?;
+                        if n == 0 {
+                            poll.registry().reregister(
+                                &mut tty_source,
+                                TTY,
+                                mio::Interest::READABLE,
+                            )?;
+                        }
                     }
 
                     if event.is_readable() {
-                        let read = read_all(&mut tty.deref(), &mut buf, &mut input)?;
+                        let n = read_all(&mut tty.deref(), &mut buf, &mut input)?;
 
-                        if read > 0 {
+                        if n > 0 {
                             poll.registry().reregister(
                                 &mut master_source,
                                 MASTER,
@@ -201,4 +203,42 @@ fn read_all<R: Read>(source: &mut R, buf: &mut [u8], out: &mut Vec<u8>) -> io::R
     }
 
     Ok(read)
+}
+
+fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
+    let mut buf: &[u8] = data.as_ref();
+
+    loop {
+        match sink.write(buf) {
+            Ok(0) => (),
+
+            Ok(n) => {
+                buf = &buf[n..];
+
+                if buf.is_empty() {
+                    break;
+                }
+            }
+
+            Err(e) => {
+                if e.kind() == std::io::ErrorKind::WouldBlock {
+                    break;
+                } else {
+                    return Err(e);
+                }
+            }
+        }
+    }
+
+    let left = buf.len();
+
+    if left == 0 {
+        data.clear();
+    } else {
+        let rot = data.len() - left;
+        data.rotate_left(rot);
+        data.truncate(left);
+    }
+
+    Ok(left)
 }
