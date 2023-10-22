@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.75"
-nix = { version = "0.27", features = [ "fs", "term", "process" ] }
+nix = { version = "0.27", features = [ "fs", "term", "process", "signal" ] }
 mio = { version ="0.8", features = ["os-poll", "os-ext"] }
 termion = "2.0.1"

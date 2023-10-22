@@ -1,5 +1,5 @@
 use mio::unix::SourceFd;
-use nix::{fcntl, libc, pty, sys::wait, unistd, unistd::ForkResult};
+use nix::{fcntl, libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
 use std::fs;
 use std::io::{self, Read, Write};
 use std::ops::Deref;
@@ -155,6 +155,7 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
 }
 
 fn handle_child<S: AsRef<str>>(args: &[S]) -> anyhow::Result<()> {
+    use signal::{SigHandler, Signal};
     use std::ffi::{CString, NulError};
 
     let args = args
@@ -162,6 +163,7 @@ fn handle_child<S: AsRef<str>>(args: &[S]) -> anyhow::Result<()> {
         .map(|s| CString::new(s.as_ref()))
         .collect::<Result<Vec<CString>, NulError>>()?;
 
+    unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
     unistd::execvp(&args[0], &args)?;
     unsafe { libc::_exit(1) }
 }
