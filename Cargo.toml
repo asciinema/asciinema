@@ -2,6 +2,8 @@
 name = "asciinema"
 version = "3.0.0-alpha.1"
 edition = "2021"
+homepage = "https://asciinema.org"
+repository = "https://github.com/asciinema/asciinema"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
