@@ -5,6 +5,8 @@ edition = "2021"
 authors = ["Marcin Kulik <m@ku1ik.com>"]
 homepage = "https://asciinema.org"
 repository = "https://github.com/asciinema/asciinema"
+description = "Terminal session recorder"
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
