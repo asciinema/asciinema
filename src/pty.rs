@@ -154,7 +154,6 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
                     if event.is_read_closed() {
                         poll.registry().deregister(&mut tty_source).unwrap();
                         return Ok(());
-                        // TODO don't return but deregister tty_source and flush remaining input to master
                     }
                 }
 
