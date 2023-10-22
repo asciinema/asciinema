@@ -70,6 +70,7 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
+    let mut flush = false;
 
     set_non_blocking(&master_fd)?;
     set_non_blocking(&tty_fd)?;
@@ -87,9 +88,9 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
             match event.token() {
                 MASTER => {
                     if event.is_readable() {
-                        let n = read_all(&mut master, &mut buf, &mut output)?;
+                        let read = read_all(&mut master, &mut buf, &mut output)?;
 
-                        if n > 0 {
+                        if read > 0 {
                             poll.registry().reregister(
                                 &mut tty_source,
                                 TTY,
@@ -99,9 +100,9 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
                     }
 
                     if event.is_writable() {
-                        let n = write_all(&mut master, &mut input)?;
+                        let left = write_all(&mut master, &mut input)?;
 
-                        if n == 0 {
+                        if left == 0 {
                             poll.registry().reregister(
                                 &mut master_source,
                                 MASTER,
@@ -111,28 +112,37 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
                     }
 
                     if event.is_read_closed() {
-                        return Ok(());
-                        // TODO don't return but deregister master_source and flush remaining output to tty
+                        poll.registry().deregister(&mut master_source)?;
+
+                        if !output.is_empty() {
+                            flush = true;
+                        } else {
+                            return Ok(());
+                        }
                     }
                 }
 
                 TTY => {
                     if event.is_writable() {
-                        let n = write_all(&mut tty, &mut output)?;
+                        let left = write_all(&mut tty, &mut output)?;
 
-                        if n == 0 {
-                            poll.registry().reregister(
-                                &mut tty_source,
-                                TTY,
-                                mio::Interest::READABLE,
-                            )?;
+                        if left == 0 {
+                            if flush {
+                                return Ok(());
+                            } else {
+                                poll.registry().reregister(
+                                    &mut tty_source,
+                                    TTY,
+                                    mio::Interest::READABLE,
+                                )?;
+                            }
                         }
                     }
 
                     if event.is_readable() {
-                        let n = read_all(&mut tty.deref(), &mut buf, &mut input)?;
+                        let read = read_all(&mut tty.deref(), &mut buf, &mut input)?;
 
-                        if n > 0 {
+                        if read > 0 {
                             poll.registry().reregister(
                                 &mut master_source,
                                 MASTER,
