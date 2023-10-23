@@ -37,9 +37,13 @@ class Asciicast:
     ) -> Generator[List[Any], None, None]:
         if type_ is None:
             for line in self.__file:
+                if line == "\n":
+                    break
                 yield json.loads(line)
         else:
             for line in self.__file:
+                if line == "\n":
+                    break
                 event = json.loads(line)
                 if event[1] == type_:
                     yield event
