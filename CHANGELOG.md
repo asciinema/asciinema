@@ -1,5 +1,13 @@
 # asciinema changelog
 
+## 2.4.0 (2023-10-23)
+
+* When recording without file arg we now ask whether to save, upload or discard the recording (#576)
+* Added capture of terminal resize events (#565)
+* Fixed blocking write error when PTY master is not ready (#569) (thanks @Low-power!)
+* Fixed "broken pipe" errors when piping certain commands during recording (#369) (thanks @Low-power!)
+* Fixed crash during playback of cast files with trailing blank line (#577)
+
 ## 2.3.0 (2023-07-05)
 
 * Added official support for Python 3.11
