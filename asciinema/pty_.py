@@ -167,6 +167,7 @@ def record(
     pid, pty_fd = pty.fork()
 
     if pid == pty.CHILD:
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
         os.execvpe(command[0], command, env)
 
     flags = fcntl.fcntl(pty_fd, fcntl.F_GETFL, 0) | os.O_NONBLOCK
