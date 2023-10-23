@@ -17,12 +17,16 @@ class Command:
         end: str = "\r\n",
         color: Optional[int] = None,
         force: bool = False,
+        flush: bool = False,
     ) -> None:
         if not self.quiet or force:
             if color is not None and os.isatty(sys.stderr.fileno()):
                 text = f"\x1b[0;3{color}m{text}\x1b[0m"
 
             print(text, file=sys.stderr, end=end)
+
+            if flush:
+                sys.stderr.flush()
 
     def print_info(self, text: str) -> None:
         self.print(f"asciinema: {text}", color=2)
