@@ -3,8 +3,8 @@ import sys
 __author__ = "Marcin Kulik"
 __version__ = "2.4.0"
 
-if sys.version_info < (3, 6):
-    raise ImportError("Python < 3.6 is unsupported.")
+if sys.version_info < (3, 7):
+    raise ImportError("Python < 3.7 is unsupported.")
 
 # pylint: disable=wrong-import-position
 from typing import Any, Optional
