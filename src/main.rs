@@ -1,8 +1,15 @@
 mod pty;
-use anyhow::Result;
+mod recorder;
+use anyhow::{anyhow, Result};
+use std::env;
 
 fn main() -> Result<()> {
-    pty::exec(&["/bin/bash"])?;
+    let path = env::args()
+        .nth(1)
+        .ok_or(anyhow!("output filename missing"))?;
+
+    let mut recorder = recorder::new(path, recorder::Format::Raw, false, true)?;
+    pty::exec(&["/bin/bash"], &mut recorder)?;
 
     Ok(())
 }

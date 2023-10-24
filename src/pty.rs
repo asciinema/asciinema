@@ -7,13 +7,22 @@ use std::os::fd::RawFd;
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use termion::raw::IntoRawMode;
 
-pub fn exec<S: AsRef<str>>(args: &[S]) -> anyhow::Result<i32> {
+pub trait Recorder {
+    fn start(&mut self, size: (u16, u16)) -> io::Result<()>;
+    fn output(&mut self, data: &[u8]);
+    fn input(&mut self, data: &[u8]);
+}
+
+pub fn exec<S: AsRef<str>, R: Recorder>(args: &[S], recorder: &mut R) -> anyhow::Result<i32> {
     let tty = open_tty()?;
     let winsize = get_tty_size(tty.as_raw_fd());
+    recorder.start((winsize.ws_col, winsize.ws_row))?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
-        ForkResult::Parent { child } => handle_parent(result.master.as_raw_fd(), tty, child),
+        ForkResult::Parent { child } => {
+            handle_parent(result.master.as_raw_fd(), tty, child, recorder)
+        }
 
         ForkResult::Child => {
             handle_child(args)?;
@@ -42,8 +51,13 @@ fn get_tty_size(tty_fd: i32) -> pty::Winsize {
     winsize
 }
 
-fn handle_parent(master_fd: RawFd, tty: fs::File, child: unistd::Pid) -> anyhow::Result<i32> {
-    let copy_result = copy(master_fd, tty);
+fn handle_parent<R: Recorder>(
+    master_fd: RawFd,
+    tty: fs::File,
+    child: unistd::Pid,
+    recorder: &mut R,
+) -> anyhow::Result<i32> {
+    let copy_result = copy(master_fd, tty, recorder);
     let wait_result = wait::waitpid(child, None);
     copy_result?;
 
@@ -59,7 +73,7 @@ const MASTER: mio::Token = mio::Token(0);
 const TTY: mio::Token = mio::Token(1);
 const BUF_SIZE: usize = 128 * 1024;
 
-fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
+fn copy<R: Recorder>(master_fd: RawFd, tty: fs::File, recorder: &mut R) -> anyhow::Result<()> {
     let mut master = unsafe { fs::File::from_raw_fd(master_fd) };
     let mut poll = mio::Poll::new()?;
     let mut events = mio::Events::with_capacity(128);
@@ -88,9 +102,12 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
             match event.token() {
                 MASTER => {
                     if event.is_readable() {
+                        let offset = output.len();
                         let read = read_all(&mut master, &mut buf, &mut output)?;
 
                         if read > 0 {
+                            recorder.output(&output[offset..]);
+
                             poll.registry().reregister(
                                 &mut tty_source,
                                 TTY,
@@ -140,9 +157,12 @@ fn copy(master_fd: RawFd, tty: fs::File) -> anyhow::Result<()> {
                     }
 
                     if event.is_readable() {
+                        let offset = input.len();
                         let read = read_all(&mut tty.deref(), &mut buf, &mut input)?;
 
                         if read > 0 {
+                            recorder.input(&input[offset..]);
+
                             poll.registry().reregister(
                                 &mut master_source,
                                 MASTER,
