@@ -57,10 +57,15 @@ impl AsciicastWriter {
 
 impl RawWriter {
     fn new(path: String, append: bool) -> io::Result<Self> {
-        let file = fs::OpenOptions::new()
-            .write(true)
-            .append(append)
-            .open(path)?;
+        let mut opts = fs::OpenOptions::new();
+
+        if append {
+            opts.append(true);
+        } else {
+            opts.create_new(true).write(true);
+        }
+
+        let file = opts.open(path)?;
 
         Ok(Self { file, append })
     }
