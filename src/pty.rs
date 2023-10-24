@@ -220,12 +220,8 @@ fn read_all<R: Read>(source: &mut R, buf: &mut [u8], out: &mut Vec<u8>) -> io::R
                 read += n;
             }
 
-            Err(e) => {
-                if e.kind() == std::io::ErrorKind::WouldBlock {
-                    break;
-                } else {
-                    return Err(e);
-                }
+            Err(_) => {
+                break;
             }
         }
     }
@@ -248,12 +244,8 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
                 }
             }
 
-            Err(e) => {
-                if e.kind() == std::io::ErrorKind::WouldBlock {
-                    break;
-                } else {
-                    return Err(e);
-                }
+            Err(_) => {
+                break;
             }
         }
     }
