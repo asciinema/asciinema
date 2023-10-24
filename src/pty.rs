@@ -262,3 +262,54 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
 
     Ok(left)
 }
+
+#[cfg(test)]
+mod tests {
+    #[derive(Default)]
+    struct TestRecorder {
+        size: Option<(u16, u16)>,
+        output: Vec<Vec<u8>>,
+    }
+
+    impl super::Recorder for TestRecorder {
+        fn start(&mut self, size: (u16, u16)) -> std::io::Result<()> {
+            self.size = Some(size);
+            Ok(())
+        }
+
+        fn output(&mut self, data: &[u8]) {
+            self.output.push(data.into());
+        }
+
+        fn input(&mut self, _data: &[u8]) {}
+    }
+
+    impl TestRecorder {
+        fn output(&self) -> Vec<String> {
+            self.output
+                .iter()
+                .map(|x| String::from_utf8_lossy(x).to_string())
+                .collect::<Vec<_>>()
+        }
+    }
+
+    #[test]
+    fn exec() {
+        let mut recorder = TestRecorder::default();
+
+        let code = r#"
+import sys;
+import time;
+sys.stdout.write('foo');
+sys.stdout.flush();
+time.sleep(0.01);
+sys.stdout.write('bar');
+"#;
+
+        let result = super::exec(&["python3", "-c", code], &mut recorder);
+
+        assert!(result.is_ok());
+        assert!(recorder.size.is_some());
+        assert_eq!(recorder.output(), vec!["foo", "bar"]);
+    }
+}
