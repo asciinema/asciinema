@@ -1,3 +1,4 @@
+mod asciicast;
 mod pty;
 mod recorder;
 use anyhow::{anyhow, Result};
@@ -8,7 +9,7 @@ fn main() -> Result<()> {
         .nth(1)
         .ok_or(anyhow!("output filename missing"))?;
 
-    let mut recorder = recorder::new(path, recorder::Format::Raw, false, true)?;
+    let mut recorder = recorder::new(path, recorder::Format::Asciicast, false, true)?;
     pty::exec(&["/bin/bash"], &mut recorder)?;
 
     Ok(())
