@@ -3,7 +3,8 @@
 ## 3.0.0 (wip)
 
 * Full rewrite in Rust
-* Use of `--append` and `--overwrite` together gives returns error now
+* rec: `--append` can be used with `--raw` now
+* rec: use of `--append` and `--overwrite` together returns error now
 
 ## 2.4.0 (2023-10-23)
 

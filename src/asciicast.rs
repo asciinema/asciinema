@@ -7,8 +7,8 @@ use std::io::BufRead;
 use std::io::Write;
 use std::path::Path;
 
-pub struct Writer {
-    file: fs::File,
+pub struct Writer<W: Write> {
+    writer: W,
     time_offset: f64,
 }
 
@@ -99,46 +99,25 @@ pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<f64> {
     Ok(time)
 }
 
-impl Writer {
-    pub fn new<S: AsRef<Path>>(path: S, append: bool) -> anyhow::Result<Self> {
-        if append {
-            Self::append(path)
-        } else {
-            Self::create(path)
+impl<W> Writer<W>
+where
+    W: Write,
+{
+    pub fn new(writer: W, time_offset: f64) -> Self {
+        Self {
+            writer,
+            time_offset,
         }
-    }
-
-    pub fn create<S: AsRef<Path>>(path: S) -> anyhow::Result<Self> {
-        let file = fs::OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(path)?;
-
-        Ok(Self {
-            file,
-            time_offset: 0.0,
-        })
-    }
-
-    pub fn append<S: AsRef<Path>>(path: S) -> anyhow::Result<Self> {
-        let time_offset = get_duration(&path)?;
-        let file = fs::OpenOptions::new().append(true).open(path)?;
-
-        Ok(Self { file, time_offset })
     }
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
-        if self.time_offset == 0.0 {
-            write_header(&mut self.file, header)
-        } else {
-            Ok(())
-        }
+        write_header(&mut self.writer, header)
     }
 
     pub fn write_event(&mut self, mut event: Event) -> io::Result<()> {
         event.time += self.time_offset;
 
-        write_event(&mut self.file, &event)
+        write_event(&mut self.writer, &event)
     }
 }
 
@@ -215,9 +194,8 @@ impl From<V2Header> for Header {
 #[cfg(test)]
 mod tests {
     use super::{Event, EventCode, Header, Writer};
-    use std::fs::{self, File};
+    use std::fs::File;
     use std::io;
-    use tempfile::tempdir;
 
     #[test]
     fn open() {
@@ -246,38 +224,39 @@ mod tests {
 
     #[test]
     fn writer() {
-        let tmp_dir = tempdir().unwrap();
-        let tmp_path = tmp_dir.path().join("test.cast");
+        let mut data = Vec::new();
 
-        {
-            let header = Header {
-                terminal_size: (80, 24),
-                idle_time_limit: None,
-            };
+        let cursor = io::Cursor::new(&mut data);
+        let mut fw = Writer::new(cursor, 0.0);
 
-            let mut fw = Writer::create(&tmp_path).unwrap();
+        let header = Header {
+            terminal_size: (80, 24),
+            idle_time_limit: None,
+        };
 
-            fw.write_header(&header).unwrap();
+        fw.write_header(&header).unwrap();
 
-            fw.write_event(Event {
-                time: 1.0,
-                code: EventCode::Output,
-                data: "hello\r\n".to_owned(),
-            })
-            .unwrap();
-        }
+        fw.write_event(Event {
+            time: 1.0,
+            code: EventCode::Output,
+            data: "hello\r\n".to_owned(),
+        })
+        .unwrap();
 
-        {
-            let mut fw = Writer::append(&tmp_path).unwrap();
+        let data_len = data.len() as u64;
+        let mut cursor = io::Cursor::new(&mut data);
+        cursor.set_position(data_len);
+        let mut fw = Writer::new(cursor, 1.0);
 
-            fw.write_event(Event {
-                time: 1.0,
-                code: EventCode::Output,
-                data: "world".to_owned(),
-            })
-            .unwrap();
-        }
+        fw.write_event(Event {
+            time: 1.0,
+            code: EventCode::Output,
+            data: "world".to_owned(),
+        })
+        .unwrap();
 
-        assert_eq!(fs::read_to_string(tmp_path).unwrap(), "{\"version\":2,\"width\":80,\"height\":24}\n[1.0,\"o\",\"hello\\r\\n\"]\n[2.0,\"o\",\"world\"]\n");
+        let asciicast = String::from_utf8(data).unwrap();
+
+        assert_eq!(asciicast, "{\"version\":2,\"width\":80,\"height\":24}\n[1.0,\"o\",\"hello\\r\\n\"]\n[2.0,\"o\",\"world\"]\n");
     }
 }

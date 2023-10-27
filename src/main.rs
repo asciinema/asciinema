@@ -1,9 +1,12 @@
 mod asciicast;
+mod format;
 mod pty;
 mod recorder;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::env;
+use std::fs;
+use std::path;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
@@ -109,7 +112,7 @@ fn main() -> Result<()> {
         Commands::Record {
             filename,
             stdin,
-            append,
+            mut append,
             raw,
             overwrite,
             command,
@@ -120,13 +123,33 @@ fn main() -> Result<()> {
             rows,
             quiet,
         } => {
-            let format = if raw {
-                recorder::Format::Raw
+            let exists = path::Path::new(&filename).exists();
+            append = append && exists;
+            let mut opts = fs::OpenOptions::new();
+
+            opts.write(true)
+                .append(append)
+                .create_new(!overwrite && !append)
+                .truncate(overwrite);
+
+            let writer: Box<dyn format::Writer> = if raw {
+                let file = opts.open(&filename)?;
+
+                Box::new(format::raw::Writer::new(file))
             } else {
-                recorder::Format::Asciicast
+                let writer = if append {
+                    let time_offset = asciicast::get_duration(&filename)?;
+                    let file = opts.open(&filename)?;
+                    format::asciicast::Writer::new(file, time_offset)
+                } else {
+                    let file = opts.open(&filename)?;
+                    format::asciicast::Writer::new(file, 0.0)
+                };
+
+                Box::new(writer)
             };
 
-            let mut recorder = recorder::new(filename, format, append, stdin)?;
+            let mut recorder = recorder::Recorder::new(writer, append, stdin);
 
             let command = if command == "$SHELL" {
                 env::var("SHELL").ok().unwrap_or("/bin/sh".to_owned())
