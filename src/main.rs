@@ -2,7 +2,7 @@ mod asciicast;
 mod pty;
 mod recorder;
 use anyhow::Result;
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use std::env;
 
 #[derive(Debug, Parser)]
