@@ -3,6 +3,7 @@ mod pty;
 mod recorder;
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use std::env;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
@@ -126,7 +127,14 @@ fn main() -> Result<()> {
             };
 
             let mut recorder = recorder::new(filename, format, append, stdin)?;
-            pty::exec(&["/bin/bash"], &mut recorder)?;
+
+            let command = if command == "$SHELL" {
+                env::var("SHELL").ok().unwrap_or("/bin/sh".to_owned())
+            } else {
+                command
+            };
+
+            pty::exec(&["/bin/sh", "-c", &command], &mut recorder)?;
         }
 
         Commands::Play {
