@@ -5,6 +5,7 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
+#[clap(author, version, about)]
 #[command(name = "asciinema")]
 struct Cli {
     #[command(subcommand)]
@@ -62,6 +63,42 @@ enum Commands {
         #[arg(short, long)]
         quiet: bool,
     },
+
+    /// Play terminal session
+    Play {
+        filename: String,
+
+        /// Limit idle time to given number of seconds
+        #[arg(short, long, value_name = "SECS")]
+        idle_time_limit: Option<f64>,
+
+        /// Set playback speed
+        #[arg(short, long)]
+        speed: Option<f64>,
+
+        /// Loop loop loop loop
+        #[arg(short, long, name = "loop")]
+        loop_: bool,
+
+        /// Automatically pause on markers
+        #[arg(short = 'm', long)]
+        pause_on_markers: bool,
+    },
+
+    /// Print full output of terminal sessions
+    Cat {
+        #[arg(required = true)]
+        filename: Vec<String>,
+    },
+
+    /// Upload recording to asciinema.org
+    Upload {
+        /// Filename/path of asciicast to upload
+        filename: String,
+    },
+
+    /// Link this system to asciinema.org account
+    Auth,
 }
 
 fn main() -> Result<()> {
@@ -91,6 +128,20 @@ fn main() -> Result<()> {
             let mut recorder = recorder::new(filename, format, append, stdin)?;
             pty::exec(&["/bin/bash"], &mut recorder)?;
         }
+
+        Commands::Play {
+            filename,
+            idle_time_limit,
+            speed,
+            loop_,
+            pause_on_markers,
+        } => todo!(),
+
+        Commands::Cat { filename } => todo!(),
+
+        Commands::Upload { filename } => todo!(),
+
+        Commands::Auth => todo!(),
     }
 
     Ok(())
