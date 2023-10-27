@@ -33,7 +33,7 @@ enum Commands {
         raw: bool,
 
         /// Overwrite target file if it already exists
-        #[arg(long)]
+        #[arg(long, conflicts_with = "append")]
         overwrite: bool,
 
         /// Command to record
