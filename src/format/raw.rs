@@ -11,7 +11,12 @@ impl<W> Writer<W> {
 }
 
 impl<W: Write> super::Writer for Writer<W> {
-    fn header(&mut self, size: (u16, u16), _idle_time_limit: Option<f32>) -> io::Result<()> {
+    fn header(
+        &mut self,
+        size: (u16, u16),
+        _timestamp: u64,
+        _idle_time_limit: Option<f32>,
+    ) -> io::Result<()> {
         write!(self.writer, "\x1b[8;{};{}t", size.1, size.0)
     }
 

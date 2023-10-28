@@ -1,13 +1,14 @@
 use crate::format;
 use crate::pty;
 use std::io;
-use std::time;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 pub struct Recorder {
     writer: Box<dyn format::Writer>,
-    start_time: time::Instant,
+    start_time: Instant,
     append: bool,
     record_input: bool,
+    timestamp: u64,
     idle_time_limit: Option<f32>,
 }
 
@@ -20,10 +21,11 @@ impl Recorder {
     ) -> Self {
         Recorder {
             writer,
-            start_time: time::Instant::now(),
+            start_time: Instant::now(),
             append,
             record_input,
             idle_time_limit,
+            timestamp: 0,
         }
     }
 
@@ -34,10 +36,16 @@ impl Recorder {
 
 impl pty::Recorder for Recorder {
     fn start(&mut self, size: (u16, u16)) -> io::Result<()> {
-        self.start_time = time::Instant::now();
+        self.timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        self.start_time = Instant::now();
 
         if !self.append {
-            self.writer.header(size, self.idle_time_limit)
+            self.writer
+                .header(size, self.timestamp, self.idle_time_limit)
         } else {
             Ok(())
         }

@@ -13,6 +13,7 @@ pub struct Writer<W: Write> {
 
 pub struct Header {
     pub terminal_size: (usize, usize),
+    pub timestamp: u64,
     pub idle_time_limit: Option<f32>,
 }
 
@@ -20,6 +21,7 @@ pub struct Header {
 pub struct V2Header {
     pub width: usize,
     pub height: usize,
+    pub timestamp: u64,
     pub idle_time_limit: Option<f32>,
 }
 
@@ -50,7 +52,8 @@ where
     }
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
-        writeln!(self.writer, "{}", serde_json::to_string(header)?)
+        let header: V2Header = header.into();
+        writeln!(self.writer, "{}", serde_json::to_string(&header)?)
     }
 
     pub fn write_event(&mut self, mut event: Event) -> io::Result<()> {
@@ -64,9 +67,15 @@ impl<W> super::Writer for Writer<W>
 where
     W: Write,
 {
-    fn header(&mut self, size: (u16, u16), idle_time_limit: Option<f32>) -> io::Result<()> {
+    fn header(
+        &mut self,
+        size: (u16, u16),
+        timestamp: u64,
+        idle_time_limit: Option<f32>,
+    ) -> io::Result<()> {
         let header = Header {
             terminal_size: (size.0 as usize, size.1 as usize),
+            timestamp,
             idle_time_limit,
         };
 
@@ -88,7 +97,7 @@ pub fn open<R: BufRead>(
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow::anyhow!("empty"))??;
     let v2_header: V2Header = serde_json::from_str(&first_line)?;
-    let header: Header = v2_header.into();
+    let header: Header = (&v2_header).into();
 
     let events = lines
         .filter(|l| l.as_ref().map_or(true, |l| !l.is_empty()))
@@ -166,18 +175,19 @@ impl Display for EventCode {
     }
 }
 
-impl serde::Serialize for Header {
+impl serde::Serialize for V2Header {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         use serde::ser::SerializeMap;
 
-        let len = if self.idle_time_limit.is_none() { 3 } else { 4 };
+        let len = if self.idle_time_limit.is_none() { 4 } else { 5 };
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
-        map.serialize_entry("width", &self.terminal_size.0)?;
-        map.serialize_entry("height", &self.terminal_size.1)?;
+        map.serialize_entry("width", &self.width)?;
+        map.serialize_entry("height", &self.height)?;
+        map.serialize_entry("timestamp", &self.timestamp)?;
 
         if let Some(limit) = self.idle_time_limit {
             map.serialize_entry("idle_time_limit", &limit)?;
@@ -201,11 +211,23 @@ impl serde::Serialize for Event {
     }
 }
 
-impl From<V2Header> for Header {
-    fn from(v2: V2Header) -> Self {
+impl From<&V2Header> for Header {
+    fn from(header: &V2Header) -> Self {
         Self {
-            terminal_size: (v2.width, v2.height),
-            idle_time_limit: v2.idle_time_limit,
+            terminal_size: (header.width, header.height),
+            timestamp: header.timestamp,
+            idle_time_limit: header.idle_time_limit,
+        }
+    }
+}
+
+impl From<&Header> for V2Header {
+    fn from(header: &Header) -> Self {
+        Self {
+            width: header.terminal_size.0,
+            height: header.terminal_size.1,
+            timestamp: header.timestamp,
+            idle_time_limit: header.idle_time_limit,
         }
     }
 }
@@ -250,6 +272,7 @@ mod tests {
 
         let header = Header {
             terminal_size: (80, 24),
+            timestamp: 1,
             idle_time_limit: None,
         };
 
@@ -276,7 +299,7 @@ mod tests {
 
         let asciicast = String::from_utf8(data).unwrap();
 
-        assert_eq!(asciicast, "{\"version\":2,\"width\":80,\"height\":24}\n[1.0,\"o\",\"hello\\r\\n\"]\n[2.0,\"o\",\"world\"]\n");
+        assert_eq!(asciicast, "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1}\n[1.0,\"o\",\"hello\\r\\n\"]\n[2.0,\"o\",\"world\"]\n");
     }
 
     #[test]
@@ -286,6 +309,7 @@ mod tests {
 
         let header = Header {
             terminal_size: (80, 24),
+            timestamp: 1,
             idle_time_limit: Some(1.5),
         };
 
@@ -295,7 +319,7 @@ mod tests {
 
         assert_eq!(
             asciicast,
-            "{\"version\":2,\"width\":80,\"height\":24,\"idle_time_limit\":1.5}\n"
+            "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1,\"idle_time_limit\":1.5}\n"
         );
     }
 }
