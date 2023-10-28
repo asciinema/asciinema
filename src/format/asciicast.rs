@@ -18,6 +18,7 @@ pub struct Header {
     timestamp: u64,
     idle_time_limit: Option<f32>,
     command: Option<String>,
+    title: Option<String>,
 }
 
 pub struct Event {
@@ -175,6 +176,10 @@ impl serde::Serialize for Header {
             len += 1;
         }
 
+        if self.title.is_some() {
+            len += 1;
+        }
+
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.width)?;
@@ -187,6 +192,10 @@ impl serde::Serialize for Header {
 
         if let Some(command) = &self.command {
             map.serialize_entry("command", &command)?;
+        }
+
+        if let Some(title) = &self.title {
+            map.serialize_entry("title", &title)?;
         }
 
         map.end()
@@ -215,6 +224,7 @@ impl From<&Header> for super::Header {
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
+            title: header.title.clone(),
         }
     }
 }
@@ -227,6 +237,7 @@ impl From<&super::Header> for Header {
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
+            title: header.title.clone(),
         }
     }
 }
@@ -275,6 +286,7 @@ mod tests {
             timestamp: 1,
             idle_time_limit: None,
             command: None,
+            title: None,
         };
 
         fw.write_header(&header).unwrap();
@@ -314,6 +326,7 @@ mod tests {
             timestamp: 1,
             idle_time_limit: Some(1.5),
             command: Some("/bin/bash".to_owned()),
+            title: Some("Demo".to_owned()),
         };
 
         fw.write_header(&header).unwrap();
@@ -322,7 +335,7 @@ mod tests {
 
         assert_eq!(
             asciicast,
-            "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1,\"idle_time_limit\":1.5,\"command\":\"/bin/bash\"}\n"
+            "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1,\"idle_time_limit\":1.5,\"command\":\"/bin/bash\",\"title\":\"Demo\"}\n"
         );
     }
 }

@@ -149,8 +149,14 @@ fn main() -> Result<()> {
                 Box::new(writer)
             };
 
-            let mut recorder =
-                recorder::Recorder::new(writer, append, stdin, idle_time_limit, command.clone());
+            let mut recorder = recorder::Recorder::new(
+                writer,
+                append,
+                stdin,
+                idle_time_limit,
+                command.clone(),
+                title.clone(),
+            );
 
             let command = command
                 .or(env::var("SHELL").ok())
