@@ -13,11 +13,11 @@ pub struct Writer<W: Write> {
 
 #[derive(Deserialize)]
 pub struct Header {
-    pub width: u16,
-    pub height: u16,
-    pub timestamp: u64,
-    pub idle_time_limit: Option<f32>,
-    pub command: Option<String>,
+    width: u16,
+    height: u16,
+    timestamp: u64,
+    idle_time_limit: Option<f32>,
+    command: Option<String>,
 }
 
 pub struct Event {
