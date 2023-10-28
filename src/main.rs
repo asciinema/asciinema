@@ -162,13 +162,10 @@ fn main() -> Result<()> {
                 capture_env(&env),
             );
 
-            let command = command
-                .or(env::var("SHELL").ok())
-                .unwrap_or("/bin/sh".to_owned());
-
+            let exec_args = build_exec_args(command);
             let exec_env = build_exec_env();
 
-            pty::exec(&["/bin/sh", "-c", &command], &exec_env, &mut recorder)?;
+            pty::exec(&exec_args, &exec_env, &mut recorder)?;
         }
 
         Commands::Play {
@@ -195,6 +192,14 @@ fn capture_env(vars: &str) -> HashMap<String, String> {
     env::vars()
         .filter(|(k, _v)| vars.contains(&k.as_str()))
         .collect::<HashMap<_, _>>()
+}
+
+fn build_exec_args(command: Option<String>) -> Vec<String> {
+    let command = command
+        .or(env::var("SHELL").ok())
+        .unwrap_or("/bin/sh".to_owned());
+
+    vec!["/bin/sh".to_owned(), "-c".to_owned(), command]
 }
 
 fn build_exec_env() -> Vec<CString> {
