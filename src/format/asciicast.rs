@@ -11,16 +11,10 @@ pub struct Writer<W: Write> {
     time_offset: f64,
 }
 
-pub struct Header {
-    pub terminal_size: (usize, usize),
-    pub timestamp: u64,
-    pub idle_time_limit: Option<f32>,
-}
-
 #[derive(Deserialize)]
-pub struct V2Header {
-    pub width: usize,
-    pub height: usize,
+pub struct Header {
+    pub width: u16,
+    pub height: u16,
     pub timestamp: u64,
     pub idle_time_limit: Option<f32>,
 }
@@ -52,7 +46,6 @@ where
     }
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
-        let header: V2Header = header.into();
         writeln!(self.writer, "{}", serde_json::to_string(&header)?)
     }
 
@@ -67,19 +60,8 @@ impl<W> super::Writer for Writer<W>
 where
     W: Write,
 {
-    fn header(
-        &mut self,
-        size: (u16, u16),
-        timestamp: u64,
-        idle_time_limit: Option<f32>,
-    ) -> io::Result<()> {
-        let header = Header {
-            terminal_size: (size.0 as usize, size.1 as usize),
-            timestamp,
-            idle_time_limit,
-        };
-
-        self.write_header(&header)
+    fn header(&mut self, header: &super::Header) -> io::Result<()> {
+        self.write_header(&header.into())
     }
 
     fn output(&mut self, time: f64, data: &[u8]) -> io::Result<()> {
@@ -93,11 +75,11 @@ where
 
 pub fn open<R: BufRead>(
     reader: R,
-) -> anyhow::Result<(Header, impl Iterator<Item = anyhow::Result<Event>>)> {
+) -> anyhow::Result<(super::Header, impl Iterator<Item = anyhow::Result<Event>>)> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow::anyhow!("empty"))??;
-    let v2_header: V2Header = serde_json::from_str(&first_line)?;
-    let header: Header = (&v2_header).into();
+    let header: Header = serde_json::from_str(&first_line)?;
+    let header: super::Header = (&header).into();
 
     let events = lines
         .filter(|l| l.as_ref().map_or(true, |l| !l.is_empty()))
@@ -175,7 +157,7 @@ impl Display for EventCode {
     }
 }
 
-impl serde::Serialize for V2Header {
+impl serde::Serialize for Header {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -211,21 +193,22 @@ impl serde::Serialize for Event {
     }
 }
 
-impl From<&V2Header> for Header {
-    fn from(header: &V2Header) -> Self {
+impl From<&Header> for super::Header {
+    fn from(header: &Header) -> Self {
         Self {
-            terminal_size: (header.width, header.height),
+            cols: header.width,
+            rows: header.height,
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
         }
     }
 }
 
-impl From<&Header> for V2Header {
-    fn from(header: &Header) -> Self {
+impl From<&super::Header> for Header {
+    fn from(header: &super::Header) -> Self {
         Self {
-            width: header.terminal_size.0,
-            height: header.terminal_size.1,
+            width: header.cols,
+            height: header.rows,
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
         }
@@ -248,7 +231,7 @@ mod tests {
             .collect::<anyhow::Result<Vec<Event>>>()
             .unwrap();
 
-        assert_eq!(header.terminal_size, (75, 18));
+        assert_eq!((header.cols, header.rows), (75, 18));
 
         assert_eq!(events[1].time, 0.100989);
         assert_eq!(events[1].code, EventCode::Output);
@@ -271,7 +254,8 @@ mod tests {
         let mut fw = Writer::new(cursor, 0.0);
 
         let header = Header {
-            terminal_size: (80, 24),
+            width: 80,
+            height: 24,
             timestamp: 1,
             idle_time_limit: None,
         };
@@ -308,7 +292,8 @@ mod tests {
         let mut fw = Writer::new(io::Cursor::new(&mut data), 0.0);
 
         let header = Header {
-            terminal_size: (80, 24),
+            width: 80,
+            height: 24,
             timestamp: 1,
             idle_time_limit: Some(1.5),
         };

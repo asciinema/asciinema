@@ -8,7 +8,6 @@ pub struct Recorder {
     start_time: Instant,
     append: bool,
     record_input: bool,
-    timestamp: u64,
     idle_time_limit: Option<f32>,
 }
 
@@ -25,7 +24,6 @@ impl Recorder {
             append,
             record_input,
             idle_time_limit,
-            timestamp: 0,
         }
     }
 
@@ -36,7 +34,7 @@ impl Recorder {
 
 impl pty::Recorder for Recorder {
     fn start(&mut self, size: (u16, u16)) -> io::Result<()> {
-        self.timestamp = SystemTime::now()
+        let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
@@ -44,8 +42,14 @@ impl pty::Recorder for Recorder {
         self.start_time = Instant::now();
 
         if !self.append {
-            self.writer
-                .header(size, self.timestamp, self.idle_time_limit)
+            let header = format::Header {
+                cols: size.0,
+                rows: size.1,
+                timestamp,
+                idle_time_limit: self.idle_time_limit,
+            };
+
+            self.writer.header(&header)
         } else {
             Ok(())
         }
