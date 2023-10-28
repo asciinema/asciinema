@@ -72,10 +72,7 @@ Map of captured environment variables. Object (String -> String).
 Example env:
 
 ```json
-"env": {
-  "SHELL": "/bin/bash",
-  "TERM": "xterm-256color"
-}
+"env": { "SHELL": "/bin/bash", "TERM": "xterm-256color" }
 ```
 
 > Official asciinema recorder captures only `SHELL` and `TERM` by default. All

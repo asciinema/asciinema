@@ -1,5 +1,6 @@
 use anyhow::bail;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::fs;
 use std::io::BufRead;
@@ -19,6 +20,7 @@ pub struct Header {
     idle_time_limit: Option<f32>,
     command: Option<String>,
     title: Option<String>,
+    env: HashMap<String, String>,
 }
 
 pub struct Event {
@@ -180,6 +182,10 @@ impl serde::Serialize for Header {
             len += 1;
         }
 
+        if !self.env.is_empty() {
+            len += 1;
+        }
+
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.width)?;
@@ -196,6 +202,10 @@ impl serde::Serialize for Header {
 
         if let Some(title) = &self.title {
             map.serialize_entry("title", &title)?;
+        }
+
+        if !self.env.is_empty() {
+            map.serialize_entry("env", &self.env)?;
         }
 
         map.end()
@@ -225,6 +235,7 @@ impl From<&Header> for super::Header {
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
             title: header.title.clone(),
+            env: header.env.clone(),
         }
     }
 }
@@ -238,6 +249,7 @@ impl From<&super::Header> for Header {
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
             title: header.title.clone(),
+            env: header.env.clone(),
         }
     }
 }
@@ -245,6 +257,7 @@ impl From<&super::Header> for Header {
 #[cfg(test)]
 mod tests {
     use super::{Event, EventCode, Header, Writer};
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io;
 
@@ -287,6 +300,7 @@ mod tests {
             idle_time_limit: None,
             command: None,
             title: None,
+            env: Default::default(),
         };
 
         fw.write_header(&header).unwrap();
@@ -310,15 +324,28 @@ mod tests {
         })
         .unwrap();
 
-        let asciicast = String::from_utf8(data).unwrap();
+        let lines = parse(data);
 
-        assert_eq!(asciicast, "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1}\n[1.0,\"o\",\"hello\\r\\n\"]\n[2.0,\"o\",\"world\"]\n");
+        assert_eq!(lines[0]["version"], 2);
+        assert_eq!(lines[0]["width"], 80);
+        assert_eq!(lines[0]["height"], 24);
+        assert_eq!(lines[0]["timestamp"], 1);
+        assert_eq!(lines[1][0], 1.0);
+        assert_eq!(lines[1][1], "o");
+        assert_eq!(lines[1][2], "hello\r\n");
+        assert_eq!(lines[2][0], 2.0);
+        assert_eq!(lines[2][1], "o");
+        assert_eq!(lines[2][2], "world");
     }
 
     #[test]
     fn write_header() {
         let mut data = Vec::new();
         let mut fw = Writer::new(io::Cursor::new(&mut data), 0.0);
+
+        let mut env = HashMap::new();
+        env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
+        env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
         let header = Header {
             width: 80,
@@ -327,15 +354,32 @@ mod tests {
             idle_time_limit: Some(1.5),
             command: Some("/bin/bash".to_owned()),
             title: Some("Demo".to_owned()),
+            env,
         };
 
         fw.write_header(&header).unwrap();
 
-        let asciicast = String::from_utf8(data).unwrap();
+        let lines = parse(data);
 
-        assert_eq!(
-            asciicast,
-            "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1,\"idle_time_limit\":1.5,\"command\":\"/bin/bash\",\"title\":\"Demo\"}\n"
-        );
+        assert_eq!(lines[0]["version"], 2);
+        assert_eq!(lines[0]["width"], 80);
+        assert_eq!(lines[0]["height"], 24);
+        assert_eq!(lines[0]["timestamp"], 1);
+        assert_eq!(lines[0]["idle_time_limit"], 1.5);
+        assert_eq!(lines[0]["command"], "/bin/bash");
+        assert_eq!(lines[0]["title"], "Demo");
+        assert_eq!(lines[0]["env"].as_object().unwrap().len(), 2);
+        assert_eq!(lines[0]["env"]["SHELL"], "/usr/bin/fish");
+        assert_eq!(lines[0]["env"]["TERM"], "xterm256-color");
+    }
+
+    fn parse(json: Vec<u8>) -> Vec<serde_json::Value> {
+        String::from_utf8(json)
+            .unwrap()
+            .split('\n')
+            .filter(|s| !s.is_empty())
+            .map(serde_json::from_str::<serde_json::Value>)
+            .collect::<serde_json::Result<Vec<_>>>()
+            .unwrap()
     }
 }

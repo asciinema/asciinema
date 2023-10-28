@@ -1,5 +1,6 @@
 use crate::format;
 use crate::pty;
+use std::collections::HashMap;
 use std::io;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
@@ -11,6 +12,7 @@ pub struct Recorder {
     idle_time_limit: Option<f32>,
     command: Option<String>,
     title: Option<String>,
+    env: HashMap<String, String>,
 }
 
 impl Recorder {
@@ -21,6 +23,7 @@ impl Recorder {
         idle_time_limit: Option<f32>,
         command: Option<String>,
         title: Option<String>,
+        env: HashMap<String, String>,
     ) -> Self {
         Recorder {
             writer,
@@ -30,6 +33,7 @@ impl Recorder {
             idle_time_limit,
             command,
             title,
+            env,
         }
     }
 
@@ -55,6 +59,7 @@ impl pty::Recorder for Recorder {
                 idle_time_limit: self.idle_time_limit,
                 command: self.command.clone(),
                 title: self.title.clone(),
+                env: self.env.clone(),
             };
 
             self.writer.header(&header)

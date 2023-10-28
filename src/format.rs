@@ -1,6 +1,6 @@
 pub mod asciicast;
 pub mod raw;
-use std::io;
+use std::{collections::HashMap, io};
 
 pub trait Writer {
     fn header(&mut self, header: &Header) -> io::Result<()>;
@@ -15,4 +15,5 @@ pub struct Header {
     pub idle_time_limit: Option<f32>,
     pub command: Option<String>,
     pub title: Option<String>,
+    pub env: HashMap<String, String>,
 }

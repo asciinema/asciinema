@@ -4,6 +4,7 @@ mod recorder;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use format::{asciicast, raw};
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::path;
@@ -149,6 +150,12 @@ fn main() -> Result<()> {
                 Box::new(writer)
             };
 
+            let env_allow_list = env.split(',').collect::<HashSet<_>>();
+
+            let env = std::env::vars()
+                .filter(|(k, _v)| env_allow_list.contains(&k.as_str()))
+                .collect::<HashMap<_, _>>();
+
             let mut recorder = recorder::Recorder::new(
                 writer,
                 append,
@@ -156,6 +163,7 @@ fn main() -> Result<()> {
                 idle_time_limit,
                 command.clone(),
                 title.clone(),
+                env,
             );
 
             let command = command
