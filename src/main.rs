@@ -1,9 +1,9 @@
-mod asciicast;
 mod format;
 mod pty;
 mod recorder;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use format::{asciicast, raw};
 use std::env;
 use std::fs;
 use std::path;
@@ -135,15 +135,15 @@ fn main() -> Result<()> {
             let writer: Box<dyn format::Writer> = if raw {
                 let file = opts.open(&filename)?;
 
-                Box::new(format::raw::Writer::new(file))
+                Box::new(raw::Writer::new(file))
             } else {
                 let writer = if append {
                     let time_offset = asciicast::get_duration(&filename)?;
                     let file = opts.open(&filename)?;
-                    format::asciicast::Writer::new(file, time_offset)
+                    asciicast::Writer::new(file, time_offset)
                 } else {
                     let file = opts.open(&filename)?;
-                    format::asciicast::Writer::new(file, 0.0)
+                    asciicast::Writer::new(file, 0.0)
                 };
 
                 Box::new(writer)
