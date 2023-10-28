@@ -53,7 +53,7 @@ enum Commands {
 
         /// Limit idle time to given number of seconds
         #[arg(short, long, value_name = "SECS")]
-        idle_time_limit: Option<f64>,
+        idle_time_limit: Option<f32>,
 
         /// Override terminal width (columns) for recorded command
         #[arg(long)]
@@ -149,7 +149,7 @@ fn main() -> Result<()> {
                 Box::new(writer)
             };
 
-            let mut recorder = recorder::Recorder::new(writer, append, stdin);
+            let mut recorder = recorder::Recorder::new(writer, append, stdin, idle_time_limit);
 
             let command = if command == "$SHELL" {
                 env::var("SHELL").ok().unwrap_or("/bin/sh".to_owned())

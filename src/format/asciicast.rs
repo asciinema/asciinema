@@ -13,14 +13,14 @@ pub struct Writer<W: Write> {
 
 pub struct Header {
     pub terminal_size: (usize, usize),
-    pub idle_time_limit: Option<f64>,
+    pub idle_time_limit: Option<f32>,
 }
 
 #[derive(Deserialize)]
 pub struct V2Header {
     pub width: usize,
     pub height: usize,
-    pub idle_time_limit: Option<f64>,
+    pub idle_time_limit: Option<f32>,
 }
 
 pub struct Event {
@@ -50,13 +50,13 @@ where
     }
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
-        write_header(&mut self.writer, header)
+        writeln!(self.writer, "{}", serde_json::to_string(header)?)
     }
 
     pub fn write_event(&mut self, mut event: Event) -> io::Result<()> {
         event.time += self.time_offset;
 
-        write_event(&mut self.writer, &event)
+        writeln!(self.writer, "{}", serde_json::to_string(&event)?)
     }
 }
 
@@ -64,10 +64,10 @@ impl<W> super::Writer for Writer<W>
 where
     W: Write,
 {
-    fn header(&mut self, size: (u16, u16)) -> io::Result<()> {
+    fn header(&mut self, size: (u16, u16), idle_time_limit: Option<f32>) -> io::Result<()> {
         let header = Header {
             terminal_size: (size.0 as usize, size.1 as usize),
-            idle_time_limit: None,
+            idle_time_limit,
         };
 
         self.write_header(&header)
@@ -125,14 +125,6 @@ fn parse_event(line: String, i: usize) -> anyhow::Result<Event> {
     Ok(Event { time, code, data })
 }
 
-pub fn write_header<W: Write>(sink: &mut W, header: &Header) -> io::Result<()> {
-    writeln!(sink, "{}", serde_json::to_string(header)?)
-}
-
-pub fn write_event<W: Write>(sink: &mut W, event: &Event) -> io::Result<()> {
-    writeln!(sink, "{}", serde_json::to_string(event)?)
-}
-
 pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<f64> {
     let file = fs::File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -180,11 +172,17 @@ impl serde::Serialize for Header {
         S: serde::Serializer,
     {
         use serde::ser::SerializeMap;
-        let mut map = serializer.serialize_map(Some(3))?;
+
+        let len = if self.idle_time_limit.is_none() { 3 } else { 4 };
+        let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.terminal_size.0)?;
         map.serialize_entry("height", &self.terminal_size.1)?;
-        // TODO idle_time_limit
+
+        if let Some(limit) = self.idle_time_limit {
+            map.serialize_entry("idle_time_limit", &limit)?;
+        }
+
         map.end()
     }
 }
@@ -279,5 +277,25 @@ mod tests {
         let asciicast = String::from_utf8(data).unwrap();
 
         assert_eq!(asciicast, "{\"version\":2,\"width\":80,\"height\":24}\n[1.0,\"o\",\"hello\\r\\n\"]\n[2.0,\"o\",\"world\"]\n");
+    }
+
+    #[test]
+    fn write_header() {
+        let mut data = Vec::new();
+        let mut fw = Writer::new(io::Cursor::new(&mut data), 0.0);
+
+        let header = Header {
+            terminal_size: (80, 24),
+            idle_time_limit: Some(1.5),
+        };
+
+        fw.write_header(&header).unwrap();
+
+        let asciicast = String::from_utf8(data).unwrap();
+
+        assert_eq!(
+            asciicast,
+            "{\"version\":2,\"width\":80,\"height\":24,\"idle_time_limit\":1.5}\n"
+        );
     }
 }

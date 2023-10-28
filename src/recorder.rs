@@ -5,18 +5,25 @@ use std::time;
 
 pub struct Recorder {
     writer: Box<dyn format::Writer>,
+    start_time: time::Instant,
     append: bool,
     record_input: bool,
-    start_time: time::Instant,
+    idle_time_limit: Option<f32>,
 }
 
 impl Recorder {
-    pub fn new(writer: Box<dyn format::Writer>, append: bool, record_input: bool) -> Self {
+    pub fn new(
+        writer: Box<dyn format::Writer>,
+        append: bool,
+        record_input: bool,
+        idle_time_limit: Option<f32>,
+    ) -> Self {
         Recorder {
             writer,
+            start_time: time::Instant::now(),
             append,
             record_input,
-            start_time: time::Instant::now(),
+            idle_time_limit,
         }
     }
 
@@ -30,7 +37,7 @@ impl pty::Recorder for Recorder {
         self.start_time = time::Instant::now();
 
         if !self.append {
-            self.writer.header(size)
+            self.writer.header(size, self.idle_time_limit)
         } else {
             Ok(())
         }
