@@ -13,4 +13,5 @@ pub struct Header {
     pub rows: u16,
     pub timestamp: u64,
     pub idle_time_limit: Option<f32>,
+    pub command: Option<String>,
 }

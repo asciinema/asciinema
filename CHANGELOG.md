@@ -5,6 +5,7 @@
 * Full rewrite in Rust
 * rec: `--append` can be used with `--raw` now
 * rec: use of `--append` and `--overwrite` together returns error now
+* rec: fixed saving of custom rec command in asciicast header
 
 ## 2.4.0 (2023-10-23)
 

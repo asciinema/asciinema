@@ -17,6 +17,7 @@ pub struct Header {
     pub height: u16,
     pub timestamp: u64,
     pub idle_time_limit: Option<f32>,
+    pub command: Option<String>,
 }
 
 pub struct Event {
@@ -164,7 +165,16 @@ impl serde::Serialize for Header {
     {
         use serde::ser::SerializeMap;
 
-        let len = if self.idle_time_limit.is_none() { 4 } else { 5 };
+        let mut len = 4;
+
+        if self.idle_time_limit.is_some() {
+            len += 1;
+        }
+
+        if self.command.is_some() {
+            len += 1;
+        }
+
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.width)?;
@@ -173,6 +183,10 @@ impl serde::Serialize for Header {
 
         if let Some(limit) = self.idle_time_limit {
             map.serialize_entry("idle_time_limit", &limit)?;
+        }
+
+        if let Some(command) = &self.command {
+            map.serialize_entry("command", &command)?;
         }
 
         map.end()
@@ -200,6 +214,7 @@ impl From<&Header> for super::Header {
             rows: header.height,
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
+            command: header.command.clone(),
         }
     }
 }
@@ -211,6 +226,7 @@ impl From<&super::Header> for Header {
             height: header.rows,
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
+            command: header.command.clone(),
         }
     }
 }
@@ -258,6 +274,7 @@ mod tests {
             height: 24,
             timestamp: 1,
             idle_time_limit: None,
+            command: None,
         };
 
         fw.write_header(&header).unwrap();
@@ -296,6 +313,7 @@ mod tests {
             height: 24,
             timestamp: 1,
             idle_time_limit: Some(1.5),
+            command: Some("/bin/bash".to_owned()),
         };
 
         fw.write_header(&header).unwrap();
@@ -304,7 +322,7 @@ mod tests {
 
         assert_eq!(
             asciicast,
-            "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1,\"idle_time_limit\":1.5}\n"
+            "{\"version\":2,\"width\":80,\"height\":24,\"timestamp\":1,\"idle_time_limit\":1.5,\"command\":\"/bin/bash\"}\n"
         );
     }
 }

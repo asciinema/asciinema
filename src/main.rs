@@ -39,9 +39,9 @@ enum Commands {
         #[arg(long, conflicts_with = "append")]
         overwrite: bool,
 
-        /// Command to record
-        #[arg(short, long, default_value_t = String::from("$SHELL"))]
-        command: String,
+        /// Command to record [default: $SHELL]
+        #[arg(short, long)]
+        command: Option<String>,
 
         /// List of env vars to save
         #[arg(short, long, default_value_t = String::from("SHELL,TERM"))]
@@ -149,13 +149,12 @@ fn main() -> Result<()> {
                 Box::new(writer)
             };
 
-            let mut recorder = recorder::Recorder::new(writer, append, stdin, idle_time_limit);
+            let mut recorder =
+                recorder::Recorder::new(writer, append, stdin, idle_time_limit, command.clone());
 
-            let command = if command == "$SHELL" {
-                env::var("SHELL").ok().unwrap_or("/bin/sh".to_owned())
-            } else {
-                command
-            };
+            let command = command
+                .or(env::var("SHELL").ok())
+                .unwrap_or("/bin/sh".to_owned());
 
             pty::exec(&["/bin/sh", "-c", &command], &mut recorder)?;
         }

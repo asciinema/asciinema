@@ -9,6 +9,7 @@ pub struct Recorder {
     append: bool,
     record_input: bool,
     idle_time_limit: Option<f32>,
+    command: Option<String>,
 }
 
 impl Recorder {
@@ -17,6 +18,7 @@ impl Recorder {
         append: bool,
         record_input: bool,
         idle_time_limit: Option<f32>,
+        command: Option<String>,
     ) -> Self {
         Recorder {
             writer,
@@ -24,6 +26,7 @@ impl Recorder {
             append,
             record_input,
             idle_time_limit,
+            command,
         }
     }
 
@@ -47,6 +50,7 @@ impl pty::Recorder for Recorder {
                 rows: size.1,
                 timestamp,
                 idle_time_limit: self.idle_time_limit,
+                command: self.command.clone(),
             };
 
             self.writer.header(&header)
