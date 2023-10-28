@@ -6,7 +6,9 @@ use clap::{Parser, Subcommand};
 use format::{asciicast, raw};
 use std::collections::{HashMap, HashSet};
 use std::env;
+use std::ffi::{CString, OsString};
 use std::fs;
+use std::os::unix::ffi::OsStringExt;
 use std::path;
 
 #[derive(Debug, Parser)]
@@ -150,12 +152,6 @@ fn main() -> Result<()> {
                 Box::new(writer)
             };
 
-            let env_allow_list = env.split(',').collect::<HashSet<_>>();
-
-            let env = std::env::vars()
-                .filter(|(k, _v)| env_allow_list.contains(&k.as_str()))
-                .collect::<HashMap<_, _>>();
-
             let mut recorder = recorder::Recorder::new(
                 writer,
                 append,
@@ -163,14 +159,16 @@ fn main() -> Result<()> {
                 idle_time_limit,
                 command.clone(),
                 title.clone(),
-                env,
+                capture_env(&env),
             );
 
             let command = command
                 .or(env::var("SHELL").ok())
                 .unwrap_or("/bin/sh".to_owned());
 
-            pty::exec(&["/bin/sh", "-c", &command], &mut recorder)?;
+            let exec_env = build_exec_env();
+
+            pty::exec(&["/bin/sh", "-c", &command], &exec_env, &mut recorder)?;
         }
 
         Commands::Play {
@@ -189,4 +187,27 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn capture_env(vars: &str) -> HashMap<String, String> {
+    let vars = vars.split(',').collect::<HashSet<_>>();
+
+    env::vars()
+        .filter(|(k, _v)| vars.contains(&k.as_str()))
+        .collect::<HashMap<_, _>>()
+}
+
+fn build_exec_env() -> Vec<CString> {
+    env::vars_os()
+        .map(format_env_var)
+        .chain(std::iter::once(CString::new("ASCIINEMA_REC=1").unwrap()))
+        .collect()
+}
+
+fn format_env_var((key, value): (OsString, OsString)) -> CString {
+    let mut key_value = key.into_vec();
+    key_value.push(b'=');
+    key_value.extend(value.into_vec());
+
+    CString::new(key_value).unwrap()
 }

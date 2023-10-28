@@ -1,5 +1,6 @@
 use mio::unix::SourceFd;
 use nix::{fcntl, libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
+use std::ffi::{CString, NulError};
 use std::fs;
 use std::io::{self, Read, Write};
 use std::ops::Deref;
@@ -13,7 +14,11 @@ pub trait Recorder {
     fn input(&mut self, data: &[u8]);
 }
 
-pub fn exec<S: AsRef<str>, R: Recorder>(args: &[S], recorder: &mut R) -> anyhow::Result<i32> {
+pub fn exec<S: AsRef<str>, R: Recorder>(
+    args: &[S],
+    env: &[CString],
+    recorder: &mut R,
+) -> anyhow::Result<i32> {
     let tty = open_tty()?;
     let winsize = get_tty_size(tty.as_raw_fd());
     recorder.start((winsize.ws_col, winsize.ws_row))?;
@@ -25,7 +30,7 @@ pub fn exec<S: AsRef<str>, R: Recorder>(args: &[S], recorder: &mut R) -> anyhow:
         }
 
         ForkResult::Child => {
-            handle_child(args)?;
+            handle_child(args, env)?;
             unreachable!();
         }
     }
@@ -183,9 +188,8 @@ fn copy<R: Recorder>(master_fd: RawFd, tty: fs::File, recorder: &mut R) -> anyho
     }
 }
 
-fn handle_child<S: AsRef<str>>(args: &[S]) -> anyhow::Result<()> {
+fn handle_child<S: AsRef<str>>(args: &[S], env: &[CString]) -> anyhow::Result<()> {
     use signal::{SigHandler, Signal};
-    use std::ffi::{CString, NulError};
 
     let args = args
         .iter()
@@ -193,7 +197,7 @@ fn handle_child<S: AsRef<str>>(args: &[S]) -> anyhow::Result<()> {
         .collect::<Result<Vec<CString>, NulError>>()?;
 
     unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
-    unistd::execvp(&args[0], &args)?;
+    unistd::execvpe(&args[0], &args, env)?;
     unsafe { libc::_exit(1) }
 }
 
@@ -306,7 +310,7 @@ time.sleep(0.01);
 sys.stdout.write('bar');
 "#;
 
-        let result = super::exec(&["python3", "-c", code], &mut recorder);
+        let result = super::exec(&["python3", "-c", code], &[], &mut recorder);
 
         assert!(result.is_ok());
         assert!(recorder.size.is_some());
