@@ -1,4 +1,5 @@
 mod format;
+mod locale;
 mod pty;
 mod recorder;
 use anyhow::Result;
@@ -126,6 +127,8 @@ fn main() -> Result<()> {
             rows,
             quiet,
         } => {
+            locale::check_utf8_locale()?;
+
             let exists = path::Path::new(&filename).exists();
             append = append && exists;
             let mut opts = fs::OpenOptions::new();
