@@ -132,6 +132,7 @@ fn main() -> Result<()> {
 
             opts.write(true)
                 .append(append)
+                .create(overwrite)
                 .create_new(!overwrite && !append)
                 .truncate(overwrite);
 
