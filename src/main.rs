@@ -10,7 +10,7 @@ use std::env;
 use std::ffi::{CString, OsString};
 use std::fs;
 use std::os::unix::ffi::OsStringExt;
-use std::path;
+use std::path::Path;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
@@ -118,7 +118,7 @@ fn main() -> Result<()> {
             stdin,
             mut append,
             raw,
-            overwrite,
+            mut overwrite,
             command,
             env,
             title,
@@ -129,8 +129,20 @@ fn main() -> Result<()> {
         } => {
             locale::check_utf8_locale()?;
 
-            let exists = path::Path::new(&filename).exists();
-            append = append && exists;
+            let path = Path::new(&filename);
+
+            if path.exists() {
+                let metadata = fs::metadata(path)?;
+
+                if metadata.len() == 0 {
+                    overwrite = true;
+                    append = false;
+                }
+                // TODO if !append && !overwrite - error message
+            } else {
+                append = false;
+            }
+
             let mut opts = fs::OpenOptions::new();
 
             opts.write(true)
