@@ -1,5 +1,8 @@
+use anyhow::bail;
 use mio::unix::SourceFd;
 use nix::{fcntl, libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
+use signal_hook::consts::signal::*;
+use signal_hook_mio::v0_8::Signals;
 use std::ffi::{CString, NulError};
 use std::fs;
 use std::io::{self, Read, Write};
@@ -26,9 +29,13 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
-        ForkResult::Parent { child } => {
-            handle_parent(result.master.as_raw_fd(), tty, child, recorder)
-        }
+        ForkResult::Parent { child } => handle_parent(
+            result.master.as_raw_fd(),
+            tty,
+            child,
+            winsize_override,
+            recorder,
+        ),
 
         ForkResult::Child => {
             handle_child(args, env)?;
@@ -37,41 +44,14 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
     }
 }
 
-fn open_tty() -> io::Result<fs::File> {
-    fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open("/dev/tty")
-}
-
-fn get_tty_size(tty_fd: i32, winsize_override: (Option<u16>, Option<u16>)) -> pty::Winsize {
-    let mut winsize = pty::Winsize {
-        ws_row: 24,
-        ws_col: 80,
-        ws_xpixel: 0,
-        ws_ypixel: 0,
-    };
-
-    unsafe { libc::ioctl(tty_fd, libc::TIOCGWINSZ, &mut winsize) };
-
-    if let Some(cols) = winsize_override.0 {
-        winsize.ws_col = cols;
-    }
-
-    if let Some(rows) = winsize_override.1 {
-        winsize.ws_row = rows;
-    }
-
-    winsize
-}
-
 fn handle_parent<R: Recorder>(
     master_fd: RawFd,
     tty: fs::File,
     child: unistd::Pid,
+    winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<i32> {
-    let copy_result = copy(master_fd, tty, recorder);
+    let copy_result = copy(master_fd, tty, winsize_override, recorder);
     let wait_result = wait::waitpid(child, None);
     copy_result?;
 
@@ -85,9 +65,15 @@ fn handle_parent<R: Recorder>(
 
 const MASTER: mio::Token = mio::Token(0);
 const TTY: mio::Token = mio::Token(1);
+const SIGNAL: mio::Token = mio::Token(2);
 const BUF_SIZE: usize = 128 * 1024;
 
-fn copy<R: Recorder>(master_fd: RawFd, tty: fs::File, recorder: &mut R) -> anyhow::Result<()> {
+fn copy<R: Recorder>(
+    master_fd: RawFd,
+    tty: fs::File,
+    winsize_override: (Option<u16>, Option<u16>),
+    recorder: &mut R,
+) -> anyhow::Result<()> {
     let mut master = unsafe { fs::File::from_raw_fd(master_fd) };
     let mut poll = mio::Poll::new()?;
     let mut events = mio::Events::with_capacity(128);
@@ -95,6 +81,7 @@ fn copy<R: Recorder>(master_fd: RawFd, tty: fs::File, recorder: &mut R) -> anyho
     let mut tty = tty.into_raw_mode()?;
     let tty_fd = tty.as_raw_fd();
     let mut tty_source = SourceFd(&tty_fd);
+    let mut signals = Signals::new([SIGWINCH])?;
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
@@ -103,14 +90,24 @@ fn copy<R: Recorder>(master_fd: RawFd, tty: fs::File, recorder: &mut R) -> anyho
     set_non_blocking(&master_fd)?;
     set_non_blocking(&tty_fd)?;
 
+
     poll.registry()
         .register(&mut master_source, MASTER, mio::Interest::READABLE)?;
 
     poll.registry()
         .register(&mut tty_source, TTY, mio::Interest::READABLE)?;
 
+    poll.registry()
+        .register(&mut signals, SIGNAL, mio::Interest::READABLE)?;
+
     loop {
-        poll.poll(&mut events, None).unwrap();
+        if let Err(e) = poll.poll(&mut events, None) {
+            if e.kind() == io::ErrorKind::Interrupted {
+                continue;
+            } else {
+                bail!(e);
+            }
+        }
 
         for event in events.iter() {
             match event.token() {
@@ -191,6 +188,15 @@ fn copy<R: Recorder>(master_fd: RawFd, tty: fs::File, recorder: &mut R) -> anyho
                     }
                 }
 
+                SIGNAL => {
+                    for signal in signals.pending() {
+                        if signal == SIGWINCH {
+                            let winsize = get_tty_size(tty_fd, winsize_override);
+                            set_pty_size(master_fd, &winsize);
+                        }
+                    }
+                }
+
                 _ => (),
             }
         }
@@ -208,6 +214,38 @@ fn handle_child<S: AsRef<str>>(args: &[S], env: &[CString]) -> anyhow::Result<()
     unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
     unistd::execvpe(&args[0], &args, env)?;
     unsafe { libc::_exit(1) }
+}
+
+fn open_tty() -> io::Result<fs::File> {
+    fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")
+}
+
+fn get_tty_size(tty_fd: i32, winsize_override: (Option<u16>, Option<u16>)) -> pty::Winsize {
+    let mut winsize = pty::Winsize {
+        ws_row: 24,
+        ws_col: 80,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
+
+    unsafe { libc::ioctl(tty_fd, libc::TIOCGWINSZ, &mut winsize) };
+
+    if let Some(cols) = winsize_override.0 {
+        winsize.ws_col = cols;
+    }
+
+    if let Some(rows) = winsize_override.1 {
+        winsize.ws_row = rows;
+    }
+
+    winsize
+}
+
+fn set_pty_size(pty_fd: i32, winsize: &pty::Winsize) {
+    unsafe { libc::ioctl(pty_fd, libc::TIOCSWINSZ, winsize) };
 }
 
 fn set_non_blocking(fd: &RawFd) -> Result<(), io::Error> {
