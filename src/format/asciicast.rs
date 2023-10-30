@@ -316,25 +316,18 @@ mod tests {
         };
 
         fw.write_header(&header).unwrap();
-
-        fw.write_event(Event {
-            time: 1.0,
-            code: EventCode::Output,
-            data: "hello\r\n".to_owned(),
-        })
-        .unwrap();
+        fw.write_event(Event::output(1.0, "hello\r\n".as_bytes()))
+            .unwrap();
 
         let data_len = data.len() as u64;
         let mut cursor = io::Cursor::new(&mut data);
         cursor.set_position(data_len);
         let mut fw = Writer::new(cursor, 1.0);
 
-        fw.write_event(Event {
-            time: 1.0,
-            code: EventCode::Output,
-            data: "world".to_owned(),
-        })
-        .unwrap();
+        fw.write_event(Event::output(1.0, "world".as_bytes()))
+            .unwrap();
+        fw.write_event(Event::input(2.0, " ".as_bytes())).unwrap();
+        fw.write_event(Event::resize(3.0, (100, 40))).unwrap();
 
         let lines = parse(data);
 
@@ -348,6 +341,12 @@ mod tests {
         assert_eq!(lines[2][0], 2.0);
         assert_eq!(lines[2][1], "o");
         assert_eq!(lines[2][2], "world");
+        assert_eq!(lines[3][0], 3.0);
+        assert_eq!(lines[3][1], "i");
+        assert_eq!(lines[3][2], " ");
+        assert_eq!(lines[4][0], 4.0);
+        assert_eq!(lines[4][1], "r");
+        assert_eq!(lines[4][2], "100x40");
     }
 
     #[test]
