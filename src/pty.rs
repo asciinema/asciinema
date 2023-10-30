@@ -91,7 +91,6 @@ fn copy<R: Recorder>(
     set_non_blocking(&master_fd)?;
     set_non_blocking(&tty_fd)?;
 
-
     poll.registry()
         .register(&mut master_source, MASTER, mio::Interest::READABLE)?;
 
