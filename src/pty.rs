@@ -17,10 +17,11 @@ pub trait Recorder {
 pub fn exec<S: AsRef<str>, R: Recorder>(
     args: &[S],
     env: &[CString],
+    winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<i32> {
     let tty = open_tty()?;
-    let winsize = get_tty_size(tty.as_raw_fd());
+    let winsize = get_tty_size(tty.as_raw_fd(), winsize_override);
     recorder.start((winsize.ws_col, winsize.ws_row))?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
@@ -43,7 +44,7 @@ fn open_tty() -> io::Result<fs::File> {
         .open("/dev/tty")
 }
 
-fn get_tty_size(tty_fd: i32) -> pty::Winsize {
+fn get_tty_size(tty_fd: i32, winsize_override: (Option<u16>, Option<u16>)) -> pty::Winsize {
     let mut winsize = pty::Winsize {
         ws_row: 24,
         ws_col: 80,
@@ -52,6 +53,14 @@ fn get_tty_size(tty_fd: i32) -> pty::Winsize {
     };
 
     unsafe { libc::ioctl(tty_fd, libc::TIOCGWINSZ, &mut winsize) };
+
+    if let Some(cols) = winsize_override.0 {
+        winsize.ws_col = cols;
+    }
+
+    if let Some(rows) = winsize_override.1 {
+        winsize.ws_row = rows;
+    }
 
     winsize
 }
@@ -310,7 +319,7 @@ time.sleep(0.01);
 sys.stdout.write('bar');
 "#;
 
-        let result = super::exec(&["python3", "-c", code], &[], &mut recorder);
+        let result = super::exec(&["python3", "-c", code], &[], (None, None), &mut recorder);
 
         assert!(result.is_ok());
         assert!(recorder.size.is_some());

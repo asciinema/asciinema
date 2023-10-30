@@ -181,7 +181,7 @@ fn main() -> Result<()> {
             let exec_args = build_exec_args(command);
             let exec_env = build_exec_env();
 
-            pty::exec(&exec_args, &exec_env, &mut recorder)?;
+            pty::exec(&exec_args, &exec_env, (cols, rows), &mut recorder)?;
         }
 
         Commands::Play {
