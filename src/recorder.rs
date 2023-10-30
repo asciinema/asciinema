@@ -79,4 +79,8 @@ impl pty::Recorder for Recorder {
             // TODO use notifier for error reporting
         }
     }
+
+    fn resize(&mut self, size: (u16, u16)) {
+        let _ = self.writer.resize(self.elapsed_time(), size);
+    }
 }

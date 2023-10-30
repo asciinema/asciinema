@@ -75,6 +75,10 @@ where
     fn input(&mut self, time: f64, data: &[u8]) -> io::Result<()> {
         self.write_event(Event::input(time, data))
     }
+
+    fn resize(&mut self, time: f64, size: (u16, u16)) -> io::Result<()> {
+        self.write_event(Event::resize(time, size))
+    }
 }
 
 pub fn open<R: BufRead>(
@@ -143,6 +147,14 @@ impl Event {
             time,
             code: EventCode::Input,
             data: String::from_utf8_lossy(data).to_string(),
+        }
+    }
+
+    pub fn resize(time: f64, size: (u16, u16)) -> Self {
+        Event {
+            time,
+            code: EventCode::Resize,
+            data: format!("{}x{}", size.0, size.1),
         }
     }
 }

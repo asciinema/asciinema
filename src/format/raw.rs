@@ -22,4 +22,8 @@ impl<W: Write> super::Writer for Writer<W> {
     fn input(&mut self, _time: f64, _data: &[u8]) -> io::Result<()> {
         Ok(())
     }
+
+    fn resize(&mut self, time: f64, size: (u16, u16)) -> io::Result<()> {
+        Ok(())
+    }
 }

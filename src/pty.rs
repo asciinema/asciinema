@@ -15,6 +15,7 @@ pub trait Recorder {
     fn start(&mut self, size: (u16, u16)) -> io::Result<()>;
     fn output(&mut self, data: &[u8]);
     fn input(&mut self, data: &[u8]);
+    fn resize(&mut self, size: (u16, u16));
 }
 
 pub fn exec<S: AsRef<str>, R: Recorder>(
@@ -193,6 +194,7 @@ fn copy<R: Recorder>(
                         if signal == SIGWINCH {
                             let winsize = get_tty_size(tty_fd, winsize_override);
                             set_pty_size(master_fd, &winsize);
+                            recorder.resize((winsize.ws_col, winsize.ws_row));
                         }
                     }
                 }
@@ -333,6 +335,7 @@ mod tests {
         }
 
         fn input(&mut self, _data: &[u8]) {}
+        fn resize(&mut self, _size: (u16, u16)) {}
     }
 
     impl TestRecorder {
