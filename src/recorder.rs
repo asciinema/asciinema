@@ -2,10 +2,12 @@ use crate::format;
 use crate::pty;
 use std::collections::HashMap;
 use std::io;
+use std::sync::mpsc;
+use std::thread;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 pub struct Recorder {
-    writer: Box<dyn format::Writer>,
+    writer: Option<Box<dyn format::Writer + Send>>,
     start_time: Instant,
     append: bool,
     record_input: bool,
@@ -13,11 +15,22 @@ pub struct Recorder {
     command: Option<String>,
     title: Option<String>,
     env: HashMap<String, String>,
+    sender: mpsc::Sender<Message>,
+    receiver: Option<mpsc::Receiver<Message>>,
+    handle: Option<JoinHandle>,
 }
+
+enum Message {
+    Output(f64, Vec<u8>),
+    Input(f64, Vec<u8>),
+    Resize(f64, (u16, u16)),
+}
+
+struct JoinHandle(Option<thread::JoinHandle<()>>);
 
 impl Recorder {
     pub fn new(
-        writer: Box<dyn format::Writer>,
+        writer: Box<dyn format::Writer + Send>,
         append: bool,
         record_input: bool,
         idle_time_limit: Option<f32>,
@@ -25,8 +38,10 @@ impl Recorder {
         title: Option<String>,
         env: HashMap<String, String>,
     ) -> Self {
+        let (sender, receiver) = mpsc::channel();
+
         Recorder {
-            writer,
+            writer: Some(writer),
             start_time: Instant::now(),
             append,
             record_input,
@@ -34,6 +49,9 @@ impl Recorder {
             command,
             title,
             env,
+            sender,
+            receiver: Some(receiver),
+            handle: None,
         }
     }
 
@@ -49,7 +67,8 @@ impl pty::Recorder for Recorder {
             .unwrap()
             .as_secs();
 
-        self.start_time = Instant::now();
+        let mut writer = self.writer.take().unwrap();
+        let receiver = self.receiver.take().unwrap();
 
         if !self.append {
             let header = format::Header {
@@ -62,25 +81,56 @@ impl pty::Recorder for Recorder {
                 env: self.env.clone(),
             };
 
-            self.writer.header(&header)
-        } else {
-            Ok(())
+            writer.header(&header)?;
         }
+
+        let handle = thread::spawn(move || {
+            for msg in receiver {
+                match msg {
+                    Message::Output(time, data) => {
+                        let _ = writer.output(time, &data);
+                    }
+
+                    Message::Input(time, data) => {
+                        let _ = writer.input(time, &data);
+                    }
+
+                    Message::Resize(time, size) => {
+                        let _ = writer.resize(time, size);
+                    }
+                }
+            }
+        });
+
+        self.handle = Some(JoinHandle(Some(handle)));
+        self.start_time = Instant::now();
+
+        Ok(())
     }
 
     fn output(&mut self, data: &[u8]) {
-        let _ = self.writer.output(self.elapsed_time(), data);
+        let msg = Message::Output(self.elapsed_time(), data.into());
+        let _ = self.sender.send(msg);
         // TODO use notifier for error reporting
     }
 
     fn input(&mut self, data: &[u8]) {
         if self.record_input {
-            let _ = self.writer.input(self.elapsed_time(), data);
+            let msg = Message::Input(self.elapsed_time(), data.into());
+            let _ = self.sender.send(msg);
             // TODO use notifier for error reporting
         }
     }
 
     fn resize(&mut self, size: (u16, u16)) {
-        let _ = self.writer.resize(self.elapsed_time(), size);
+        let msg = Message::Resize(self.elapsed_time(), size);
+        let _ = self.sender.send(msg);
+        // TODO use notifier for error reporting
+    }
+}
+
+impl Drop for JoinHandle {
+    fn drop(&mut self) {
+        self.0.take().unwrap().join().expect("Thread panicked");
     }
 }

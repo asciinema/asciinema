@@ -151,7 +151,7 @@ fn main() -> Result<()> {
                 .create_new(!overwrite && !append)
                 .truncate(overwrite);
 
-            let writer: Box<dyn format::Writer> = if raw {
+            let writer: Box<dyn format::Writer + Send> = if raw {
                 let file = opts.open(&filename)?;
 
                 Box::new(raw::Writer::new(file))
