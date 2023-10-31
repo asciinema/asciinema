@@ -52,7 +52,7 @@ fn handle_parent<R: Recorder>(
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<i32> {
-    let copy_result = copy(master_fd, tty, winsize_override, recorder);
+    let copy_result = copy(master_fd, tty, child, winsize_override, recorder);
     let wait_result = wait::waitpid(child, None);
     copy_result?;
 
@@ -72,6 +72,7 @@ const BUF_SIZE: usize = 128 * 1024;
 fn copy<R: Recorder>(
     master_fd: RawFd,
     tty: fs::File,
+    child: unistd::Pid,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<()> {
@@ -82,7 +83,7 @@ fn copy<R: Recorder>(
     let mut tty = tty.into_raw_mode()?;
     let tty_fd = tty.as_raw_fd();
     let mut tty_source = SourceFd(&tty_fd);
-    let mut signals = Signals::new([SIGWINCH])?;
+    let mut signals = Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP])?;
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
@@ -190,10 +191,21 @@ fn copy<R: Recorder>(
 
                 SIGNAL => {
                     for signal in signals.pending() {
-                        if signal == SIGWINCH {
-                            let winsize = get_tty_size(tty_fd, winsize_override);
-                            set_pty_size(master_fd, &winsize);
-                            recorder.resize((winsize.ws_col, winsize.ws_row));
+                        match signal {
+                            SIGWINCH => {
+                                let winsize = get_tty_size(tty_fd, winsize_override);
+                                set_pty_size(master_fd, &winsize);
+                                recorder.resize((winsize.ws_col, winsize.ws_row));
+                            }
+
+                            SIGINT => (),
+
+                            SIGTERM | SIGQUIT | SIGHUP => {
+                                unsafe { libc::kill(child.as_raw(), SIGTERM) };
+                                return Ok(());
+                            }
+
+                            _ => (),
                         }
                     }
                 }
