@@ -23,7 +23,7 @@ impl<W: Write> super::Writer for Writer<W> {
         Ok(())
     }
 
-    fn resize(&mut self, time: f64, size: (u16, u16)) -> io::Result<()> {
+    fn resize(&mut self, _time: f64, _size: (u16, u16)) -> io::Result<()> {
         Ok(())
     }
 }
