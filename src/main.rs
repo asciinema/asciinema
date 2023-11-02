@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::env;
 use std::ffi::{CString, OsString};
 use std::fs;
+use std::io;
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 
@@ -156,14 +157,14 @@ fn main() -> Result<()> {
 
                 Box::new(raw::Writer::new(file))
             } else {
-                let writer = if append {
-                    let time_offset = asciicast::get_duration(&filename)?;
-                    let file = opts.open(&filename)?;
-                    asciicast::Writer::new(file, time_offset)
+                let time_offset = if append {
+                    asciicast::get_duration(&filename)?
                 } else {
-                    let file = opts.open(&filename)?;
-                    asciicast::Writer::new(file, 0.0)
+                    0.0
                 };
+
+                let file = io::LineWriter::new(opts.open(&filename)?);
+                let writer = asciicast::Writer::new(file, time_offset);
 
                 Box::new(writer)
             };
