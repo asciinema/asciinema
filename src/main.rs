@@ -175,7 +175,7 @@ fn main() -> Result<()> {
                 stdin,
                 idle_time_limit,
                 command.clone(),
-                title.clone(),
+                title,
                 capture_env(&env),
             );
 
