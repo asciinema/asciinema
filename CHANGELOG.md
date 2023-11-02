@@ -1,5 +1,13 @@
 # asciinema changelog
 
+## 3.0.0 (wip)
+
+* Full rewrite in Rust
+* rec: `--append` can be used with `--raw` now
+* rec: use of `--append` and `--overwrite` together returns error now
+* rec: fixed saving of custom rec command in asciicast header
+* Improved error message when non-UTF-8 locale is detected
+
 ## 2.4.0 (2023-10-23)
 
 * When recording without file arg we now ask whether to save, upload or discard the recording (#576)
