@@ -71,6 +71,7 @@ enum Commands {
         /// Quiet mode - suppress all notices/warnings
         #[arg(short, long)]
         quiet: bool,
+        // TODO implement diag messages
     },
 
     /// Play terminal session
