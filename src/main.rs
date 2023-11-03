@@ -144,17 +144,15 @@ fn main() -> Result<()> {
                 append = false;
             }
 
-            let mut opts = fs::OpenOptions::new();
-
-            opts.write(true)
+            let file = fs::OpenOptions::new()
+                .write(true)
                 .append(append)
                 .create(overwrite)
                 .create_new(!overwrite && !append)
-                .truncate(overwrite);
+                .truncate(overwrite)
+                .open(&filename)?;
 
             let writer: Box<dyn format::Writer + Send> = if raw {
-                let file = opts.open(&filename)?;
-
                 Box::new(raw::Writer::new(file))
             } else {
                 let time_offset = if append {
@@ -163,10 +161,7 @@ fn main() -> Result<()> {
                     0.0
                 };
 
-                let file = io::LineWriter::new(opts.open(&filename)?);
-                let writer = asciicast::Writer::new(file, time_offset);
-
-                Box::new(writer)
+                Box::new(asciicast::Writer::new(file, time_offset))
             };
 
             let mut recorder = recorder::Recorder::new(

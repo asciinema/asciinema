@@ -8,7 +8,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 pub struct Writer<W: Write> {
-    writer: W,
+    writer: io::LineWriter<W>,
     time_offset: f64,
 }
 
@@ -44,7 +44,7 @@ where
 {
     pub fn new(writer: W, time_offset: f64) -> Self {
         Self {
-            writer,
+            writer: io::LineWriter::new(writer),
             time_offset,
         }
     }
@@ -302,32 +302,36 @@ mod tests {
     fn writer() {
         let mut data = Vec::new();
 
-        let cursor = io::Cursor::new(&mut data);
-        let mut fw = Writer::new(cursor, 0.0);
+        {
+            let cursor = io::Cursor::new(&mut data);
+            let mut fw = Writer::new(cursor, 0.0);
 
-        let header = Header {
-            width: 80,
-            height: 24,
-            timestamp: 1,
-            idle_time_limit: None,
-            command: None,
-            title: None,
-            env: Default::default(),
-        };
+            let header = Header {
+                width: 80,
+                height: 24,
+                timestamp: 1,
+                idle_time_limit: None,
+                command: None,
+                title: None,
+                env: Default::default(),
+            };
 
-        fw.write_header(&header).unwrap();
-        fw.write_event(Event::output(1.0, "hello\r\n".as_bytes()))
-            .unwrap();
+            fw.write_header(&header).unwrap();
+            fw.write_event(Event::output(1.0, "hello\r\n".as_bytes()))
+                .unwrap();
+        }
 
-        let data_len = data.len() as u64;
-        let mut cursor = io::Cursor::new(&mut data);
-        cursor.set_position(data_len);
-        let mut fw = Writer::new(cursor, 1.0);
+        {
+            let data_len = data.len() as u64;
+            let mut cursor = io::Cursor::new(&mut data);
+            cursor.set_position(data_len);
+            let mut fw = Writer::new(cursor, 1.0);
 
-        fw.write_event(Event::output(1.0, "world".as_bytes()))
-            .unwrap();
-        fw.write_event(Event::input(2.0, " ".as_bytes())).unwrap();
-        fw.write_event(Event::resize(3.0, (100, 40))).unwrap();
+            fw.write_event(Event::output(1.0, "world".as_bytes()))
+                .unwrap();
+            fw.write_event(Event::input(2.0, " ".as_bytes())).unwrap();
+            fw.write_event(Event::resize(3.0, (100, 40))).unwrap();
+        }
 
         let lines = parse(data);
 
@@ -352,23 +356,26 @@ mod tests {
     #[test]
     fn write_header() {
         let mut data = Vec::new();
-        let mut fw = Writer::new(io::Cursor::new(&mut data), 0.0);
 
-        let mut env = HashMap::new();
-        env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
-        env.insert("TERM".to_owned(), "xterm256-color".to_owned());
+        {
+            let mut fw = Writer::new(io::Cursor::new(&mut data), 0.0);
 
-        let header = Header {
-            width: 80,
-            height: 24,
-            timestamp: 1,
-            idle_time_limit: Some(1.5),
-            command: Some("/bin/bash".to_owned()),
-            title: Some("Demo".to_owned()),
-            env,
-        };
+            let mut env = HashMap::new();
+            env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
+            env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
-        fw.write_header(&header).unwrap();
+            let header = Header {
+                width: 80,
+                height: 24,
+                timestamp: 1,
+                idle_time_limit: Some(1.5),
+                command: Some("/bin/bash".to_owned()),
+                title: Some("Demo".to_owned()),
+                env,
+            };
+
+            fw.write_header(&header).unwrap();
+        }
 
         let lines = parse(data);
 
