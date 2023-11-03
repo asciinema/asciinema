@@ -9,7 +9,6 @@ use std::collections::{HashMap, HashSet};
 use std::env;
 use std::ffi::{CString, OsString};
 use std::fs;
-use std::io;
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 
