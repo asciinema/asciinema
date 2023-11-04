@@ -24,7 +24,7 @@ def valid_encoding() -> bool:
     if loc is None:
         return False
     else:
-        return loc.upper() in ("US-ASCII", "UTF-8", "UTF8")
+        return loc.upper() in ("ISO-8859-1", "US-ASCII", "UTF-8", "UTF8")
 
 
 def positive_int(value: str) -> int:
