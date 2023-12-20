@@ -1,2 +1,0 @@
-class HTTPConnectionError(Exception):
-    pass
