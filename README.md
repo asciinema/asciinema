@@ -19,7 +19,7 @@ an [asciinema server](https://docs.asciinema.org/manual/server/), such as
 [asciinema.org](https://asciinema.org), for further sharing.
 
 [![asciinema CLI
-demo](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH?cols=80)](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH?autoplay=1)
+demo](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH.svg)](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH?autoplay=1)
 
 Notable features:
 
