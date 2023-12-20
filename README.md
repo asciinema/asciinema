@@ -44,6 +44,14 @@ Check out the [Getting started
 guide](https://docs.asciinema.org/getting-started/) for installation and usage
 overview.
 
+## Development
+
+This branch (`main`) tracks the previous generation of the asciinema CLI,
+written in Python. This codebase is now in maintenance mode, and no more
+features will be added to it. All effort goes into the upcoming 3.0 (`develop`
+branch), which is a complete [rewrite in
+Rust](https://discourse.asciinema.org/t/rust-rewrite-of-the-asciinema-cli/777).
+
 ## Donations
 
 Sustainability of asciinema development relies on donations and sponsorships.
