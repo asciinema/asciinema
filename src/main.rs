@@ -103,6 +103,9 @@ enum Commands {
     Upload {
         /// Filename/path of asciicast to upload
         filename: String,
+
+        /// asciinema server URL
+        server_url: String,
     },
 
     /// Link this system to asciinema.org account
@@ -189,7 +192,12 @@ fn main() -> Result<()> {
 
         Commands::Cat { filename } => todo!(),
 
-        Commands::Upload { filename } => todo!(),
+        Commands::Upload {
+            filename,
+            server_url,
+        } => {
+            asciinema::upload(filename, server_url)?;
+        }
 
         Commands::Auth => todo!(),
     }
