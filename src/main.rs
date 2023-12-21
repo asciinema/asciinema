@@ -109,7 +109,10 @@ enum Commands {
     },
 
     /// Link this system to asciinema.org account
-    Auth,
+    Auth {
+        /// asciinema server URL
+        server_url: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -199,7 +202,9 @@ fn main() -> Result<()> {
             asciinema::upload(filename, server_url)?;
         }
 
-        Commands::Auth => todo!(),
+        Commands::Auth { server_url } => {
+            asciinema::auth(server_url)?;
+        }
     }
 
     Ok(())
