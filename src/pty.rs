@@ -225,7 +225,7 @@ fn handle_child<S: AsRef<str>>(args: &[S], env: &[CString]) -> anyhow::Result<()
         .collect::<Result<Vec<CString>, NulError>>()?;
 
     unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
-    unistd::execvpe(&args[0], &args, env)?;
+    unistd::execve(&args[0], &args, env)?;
     unsafe { libc::_exit(1) }
 }
 
