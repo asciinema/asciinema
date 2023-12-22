@@ -1,4 +1,4 @@
-mod util;
+use crate::util;
 use anyhow::{anyhow, Result};
 use reqwest::{
     blocking::{multipart::Form, Client},
@@ -13,7 +13,7 @@ struct UploadResponse {
     message: Option<String>,
 }
 
-pub fn upload(filename: String, server_url: String) -> Result<()> {
+pub fn run(filename: String, server_url: String) -> Result<()> {
     let mut api_url = Url::parse(&server_url)?;
     api_url.set_path("api/asciicasts");
     let install_id = util::get_install_id()?;
@@ -58,17 +58,4 @@ fn build_user_agent() -> String {
     let ua = concat!("asciinema/", env!("CARGO_PKG_VERSION")); // TODO add more system info
 
     ua.to_owned()
-}
-
-pub fn auth(server_url: String) -> Result<()> {
-    let mut auth_url = Url::parse(&server_url)?;
-    let install_id = util::get_install_id()?;
-    auth_url.set_path(&format!("connect/{install_id}"));
-    let server_hostname = auth_url.host().ok_or(anyhow!("invalid server URL"))?;
-
-    println!("Open the following URL in a web browser to authenticate this asciinema CLI with your {server_hostname} user account:\n");
-    println!("{}\n", auth_url);
-    println!("This action will associate all recordings uploaded from this machine (past and future ones) with your account, allowing you to manage them (change the title/theme, delete) at {server_hostname}.");
-
-    Ok(())
 }
