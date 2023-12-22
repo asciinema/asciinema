@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-asciicast">
+    <comment>Asciinema recording</comment>
+    <comment xml:lang="de">Asciinema-Aufnahme</comment>
+    <comment xml:lang="fr">Capture Asciinema</comment>
+    <comment xml:lang="sv">Asciinema-inspelning</comment>
+    <icon name="application-x-asciicast"/>
+    <glob-deleteall/>
+    <glob pattern="*.cast"/>
+  </mime-type>
+</mime-info>
