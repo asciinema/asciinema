@@ -115,7 +115,13 @@ impl Cli {
         let exec_args = build_exec_args(self.command);
         let exec_env = build_exec_env();
 
+        println!("asciinema: recording asciicast to {}", self.filename);
+        println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
+
         pty::exec(&exec_args, &exec_env, (self.cols, self.rows), &mut recorder)?;
+
+        println!("asciinema: recording finished");
+        println!("asciinema: asciicast saved to {}", self.filename);
 
         Ok(())
     }
