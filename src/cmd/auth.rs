@@ -11,9 +11,7 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(self) -> Result<()> {
-        let mut auth_url = Url::parse(&self.server_url)?;
-        let install_id = util::get_install_id()?;
-        auth_url.set_path(&format!("connect/{install_id}"));
+        let auth_url = self.auth_url()?;
         let server_hostname = auth_url.host().ok_or(anyhow!("invalid server URL"))?;
 
         println!("Open the following URL in a web browser to authenticate this asciinema CLI with your {server_hostname} user account:\n");
@@ -21,5 +19,12 @@ impl Cli {
         println!("This action will associate all recordings uploaded from this machine (past and future ones) with your account, allowing you to manage them (change the title/theme, delete) at {server_hostname}.");
 
         Ok(())
+    }
+
+    fn auth_url(&self) -> Result<Url> {
+        let mut url = Url::parse(&self.server_url)?;
+        url.set_path(&format!("connect/{}", util::get_install_id()?));
+
+        Ok(url)
     }
 }

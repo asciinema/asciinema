@@ -25,16 +25,13 @@ struct UploadResponse {
 
 impl Cli {
     pub fn run(self) -> Result<()> {
-        let mut api_url = Url::parse(&self.server_url)?;
-        api_url.set_path("api/asciicasts");
-        let install_id = util::get_install_id()?;
         let client = Client::new();
-        let form = Form::new().file("asciicast", self.filename)?;
+        let form = Form::new().file("asciicast", &self.filename)?;
 
         let response = client
-            .post(api_url)
+            .post(self.api_url()?)
             .multipart(form)
-            .basic_auth(get_username(), Some(install_id))
+            .basic_auth(get_username(), Some(util::get_install_id()?))
             .header(header::USER_AGENT, build_user_agent())
             .header(header::ACCEPT, "application/json")
             .send()?;
@@ -59,6 +56,13 @@ impl Cli {
         }
 
         Ok(())
+    }
+
+    fn api_url(&self) -> Result<Url> {
+        let mut api_url = Url::parse(&self.server_url)?;
+        api_url.set_path("api/asciicasts");
+
+        Ok(api_url)
     }
 }
 
