@@ -4,6 +4,7 @@ use crate::locale;
 use crate::pty;
 use crate::recorder;
 use anyhow::Result;
+use clap::Args;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::ffi::{CString, OsString};
@@ -11,72 +12,113 @@ use std::fs;
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 
-pub fn run(
+#[derive(Debug, Args)]
+pub struct Cli {
     filename: String,
+
+    /// Enable input recording
+    #[arg(long)]
     stdin: bool,
-    mut append: bool,
+
+    /// Append to existing asciicast file
+    #[arg(long)]
+    append: bool,
+
+    /// Save raw output only
+    #[arg(long)]
     raw: bool,
-    mut overwrite: bool,
+
+    /// Overwrite target file if it already exists
+    #[arg(long, conflicts_with = "append")]
+    overwrite: bool,
+
+    /// Command to record [default: $SHELL]
+    #[arg(short, long)]
     command: Option<String>,
+
+    /// List of env vars to save
+    #[arg(short, long, default_value_t = String::from("SHELL,TERM"))]
     env: String,
+
+    /// Title of the recording
+    #[arg(short, long)]
     title: Option<String>,
+
+    /// Limit idle time to given number of seconds
+    #[arg(short, long, value_name = "SECS")]
     idle_time_limit: Option<f32>,
+
+    /// Override terminal width (columns) for recorded command
+    #[arg(long)]
     cols: Option<u16>,
+
+    /// Override terminal height (rows) for recorded command
+    #[arg(long)]
     rows: Option<u16>,
+
+    /// Quiet mode - suppress all notices/warnings
+    #[arg(short, long)]
     quiet: bool,
-) -> Result<()> {
-    locale::check_utf8_locale()?;
+}
 
-    let path = Path::new(&filename);
+impl Cli {
+    pub fn run(self) -> Result<()> {
+        locale::check_utf8_locale()?;
 
-    if path.exists() {
-        let metadata = fs::metadata(path)?;
+        let mut overwrite = self.overwrite;
+        let mut append = self.append;
 
-        if metadata.len() == 0 {
-            overwrite = true;
+        let path = Path::new(&self.filename);
+
+        if path.exists() {
+            let metadata = fs::metadata(path)?;
+
+            if metadata.len() == 0 {
+                overwrite = true;
+                append = false;
+            }
+            // TODO if !append && !overwrite - error message
+        } else {
             append = false;
         }
-        // TODO if !append && !overwrite - error message
-    } else {
-        append = false;
-    }
 
-    let file = fs::OpenOptions::new()
-        .write(true)
-        .append(append)
-        .create(overwrite)
-        .create_new(!overwrite && !append)
-        .truncate(overwrite)
-        .open(&filename)?;
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .append(append)
+            .create(overwrite)
+            .create_new(!overwrite && !append)
+            .truncate(overwrite)
+            .open(&self.filename)?;
 
-    let writer: Box<dyn format::Writer + Send> = if raw {
-        Box::new(raw::Writer::new(file))
-    } else {
-        let time_offset = if append {
-            asciicast::get_duration(&filename)?
+        let writer: Box<dyn format::Writer + Send> = if self.raw {
+            Box::new(raw::Writer::new(file))
         } else {
-            0.0
+            let time_offset = if append {
+                asciicast::get_duration(&self.filename)?
+            } else {
+                0.0
+            };
+
+            Box::new(asciicast::Writer::new(file, time_offset))
         };
 
-        Box::new(asciicast::Writer::new(file, time_offset))
-    };
+        let mut recorder = recorder::Recorder::new(
+            writer,
+            append,
+            self.stdin,
+            self.idle_time_limit,
+            self.command.clone(),
+            self.title,
+            capture_env(&self.env),
+        );
 
-    let mut recorder = recorder::Recorder::new(
-        writer,
-        append,
-        stdin,
-        idle_time_limit,
-        command.clone(),
-        title,
-        capture_env(&env),
-    );
+        let exec_args = build_exec_args(self.command);
+        let exec_env = build_exec_env();
 
-    let exec_args = build_exec_args(command);
-    let exec_env = build_exec_env();
+        pty::exec(&exec_args, &exec_env, (self.cols, self.rows), &mut recorder)?;
 
-    pty::exec(&exec_args, &exec_env, (cols, rows), &mut recorder)?;
-
-    Ok(())
+        Ok(())
+    }
 }
 
 fn capture_env(vars: &str) -> HashMap<String, String> {

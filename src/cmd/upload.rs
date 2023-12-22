@@ -1,5 +1,6 @@
 use crate::util;
 use anyhow::{anyhow, Result};
+use clap::Args;
 use reqwest::{
     blocking::{multipart::Form, Client},
     header, Url,
@@ -7,47 +8,58 @@ use reqwest::{
 use serde::Deserialize;
 use std::env;
 
+#[derive(Debug, Args)]
+pub struct Cli {
+    /// Filename/path of asciicast to upload
+    filename: String,
+
+    /// asciinema server URL
+    server_url: String,
+}
+
 #[derive(Debug, Deserialize)]
 struct UploadResponse {
     url: String,
     message: Option<String>,
 }
 
-pub fn run(filename: String, server_url: String) -> Result<()> {
-    let mut api_url = Url::parse(&server_url)?;
-    api_url.set_path("api/asciicasts");
-    let install_id = util::get_install_id()?;
-    let client = Client::new();
-    let form = Form::new().file("asciicast", filename)?;
+impl Cli {
+    pub fn run(self) -> Result<()> {
+        let mut api_url = Url::parse(&self.server_url)?;
+        api_url.set_path("api/asciicasts");
+        let install_id = util::get_install_id()?;
+        let client = Client::new();
+        let form = Form::new().file("asciicast", self.filename)?;
 
-    let response = client
-        .post(api_url)
-        .multipart(form)
-        .basic_auth(get_username(), Some(install_id))
-        .header(header::USER_AGENT, build_user_agent())
-        .header(header::ACCEPT, "application/json")
-        .send()?;
+        let response = client
+            .post(api_url)
+            .multipart(form)
+            .basic_auth(get_username(), Some(install_id))
+            .header(header::USER_AGENT, build_user_agent())
+            .header(header::ACCEPT, "application/json")
+            .send()?;
 
-    response.error_for_status_ref()?;
+        response.error_for_status_ref()?;
 
-    let content_type = response
-        .headers()
-        .get("content-type")
-        .ok_or(anyhow!("no content-type header in the response"))?
-        .to_str()?;
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .ok_or(anyhow!("no content-type header in the response"))?
+            .to_str()?;
 
-    if content_type.starts_with("application/json") {
-        let json = response.json::<UploadResponse>()?;
-        if let Some(message) = json.message {
-            println!("{}", message);
+        if content_type.starts_with("application/json") {
+            let json = response.json::<UploadResponse>()?;
+            if let Some(message) = json.message {
+                println!("{}", message);
+            } else {
+                println!("{}", json.url);
+            }
         } else {
-            println!("{}", json.url);
+            println!("{}", &response.text()?);
         }
-    } else {
-        println!("{}", &response.text()?);
-    }
 
-    Ok(())
+        Ok(())
+    }
 }
 
 fn get_username() -> String {
