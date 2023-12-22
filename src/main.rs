@@ -17,20 +17,20 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Record terminal session
+    /// Record a terminal session
     #[command(name = "rec")]
     Record(cmd::record::Cli),
 
-    /// Play terminal session
+    /// Replay a terminal session
     Play(cmd::play::Cli),
 
     /// Print full output of terminal sessions
     Cat(cmd::cat::Cli),
 
-    /// Upload recording to asciinema.org
+    /// Upload recording to an asciinema server
     Upload(cmd::upload::Cli),
 
-    /// Link this system to asciinema.org account
+    /// Authenticate this CLI with an asciinema server account
     Auth(cmd::auth::Cli),
 }
 
