@@ -6,7 +6,7 @@ use reqwest::Url;
 #[derive(Debug, Args)]
 pub struct Cli {
     /// asciinema server URL
-    server_url: String,
+    server_url: Option<String>,
 }
 
 impl Cli {
@@ -22,7 +22,7 @@ impl Cli {
     }
 
     fn auth_url(&self) -> Result<Url> {
-        let mut url = Url::parse(&self.server_url)?;
+        let mut url = util::get_server_url(self.server_url.as_ref())?;
         url.set_path(&format!("connect/{}", util::get_install_id()?));
 
         Ok(url)

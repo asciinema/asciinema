@@ -14,7 +14,7 @@ pub struct Cli {
     filename: String,
 
     /// asciinema server URL
-    server_url: String,
+    server_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -59,10 +59,10 @@ impl Cli {
     }
 
     fn api_url(&self) -> Result<Url> {
-        let mut api_url = Url::parse(&self.server_url)?;
-        api_url.set_path("api/asciicasts");
+        let mut url = util::get_server_url(self.server_url.as_ref())?;
+        url.set_path("api/asciicasts");
 
-        Ok(api_url)
+        Ok(url)
     }
 }
 

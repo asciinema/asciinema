@@ -22,3 +22,4 @@ signal-hook-mio = { version = "0.2.3", features = ["support-v0_8"] }
 signal-hook = "0.3.17"
 uuid = { version = "1.6.1", features = ["v4"] }
 reqwest = { version = "0.11.23", default-features = false, features = ["blocking", "rustls-tls", "multipart", "gzip", "json"] }
+rustyline = "13.0.0"
