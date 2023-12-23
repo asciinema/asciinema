@@ -7,9 +7,7 @@ use anyhow::Result;
 use clap::Args;
 use std::collections::{HashMap, HashSet};
 use std::env;
-use std::ffi::{CString, OsString};
 use std::fs;
-use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 
 #[derive(Debug, Args)]
