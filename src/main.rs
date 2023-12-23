@@ -24,7 +24,7 @@ enum Commands {
     /// Replay a terminal session
     Play(cmd::play::Cli),
 
-    /// Print full output of terminal sessions
+    /// Concatenate multiple recordings
     Cat(cmd::cat::Cli),
 
     /// Upload recording to an asciinema server
