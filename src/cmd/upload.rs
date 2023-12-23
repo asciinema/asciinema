@@ -12,9 +12,6 @@ use std::env;
 pub struct Cli {
     /// Filename/path of asciicast to upload
     filename: String,
-
-    /// asciinema server URL
-    server_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -24,12 +21,12 @@ struct UploadResponse {
 }
 
 impl Cli {
-    pub fn run(self) -> Result<()> {
+    pub fn run(self, server_url: &Option<String>) -> Result<()> {
         let client = Client::new();
-        let form = Form::new().file("asciicast", &self.filename)?;
+        let form = Form::new().file("asciicast", self.filename)?;
 
         let response = client
-            .post(self.api_url()?)
+            .post(api_url(server_url)?)
             .multipart(form)
             .basic_auth(get_username(), Some(util::get_install_id()?))
             .header(header::USER_AGENT, build_user_agent())
@@ -57,13 +54,13 @@ impl Cli {
 
         Ok(())
     }
+}
 
-    fn api_url(&self) -> Result<Url> {
-        let mut url = util::get_server_url(self.server_url.as_ref())?;
-        url.set_path("api/asciicasts");
+fn api_url(server_url: &Option<String>) -> Result<Url> {
+    let mut url = util::get_server_url(server_url.as_ref())?;
+    url.set_path("api/asciicasts");
 
-        Ok(url)
-    }
+    Ok(url)
 }
 
 fn get_username() -> String {

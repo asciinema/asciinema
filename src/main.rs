@@ -13,6 +13,10 @@ use clap::{Parser, Subcommand};
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    /// asciinema server URL
+    #[arg(long)]
+    server_url: Option<String>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -36,12 +40,13 @@ enum Commands {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+    let server_url = &cli.server_url;
 
     match cli.command {
-        Commands::Record(cli) => cli.run(),
-        Commands::Play(cli) => cli.run(),
-        Commands::Cat(cli) => cli.run(),
-        Commands::Upload(cli) => cli.run(),
-        Commands::Auth(cli) => cli.run(),
+        Commands::Record(record) => record.run(),
+        Commands::Play(play) => play.run(),
+        Commands::Cat(cat) => cat.run(),
+        Commands::Upload(upload) => upload.run(server_url),
+        Commands::Auth(auth) => auth.run(server_url),
     }
 }

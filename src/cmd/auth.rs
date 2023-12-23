@@ -4,14 +4,11 @@ use clap::Args;
 use reqwest::Url;
 
 #[derive(Debug, Args)]
-pub struct Cli {
-    /// asciinema server URL
-    server_url: Option<String>,
-}
+pub struct Cli {}
 
 impl Cli {
-    pub fn run(self) -> Result<()> {
-        let auth_url = self.auth_url()?;
+    pub fn run(self, server_url: &Option<String>) -> Result<()> {
+        let auth_url = auth_url(server_url)?;
         let server_hostname = auth_url.host().ok_or(anyhow!("invalid server URL"))?;
 
         println!("Open the following URL in a web browser to authenticate this asciinema CLI with your {server_hostname} user account:\n");
@@ -20,11 +17,11 @@ impl Cli {
 
         Ok(())
     }
+}
 
-    fn auth_url(&self) -> Result<Url> {
-        let mut url = util::get_server_url(self.server_url.as_ref())?;
-        url.set_path(&format!("connect/{}", util::get_install_id()?));
+fn auth_url(server_url: &Option<String>) -> Result<Url> {
+    let mut url = util::get_server_url(server_url.as_ref())?;
+    url.set_path(&format!("connect/{}", util::get_install_id()?));
 
-        Ok(url)
-    }
+    Ok(url)
 }
