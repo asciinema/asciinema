@@ -387,8 +387,8 @@ sys.stdout.write('bar');
             &mut recorder,
         );
 
+        assert_eq!(recorder.output(), vec!["foo", "bar"]);
         assert!(result.is_ok());
         assert!(recorder.size.is_some());
-        assert_eq!(recorder.output(), vec!["foo", "bar"]);
     }
 }
