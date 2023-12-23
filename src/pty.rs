@@ -3,13 +3,16 @@ use mio::unix::SourceFd;
 use nix::{fcntl, libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
 use signal_hook::consts::signal::*;
 use signal_hook_mio::v0_8::Signals;
+use std::collections::HashMap;
 use std::ffi::{CString, NulError};
-use std::fs;
 use std::io::{self, Read, Write};
 use std::ops::Deref;
 use std::os::fd::RawFd;
 use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::{env, fs};
 use termion::raw::IntoRawMode;
+
+type ExtraEnv = HashMap<String, String>;
 
 pub trait Recorder {
     fn start(&mut self, size: (u16, u16)) -> io::Result<()>;
@@ -20,7 +23,7 @@ pub trait Recorder {
 
 pub fn exec<S: AsRef<str>, R: Recorder>(
     args: &[S],
-    env: &[CString],
+    extra_env: &ExtraEnv,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<i32> {
@@ -39,7 +42,7 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
         ),
 
         ForkResult::Child => {
-            handle_child(args, env)?;
+            handle_child(args, extra_env)?;
             unreachable!();
         }
     }
@@ -216,7 +219,7 @@ fn copy<R: Recorder>(
     }
 }
 
-fn handle_child<S: AsRef<str>>(args: &[S], env: &[CString]) -> anyhow::Result<()> {
+fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> anyhow::Result<()> {
     use signal::{SigHandler, Signal};
 
     let args = args
@@ -224,8 +227,12 @@ fn handle_child<S: AsRef<str>>(args: &[S], env: &[CString]) -> anyhow::Result<()
         .map(|s| CString::new(s.as_ref()))
         .collect::<Result<Vec<CString>, NulError>>()?;
 
+    for (k, v) in extra_env {
+        env::set_var(k, v);
+    }
+
     unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
-    unistd::execve(&args[0], &args, env)?;
+    unistd::execvp(&args[0], &args)?;
     unsafe { libc::_exit(1) }
 }
 
@@ -329,6 +336,8 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
 
 #[cfg(test)]
 mod tests {
+    use crate::pty::ExtraEnv;
+
     #[derive(Default)]
     struct TestRecorder {
         size: Option<(u16, u16)>,
@@ -371,7 +380,12 @@ time.sleep(0.01);
 sys.stdout.write('bar');
 "#;
 
-        let result = super::exec(&["python3", "-c", code], &[], (None, None), &mut recorder);
+        let result = super::exec(
+            &["python3", "-c", code],
+            &ExtraEnv::new(),
+            (None, None),
+            &mut recorder,
+        );
 
         assert!(result.is_ok());
         assert!(recorder.size.is_some());

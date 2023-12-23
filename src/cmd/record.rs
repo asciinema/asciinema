@@ -113,12 +113,17 @@ impl Cli {
         );
 
         let exec_args = build_exec_args(self.command);
-        let exec_env = build_exec_env();
+        let exec_extra_env = build_exec_extra_env();
 
         println!("asciinema: recording asciicast to {}", self.filename);
         println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
 
-        pty::exec(&exec_args, &exec_env, (self.cols, self.rows), &mut recorder)?;
+        pty::exec(
+            &exec_args,
+            &exec_extra_env,
+            (self.cols, self.rows),
+            &mut recorder,
+        )?;
 
         println!("asciinema: recording finished");
         println!("asciinema: asciicast saved to {}", self.filename);
@@ -143,17 +148,10 @@ fn build_exec_args(command: Option<String>) -> Vec<String> {
     vec!["/bin/sh".to_owned(), "-c".to_owned(), command]
 }
 
-fn build_exec_env() -> Vec<CString> {
-    env::vars_os()
-        .map(format_env_var)
-        .chain(std::iter::once(CString::new("ASCIINEMA_REC=1").unwrap()))
-        .collect()
-}
+fn build_exec_extra_env() -> HashMap<String, String> {
+    let mut env = HashMap::new();
 
-fn format_env_var((key, value): (OsString, OsString)) -> CString {
-    let mut key_value = key.into_vec();
-    key_value.push(b'=');
-    key_value.extend(value.into_vec());
+    env.insert("ASCIINEMA_REC".to_owned(), "1".to_owned());
 
-    CString::new(key_value).unwrap()
+    env
 }
