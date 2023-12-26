@@ -6,7 +6,7 @@ authors = ["Marcin Kulik <m@ku1ik.com>"]
 homepage = "https://asciinema.org"
 repository = "https://github.com/asciinema/asciinema"
 description = "Terminal session recorder"
-license-file = "LICENSE"
+license = "GPL-3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
