@@ -1,3 +1,4 @@
+use crate::config::Config;
 use crate::util;
 use anyhow::{anyhow, Result};
 use clap::Args;
@@ -21,12 +22,12 @@ struct UploadResponse {
 }
 
 impl Cli {
-    pub fn run(self, server_url: &Option<String>) -> Result<()> {
+    pub fn run(self, config: &Config) -> Result<()> {
         let client = Client::new();
         let form = Form::new().file("asciicast", self.filename)?;
 
         let response = client
-            .post(api_url(server_url)?)
+            .post(api_url(config.server_url())?)
             .multipart(form)
             .basic_auth(get_username(), Some(util::get_install_id()?))
             .header(header::USER_AGENT, build_user_agent())
@@ -56,8 +57,8 @@ impl Cli {
     }
 }
 
-fn api_url(server_url: &Option<String>) -> Result<Url> {
-    let mut url = util::get_server_url(server_url.as_ref())?;
+fn api_url(server_url: Option<&String>) -> Result<Url> {
+    let mut url = util::get_server_url(server_url)?;
     url.set_path("api/asciicasts");
 
     Ok(url)
