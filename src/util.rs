@@ -1,3 +1,4 @@
+use crate::config;
 use anyhow::{anyhow, bail, Result};
 use reqwest::Url;
 use std::{env, fs, io::ErrorKind, path::Path, path::PathBuf};
@@ -29,7 +30,7 @@ fn create_install_id() -> Result<String> {
 }
 
 fn read_legacy_install_id() -> Result<Option<String>> {
-    let path = config_home()?.join(INSTALL_ID_FILENAME);
+    let path = config::home()?.join(INSTALL_ID_FILENAME);
 
     match fs::read_to_string(path) {
         Ok(s) => Ok(Some(s.trim().to_string())),
@@ -44,17 +45,14 @@ fn read_legacy_install_id() -> Result<Option<String>> {
     }
 }
 
-pub fn get_server_url<S: ToString>(server_url: Option<S>) -> Result<Url> {
-    let mut url_opt = server_url
-        .map(|s| s.to_string())
-        .or(env::var("ASCIINEMA_SERVER_URL").ok())
-        .or(env::var("ASCIINEMA_API_URL").ok());
+pub fn get_server_url(server_url: Option<&String>) -> Result<Url> {
+    let mut url = server_url.cloned();
 
-    if url_opt.is_none() {
-        url_opt = read_state_file(DEFAULT_SERVER_URL_FILENAME)?;
+    if url.is_none() {
+        url = read_state_file(DEFAULT_SERVER_URL_FILENAME)?;
     }
 
-    match url_opt {
+    match url {
         Some(url) => Ok(Url::parse(&url)?),
 
         None => {
@@ -104,14 +102,6 @@ fn write_state_file(filename: &str, contents: &str) -> Result<()> {
     fs::write(path, contents)?;
 
     Ok(())
-}
-
-fn config_home() -> Result<PathBuf> {
-    env::var("ASCIINEMA_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or(env::var("XDG_CONFIG_HOME").map(|home| Path::new(&home).join("asciinema")))
-        .or(env::var("HOME").map(|home| Path::new(&home).join(".config").join("asciinema")))
-        .map_err(|_| anyhow!("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME"))
 }
 
 fn state_home() -> Result<PathBuf> {

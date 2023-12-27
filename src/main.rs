@@ -1,9 +1,11 @@
 mod cmd;
+mod config;
 mod format;
 mod locale;
 mod pty;
 mod recorder;
 mod util;
+use crate::config::Config;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
@@ -40,13 +42,13 @@ enum Commands {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    let server_url = &cli.server_url;
+    let config = Config::new(cli.server_url.clone())?;
 
     match cli.command {
         Commands::Record(record) => record.run(),
         Commands::Play(play) => play.run(),
         Commands::Cat(cat) => cat.run(),
-        Commands::Upload(upload) => upload.run(server_url),
-        Commands::Auth(auth) => auth.run(server_url),
+        Commands::Upload(upload) => upload.run(&config),
+        Commands::Auth(auth) => auth.run(&config),
     }
 }
