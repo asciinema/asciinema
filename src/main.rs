@@ -31,7 +31,7 @@ enum Commands {
     /// Concatenate multiple recordings
     Cat(cmd::cat::Cli),
 
-    /// Upload recording to an asciinema server
+    /// Upload a recording to an asciinema server
     Upload(cmd::upload::Cli),
 
     /// Authenticate this CLI with an asciinema server account
