@@ -14,19 +14,12 @@ const INSTALL_ID_FILENAME: &str = "install-id";
 #[allow(unused)]
 pub struct Config {
     server: Server,
-    api: Api,
     cmd: Cmd,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Server {
-    url: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct Api {
     url: Option<String>,
 }
 
@@ -63,7 +56,6 @@ impl Config {
     pub fn new(server_url: Option<String>) -> Result<Self> {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
-            .set_default("api.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
             .set_default("cmd.rec.env", "SHELL,TERM")?
             .set_default("cmd.rec.pause_key", "C-\\")?
@@ -81,6 +73,13 @@ impl Config {
 
         if let Some(url) = server_url {
             config = config.set_override("server.url", Some(url))?;
+        }
+
+        if let (Err(_), Ok(url)) = (
+            env::var("ASCIINEMA_SERVER_URL"),
+            env::var("ASCIINEMA_API_URL"),
+        ) {
+            env::set_var("ASCIINEMA_SERVER_URL", url);
         }
 
         Ok(config.build()?.try_deserialize()?)
