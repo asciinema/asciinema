@@ -5,7 +5,6 @@ use std::{env, fs, io::ErrorKind, path::Path, path::PathBuf};
 use uuid::Uuid;
 
 const DEFAULT_SERVER_URL: &str = "https://asciinema.org";
-const DEFAULT_SERVER_URL_FILENAME: &str = "default-server-url";
 const INSTALL_ID_FILENAME: &str = "install-id";
 
 pub fn get_install_id() -> Result<String> {
@@ -46,18 +45,12 @@ fn read_legacy_install_id() -> Result<Option<String>> {
 }
 
 pub fn get_server_url(server_url: Option<&String>) -> Result<Url> {
-    let mut url = server_url.cloned();
-
-    if url.is_none() {
-        url = read_state_file(DEFAULT_SERVER_URL_FILENAME)?;
-    }
-
-    match url {
+    match server_url {
         Some(url) => Ok(Url::parse(&url)?),
 
         None => {
             let url = Url::parse(&ask_for_server_url()?)?;
-            write_state_file(DEFAULT_SERVER_URL_FILENAME, url.as_ref())?;
+            config::save_default_server_url(url.as_ref())?;
 
             Ok(url)
         }

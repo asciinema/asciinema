@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 use serde::Deserialize;
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Deserialize)]
@@ -54,8 +55,6 @@ pub struct Play {
 
 impl Config {
     pub fn new(server_url: Option<String>) -> Result<Self> {
-        let user_config_file = home()?.join("config.toml");
-
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("api.url", None::<Option<String>>)?
@@ -67,7 +66,10 @@ impl Config {
             .set_default("cmd.play.step_key", ".")?
             .set_default("cmd.play.next_marker_key", "]")?
             .add_source(
-                config::File::with_name(&user_config_file.to_string_lossy()).required(false),
+                config::File::with_name(&user_defaults_path()?.to_string_lossy()).required(false),
+            )
+            .add_source(
+                config::File::with_name(&user_config_path()?.to_string_lossy()).required(false),
             )
             .add_source(config::Environment::with_prefix("asciinema").separator("_"));
 
@@ -83,10 +85,30 @@ impl Config {
     }
 }
 
+pub fn save_default_server_url(url: &str) -> Result<()> {
+    let path = user_defaults_path()?;
+
+    if let Some(dir) = path.parent() {
+        fs::create_dir_all(dir)?;
+    }
+
+    fs::write(path, format!("[server]\nurl = \"{url}\"\n"))?;
+
+    Ok(())
+}
+
 pub fn home() -> Result<PathBuf> {
     env::var("ASCIINEMA_CONFIG_HOME")
         .map(PathBuf::from)
         .or(env::var("XDG_CONFIG_HOME").map(|home| Path::new(&home).join("asciinema")))
         .or(env::var("HOME").map(|home| Path::new(&home).join(".config").join("asciinema")))
         .map_err(|_| anyhow!("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME"))
+}
+
+fn user_config_path() -> Result<PathBuf> {
+    Ok(home()?.join("config.toml"))
+}
+
+fn user_defaults_path() -> Result<PathBuf> {
+    Ok(home()?.join("defaults.toml"))
 }
