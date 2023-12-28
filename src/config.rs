@@ -159,7 +159,7 @@ fn save_install_id(path: &PathBuf, id: &str) -> Result<()> {
         fs::create_dir_all(dir)?;
     }
 
-    fs::write(path, &id)?;
+    fs::write(path, id)?;
 
     Ok(())
 }
