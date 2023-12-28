@@ -23,8 +23,7 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     /// Record a terminal session
-    #[command(name = "rec")]
-    Record(cmd::record::Cli),
+    Rec(cmd::rec::Cli),
 
     /// Replay a terminal session
     Play(cmd::play::Cli),
@@ -44,7 +43,7 @@ fn main() -> Result<()> {
     let config = Config::new(cli.server_url.clone())?;
 
     match cli.command {
-        Commands::Record(record) => record.run(),
+        Commands::Rec(record) => record.run(),
         Commands::Play(play) => play.run(),
         Commands::Cat(cat) => cat.run(),
         Commands::Upload(upload) => upload.run(&config),
