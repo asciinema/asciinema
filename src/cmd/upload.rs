@@ -1,5 +1,4 @@
 use crate::config::Config;
-use crate::util;
 use anyhow::{anyhow, Result};
 use clap::Args;
 use reqwest::{
@@ -27,9 +26,9 @@ impl Cli {
         let form = Form::new().file("asciicast", self.filename)?;
 
         let response = client
-            .post(api_url(config.server_url())?)
+            .post(api_url(&config.get_server_url()?))
             .multipart(form)
-            .basic_auth(get_username(), Some(util::get_install_id()?))
+            .basic_auth(get_username(), Some(config.get_install_id()?))
             .header(header::USER_AGENT, build_user_agent())
             .header(header::ACCEPT, "application/json")
             .send()?;
@@ -57,11 +56,11 @@ impl Cli {
     }
 }
 
-fn api_url(server_url: Option<&String>) -> Result<Url> {
-    let mut url = util::get_server_url(server_url)?;
+fn api_url(server_url: &Url) -> Url {
+    let mut url = server_url.clone();
     url.set_path("api/asciicasts");
 
-    Ok(url)
+    url
 }
 
 fn get_username() -> String {

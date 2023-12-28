@@ -4,7 +4,6 @@ mod format;
 mod locale;
 mod pty;
 mod recorder;
-mod util;
 use crate::config::Config;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
