@@ -1,4 +1,4 @@
-use serde::de::Error;
+use anyhow::Result;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
@@ -17,13 +17,13 @@ pub struct Header {
     width: u16,
     height: u16,
     timestamp: u64,
-    idle_time_limit: Option<f32>,
+    pub idle_time_limit: Option<f64>,
     command: Option<String>,
     title: Option<String>,
     env: HashMap<String, String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Event {
     #[serde(deserialize_with = "deserialize_time")]
     pub time: u64,
@@ -32,7 +32,7 @@ pub struct Event {
     pub data: String,
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum EventCode {
     Output,
     Input,
@@ -84,7 +84,7 @@ where
     }
 }
 
-pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<u64> {
+pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
     let file = fs::File::open(path)?;
     let reader = io::BufReader::new(file);
     let (_header, events) = open(reader)?;
@@ -93,9 +93,7 @@ pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<u64> {
     Ok(time)
 }
 
-pub fn open<R: BufRead>(
-    reader: R,
-) -> anyhow::Result<(Header, impl Iterator<Item = anyhow::Result<Event>>)> {
+pub fn open<R: BufRead>(reader: R) -> Result<(Header, impl Iterator<Item = Result<Event>>)> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow::anyhow!("empty file"))??;
     let header: Header = serde_json::from_str(&first_line)?;
@@ -104,7 +102,7 @@ pub fn open<R: BufRead>(
     Ok((header, events))
 }
 
-fn parse_event(line: io::Result<String>) -> Option<anyhow::Result<Event>> {
+fn parse_event(line: io::Result<String>) -> Option<Result<Event>> {
     match line {
         Ok(line) => {
             if line.is_empty() {
@@ -122,6 +120,8 @@ fn deserialize_time<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
     D: Deserializer<'de>,
 {
+    use serde::de::Error;
+
     let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
     let string = value.to_string();
     let parts: Vec<&str> = string.split('.').collect();
@@ -146,6 +146,7 @@ fn deserialize_code<'de, D>(deserializer: D) -> Result<EventCode, D::Error>
 where
     D: Deserializer<'de>,
 {
+    use serde::de::Error;
     use EventCode::*;
 
     let value: &str = Deserialize::deserialize(deserializer)?;
@@ -292,9 +293,62 @@ impl From<&super::Header> for Header {
     }
 }
 
+pub fn limit_idle_time(
+    events: impl Iterator<Item = Result<Event>>,
+    limit: f64,
+) -> impl Iterator<Item = Result<Event>> {
+    let limit = (limit * 1_000_000.0) as u64;
+    let mut prev_time = 0;
+    let mut offset = 0;
+
+    events.map(move |event| {
+        event.map(|event| {
+            let delay = event.time - prev_time;
+
+            if delay > limit {
+                offset += delay - limit;
+            }
+
+            prev_time = event.time;
+            let time = event.time - offset;
+
+            Event { time, ..event }
+        })
+    })
+}
+
+pub fn accelerate(
+    events: impl Iterator<Item = Result<Event>>,
+    speed: f64,
+) -> impl Iterator<Item = Result<Event>> {
+    events.map(move |event| {
+        event.map(|event| {
+            let time = ((event.time as f64) / speed) as u64;
+
+            Event { time, ..event }
+        })
+    })
+}
+
+pub fn output(
+    events: impl Iterator<Item = Result<Event>>,
+) -> impl Iterator<Item = Result<(u64, String)>> {
+    events.filter_map(|e| match e {
+        Ok(Event {
+            code: EventCode::Output,
+            time,
+            data,
+        }) => Some(Ok((time, data))),
+
+        Ok(_) => None,
+        Err(e) => Some(Err(e)),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Event, EventCode, Header, Writer};
+    use anyhow::Result;
     use std::collections::HashMap;
     use std::fs::File;
     use std::io;
@@ -304,10 +358,7 @@ mod tests {
         let file = File::open("tests/demo.cast").unwrap();
         let (header, events) = super::open(io::BufReader::new(file)).unwrap();
 
-        let events = events
-            .take(7)
-            .collect::<anyhow::Result<Vec<Event>>>()
-            .unwrap();
+        let events = events.take(7).collect::<Result<Vec<Event>>>().unwrap();
 
         assert_eq!((header.width, header.height), (75, 18));
 
@@ -426,5 +477,49 @@ mod tests {
             .map(serde_json::from_str::<serde_json::Value>)
             .collect::<serde_json::Result<Vec<_>>>()
             .unwrap()
+    }
+
+    #[test]
+    fn accelerate() {
+        let stdout = [(0u64, "foo"), (20, "bar"), (50, "baz")]
+            .map(|(time, output)| Ok(Event::output(time, output.as_bytes())));
+
+        let stdout = super::accelerate(stdout.into_iter(), 2.0)
+            .collect::<Result<Vec<_>>>()
+            .unwrap();
+
+        assert_eq!(stdout[0].time, 0);
+        assert_eq!(stdout[0].data, "foo");
+        assert_eq!(stdout[1].time, 10);
+        assert_eq!(stdout[1].data, "bar");
+        assert_eq!(stdout[2].time, 25);
+        assert_eq!(stdout[2].data, "baz");
+    }
+
+    #[test]
+    fn limit_idle_time() {
+        let stdout = [
+            (0, "foo"),
+            (1_000_000, "bar"),
+            (3_500_000, "baz"),
+            (4_000_000, "qux"),
+            (7_500_000, "quux"),
+        ]
+        .map(|(time, output)| Ok(Event::output(time, output.as_bytes())));
+
+        let stdout = super::limit_idle_time(stdout.into_iter(), 2.0)
+            .collect::<Result<Vec<_>>>()
+            .unwrap();
+
+        assert_eq!(stdout[0].time, 0);
+        assert_eq!(stdout[0].data, "foo");
+        assert_eq!(stdout[1].time, 1_000_000);
+        assert_eq!(stdout[1].data, "bar");
+        assert_eq!(stdout[2].time, 3_000_000);
+        assert_eq!(stdout[2].data, "baz");
+        assert_eq!(stdout[3].time, 3_500_000);
+        assert_eq!(stdout[3].data, "qux");
+        assert_eq!(stdout[4].time, 5_500_000);
+        assert_eq!(stdout[4].data, "quux");
     }
 }
