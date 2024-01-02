@@ -26,8 +26,12 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(self) -> Result<()> {
-        let file = fs::File::open(self.filename)?;
+        loop {
+            let file = fs::File::open(&self.filename)?;
+            player::play(file)?;
+            if !self.loop_ { break }
+        }
 
-        player::play(file)
+        Ok(())
     }
 }
