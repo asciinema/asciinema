@@ -4,9 +4,9 @@ use std::{collections::HashMap, io};
 
 pub trait Writer {
     fn header(&mut self, header: &Header) -> io::Result<()>;
-    fn output(&mut self, time: f64, data: &[u8]) -> io::Result<()>;
-    fn input(&mut self, time: f64, data: &[u8]) -> io::Result<()>;
-    fn resize(&mut self, time: f64, size: (u16, u16)) -> io::Result<()>;
+    fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
+    fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
+    fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
 }
 
 pub struct Header {

@@ -94,7 +94,7 @@ impl Cli {
             let time_offset = if append {
                 asciicast::get_duration(&self.filename)?
             } else {
-                0.0
+                0
             };
 
             Box::new(asciicast::Writer::new(file, time_offset))
