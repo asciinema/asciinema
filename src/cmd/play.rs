@@ -26,10 +26,15 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(self) -> Result<()> {
+        let speed = self.speed.unwrap_or(1.0);
+
         loop {
             let file = fs::File::open(&self.filename)?;
-            player::play(file)?;
-            if !self.loop_ { break }
+            player::play(file, speed, self.idle_time_limit)?;
+
+            if !self.loop_ {
+                break;
+            }
         }
 
         Ok(())

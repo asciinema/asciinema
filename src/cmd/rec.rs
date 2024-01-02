@@ -44,7 +44,7 @@ pub struct Cli {
 
     /// Limit idle time to given number of seconds
     #[arg(short, long, value_name = "SECS")]
-    idle_time_limit: Option<f32>,
+    idle_time_limit: Option<f64>,
 
     /// Override terminal width (columns) for recorded command
     #[arg(long)]

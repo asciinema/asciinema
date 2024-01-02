@@ -4,11 +4,18 @@ use std::io::{self, Write};
 use std::thread;
 use std::time::{Duration, Instant};
 
-pub fn play(input: impl io::Read) -> Result<()> {
+pub fn play(input: impl io::Read, speed: f64, idle_time_limit: Option<f64>) -> Result<()> {
     let reader = io::BufReader::new(input);
-    let (_, events) = asciicast::open(reader)?;
-    let output = asciicast::output(events);
+    let (header, events) = asciicast::open(reader)?;
     let mut stdout = io::stdout();
+
+    let idle_time_limit = idle_time_limit
+        .or(header.idle_time_limit)
+        .unwrap_or(f64::MAX);
+
+    let events = asciicast::limit_idle_time(events, idle_time_limit);
+    let events = asciicast::accelerate(events, speed);
+    let output = asciicast::output(events);
     let epoch = Instant::now();
 
     for o in output {
