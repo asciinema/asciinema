@@ -1,5 +1,5 @@
-use anyhow::bail;
-use serde::Deserialize;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
 use std::fs;
@@ -9,7 +9,7 @@ use std::path::Path;
 
 pub struct Writer<W: Write> {
     writer: io::LineWriter<W>,
-    time_offset: f64,
+    time_offset: u64,
 }
 
 #[derive(Deserialize)]
@@ -23,8 +23,11 @@ pub struct Header {
     env: HashMap<String, String>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Event {
-    pub time: f64,
+    #[serde(deserialize_with = "deserialize_time")]
+    pub time: u64,
+    #[serde(deserialize_with = "deserialize_code")]
     pub code: EventCode,
     pub data: String,
 }
@@ -42,7 +45,7 @@ impl<W> Writer<W>
 where
     W: Write,
 {
-    pub fn new(writer: W, time_offset: f64) -> Self {
+    pub fn new(writer: W, time_offset: u64) -> Self {
         Self {
             writer: io::LineWriter::new(writer),
             time_offset,
@@ -50,13 +53,13 @@ where
     }
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
-        writeln!(self.writer, "{}", serde_json::to_string(&header)?)
+        writeln!(self.writer, "{}", serde_json::to_string(header)?)
     }
 
     pub fn write_event(&mut self, mut event: Event) -> io::Result<()> {
         event.time += self.time_offset;
 
-        writeln!(self.writer, "{}", serde_json::to_string(&event)?)
+        writeln!(self.writer, "{}", serialize_event(&event)?)
     }
 }
 
@@ -68,73 +71,97 @@ where
         self.write_header(&header.into())
     }
 
-    fn output(&mut self, time: f64, data: &[u8]) -> io::Result<()> {
+    fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
         self.write_event(Event::output(time, data))
     }
 
-    fn input(&mut self, time: f64, data: &[u8]) -> io::Result<()> {
+    fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
         self.write_event(Event::input(time, data))
     }
 
-    fn resize(&mut self, time: f64, size: (u16, u16)) -> io::Result<()> {
+    fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()> {
         self.write_event(Event::resize(time, size))
     }
 }
 
-pub fn open<R: BufRead>(
-    reader: R,
-) -> anyhow::Result<(super::Header, impl Iterator<Item = anyhow::Result<Event>>)> {
-    let mut lines = reader.lines();
-    let first_line = lines.next().ok_or(anyhow::anyhow!("empty"))??;
-    let header: Header = serde_json::from_str(&first_line)?;
-    let header: super::Header = (&header).into();
-
-    let events = lines
-        .filter(|l| l.as_ref().map_or(true, |l| !l.is_empty()))
-        .enumerate()
-        .map(|(i, l)| l.map(|l| parse_event(l, i + 2))?);
-
-    Ok((header, events))
-}
-
-fn parse_event(line: String, i: usize) -> anyhow::Result<Event> {
-    use EventCode::*;
-
-    let value: serde_json::Value = serde_json::from_str(&line)?;
-
-    let time = value[0]
-        .as_f64()
-        .ok_or(anyhow::anyhow!("line {}: invalid event time", i))?;
-
-    let code = match value[1].as_str() {
-        Some("o") => Output,
-        Some("i") => Input,
-        Some("r") => Resize,
-        Some("m") => Marker,
-        Some(s) if !s.is_empty() => Other(s.chars().next().unwrap()),
-        Some(_) => bail!("line {}: missing event code", i),
-        None => bail!("line {}: event code must be a string", i),
-    };
-
-    let data = match value[2].as_str() {
-        Some(data) => data.to_owned(),
-        None => bail!("line {}: event data must be a string", i),
-    };
-
-    Ok(Event { time, code, data })
-}
-
-pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<f64> {
+pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<u64> {
     let file = fs::File::open(path)?;
     let reader = io::BufReader::new(file);
     let (_header, events) = open(reader)?;
-    let time = events.last().map_or(Ok(0.0), |e| e.map(|e| e.time))?;
+    let time = events.last().map_or(Ok(0), |e| e.map(|e| e.time))?;
 
     Ok(time)
 }
 
+pub fn open<R: BufRead>(
+    reader: R,
+) -> anyhow::Result<(Header, impl Iterator<Item = anyhow::Result<Event>>)> {
+    let mut lines = reader.lines();
+    let first_line = lines.next().ok_or(anyhow::anyhow!("empty file"))??;
+    let header: Header = serde_json::from_str(&first_line)?;
+    let events = lines.filter_map(parse_event);
+
+    Ok((header, events))
+}
+
+fn parse_event(line: io::Result<String>) -> Option<anyhow::Result<Event>> {
+    match line {
+        Ok(line) => {
+            if line.is_empty() {
+                None
+            } else {
+                Some(serde_json::from_str(&line).map_err(|e| e.into()))
+            }
+        }
+
+        Err(e) => Some(Err(e.into())),
+    }
+}
+
+fn deserialize_time<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
+    let string = value.to_string();
+    let parts: Vec<&str> = string.split('.').collect();
+
+    match parts.as_slice() {
+        [left, right] => {
+            let secs: u64 = left.parse().map_err(Error::custom)?;
+
+            let right = right.trim();
+            let micros: u64 = format!("{:0<6}", &right[..(6.min(right.len()))])
+                .parse()
+                .map_err(Error::custom)?;
+
+            Ok(secs * 1_000_000 + micros)
+        }
+
+        _ => Err(Error::custom("invalid time format")),
+    }
+}
+
+fn deserialize_code<'de, D>(deserializer: D) -> Result<EventCode, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use EventCode::*;
+
+    let value: &str = Deserialize::deserialize(deserializer)?;
+
+    match value {
+        "o" => Ok(Output),
+        "i" => Ok(Input),
+        "r" => Ok(Resize),
+        "m" => Ok(Marker),
+        "" => Err(Error::custom("missing event code")),
+        s => Ok(Other(s.chars().next().unwrap())),
+    }
+}
+
 impl Event {
-    pub fn output(time: f64, data: &[u8]) -> Self {
+    pub fn output(time: u64, data: &[u8]) -> Self {
         Event {
             time,
             code: EventCode::Output,
@@ -142,7 +169,7 @@ impl Event {
         }
     }
 
-    pub fn input(time: f64, data: &[u8]) -> Self {
+    pub fn input(time: u64, data: &[u8]) -> Self {
         Event {
             time,
             code: EventCode::Input,
@@ -150,7 +177,7 @@ impl Event {
         }
     }
 
-    pub fn resize(time: f64, size: (u16, u16)) -> Self {
+    pub fn resize(time: u64, size: (u16, u16)) -> Self {
         Event {
             time,
             code: EventCode::Resize,
@@ -224,18 +251,17 @@ impl serde::Serialize for Header {
     }
 }
 
-impl serde::Serialize for Event {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeTuple;
-        let mut tup = serializer.serialize_tuple(3)?;
-        tup.serialize_element(&self.time)?;
-        tup.serialize_element(&self.code.to_string())?;
-        tup.serialize_element(&self.data)?;
-        tup.end()
-    }
+fn serialize_event(event: &Event) -> Result<String, serde_json::Error> {
+    Ok(format!(
+        "[{}, {}, {}]",
+        format_time(event.time).trim_end_matches('0'),
+        serde_json::to_string(&event.code.to_string())?,
+        serde_json::to_string(&event.data)?
+    ))
+}
+
+fn format_time(time: u64) -> String {
+    format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000)
 }
 
 impl From<&Header> for super::Header {
@@ -283,17 +309,17 @@ mod tests {
             .collect::<anyhow::Result<Vec<Event>>>()
             .unwrap();
 
-        assert_eq!((header.cols, header.rows), (75, 18));
+        assert_eq!((header.width, header.height), (75, 18));
 
-        assert_eq!(events[1].time, 0.100989);
+        assert_eq!(events[1].time, 100989);
         assert_eq!(events[1].code, EventCode::Output);
         assert_eq!(events[1].data, "\u{1b}[?2004h");
 
-        assert_eq!(events[5].time, 1.511526);
+        assert_eq!(events[5].time, 1511526);
         assert_eq!(events[5].code, EventCode::Input);
         assert_eq!(events[5].data, "v");
 
-        assert_eq!(events[6].time, 1.511937);
+        assert_eq!(events[6].time, 1511937);
         assert_eq!(events[6].code, EventCode::Output);
         assert_eq!(events[6].data, "v");
     }
@@ -304,7 +330,7 @@ mod tests {
 
         {
             let cursor = io::Cursor::new(&mut data);
-            let mut fw = Writer::new(cursor, 0.0);
+            let mut fw = Writer::new(cursor, 0);
 
             let header = Header {
                 width: 80,
@@ -317,7 +343,7 @@ mod tests {
             };
 
             fw.write_header(&header).unwrap();
-            fw.write_event(Event::output(1.0, "hello\r\n".as_bytes()))
+            fw.write_event(Event::output(1000001, "hello\r\n".as_bytes()))
                 .unwrap();
         }
 
@@ -325,12 +351,13 @@ mod tests {
             let data_len = data.len() as u64;
             let mut cursor = io::Cursor::new(&mut data);
             cursor.set_position(data_len);
-            let mut fw = Writer::new(cursor, 1.0);
+            let mut fw = Writer::new(cursor, 1000001);
 
-            fw.write_event(Event::output(1.0, "world".as_bytes()))
+            fw.write_event(Event::output(1000001, "world".as_bytes()))
                 .unwrap();
-            fw.write_event(Event::input(2.0, " ".as_bytes())).unwrap();
-            fw.write_event(Event::resize(3.0, (100, 40))).unwrap();
+            fw.write_event(Event::input(2000002, " ".as_bytes()))
+                .unwrap();
+            fw.write_event(Event::resize(3000003, (100, 40))).unwrap();
         }
 
         let lines = parse(data);
@@ -339,16 +366,16 @@ mod tests {
         assert_eq!(lines[0]["width"], 80);
         assert_eq!(lines[0]["height"], 24);
         assert_eq!(lines[0]["timestamp"], 1);
-        assert_eq!(lines[1][0], 1.0);
+        assert_eq!(lines[1][0], 1.000001);
         assert_eq!(lines[1][1], "o");
         assert_eq!(lines[1][2], "hello\r\n");
-        assert_eq!(lines[2][0], 2.0);
+        assert_eq!(lines[2][0], 2.000002);
         assert_eq!(lines[2][1], "o");
         assert_eq!(lines[2][2], "world");
-        assert_eq!(lines[3][0], 3.0);
+        assert_eq!(lines[3][0], 3.000003);
         assert_eq!(lines[3][1], "i");
         assert_eq!(lines[3][2], " ");
-        assert_eq!(lines[4][0], 4.0);
+        assert_eq!(lines[4][0], 4.000004);
         assert_eq!(lines[4][1], "r");
         assert_eq!(lines[4][2], "100x40");
     }
@@ -358,7 +385,7 @@ mod tests {
         let mut data = Vec::new();
 
         {
-            let mut fw = Writer::new(io::Cursor::new(&mut data), 0.0);
+            let mut fw = Writer::new(io::Cursor::new(&mut data), 0);
 
             let mut env = HashMap::new();
             env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());

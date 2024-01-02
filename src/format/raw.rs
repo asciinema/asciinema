@@ -15,15 +15,15 @@ impl<W: Write> super::Writer for Writer<W> {
         write!(self.writer, "\x1b[8;{};{}t", header.rows, header.cols)
     }
 
-    fn output(&mut self, _time: f64, data: &[u8]) -> io::Result<()> {
+    fn output(&mut self, _time: u64, data: &[u8]) -> io::Result<()> {
         self.writer.write_all(data)
     }
 
-    fn input(&mut self, _time: f64, _data: &[u8]) -> io::Result<()> {
+    fn input(&mut self, _time: u64, _data: &[u8]) -> io::Result<()> {
         Ok(())
     }
 
-    fn resize(&mut self, _time: f64, _size: (u16, u16)) -> io::Result<()> {
+    fn resize(&mut self, _time: u64, _size: (u16, u16)) -> io::Result<()> {
         Ok(())
     }
 }

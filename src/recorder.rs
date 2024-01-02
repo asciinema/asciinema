@@ -21,9 +21,9 @@ pub struct Recorder {
 }
 
 enum Message {
-    Output(f64, Vec<u8>),
-    Input(f64, Vec<u8>),
-    Resize(f64, (u16, u16)),
+    Output(u64, Vec<u8>),
+    Input(u64, Vec<u8>),
+    Resize(u64, (u16, u16)),
 }
 
 struct JoinHandle(Option<thread::JoinHandle<()>>);
@@ -55,8 +55,8 @@ impl Recorder {
         }
     }
 
-    fn elapsed_time(&self) -> f64 {
-        self.start_time.elapsed().as_secs_f64()
+    fn elapsed_time(&self) -> u64 {
+        self.start_time.elapsed().as_micros() as u64
     }
 }
 
