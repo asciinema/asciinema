@@ -1,5 +1,7 @@
+use crate::player;
 use anyhow::Result;
 use clap::Args;
+use std::fs;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -24,6 +26,8 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(self) -> Result<()> {
-        todo!();
+        let file = fs::File::open(self.filename)?;
+
+        player::play(file)
     }
 }

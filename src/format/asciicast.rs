@@ -1,4 +1,4 @@
-use serde::de::Error;
+use anyhow::Result;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
@@ -84,7 +84,7 @@ where
     }
 }
 
-pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<u64> {
+pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
     let file = fs::File::open(path)?;
     let reader = io::BufReader::new(file);
     let (_header, events) = open(reader)?;
@@ -93,9 +93,7 @@ pub fn get_duration<S: AsRef<Path>>(path: S) -> anyhow::Result<u64> {
     Ok(time)
 }
 
-pub fn open<R: BufRead>(
-    reader: R,
-) -> anyhow::Result<(Header, impl Iterator<Item = anyhow::Result<Event>>)> {
+pub fn open<R: BufRead>(reader: R) -> Result<(Header, impl Iterator<Item = Result<Event>>)> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow::anyhow!("empty file"))??;
     let header: Header = serde_json::from_str(&first_line)?;
@@ -104,7 +102,7 @@ pub fn open<R: BufRead>(
     Ok((header, events))
 }
 
-fn parse_event(line: io::Result<String>) -> Option<anyhow::Result<Event>> {
+fn parse_event(line: io::Result<String>) -> Option<Result<Event>> {
     match line {
         Ok(line) => {
             if line.is_empty() {
@@ -122,6 +120,8 @@ fn deserialize_time<'de, D>(deserializer: D) -> Result<u64, D::Error>
 where
     D: Deserializer<'de>,
 {
+    use serde::de::Error;
+
     let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
     let string = value.to_string();
     let parts: Vec<&str> = string.split('.').collect();
@@ -146,6 +146,7 @@ fn deserialize_code<'de, D>(deserializer: D) -> Result<EventCode, D::Error>
 where
     D: Deserializer<'de>,
 {
+    use serde::de::Error;
     use EventCode::*;
 
     let value: &str = Deserialize::deserialize(deserializer)?;
@@ -290,6 +291,21 @@ impl From<&super::Header> for Header {
             env: header.env.clone(),
         }
     }
+}
+
+pub fn output(
+    events: impl Iterator<Item = Result<Event>>,
+) -> impl Iterator<Item = Result<(u64, String)>> {
+    events.filter_map(|e| match e {
+        Ok(Event {
+            code: EventCode::Output,
+            time,
+            data,
+        }) => Some(Ok((time, data))),
+
+        Ok(_) => None,
+        Err(e) => Some(Err(e)),
+    })
 }
 
 #[cfg(test)]

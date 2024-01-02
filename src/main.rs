@@ -2,6 +2,7 @@ mod cmd;
 mod config;
 mod format;
 mod locale;
+mod player;
 mod pty;
 mod recorder;
 use crate::config::Config;
