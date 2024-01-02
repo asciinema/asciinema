@@ -20,7 +20,7 @@ pub fn play(input: impl io::Read) -> Result<()> {
             thread::sleep(Duration::from_micros(diff as u64));
         }
 
-        stdout.write(data.as_bytes())?;
+        stdout.write_all(data.as_bytes())?;
     }
 
     Ok(())
