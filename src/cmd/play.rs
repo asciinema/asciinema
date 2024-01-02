@@ -1,7 +1,7 @@
 use crate::player;
 use anyhow::Result;
 use clap::Args;
-use std::fs;
+use std::{fs, io};
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -30,7 +30,7 @@ impl Cli {
 
         loop {
             let file = fs::File::open(&self.filename)?;
-            player::play(file, speed, self.idle_time_limit)?;
+            player::play(file, io::stdout(), speed, self.idle_time_limit)?;
 
             if !self.loop_ {
                 break;
