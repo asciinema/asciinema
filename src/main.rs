@@ -1,6 +1,7 @@
 mod cmd;
 mod config;
 mod format;
+mod io;
 mod locale;
 mod player;
 mod pty;

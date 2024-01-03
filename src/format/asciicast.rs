@@ -330,21 +330,6 @@ pub fn accelerate(
     })
 }
 
-pub fn output(
-    events: impl Iterator<Item = Result<Event>>,
-) -> impl Iterator<Item = Result<(u64, String)>> {
-    events.filter_map(|e| match e {
-        Ok(Event {
-            code: EventCode::Output,
-            time,
-            data,
-        }) => Some(Ok((time, data))),
-
-        Ok(_) => None,
-        Err(e) => Some(Err(e)),
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::{Event, EventCode, Header, Writer};

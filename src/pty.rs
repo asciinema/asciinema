@@ -1,6 +1,7 @@
+use crate::io::set_non_blocking;
 use anyhow::bail;
 use mio::unix::SourceFd;
-use nix::{fcntl, libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
+use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
 use signal_hook::consts::signal::*;
 use signal_hook_mio::v0_8::Signals;
 use std::collections::HashMap;
@@ -266,17 +267,6 @@ fn get_tty_size(tty_fd: i32, winsize_override: (Option<u16>, Option<u16>)) -> pt
 
 fn set_pty_size(pty_fd: i32, winsize: &pty::Winsize) {
     unsafe { libc::ioctl(pty_fd, libc::TIOCSWINSZ, winsize) };
-}
-
-fn set_non_blocking(fd: &RawFd) -> Result<(), io::Error> {
-    use fcntl::{fcntl, FcntlArg::*, OFlag};
-
-    let flags = fcntl(*fd, F_GETFL)?;
-    let mut oflags = OFlag::from_bits_truncate(flags);
-    oflags |= OFlag::O_NONBLOCK;
-    fcntl(*fd, F_SETFL(oflags))?;
-
-    Ok(())
 }
 
 fn read_all<R: Read>(source: &mut R, buf: &mut [u8], out: &mut Vec<u8>) -> io::Result<usize> {

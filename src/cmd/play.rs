@@ -30,7 +30,14 @@ impl Cli {
 
         loop {
             let file = fs::File::open(&self.filename)?;
-            player::play(file, io::stdout(), speed, self.idle_time_limit)?;
+
+            player::play(
+                file,
+                io::stdout(),
+                speed,
+                self.idle_time_limit,
+                self.pause_on_markers,
+            )?;
 
             if !self.loop_ {
                 break;
