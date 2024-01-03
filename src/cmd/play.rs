@@ -7,7 +7,7 @@ use std::{fs, io};
 pub struct Cli {
     filename: String,
 
-    /// Limit idle time to given number of seconds
+    /// Limit idle time to a given number of seconds
     #[arg(short, long, value_name = "SECS")]
     idle_time_limit: Option<f64>,
 

@@ -18,7 +18,7 @@ pub struct Cli {
     #[arg(long)]
     stdin: bool,
 
-    /// Append to existing asciicast file
+    /// Append to an existing asciicast file
     #[arg(long)]
     append: bool,
 
@@ -42,15 +42,15 @@ pub struct Cli {
     #[arg(short, long)]
     title: Option<String>,
 
-    /// Limit idle time to given number of seconds
+    /// Limit idle time to a given number of seconds
     #[arg(short, long, value_name = "SECS")]
     idle_time_limit: Option<f64>,
 
-    /// Override terminal width (columns) for recorded command
+    /// Override terminal width (columns) for the recorded command
     #[arg(long)]
     cols: Option<u16>,
 
-    /// Override terminal height (rows) for recorded command
+    /// Override terminal height (rows) for the recorded command
     #[arg(long)]
     rows: Option<u16>,
 
