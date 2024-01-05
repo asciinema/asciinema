@@ -6,6 +6,7 @@ mod locale;
 mod player;
 mod pty;
 mod recorder;
+mod tty;
 use crate::config::Config;
 use anyhow::Result;
 use clap::{Parser, Subcommand};

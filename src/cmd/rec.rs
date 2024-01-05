@@ -3,6 +3,7 @@ use crate::format::{asciicast, raw};
 use crate::locale;
 use crate::pty;
 use crate::recorder;
+use crate::tty;
 use anyhow::Result;
 use clap::Args;
 use std::collections::{HashMap, HashSet};
@@ -116,9 +117,17 @@ impl Cli {
         println!("asciinema: recording asciicast to {}", self.filename);
         println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
 
+        let tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
+            Box::new(dev_tty)
+        } else {
+            println!("asciinema: TTY not available, recording in headless mode");
+            Box::new(tty::DevNull::open()?)
+        };
+
         pty::exec(
             &exec_args,
             &exec_extra_env,
+            tty,
             (self.cols, self.rows),
             &mut recorder,
         )?;

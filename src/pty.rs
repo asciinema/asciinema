@@ -1,4 +1,5 @@
 use crate::io::set_non_blocking;
+use crate::tty::Tty;
 use anyhow::bail;
 use mio::unix::SourceFd;
 use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
@@ -7,11 +8,9 @@ use signal_hook_mio::v0_8::Signals;
 use std::collections::HashMap;
 use std::ffi::{CString, NulError};
 use std::io::{self, Read, Write};
-use std::ops::Deref;
 use std::os::fd::RawFd;
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::{env, fs};
-use termion::raw::IntoRawMode;
 
 type ExtraEnv = HashMap<String, String>;
 
@@ -25,19 +24,19 @@ pub trait Recorder {
 pub fn exec<S: AsRef<str>, R: Recorder>(
     args: &[S],
     extra_env: &ExtraEnv,
+    tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<i32> {
-    let tty = open_tty()?;
-    let winsize = get_tty_size(tty.as_raw_fd(), winsize_override);
+    let winsize = get_tty_size(&*tty, winsize_override);
     recorder.start((winsize.ws_col, winsize.ws_row))?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
         ForkResult::Parent { child } => handle_parent(
             result.master.as_raw_fd(),
-            tty,
             child,
+            tty,
             winsize_override,
             recorder,
         ),
@@ -51,12 +50,12 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
 
 fn handle_parent<R: Recorder>(
     master_fd: RawFd,
-    tty: fs::File,
     child: unistd::Pid,
+    tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<i32> {
-    let copy_result = copy(master_fd, tty, child, winsize_override, recorder);
+    let copy_result = copy(master_fd, child, tty, winsize_override, recorder);
     let wait_result = wait::waitpid(child, None);
     copy_result?;
 
@@ -75,8 +74,8 @@ const BUF_SIZE: usize = 128 * 1024;
 
 fn copy<R: Recorder>(
     master_fd: RawFd,
-    tty: fs::File,
     child: unistd::Pid,
+    mut tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<()> {
@@ -84,7 +83,6 @@ fn copy<R: Recorder>(
     let mut poll = mio::Poll::new()?;
     let mut events = mio::Events::with_capacity(128);
     let mut master_source = SourceFd(&master_fd);
-    let mut tty = tty.into_raw_mode()?;
     let tty_fd = tty.as_raw_fd();
     let mut tty_source = SourceFd(&tty_fd);
     let mut signals = Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP])?;
@@ -94,7 +92,6 @@ fn copy<R: Recorder>(
     let mut flush = false;
 
     set_non_blocking(&master_fd)?;
-    set_non_blocking(&tty_fd)?;
 
     poll.registry()
         .register(&mut master_source, MASTER, mio::Interest::READABLE)?;
@@ -147,11 +144,11 @@ fn copy<R: Recorder>(
                     if event.is_read_closed() {
                         poll.registry().deregister(&mut master_source)?;
 
-                        if !output.is_empty() {
-                            flush = true;
-                        } else {
+                        if output.is_empty() {
                             return Ok(());
                         }
+
+                        flush = true;
                     }
                 }
 
@@ -162,19 +159,19 @@ fn copy<R: Recorder>(
                         if left == 0 {
                             if flush {
                                 return Ok(());
-                            } else {
-                                poll.registry().reregister(
-                                    &mut tty_source,
-                                    TTY,
-                                    mio::Interest::READABLE,
-                                )?;
                             }
+
+                            poll.registry().reregister(
+                                &mut tty_source,
+                                TTY,
+                                mio::Interest::READABLE,
+                            )?;
                         }
                     }
 
                     if event.is_readable() {
                         let offset = input.len();
-                        let read = read_all(&mut tty.deref(), &mut buf, &mut input)?;
+                        let read = read_all(&mut tty, &mut buf, &mut input)?;
 
                         if read > 0 {
                             recorder.input(&input[offset..]);
@@ -188,7 +185,7 @@ fn copy<R: Recorder>(
                     }
 
                     if event.is_read_closed() {
-                        poll.registry().deregister(&mut tty_source).unwrap();
+                        poll.registry().deregister(&mut tty_source)?;
                         return Ok(());
                     }
                 }
@@ -197,7 +194,7 @@ fn copy<R: Recorder>(
                     for signal in signals.pending() {
                         match signal {
                             SIGWINCH => {
-                                let winsize = get_tty_size(tty_fd, winsize_override);
+                                let winsize = get_tty_size(&*tty, winsize_override);
                                 set_pty_size(master_fd, &winsize);
                                 recorder.resize((winsize.ws_col, winsize.ws_row));
                             }
@@ -237,22 +234,11 @@ fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> anyhow::Resu
     unsafe { libc::_exit(1) }
 }
 
-fn open_tty() -> io::Result<fs::File> {
-    fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open("/dev/tty")
-}
-
-fn get_tty_size(tty_fd: i32, winsize_override: (Option<u16>, Option<u16>)) -> pty::Winsize {
-    let mut winsize = pty::Winsize {
-        ws_row: 24,
-        ws_col: 80,
-        ws_xpixel: 0,
-        ws_ypixel: 0,
-    };
-
-    unsafe { libc::ioctl(tty_fd, libc::TIOCGWINSZ, &mut winsize) };
+fn get_tty_size<T: Tty + ?Sized>(
+    tty: &T,
+    winsize_override: (Option<u16>, Option<u16>),
+) -> pty::Winsize {
+    let mut winsize = tty.get_size();
 
     if let Some(cols) = winsize_override.0 {
         winsize.ws_col = cols;
@@ -327,6 +313,7 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
 #[cfg(test)]
 mod tests {
     use crate::pty::ExtraEnv;
+    use crate::tty::DevNull;
 
     #[derive(Default)]
     struct TestRecorder {
@@ -373,12 +360,13 @@ sys.stdout.write('bar');
         let result = super::exec(
             &["python3", "-c", code],
             &ExtraEnv::new(),
+            Box::new(DevNull::open().unwrap()),
             (None, None),
             &mut recorder,
         );
 
-        assert_eq!(recorder.output(), vec!["foo", "bar"]);
         assert!(result.is_ok());
+        assert_eq!(recorder.output(), vec!["foo", "bar"]);
         assert!(recorder.size.is_some());
     }
 }
