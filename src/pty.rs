@@ -1,14 +1,13 @@
 use crate::io::set_non_blocking;
 use crate::tty::Tty;
 use anyhow::bail;
-use mio::unix::SourceFd;
+use nix::errno::Errno;
+use nix::sys::select::{pselect, FdSet};
 use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
-use signal_hook::consts::signal::*;
-use signal_hook_mio::v0_8::Signals;
 use std::collections::HashMap;
 use std::ffi::{CString, NulError};
 use std::io::{self, Read, Write};
-use std::os::fd::RawFd;
+use std::os::fd::{AsFd, RawFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::{env, fs};
 
@@ -67,151 +66,87 @@ fn handle_parent<R: Recorder>(
     }
 }
 
-const MASTER: mio::Token = mio::Token(0);
-const TTY: mio::Token = mio::Token(1);
-const SIGNAL: mio::Token = mio::Token(2);
 const BUF_SIZE: usize = 128 * 1024;
 
 fn copy<R: Recorder>(
-    master_fd: RawFd,
+    master_raw_fd: RawFd,
     child: unistd::Pid,
     mut tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> anyhow::Result<()> {
-    let mut master = unsafe { fs::File::from_raw_fd(master_fd) };
-    let mut poll = mio::Poll::new()?;
-    let mut events = mio::Events::with_capacity(128);
-    let mut master_source = SourceFd(&master_fd);
-    let tty_fd = tty.as_raw_fd();
-    let mut tty_source = SourceFd(&tty_fd);
-    let mut signals = Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP])?;
+    let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut flush = false;
 
-    set_non_blocking(&master_fd)?;
-
-    poll.registry()
-        .register(&mut master_source, MASTER, mio::Interest::READABLE)?;
-
-    poll.registry()
-        .register(&mut tty_source, TTY, mio::Interest::READABLE)?;
-
-    poll.registry()
-        .register(&mut signals, SIGNAL, mio::Interest::READABLE)?;
+    set_non_blocking(&master_raw_fd)?;
 
     loop {
-        if let Err(e) = poll.poll(&mut events, None) {
-            if e.kind() == io::ErrorKind::Interrupted {
+        let master_fd = master.as_fd();
+        let tty_fd = tty.as_fd();
+        let mut rfds = FdSet::new();
+        let mut wfds = FdSet::new();
+
+        rfds.insert(&tty_fd);
+
+        if !flush {
+            rfds.insert(&master_fd);
+        }
+
+        if !input.is_empty() {
+            wfds.insert(&master_fd);
+        }
+
+        if !output.is_empty() {
+            wfds.insert(&tty_fd);
+        }
+
+        if let Err(e) = pselect(None, &mut rfds, &mut wfds, None, None, None) {
+            if e == Errno::EINTR {
                 continue;
             } else {
                 bail!(e);
             }
         }
 
-        for event in events.iter() {
-            match event.token() {
-                MASTER => {
-                    if event.is_readable() {
-                        let offset = output.len();
-                        let read = read_all(&mut master, &mut buf, &mut output)?;
+        let master_read = rfds.contains(&master_fd);
+        let master_write = wfds.contains(&master_fd);
+        let tty_read = rfds.contains(&tty_fd);
+        let tty_write = wfds.contains(&tty_fd);
 
-                        if read > 0 {
-                            recorder.output(&output[offset..]);
+        if master_read {
+            let offset = output.len();
+            let read = read_all(&mut master, &mut buf, &mut output)?;
 
-                            poll.registry().reregister(
-                                &mut tty_source,
-                                TTY,
-                                mio::Interest::READABLE | mio::Interest::WRITABLE,
-                            )?;
-                        }
-                    }
+            if read > 0 {
+                recorder.output(&output[offset..]);
+            } else if output.is_empty() {
+                return Ok(());
+            } else {
+                flush = true;
+            }
+        }
 
-                    if event.is_writable() {
-                        let left = write_all(&mut master, &mut input)?;
+        if master_write {
+            write_all(&mut master, &mut input)?;
+        }
 
-                        if left == 0 {
-                            poll.registry().reregister(
-                                &mut master_source,
-                                MASTER,
-                                mio::Interest::READABLE,
-                            )?;
-                        }
-                    }
+        if tty_write {
+            let left = write_all(&mut tty, &mut output)?;
 
-                    if event.is_read_closed() {
-                        poll.registry().deregister(&mut master_source)?;
+            if left == 0 && flush {
+                return Ok(());
+            }
+        }
 
-                        if output.is_empty() {
-                            return Ok(());
-                        }
+        if tty_read {
+            let offset = input.len();
+            let read = read_all(&mut tty, &mut buf, &mut input)?;
 
-                        flush = true;
-                    }
-                }
-
-                TTY => {
-                    if event.is_writable() {
-                        let left = write_all(&mut tty, &mut output)?;
-
-                        if left == 0 {
-                            if flush {
-                                return Ok(());
-                            }
-
-                            poll.registry().reregister(
-                                &mut tty_source,
-                                TTY,
-                                mio::Interest::READABLE,
-                            )?;
-                        }
-                    }
-
-                    if event.is_readable() {
-                        let offset = input.len();
-                        let read = read_all(&mut tty, &mut buf, &mut input)?;
-
-                        if read > 0 {
-                            recorder.input(&input[offset..]);
-
-                            poll.registry().reregister(
-                                &mut master_source,
-                                MASTER,
-                                mio::Interest::READABLE | mio::Interest::WRITABLE,
-                            )?;
-                        }
-                    }
-
-                    if event.is_read_closed() {
-                        poll.registry().deregister(&mut tty_source)?;
-                        return Ok(());
-                    }
-                }
-
-                SIGNAL => {
-                    for signal in signals.pending() {
-                        match signal {
-                            SIGWINCH => {
-                                let winsize = get_tty_size(&*tty, winsize_override);
-                                set_pty_size(master_fd, &winsize);
-                                recorder.resize((winsize.ws_col, winsize.ws_row));
-                            }
-
-                            SIGINT => (),
-
-                            SIGTERM | SIGQUIT | SIGHUP => {
-                                unsafe { libc::kill(child.as_raw(), SIGTERM) };
-                                return Ok(());
-                            }
-
-                            _ => (),
-                        }
-                    }
-                }
-
-                _ => (),
+            if read > 0 {
+                recorder.input(&input[offset..]);
             }
         }
     }

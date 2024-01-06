@@ -3,11 +3,11 @@ use mio::unix::pipe;
 use nix::{libc, pty};
 use std::{
     fs, io,
-    os::fd::{AsRawFd, RawFd},
+    os::fd::{AsFd, AsRawFd, BorrowedFd},
 };
 use termion::raw::{IntoRawMode, RawTerminal};
 
-pub trait Tty: io::Write + io::Read + AsRawFd {
+pub trait Tty: io::Write + io::Read + AsFd {
     fn get_size(&self) -> pty::Winsize;
 }
 
@@ -60,9 +60,9 @@ impl io::Write for DevTty {
     }
 }
 
-impl AsRawFd for DevTty {
-    fn as_raw_fd(&self) -> std::os::unix::prelude::RawFd {
-        self.file.as_raw_fd()
+impl AsFd for DevTty {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.file.as_fd()
     }
 }
 
@@ -106,8 +106,8 @@ impl io::Write for DevNull {
     }
 }
 
-impl AsRawFd for DevNull {
-    fn as_raw_fd(&self) -> RawFd {
-        self.tx.as_raw_fd()
+impl AsFd for DevNull {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        unsafe { BorrowedFd::borrow_raw(self.tx.as_raw_fd()) }
     }
 }
