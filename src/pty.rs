@@ -30,7 +30,7 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
     tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
-) -> anyhow::Result<i32> {
+) -> Result<i32> {
     let winsize = get_tty_size(&*tty, winsize_override);
     recorder.start((winsize.ws_col, winsize.ws_row))?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
@@ -57,7 +57,7 @@ fn handle_parent<R: Recorder>(
     tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
-) -> anyhow::Result<i32> {
+) -> Result<i32> {
     let copy_result = copy(master_fd, child, tty, winsize_override, recorder);
     let wait_result = wait::waitpid(child, None);
     copy_result?;
@@ -78,7 +78,7 @@ fn copy<R: Recorder>(
     mut tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
@@ -200,7 +200,7 @@ fn copy<R: Recorder>(
     }
 }
 
-fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> anyhow::Result<()> {
+fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> Result<()> {
     use signal::{SigHandler, Signal};
 
     let args = args
