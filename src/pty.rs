@@ -195,16 +195,14 @@ fn read_all<R: Read>(source: &mut R, buf: &mut [u8], out: &mut Vec<u8>) -> io::R
 
     loop {
         match source.read(buf) {
-            Ok(0) => (),
+            Ok(0) => break,
 
             Ok(n) => {
                 out.extend_from_slice(&buf[0..n]);
                 read += n;
             }
 
-            Err(_) => {
-                break;
-            }
+            Err(_) => break,
         }
     }
 
