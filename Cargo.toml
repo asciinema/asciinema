@@ -17,7 +17,7 @@ termion = "2.0.1"
 serde = { version = "1.0.189", features = ["derive"] }
 serde_json = "1.0.107"
 clap = { version = "4.4.7", features = ["derive"] }
-signal-hook = "0.3.17"
+signal-hook = { version = "0.3.17", default-features = false }
 uuid = { version = "1.6.1", features = ["v4"] }
 reqwest = { version = "0.11.23", default-features = false, features = ["blocking", "rustls-tls", "multipart", "gzip", "json"] }
 rustyline = "13.0.0"
