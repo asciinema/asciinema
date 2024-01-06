@@ -1,6 +1,5 @@
 use anyhow::Result;
-use mio::unix::pipe;
-use nix::{libc, pty};
+use nix::{libc, pty, unistd};
 use std::{
     fs, io,
     os::fd::{AsFd, AsRawFd, BorrowedFd},
@@ -67,13 +66,13 @@ impl AsFd for DevTty {
 }
 
 pub struct DevNull {
-    tx: pipe::Sender,
-    _rx: pipe::Receiver,
+    tx: i32,
+    _rx: i32,
 }
 
 impl DevNull {
     pub fn open() -> Result<Self> {
-        let (tx, rx) = pipe::new()?;
+        let (rx, tx) = unistd::pipe()?;
 
         Ok(Self { tx, _rx: rx })
     }
