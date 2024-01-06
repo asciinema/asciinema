@@ -214,7 +214,7 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
 
     loop {
         match sink.write(buf) {
-            Ok(0) => (),
+            Ok(0) => break,
 
             Ok(n) => {
                 buf = &buf[n..];
@@ -224,9 +224,7 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
                 }
             }
 
-            Err(_) => {
-                break;
-            }
+            Err(_) => break,
         }
     }
 
