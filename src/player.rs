@@ -50,7 +50,7 @@ pub fn play(
                 }
 
                 Some(0x5d) => {
-                    // [ - next marker
+                    // ] - next marker
                     while let Some(Event { time, code, data }) = next_event {
                         next_event = events.next().transpose()?;
 
