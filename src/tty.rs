@@ -65,12 +65,12 @@ impl AsFd for DevTty {
     }
 }
 
-pub struct DevNull {
+pub struct NullTty {
     tx: i32,
     _rx: i32,
 }
 
-impl DevNull {
+impl NullTty {
     pub fn open() -> Result<Self> {
         let (rx, tx) = unistd::pipe()?;
 
@@ -78,7 +78,7 @@ impl DevNull {
     }
 }
 
-impl Tty for DevNull {
+impl Tty for NullTty {
     fn get_size(&self) -> pty::Winsize {
         pty::Winsize {
             ws_row: 24,
@@ -89,13 +89,13 @@ impl Tty for DevNull {
     }
 }
 
-impl io::Read for DevNull {
+impl io::Read for NullTty {
     fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
         panic!("read attempt from DevNull impl of Tty");
     }
 }
 
-impl io::Write for DevNull {
+impl io::Write for NullTty {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         Ok(buf.len())
     }
@@ -105,7 +105,7 @@ impl io::Write for DevNull {
     }
 }
 
-impl AsFd for DevNull {
+impl AsFd for NullTty {
     fn as_fd(&self) -> BorrowedFd<'_> {
         unsafe { BorrowedFd::borrow_raw(self.tx.as_raw_fd()) }
     }

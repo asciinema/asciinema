@@ -335,7 +335,7 @@ impl Drop for SignalFd {
 #[cfg(test)]
 mod tests {
     use crate::pty::ExtraEnv;
-    use crate::tty::DevNull;
+    use crate::tty::NullTty;
 
     #[derive(Default)]
     struct TestRecorder {
@@ -382,7 +382,7 @@ sys.stdout.write('bar');
         let result = super::exec(
             &["python3", "-c", code],
             &ExtraEnv::new(),
-            Box::new(DevNull::open().unwrap()),
+            Box::new(NullTty::open().unwrap()),
             (None, None),
             &mut recorder,
         );

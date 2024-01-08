@@ -121,7 +121,7 @@ impl Cli {
             Box::new(dev_tty)
         } else {
             println!("asciinema: TTY not available, recording in headless mode");
-            Box::new(tty::DevNull::open()?)
+            Box::new(tty::NullTty::open()?)
         };
 
         pty::exec(
