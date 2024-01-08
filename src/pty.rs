@@ -1,14 +1,17 @@
 use crate::io::set_non_blocking;
 use crate::tty::Tty;
-use anyhow::bail;
-use mio::unix::SourceFd;
+use anyhow::{bail, Result};
+use nix::errno::Errno;
+use nix::sys::select::{select, FdSet};
+use nix::unistd::pipe;
 use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
-use signal_hook::consts::signal::*;
-use signal_hook_mio::v0_8::Signals;
+use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
+use signal_hook::SigId;
 use std::collections::HashMap;
 use std::ffi::{CString, NulError};
 use std::io::{self, Read, Write};
-use std::os::fd::RawFd;
+use std::os::fd::BorrowedFd;
+use std::os::fd::{AsFd, RawFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::{env, fs};
 
@@ -27,7 +30,7 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
     tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
-) -> anyhow::Result<i32> {
+) -> Result<i32> {
     let winsize = get_tty_size(&*tty, winsize_override);
     recorder.start((winsize.ws_col, winsize.ws_row))?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
@@ -54,7 +57,7 @@ fn handle_parent<R: Recorder>(
     tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
-) -> anyhow::Result<i32> {
+) -> Result<i32> {
     let copy_result = copy(master_fd, child, tty, winsize_override, recorder);
     let wait_result = wait::waitpid(child, None);
     copy_result?;
@@ -67,157 +70,137 @@ fn handle_parent<R: Recorder>(
     }
 }
 
-const MASTER: mio::Token = mio::Token(0);
-const TTY: mio::Token = mio::Token(1);
-const SIGNAL: mio::Token = mio::Token(2);
 const BUF_SIZE: usize = 128 * 1024;
 
 fn copy<R: Recorder>(
-    master_fd: RawFd,
+    master_raw_fd: RawFd,
     child: unistd::Pid,
     mut tty: Box<dyn Tty>,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
-) -> anyhow::Result<()> {
-    let mut master = unsafe { fs::File::from_raw_fd(master_fd) };
-    let mut poll = mio::Poll::new()?;
-    let mut events = mio::Events::with_capacity(128);
-    let mut master_source = SourceFd(&master_fd);
-    let tty_fd = tty.as_raw_fd();
-    let mut tty_source = SourceFd(&tty_fd);
-    let mut signals = Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP])?;
+) -> Result<()> {
+    let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut flush = false;
+    let sigwinch_fd = SignalFd::open(SIGWINCH)?;
+    let sigint_fd = SignalFd::open(SIGINT)?;
+    let sigterm_fd = SignalFd::open(SIGTERM)?;
+    let sigquit_fd = SignalFd::open(SIGQUIT)?;
+    let sighup_fd = SignalFd::open(SIGHUP)?;
 
-    set_non_blocking(&master_fd)?;
-
-    poll.registry()
-        .register(&mut master_source, MASTER, mio::Interest::READABLE)?;
-
-    poll.registry()
-        .register(&mut tty_source, TTY, mio::Interest::READABLE)?;
-
-    poll.registry()
-        .register(&mut signals, SIGNAL, mio::Interest::READABLE)?;
+    set_non_blocking(&master_raw_fd)?;
 
     loop {
-        if let Err(e) = poll.poll(&mut events, None) {
-            if e.kind() == io::ErrorKind::Interrupted {
+        let master_fd = master.as_fd();
+        let tty_fd = tty.as_fd();
+        let mut rfds = FdSet::new();
+        let mut wfds = FdSet::new();
+
+        rfds.insert(&tty_fd);
+        rfds.insert(&sigwinch_fd);
+        rfds.insert(&sigint_fd);
+        rfds.insert(&sigterm_fd);
+        rfds.insert(&sigquit_fd);
+        rfds.insert(&sighup_fd);
+
+        if !flush {
+            rfds.insert(&master_fd);
+        }
+
+        if !input.is_empty() {
+            wfds.insert(&master_fd);
+        }
+
+        if !output.is_empty() {
+            wfds.insert(&tty_fd);
+        }
+
+        if let Err(e) = select(None, &mut rfds, &mut wfds, None, None) {
+            if e == Errno::EINTR {
                 continue;
             } else {
                 bail!(e);
             }
         }
 
-        for event in events.iter() {
-            match event.token() {
-                MASTER => {
-                    if event.is_readable() {
-                        let offset = output.len();
-                        let read = read_all(&mut master, &mut buf, &mut output)?;
+        let master_read = rfds.contains(&master_fd);
+        let master_write = wfds.contains(&master_fd);
+        let tty_read = rfds.contains(&tty_fd);
+        let tty_write = wfds.contains(&tty_fd);
+        let sigwinch_read = rfds.contains(&sigwinch_fd);
+        let sigint_read = rfds.contains(&sigint_fd);
+        let sigterm_read = rfds.contains(&sigterm_fd);
+        let sigquit_read = rfds.contains(&sigquit_fd);
+        let sighup_read = rfds.contains(&sighup_fd);
 
-                        if read > 0 {
-                            recorder.output(&output[offset..]);
+        if master_read {
+            let offset = output.len();
+            let read = read_all(&mut master, &mut buf, &mut output)?;
 
-                            poll.registry().reregister(
-                                &mut tty_source,
-                                TTY,
-                                mio::Interest::READABLE | mio::Interest::WRITABLE,
-                            )?;
-                        }
-                    }
-
-                    if event.is_writable() {
-                        let left = write_all(&mut master, &mut input)?;
-
-                        if left == 0 {
-                            poll.registry().reregister(
-                                &mut master_source,
-                                MASTER,
-                                mio::Interest::READABLE,
-                            )?;
-                        }
-                    }
-
-                    if event.is_read_closed() {
-                        poll.registry().deregister(&mut master_source)?;
-
-                        if output.is_empty() {
-                            return Ok(());
-                        }
-
-                        flush = true;
-                    }
-                }
-
-                TTY => {
-                    if event.is_writable() {
-                        let left = write_all(&mut tty, &mut output)?;
-
-                        if left == 0 {
-                            if flush {
-                                return Ok(());
-                            }
-
-                            poll.registry().reregister(
-                                &mut tty_source,
-                                TTY,
-                                mio::Interest::READABLE,
-                            )?;
-                        }
-                    }
-
-                    if event.is_readable() {
-                        let offset = input.len();
-                        let read = read_all(&mut tty, &mut buf, &mut input)?;
-
-                        if read > 0 {
-                            recorder.input(&input[offset..]);
-
-                            poll.registry().reregister(
-                                &mut master_source,
-                                MASTER,
-                                mio::Interest::READABLE | mio::Interest::WRITABLE,
-                            )?;
-                        }
-                    }
-
-                    if event.is_read_closed() {
-                        poll.registry().deregister(&mut tty_source)?;
-                        return Ok(());
-                    }
-                }
-
-                SIGNAL => {
-                    for signal in signals.pending() {
-                        match signal {
-                            SIGWINCH => {
-                                let winsize = get_tty_size(&*tty, winsize_override);
-                                set_pty_size(master_fd, &winsize);
-                                recorder.resize((winsize.ws_col, winsize.ws_row));
-                            }
-
-                            SIGINT => (),
-
-                            SIGTERM | SIGQUIT | SIGHUP => {
-                                unsafe { libc::kill(child.as_raw(), SIGTERM) };
-                                return Ok(());
-                            }
-
-                            _ => (),
-                        }
-                    }
-                }
-
-                _ => (),
+            if read > 0 {
+                recorder.output(&output[offset..]);
+            } else if output.is_empty() {
+                return Ok(());
+            } else {
+                flush = true;
             }
+        }
+
+        if master_write {
+            write_all(&mut master, &mut input)?;
+        }
+
+        if tty_write {
+            let left = write_all(&mut tty, &mut output)?;
+
+            if left == 0 && flush {
+                return Ok(());
+            }
+        }
+
+        if tty_read {
+            let offset = input.len();
+            let read = read_all(&mut tty, &mut buf, &mut input)?;
+
+            if read > 0 {
+                recorder.input(&input[offset..]);
+            }
+        }
+
+        if sigwinch_read {
+            sigwinch_fd.flush();
+            let winsize = get_tty_size(&*tty, winsize_override);
+            set_pty_size(master_raw_fd, &winsize);
+            recorder.resize((winsize.ws_col, winsize.ws_row));
+        }
+
+        if sigint_read {
+            sigint_fd.flush();
+        }
+
+        if sigterm_read || sigquit_read || sighup_read {
+            if sigterm_read {
+                sigterm_fd.flush();
+            }
+
+            if sigquit_read {
+                sigquit_fd.flush();
+            }
+
+            if sighup_read {
+                sighup_fd.flush();
+            }
+
+            unsafe { libc::kill(child.as_raw(), SIGTERM) };
+
+            return Ok(());
         }
     }
 }
 
-fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> anyhow::Result<()> {
+fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> Result<()> {
     use signal::{SigHandler, Signal};
 
     let args = args
@@ -260,16 +243,14 @@ fn read_all<R: Read>(source: &mut R, buf: &mut [u8], out: &mut Vec<u8>) -> io::R
 
     loop {
         match source.read(buf) {
-            Ok(0) => (),
+            Ok(0) => break,
 
             Ok(n) => {
                 out.extend_from_slice(&buf[0..n]);
                 read += n;
             }
 
-            Err(_) => {
-                break;
-            }
+            Err(_) => break,
         }
     }
 
@@ -281,7 +262,7 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
 
     loop {
         match sink.write(buf) {
-            Ok(0) => (),
+            Ok(0) => break,
 
             Ok(n) => {
                 buf = &buf[n..];
@@ -291,9 +272,7 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
                 }
             }
 
-            Err(_) => {
-                break;
-            }
+            Err(_) => break,
         }
     }
 
@@ -308,6 +287,49 @@ fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
     }
 
     Ok(left)
+}
+
+struct SignalFd {
+    sigid: SigId,
+    rx: i32,
+}
+
+impl SignalFd {
+    fn open(signal: libc::c_int) -> Result<Self> {
+        let (rx, tx) = pipe()?;
+        set_non_blocking(&rx)?;
+        set_non_blocking(&tx)?;
+
+        let sigid = unsafe {
+            signal_hook::low_level::register(signal, move || {
+                let _ = unistd::write(tx, &[0]);
+            })
+        }?;
+
+        Ok(Self { sigid, rx })
+    }
+
+    fn flush(&self) {
+        let mut buf = [0; 256];
+
+        while let Ok(n) = unistd::read(self.rx, &mut buf) {
+            if n == 0 {
+                break;
+            };
+        }
+    }
+}
+
+impl AsFd for SignalFd {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        unsafe { BorrowedFd::borrow_raw(self.rx) }
+    }
+}
+
+impl Drop for SignalFd {
+    fn drop(&mut self) {
+        signal_hook::low_level::unregister(self.sigid);
+    }
 }
 
 #[cfg(test)]
