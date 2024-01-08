@@ -74,7 +74,7 @@ impl pty::Recorder for Recorder {
             let header = format::Header {
                 cols: size.0,
                 rows: size.1,
-                timestamp,
+                timestamp: Some(timestamp),
                 idle_time_limit: self.idle_time_limit,
                 command: self.command.clone(),
                 title: self.title.clone(),

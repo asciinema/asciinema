@@ -12,7 +12,7 @@ pub trait Writer {
 pub struct Header {
     pub cols: u16,
     pub rows: u16,
-    pub timestamp: u64,
+    pub timestamp: Option<u64>,
     pub idle_time_limit: Option<f64>,
     pub command: Option<String>,
     pub title: Option<String>,

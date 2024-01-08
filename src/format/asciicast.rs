@@ -16,11 +16,11 @@ pub struct Writer<W: Write> {
 pub struct Header {
     width: u16,
     height: u16,
-    timestamp: u64,
+    timestamp: Option<u64>,
     pub idle_time_limit: Option<f64>,
     command: Option<String>,
     title: Option<String>,
-    env: HashMap<String, String>,
+    env: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -222,7 +222,7 @@ impl serde::Serialize for Header {
             len += 1;
         }
 
-        if !self.env.is_empty() {
+        if self.env.as_ref().is_some_and(|env| !env.is_empty()) {
             len += 1;
         }
 
@@ -244,8 +244,10 @@ impl serde::Serialize for Header {
             map.serialize_entry("title", &title)?;
         }
 
-        if !self.env.is_empty() {
-            map.serialize_entry("env", &self.env)?;
+        if let Some(env) = &self.env {
+            if !env.is_empty() {
+                map.serialize_entry("env", &env)?;
+            }
         }
 
         map.end()
@@ -274,7 +276,7 @@ impl From<&Header> for super::Header {
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
             title: header.title.clone(),
-            env: header.env.clone(),
+            env: header.env.as_ref().cloned().unwrap_or_default(),
         }
     }
 }
@@ -288,7 +290,7 @@ impl From<&super::Header> for Header {
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
             title: header.title.clone(),
-            env: header.env.clone(),
+            env: Some(header.env.clone()),
         }
     }
 }
@@ -371,7 +373,7 @@ mod tests {
             let header = Header {
                 width: 80,
                 height: 24,
-                timestamp: 1,
+                timestamp: None,
                 idle_time_limit: None,
                 command: None,
                 title: None,
@@ -401,7 +403,7 @@ mod tests {
         assert_eq!(lines[0]["version"], 2);
         assert_eq!(lines[0]["width"], 80);
         assert_eq!(lines[0]["height"], 24);
-        assert_eq!(lines[0]["timestamp"], 1);
+        assert!(lines[0]["timestamp"].is_null());
         assert_eq!(lines[1][0], 1.000001);
         assert_eq!(lines[1][1], "o");
         assert_eq!(lines[1][2], "hello\r\n");
@@ -430,11 +432,11 @@ mod tests {
             let header = Header {
                 width: 80,
                 height: 24,
-                timestamp: 1,
+                timestamp: Some(1704719152),
                 idle_time_limit: Some(1.5),
                 command: Some("/bin/bash".to_owned()),
                 title: Some("Demo".to_owned()),
-                env,
+                env: Some(env),
             };
 
             fw.write_header(&header).unwrap();
@@ -445,7 +447,7 @@ mod tests {
         assert_eq!(lines[0]["version"], 2);
         assert_eq!(lines[0]["width"], 80);
         assert_eq!(lines[0]["height"], 24);
-        assert_eq!(lines[0]["timestamp"], 1);
+        assert_eq!(lines[0]["timestamp"], 1704719152);
         assert_eq!(lines[0]["idle_time_limit"], 1.5);
         assert_eq!(lines[0]["command"], "/bin/bash");
         assert_eq!(lines[0]["title"], "Demo");
