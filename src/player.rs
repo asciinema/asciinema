@@ -159,10 +159,22 @@ fn read_key(input: &mut fs::File, timeout: i64) -> Result<Option<u8>> {
     pselect(nfds, &mut rfds, None, None, &timeout, None)?;
 
     if rfds.contains(input) {
-        let mut buf = [0u8; 1];
-        input.read_exact(&mut buf)?;
+        let mut buf = [0u8; 1024];
+        let mut total = 0;
 
-        Ok(Some(buf[0]))
+        while let Ok(n) = input.read(&mut buf) {
+            if n == 0 {
+                break;
+            }
+
+            total += n;
+        }
+
+        if total > 0 {
+            Ok(Some(buf[0]))
+        } else {
+            Ok(None)
+        }
     } else {
         Ok(None)
     }
