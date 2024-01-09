@@ -3,7 +3,6 @@ use crate::tty::Tty;
 use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::sys::select::{select, FdSet};
-use nix::unistd::pipe;
 use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
 use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
@@ -316,7 +315,7 @@ struct SignalFd {
 
 impl SignalFd {
     fn open(signal: libc::c_int) -> Result<Self> {
-        let (rx, tx) = pipe()?;
+        let (rx, tx) = unistd::pipe()?;
         set_non_blocking(&rx)?;
         set_non_blocking(&tx)?;
         let rx = unsafe { OwnedFd::from_raw_fd(rx) };

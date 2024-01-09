@@ -2,7 +2,7 @@ use anyhow::Result;
 use nix::{libc, pty, unistd};
 use std::{
     fs, io,
-    os::fd::{AsFd, AsRawFd, BorrowedFd},
+    os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd},
 };
 use termion::raw::{IntoRawMode, RawTerminal};
 
@@ -66,13 +66,15 @@ impl AsFd for DevTty {
 }
 
 pub struct NullTty {
-    tx: i32,
-    _rx: i32,
+    tx: OwnedFd,
+    _rx: OwnedFd,
 }
 
 impl NullTty {
     pub fn open() -> Result<Self> {
         let (rx, tx) = unistd::pipe()?;
+        let rx = unsafe { OwnedFd::from_raw_fd(rx) };
+        let tx = unsafe { OwnedFd::from_raw_fd(tx) };
 
         Ok(Self { tx, _rx: rx })
     }
@@ -107,6 +109,6 @@ impl io::Write for NullTty {
 
 impl AsFd for NullTty {
     fn as_fd(&self) -> BorrowedFd<'_> {
-        unsafe { BorrowedFd::borrow_raw(self.tx.as_raw_fd()) }
+        self.tx.as_fd()
     }
 }
