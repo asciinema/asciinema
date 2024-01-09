@@ -1,22 +1,19 @@
 use crate::format::asciicast::{self, Event, EventCode};
-use crate::io::set_non_blocking;
+use crate::tty::Tty;
 use anyhow::Result;
 use nix::sys::select::{pselect, FdSet};
 use nix::sys::time::{TimeSpec, TimeValLike};
-use std::io::Read;
+use std::io;
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, Instant};
-use std::{fs, io};
-use termion::raw::{IntoRawMode, RawTerminal};
 
 pub fn play(
     recording: impl io::Read,
-    mut output: impl io::Write,
+    mut tty: impl Tty,
     speed: f64,
     idle_time_limit: Option<f64>,
     pause_on_markers: bool,
 ) -> Result<()> {
-    let mut tty = open_tty()?;
     let mut events = open_recording(recording, speed, idle_time_limit)?;
     let mut epoch = Instant::now();
     let mut pause_elapsed_time: Option<u64> = None;
@@ -27,7 +24,7 @@ pub fn play(
             match read_key(&mut tty, 1_000_000)? {
                 Some(0x03) => {
                     // ctrl+c - stop
-                    output.write_all("\r\n".as_bytes())?;
+                    tty.write_all("\r\n".as_bytes())?;
                     return Ok(());
                 }
 
@@ -42,8 +39,8 @@ pub fn play(
                     pause_elapsed_time = Some(*time);
 
                     if code == &EventCode::Output {
-                        output.write_all(data.as_bytes())?;
-                        output.flush()?;
+                        tty.write_all(data.as_bytes())?;
+                        tty.flush()?;
                     }
 
                     next_event = events.next().transpose()?;
@@ -56,7 +53,7 @@ pub fn play(
 
                         match code {
                             EventCode::Output => {
-                                output.write_all(data.as_bytes())?;
+                                tty.write_all(data.as_bytes())?;
                             }
 
                             EventCode::Marker => {
@@ -68,7 +65,7 @@ pub fn play(
                         }
                     }
 
-                    output.flush()?;
+                    tty.flush()?;
                 }
 
                 _ => (),
@@ -78,12 +75,12 @@ pub fn play(
                 let delay = *time as i64 - epoch.elapsed().as_micros() as i64;
 
                 if delay > 0 {
-                    output.flush()?;
+                    tty.flush()?;
 
                     match read_key(&mut tty, delay)? {
                         Some(0x03) => {
                             // ctrl+c - stop
-                            output.write_all("\r\n".as_bytes())?;
+                            tty.write_all("\r\n".as_bytes())?;
                             return Ok(());
                         }
 
@@ -103,7 +100,7 @@ pub fn play(
 
                 match code {
                     EventCode::Output => {
-                        output.write_all(data.as_bytes())?;
+                        tty.write_all(data.as_bytes())?;
                     }
 
                     EventCode::Marker => {
@@ -125,13 +122,6 @@ pub fn play(
     Ok(())
 }
 
-fn open_tty() -> Result<RawTerminal<fs::File>> {
-    let tty = fs::File::open("/dev/tty")?.into_raw_mode()?;
-    set_non_blocking(&tty.as_raw_fd())?;
-
-    Ok(tty)
-}
-
 fn open_recording(
     recording: impl io::Read,
     speed: f64,
@@ -150,19 +140,19 @@ fn open_recording(
     Ok(events)
 }
 
-fn read_key(input: &mut fs::File, timeout: i64) -> Result<Option<u8>> {
-    let nfds = Some(input.as_raw_fd() + 1);
+fn read_key<T: Tty>(tty: &mut T, timeout: i64) -> Result<Option<u8>> {
+    let nfds = Some(tty.as_fd().as_raw_fd() + 1);
     let mut rfds = FdSet::new();
-    rfds.insert(input);
+    rfds.insert(tty);
     let timeout = TimeSpec::microseconds(timeout);
 
     pselect(nfds, &mut rfds, None, None, &timeout, None)?;
 
-    if rfds.contains(input) {
+    if rfds.contains(tty) {
         let mut buf = [0u8; 1024];
         let mut total = 0;
 
-        while let Ok(n) = input.read(&mut buf) {
+        while let Ok(n) = tty.read(&mut buf) {
             if n == 0 {
                 break;
             }

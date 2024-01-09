@@ -1,7 +1,7 @@
-use crate::player;
+use crate::{player, tty};
 use anyhow::Result;
 use clap::Args;
-use std::{fs, io};
+use std::fs;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -30,10 +30,11 @@ impl Cli {
 
         loop {
             let file = fs::File::open(&self.filename)?;
+            let tty = tty::DevTty::open()?;
 
             player::play(
                 file,
-                io::stdout(),
+                tty,
                 speed,
                 self.idle_time_limit,
                 self.pause_on_markers,
