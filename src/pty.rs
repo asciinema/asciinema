@@ -10,8 +10,8 @@ use signal_hook::SigId;
 use std::collections::HashMap;
 use std::ffi::{CString, NulError};
 use std::io::{self, ErrorKind, Read, Write};
-use std::os::fd::BorrowedFd;
 use std::os::fd::{AsFd, RawFd};
+use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::{env, fs};
 
@@ -311,7 +311,7 @@ fn write_non_blocking<W: Write>(sink: &mut W, buf: &[u8]) -> io::Result<Option<u
 
 struct SignalFd {
     sigid: SigId,
-    rx: i32,
+    rx: OwnedFd,
 }
 
 impl SignalFd {
@@ -319,10 +319,12 @@ impl SignalFd {
         let (rx, tx) = pipe()?;
         set_non_blocking(&rx)?;
         set_non_blocking(&tx)?;
+        let rx = unsafe { OwnedFd::from_raw_fd(rx) };
+        let tx = unsafe { OwnedFd::from_raw_fd(tx) };
 
         let sigid = unsafe {
             signal_hook::low_level::register(signal, move || {
-                let _ = unistd::write(tx, &[0]);
+                let _ = unistd::write(tx.as_raw_fd(), &[0]);
             })
         }?;
 
@@ -332,7 +334,7 @@ impl SignalFd {
     fn flush(&self) {
         let mut buf = [0; 256];
 
-        while let Ok(n) = unistd::read(self.rx, &mut buf) {
+        while let Ok(n) = unistd::read(self.rx.as_raw_fd(), &mut buf) {
             if n == 0 {
                 break;
             };
@@ -342,13 +344,12 @@ impl SignalFd {
 
 impl AsFd for SignalFd {
     fn as_fd(&self) -> BorrowedFd<'_> {
-        unsafe { BorrowedFd::borrow_raw(self.rx) }
+        self.rx.as_fd()
     }
 }
 
 impl Drop for SignalFd {
     fn drop(&mut self) {
-        let _ = unistd::close(self.rx);
         signal_hook::low_level::unregister(self.sigid);
     }
 }
