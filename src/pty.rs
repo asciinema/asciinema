@@ -9,7 +9,7 @@ use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
 use std::collections::HashMap;
 use std::ffi::{CString, NulError};
-use std::io::{self, Read, Write};
+use std::io::{self, ErrorKind, Read, Write};
 use std::os::fd::BorrowedFd;
 use std::os::fd::{AsFd, RawFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
@@ -83,7 +83,7 @@ fn copy<R: Recorder>(
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
-    let mut flush = false;
+    let mut master_closed = false;
     let sigwinch_fd = SignalFd::open(SIGWINCH)?;
     let sigint_fd = SignalFd::open(SIGINT)?;
     let sigterm_fd = SignalFd::open(SIGTERM)?;
@@ -105,12 +105,12 @@ fn copy<R: Recorder>(
         rfds.insert(&sigquit_fd);
         rfds.insert(&sighup_fd);
 
-        if !flush {
+        if !master_closed {
             rfds.insert(&master_fd);
-        }
 
-        if !input.is_empty() {
-            wfds.insert(&master_fd);
+            if !input.is_empty() {
+                wfds.insert(&master_fd);
+            }
         }
 
         if !output.is_empty() {
@@ -136,36 +136,75 @@ fn copy<R: Recorder>(
         let sighup_read = rfds.contains(&sighup_fd);
 
         if master_read {
-            let offset = output.len();
-            let read = read_all(&mut master, &mut buf, &mut output)?;
-
-            if read > 0 {
-                recorder.output(&output[offset..]);
-            } else if output.is_empty() {
-                return Ok(());
-            } else {
-                flush = true;
+            while let Some(n) = read_non_blocking(&mut master, &mut buf).unwrap() {
+                if n > 0 {
+                    recorder.output(&buf[0..n]);
+                    output.extend_from_slice(&buf[0..n]);
+                } else if output.is_empty() {
+                    return Ok(());
+                } else {
+                    master_closed = true;
+                    break;
+                }
             }
         }
 
         if master_write {
-            write_all(&mut master, &mut input)?;
+            let mut buf: &[u8] = input.as_ref();
+
+            while let Some(n) = write_non_blocking(&mut master, buf).unwrap() {
+                buf = &buf[n..];
+
+                if buf.is_empty() {
+                    break;
+                }
+            }
+
+            let left = buf.len();
+
+            if left == 0 {
+                input.clear();
+            } else {
+                let rot = input.len() - left;
+                input.rotate_left(rot);
+                input.truncate(left);
+            }
         }
 
         if tty_write {
-            let left = write_all(&mut tty, &mut output)?;
+            let mut buf: &[u8] = output.as_ref();
 
-            if left == 0 && flush {
-                return Ok(());
+            while let Some(n) = write_non_blocking(&mut tty, buf).unwrap() {
+                buf = &buf[n..];
+
+                if buf.is_empty() {
+                    break;
+                }
+            }
+
+            let left = buf.len();
+
+            if left == 0 {
+                if master_closed {
+                    return Ok(());
+                } else {
+                    output.clear();
+                }
+            } else {
+                let rot = output.len() - left;
+                output.rotate_left(rot);
+                output.truncate(left);
             }
         }
 
         if tty_read {
-            let offset = input.len();
-            let read = read_all(&mut tty, &mut buf, &mut input)?;
-
-            if read > 0 {
-                recorder.input(&input[offset..]);
+            while let Some(n) = read_non_blocking(&mut tty, &mut buf).unwrap() {
+                if n > 0 {
+                    recorder.input(&buf[0..n]);
+                    input.extend_from_slice(&buf[0..n]);
+                } else {
+                    return Ok(());
+                }
             }
         }
 
@@ -238,55 +277,36 @@ fn set_pty_size(pty_fd: i32, winsize: &pty::Winsize) {
     unsafe { libc::ioctl(pty_fd, libc::TIOCSWINSZ, winsize) };
 }
 
-fn read_all<R: Read>(source: &mut R, buf: &mut [u8], out: &mut Vec<u8>) -> io::Result<usize> {
-    let mut read = 0;
+fn read_non_blocking<R: Read>(source: &mut R, buf: &mut [u8]) -> io::Result<Option<usize>> {
+    match source.read(buf) {
+        Ok(n) => Ok(Some(n)),
 
-    loop {
-        match source.read(buf) {
-            Ok(0) => break,
-
-            Ok(n) => {
-                out.extend_from_slice(&buf[0..n]);
-                read += n;
+        Err(e) => {
+            if e.kind() == ErrorKind::WouldBlock {
+                Ok(None)
+            } else if e.raw_os_error().is_some_and(|code| code == 5) {
+                Ok(Some(0))
+            } else {
+                return Err(e);
             }
-
-            Err(_) => break,
         }
     }
-
-    Ok(read)
 }
 
-fn write_all<W: Write>(sink: &mut W, data: &mut Vec<u8>) -> io::Result<usize> {
-    let mut buf: &[u8] = data.as_ref();
+fn write_non_blocking<W: Write>(sink: &mut W, buf: &[u8]) -> io::Result<Option<usize>> {
+    match sink.write(buf) {
+        Ok(n) => Ok(Some(n)),
 
-    loop {
-        match sink.write(buf) {
-            Ok(0) => break,
-
-            Ok(n) => {
-                buf = &buf[n..];
-
-                if buf.is_empty() {
-                    break;
-                }
+        Err(e) => {
+            if e.kind() == ErrorKind::WouldBlock {
+                Ok(None)
+            } else if e.raw_os_error().is_some_and(|code| code == 5) {
+                Ok(Some(0))
+            } else {
+                return Err(e);
             }
-
-            Err(_) => break,
         }
     }
-
-    let left = buf.len();
-
-    if left == 0 {
-        data.clear();
-    } else {
-        let rot = data.len() - left;
-        data.rotate_left(rot);
-        data.truncate(left);
-    }
-
-    Ok(left)
 }
 
 struct SignalFd {
@@ -328,6 +348,7 @@ impl AsFd for SignalFd {
 
 impl Drop for SignalFd {
     fn drop(&mut self) {
+        let _ = unistd::close(self.rx);
         signal_hook::low_level::unregister(self.sigid);
     }
 }
@@ -367,7 +388,7 @@ mod tests {
     }
 
     #[test]
-    fn exec() {
+    fn exec_basic() {
         let mut recorder = TestRecorder::default();
 
         let code = r#"
@@ -375,20 +396,87 @@ import sys;
 import time;
 sys.stdout.write('foo');
 sys.stdout.flush();
-time.sleep(0.01);
+time.sleep(0.1);
 sys.stdout.write('bar');
 "#;
 
-        let result = super::exec(
+        super::exec(
             &["python3", "-c", code],
             &ExtraEnv::new(),
             Box::new(NullTty::open().unwrap()),
             (None, None),
             &mut recorder,
-        );
+        )
+        .unwrap();
 
-        assert!(result.is_ok());
         assert_eq!(recorder.output(), vec!["foo", "bar"]);
-        assert!(recorder.size.is_some());
+        assert_eq!(recorder.size, Some((80, 24)));
+    }
+
+    #[test]
+    fn exec_no_output() {
+        let mut recorder = TestRecorder::default();
+
+        super::exec(
+            &["true"],
+            &ExtraEnv::new(),
+            Box::new(NullTty::open().unwrap()),
+            (None, None),
+            &mut recorder,
+        )
+        .unwrap();
+
+        assert!(recorder.output().is_empty());
+    }
+
+    #[test]
+    fn exec_quick() {
+        let mut recorder = TestRecorder::default();
+
+        super::exec(
+            &["w"],
+            &ExtraEnv::new(),
+            Box::new(NullTty::open().unwrap()),
+            (None, None),
+            &mut recorder,
+        )
+        .unwrap();
+
+        assert!(!recorder.output().is_empty());
+    }
+
+    #[test]
+    fn exec_extra_env() {
+        let mut recorder = TestRecorder::default();
+
+        let mut env = ExtraEnv::new();
+        env.insert("ASCIINEMA_TEST_FOO".to_owned(), "bar".to_owned());
+
+        super::exec(
+            &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
+            &env,
+            Box::new(NullTty::open().unwrap()),
+            (None, None),
+            &mut recorder,
+        )
+        .unwrap();
+
+        assert_eq!(recorder.output(), vec!["bar"]);
+    }
+
+    #[test]
+    fn exec_winsize_override() {
+        let mut recorder = TestRecorder::default();
+
+        super::exec(
+            &["true"],
+            &ExtraEnv::new(),
+            Box::new(NullTty::open().unwrap()),
+            (Some(100), Some(50)),
+            &mut recorder,
+        )
+        .unwrap();
+
+        assert_eq!(recorder.size, Some((100, 50)));
     }
 }
