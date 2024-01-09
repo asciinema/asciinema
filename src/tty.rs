@@ -91,7 +91,7 @@ impl Tty for NullTty {
 
 impl io::Read for NullTty {
     fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        panic!("read attempt from DevNull impl of Tty");
+        panic!("read attempt from NullTty");
     }
 }
 
