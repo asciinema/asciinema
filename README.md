@@ -74,9 +74,11 @@ copy the binary to a directory in your `$PATH`.
 
 ## Development
 
-This branch contains the next generation asciinema CLI, written in Rust. It is
-still in a heavy work-in-progress stage, so if you wish to propose any code
-changes, please first reach out to the team via
+This branch contains the next generation asciinema CLI, written in Rust ([about
+the
+rewrite](https://discourse.asciinema.org/t/rust-rewrite-of-the-asciinema-cli/777)).
+It is still in a heavy work-in-progress stage, so if you wish to propose any
+code changes, please first reach out to the team via
 [forum](https://discourse.asciinema.org/),
 [Matrix](https://matrix.to/#/#asciinema:matrix.org) or
 [IRC](https://web.libera.chat/#asciinema).
