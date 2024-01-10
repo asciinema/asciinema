@@ -3,7 +3,7 @@ use crate::tty::Tty;
 use anyhow::Result;
 use nix::sys::select::{pselect, FdSet};
 use nix::sys::time::{TimeSpec, TimeValLike};
-use std::io;
+use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, Instant};
 
@@ -15,6 +15,7 @@ pub fn play(
     pause_on_markers: bool,
 ) -> Result<()> {
     let mut events = open_recording(recording, speed, idle_time_limit)?;
+    let mut stdout = io::stdout();
     let mut epoch = Instant::now();
     let mut pause_elapsed_time: Option<u64> = None;
     let mut next_event = events.next().transpose()?;
@@ -24,7 +25,7 @@ pub fn play(
             match read_key(&mut tty, 1_000_000)? {
                 Some(0x03) => {
                     // ctrl+c - stop
-                    tty.write_all("\r\n".as_bytes())?;
+                    stdout.write_all("\r\n".as_bytes())?;
                     return Ok(());
                 }
 
@@ -39,8 +40,8 @@ pub fn play(
                     pause_elapsed_time = Some(*time);
 
                     if code == &EventCode::Output {
-                        tty.write_all(data.as_bytes())?;
-                        tty.flush()?;
+                        stdout.write_all(data.as_bytes())?;
+                        stdout.flush()?;
                     }
 
                     next_event = events.next().transpose()?;
@@ -53,7 +54,7 @@ pub fn play(
 
                         match code {
                             EventCode::Output => {
-                                tty.write_all(data.as_bytes())?;
+                                stdout.write_all(data.as_bytes())?;
                             }
 
                             EventCode::Marker => {
@@ -65,7 +66,7 @@ pub fn play(
                         }
                     }
 
-                    tty.flush()?;
+                    stdout.flush()?;
                 }
 
                 _ => (),
@@ -75,12 +76,12 @@ pub fn play(
                 let delay = *time as i64 - epoch.elapsed().as_micros() as i64;
 
                 if delay > 0 {
-                    tty.flush()?;
+                    stdout.flush()?;
 
                     match read_key(&mut tty, delay)? {
                         Some(0x03) => {
                             // ctrl+c - stop
-                            tty.write_all("\r\n".as_bytes())?;
+                            stdout.write_all("\r\n".as_bytes())?;
                             return Ok(());
                         }
 
@@ -100,7 +101,7 @@ pub fn play(
 
                 match code {
                     EventCode::Output => {
-                        tty.write_all(data.as_bytes())?;
+                        stdout.write_all(data.as_bytes())?;
                     }
 
                     EventCode::Marker => {
