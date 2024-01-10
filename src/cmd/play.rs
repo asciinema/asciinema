@@ -1,4 +1,8 @@
-use crate::{player, tty};
+use crate::config::Config;
+use crate::{
+    player::{self, KeyBindings},
+    tty,
+};
 use anyhow::Result;
 use clap::Args;
 use std::fs;
@@ -25,12 +29,13 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn run(self) -> Result<()> {
+    pub fn run(self, config: &Config) -> Result<()> {
         let speed = self.speed.unwrap_or(1.0);
 
         loop {
             let file = fs::File::open(&self.filename)?;
             let tty = tty::DevTty::open()?;
+            let keys = get_key_bindings(config)?;
 
             player::play(
                 file,
@@ -38,6 +43,7 @@ impl Cli {
                 speed,
                 self.idle_time_limit,
                 self.pause_on_markers,
+                &keys,
             )?;
 
             if !self.loop_ {
@@ -47,4 +53,22 @@ impl Cli {
 
         Ok(())
     }
+}
+
+fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
+    let mut keys = KeyBindings::default();
+
+    if let Some(key) = config.cmd_play_pause_key()? {
+        keys.pause = key;
+    }
+
+    if let Some(key) = config.cmd_play_step_key()? {
+        keys.step = key;
+    }
+
+    if let Some(key) = config.cmd_play_next_marker_key()? {
+        keys.next_marker = key;
+    }
+
+    Ok(keys)
 }

@@ -47,9 +47,9 @@ pub struct Rec {
 pub struct Play {
     pub speed: f64,
     pub idle_time_limit: Option<f64>,
-    pub pause_key: String,
-    pub step_key: String,
-    pub next_marker_key: String,
+    pub pause_key: Option<String>,
+    pub step_key: Option<String>,
+    pub next_marker_key: Option<String>,
 }
 
 impl Config {
@@ -60,9 +60,6 @@ impl Config {
             .set_default("cmd.rec.env", "SHELL,TERM")?
             .set_default("cmd.rec.pause_key", "C-\\")?
             .set_default("cmd.play.speed", 1.0)?
-            .set_default("cmd.play.pause_key", " ")?
-            .set_default("cmd.play.step_key", ".")?
-            .set_default("cmd.play.next_marker_key", "]")?
             .add_source(
                 config::File::with_name(&user_defaults_path()?.to_string_lossy()).required(false),
             )
@@ -109,6 +106,23 @@ impl Config {
 
             Ok(id)
         }
+    }
+
+    pub fn cmd_play_pause_key(&self) -> Result<Option<Option<char>>> {
+        self.cmd.play.pause_key.as_ref().map(parse_key).transpose()
+    }
+
+    pub fn cmd_play_step_key(&self) -> Result<Option<Option<char>>> {
+        self.cmd.play.step_key.as_ref().map(parse_key).transpose()
+    }
+
+    pub fn cmd_play_next_marker_key(&self) -> Result<Option<Option<char>>> {
+        self.cmd
+            .play
+            .next_marker_key
+            .as_ref()
+            .map(parse_key)
+            .transpose()
     }
 }
 
@@ -182,4 +196,34 @@ fn home() -> Result<PathBuf> {
         .or(env::var("XDG_CONFIG_HOME").map(|home| Path::new(&home).join("asciinema")))
         .or(env::var("HOME").map(|home| Path::new(&home).join(".config").join("asciinema")))
         .map_err(|_| anyhow!("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME"))
+}
+
+fn parse_key<S: AsRef<str>>(key: S) -> Result<Option<char>> {
+    let key = key.as_ref();
+    let chars: Vec<char> = key.chars().collect();
+
+    match chars.len() {
+        0 => return Ok(None),
+        1 => return Ok(Some(chars[0])),
+
+        2 => {
+            if chars[0] == '^' {
+                let key = (chars[1].to_ascii_uppercase() as u8 - 0x40) as char;
+
+                return Ok(Some(key));
+            }
+        }
+
+        3 => {
+            if chars[0].to_ascii_uppercase() == 'C' && ['+', '-'].contains(&chars[1]) {
+                let key = (chars[2].to_ascii_uppercase() as u8 - 0x40) as char;
+
+                return Ok(Some(key));
+            }
+        }
+
+        _ => (),
+    }
+
+    Err(anyhow!("invalid key definition '{key}'"))
 }

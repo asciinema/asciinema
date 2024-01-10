@@ -7,12 +7,31 @@ use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, Instant};
 
+pub struct KeyBindings {
+    pub quit: Option<char>,
+    pub pause: Option<char>,
+    pub step: Option<char>,
+    pub next_marker: Option<char>,
+}
+
+impl Default for KeyBindings {
+    fn default() -> Self {
+        Self {
+            quit: Some('\x03'),
+            pause: Some(' '),
+            step: Some('.'),
+            next_marker: Some(']'),
+        }
+    }
+}
+
 pub fn play(
     recording: impl io::Read,
     mut tty: impl Tty,
     speed: f64,
     idle_time_limit: Option<f64>,
     pause_on_markers: bool,
+    keys: &KeyBindings,
 ) -> Result<()> {
     let mut events = open_recording(recording, speed, idle_time_limit)?;
     let mut stdout = io::stdout();
@@ -22,21 +41,16 @@ pub fn play(
 
     while let Some(Event { time, code, data }) = &next_event {
         if let Some(pet) = pause_elapsed_time {
-            match read_key(&mut tty, 1_000_000)? {
-                Some(0x03) => {
-                    // ctrl+c - stop
+            if let Some(key) = read_key(&mut tty, 1_000_000)? {
+                if keys.quit.is_some_and(|k| k == key) {
                     stdout.write_all("\r\n".as_bytes())?;
                     return Ok(());
                 }
 
-                Some(0x20) => {
-                    // space - resume
+                if keys.pause.is_some_and(|k| k == key) {
                     epoch = Instant::now() - Duration::from_micros(pet);
                     pause_elapsed_time = None;
-                }
-
-                Some(0x2e) => {
-                    // . - step
+                } else if keys.step.is_some_and(|k| k == key) {
                     pause_elapsed_time = Some(*time);
 
                     if code == &EventCode::Output {
@@ -45,10 +59,7 @@ pub fn play(
                     }
 
                     next_event = events.next().transpose()?;
-                }
-
-                Some(0x5d) => {
-                    // ] - next marker
+                } else if keys.next_marker.is_some_and(|k| k == key) {
                     while let Some(Event { time, code, data }) = next_event {
                         next_event = events.next().transpose()?;
 
@@ -68,8 +79,6 @@ pub fn play(
 
                     stdout.flush()?;
                 }
-
-                _ => (),
             }
         } else {
             while let Some(Event { time, code, data }) = &next_event {
@@ -78,24 +87,18 @@ pub fn play(
                 if delay > 0 {
                     stdout.flush()?;
 
-                    match read_key(&mut tty, delay)? {
-                        Some(0x03) => {
-                            // ctrl+c - stop
+                    if let Some(key) = read_key(&mut tty, delay)? {
+                        if keys.quit.is_some_and(|k| k == key) {
                             stdout.write_all("\r\n".as_bytes())?;
                             return Ok(());
                         }
 
-                        Some(0x20) => {
-                            // space - pause
+                        if keys.pause.is_some_and(|k| k == key) {
                             pause_elapsed_time = Some(epoch.elapsed().as_micros() as u64);
                             break;
                         }
 
-                        Some(_) => {
-                            continue;
-                        }
-
-                        None => (),
+                        continue;
                     }
                 }
 
@@ -141,7 +144,7 @@ fn open_recording(
     Ok(events)
 }
 
-fn read_key<T: Tty>(tty: &mut T, timeout: i64) -> Result<Option<u8>> {
+fn read_key<T: Tty>(tty: &mut T, timeout: i64) -> Result<Option<char>> {
     let nfds = Some(tty.as_fd().as_raw_fd() + 1);
     let mut rfds = FdSet::new();
     rfds.insert(tty);
@@ -162,7 +165,7 @@ fn read_key<T: Tty>(tty: &mut T, timeout: i64) -> Result<Option<u8>> {
         }
 
         if total > 0 {
-            Ok(Some(buf[0]))
+            Ok(Some(buf[0] as char))
         } else {
             Ok(None)
         }

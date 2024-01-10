@@ -47,7 +47,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Rec(record) => record.run(),
-        Commands::Play(play) => play.run(),
+        Commands::Play(play) => play.run(&config),
         Commands::Cat(cat) => cat.run(),
         Commands::Upload(upload) => upload.run(&config),
         Commands::Auth(auth) => auth.run(&config),
