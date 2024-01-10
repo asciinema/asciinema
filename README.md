@@ -43,6 +43,47 @@ Check out the [Getting started
 guide](https://docs.asciinema.org/getting-started/) for installation and usage
 overview.
 
+## Building
+
+Building asciinema from source requires the [Rust](https://www.rust-lang.org/)
+compiler (1.70 or later), and the [Cargo package
+manager](https://doc.rust-lang.org/cargo/). If they are not available via your
+system package manager then use [rustup](https://rustup.rs/).
+
+To download the source code, build the asciinema binary, and install it in
+`$HOME/.cargo/bin` run:
+
+```sh
+cargo install --git https://github.com/asciinema/asciinema
+```
+
+Then, ensure `$HOME/.cargo/bin` is in your shell's `$PATH`.
+
+Alternatively, you can manually download the source code and build the asciinema
+binary with:
+
+```sh
+git clone https://github.com/asciinema/asciinema
+cd asciinema
+cargo build --release
+```
+
+This produces the binary in _release mode_ (`--release`) at
+`target/release/asciinema`. There are no other build artifacts so you can just
+copy the binary to a directory in your `$PATH`.
+
+## Development
+
+This branch contains the next generation asciinema CLI, written in Rust. It is
+still in a heavy work-in-progress stage, so if you wish to propose any code
+changes, please first reach out to the team via
+[forum](https://discourse.asciinema.org/),
+[Matrix](https://matrix.to/#/#asciinema:matrix.org) or
+[IRC](https://web.libera.chat/#asciinema).
+
+The previous generation of asciinema CLI, written in Python, can be found in the
+`main` branch.
+
 ## Donations
 
 Sustainability of asciinema development relies on donations and sponsorships.
