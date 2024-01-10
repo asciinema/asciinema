@@ -117,7 +117,7 @@ impl Cli {
         println!("asciinema: recording asciicast to {}", self.filename);
         println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
 
-        let tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
+        let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
             Box::new(dev_tty)
         } else {
             println!("asciinema: TTY not available, recording in headless mode");
@@ -127,7 +127,7 @@ impl Cli {
         pty::exec(
             &exec_args,
             &exec_extra_env,
-            tty,
+            &mut *tty,
             (self.cols, self.rows),
             &mut recorder,
         )?;

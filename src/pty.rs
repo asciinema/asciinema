@@ -23,10 +23,10 @@ pub trait Recorder {
     fn resize(&mut self, size: (u16, u16));
 }
 
-pub fn exec<S: AsRef<str>, R: Recorder>(
+pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
     args: &[S],
     extra_env: &ExtraEnv,
-    tty: Box<dyn Tty>,
+    tty: &mut T,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> Result<i32> {
@@ -50,10 +50,10 @@ pub fn exec<S: AsRef<str>, R: Recorder>(
     }
 }
 
-fn handle_parent<R: Recorder>(
+fn handle_parent<T: Tty + ?Sized, R: Recorder>(
     master_fd: RawFd,
     child: unistd::Pid,
-    tty: Box<dyn Tty>,
+    tty: &mut T,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> Result<i32> {
@@ -71,10 +71,10 @@ fn handle_parent<R: Recorder>(
 
 const BUF_SIZE: usize = 128 * 1024;
 
-fn copy<R: Recorder>(
+fn copy<T: Tty + ?Sized, R: Recorder>(
     master_raw_fd: RawFd,
     child: unistd::Pid,
-    mut tty: Box<dyn Tty>,
+    tty: &mut T,
     winsize_override: (Option<u16>, Option<u16>),
     recorder: &mut R,
 ) -> Result<()> {
@@ -135,7 +135,7 @@ fn copy<R: Recorder>(
         let sighup_read = rfds.contains(&sighup_fd);
 
         if master_read {
-            while let Some(n) = read_non_blocking(&mut master, &mut buf).unwrap() {
+            while let Some(n) = read_non_blocking(&mut master, &mut buf)? {
                 if n > 0 {
                     recorder.output(&buf[0..n]);
                     output.extend_from_slice(&buf[0..n]);
@@ -151,7 +151,7 @@ fn copy<R: Recorder>(
         if master_write {
             let mut buf: &[u8] = input.as_ref();
 
-            while let Some(n) = write_non_blocking(&mut master, buf).unwrap() {
+            while let Some(n) = write_non_blocking(&mut master, buf)? {
                 buf = &buf[n..];
 
                 if buf.is_empty() {
@@ -173,7 +173,7 @@ fn copy<R: Recorder>(
         if tty_write {
             let mut buf: &[u8] = output.as_ref();
 
-            while let Some(n) = write_non_blocking(&mut tty, buf).unwrap() {
+            while let Some(n) = write_non_blocking(tty, buf)? {
                 buf = &buf[n..];
 
                 if buf.is_empty() {
@@ -197,7 +197,7 @@ fn copy<R: Recorder>(
         }
 
         if tty_read {
-            while let Some(n) = read_non_blocking(&mut tty, &mut buf).unwrap() {
+            while let Some(n) = read_non_blocking(tty, &mut buf)? {
                 if n > 0 {
                     recorder.input(&buf[0..n]);
                     input.extend_from_slice(&buf[0..n]);
@@ -276,7 +276,10 @@ fn set_pty_size(pty_fd: i32, winsize: &pty::Winsize) {
     unsafe { libc::ioctl(pty_fd, libc::TIOCSWINSZ, winsize) };
 }
 
-fn read_non_blocking<R: Read>(source: &mut R, buf: &mut [u8]) -> io::Result<Option<usize>> {
+fn read_non_blocking<R: Read + ?Sized>(
+    source: &mut R,
+    buf: &mut [u8],
+) -> io::Result<Option<usize>> {
     match source.read(buf) {
         Ok(n) => Ok(Some(n)),
 
@@ -292,7 +295,7 @@ fn read_non_blocking<R: Read>(source: &mut R, buf: &mut [u8]) -> io::Result<Opti
     }
 }
 
-fn write_non_blocking<W: Write>(sink: &mut W, buf: &[u8]) -> io::Result<Option<usize>> {
+fn write_non_blocking<W: Write + ?Sized>(sink: &mut W, buf: &[u8]) -> io::Result<Option<usize>> {
     match sink.write(buf) {
         Ok(n) => Ok(Some(n)),
 
@@ -403,7 +406,7 @@ sys.stdout.write('bar');
         super::exec(
             &["python3", "-c", code],
             &ExtraEnv::new(),
-            Box::new(NullTty::open().unwrap()),
+            &mut NullTty::open().unwrap(),
             (None, None),
             &mut recorder,
         )
@@ -420,7 +423,7 @@ sys.stdout.write('bar');
         super::exec(
             &["true"],
             &ExtraEnv::new(),
-            Box::new(NullTty::open().unwrap()),
+            &mut NullTty::open().unwrap(),
             (None, None),
             &mut recorder,
         )
@@ -436,7 +439,7 @@ sys.stdout.write('bar');
         super::exec(
             &["w"],
             &ExtraEnv::new(),
-            Box::new(NullTty::open().unwrap()),
+            &mut NullTty::open().unwrap(),
             (None, None),
             &mut recorder,
         )
@@ -455,7 +458,7 @@ sys.stdout.write('bar');
         super::exec(
             &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
             &env,
-            Box::new(NullTty::open().unwrap()),
+            &mut NullTty::open().unwrap(),
             (None, None),
             &mut recorder,
         )
@@ -471,7 +474,7 @@ sys.stdout.write('bar');
         super::exec(
             &["true"],
             &ExtraEnv::new(),
-            Box::new(NullTty::open().unwrap()),
+            &mut NullTty::open().unwrap(),
             (Some(100), Some(50)),
             &mut recorder,
         )
