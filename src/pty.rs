@@ -24,7 +24,7 @@ pub trait Recorder {
 }
 
 pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
-    args: &[S],
+    command: &[S],
     extra_env: &ExtraEnv,
     tty: &mut T,
     winsize_override: (Option<u16>, Option<u16>),
@@ -44,7 +44,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
         ),
 
         ForkResult::Child => {
-            handle_child(args, extra_env)?;
+            handle_child(command, extra_env)?;
             unreachable!();
         }
     }
@@ -238,10 +238,10 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
     }
 }
 
-fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> Result<()> {
+fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> Result<()> {
     use signal::{SigHandler, Signal};
 
-    let args = args
+    let command = command
         .iter()
         .map(|s| CString::new(s.as_ref()))
         .collect::<Result<Vec<CString>, NulError>>()?;
@@ -251,7 +251,7 @@ fn handle_child<S: AsRef<str>>(args: &[S], extra_env: &ExtraEnv) -> Result<()> {
     }
 
     unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
-    unistd::execvp(&args[0], &args)?;
+    unistd::execvp(&command[0], &command)?;
     unsafe { libc::_exit(1) }
 }
 

@@ -111,7 +111,7 @@ impl Cli {
             capture_env(&self.env),
         );
 
-        let exec_args = build_exec_args(self.command);
+        let exec_command = build_exec_command(self.command);
         let exec_extra_env = build_exec_extra_env();
 
         println!("asciinema: recording asciicast to {}", self.filename);
@@ -125,7 +125,7 @@ impl Cli {
         };
 
         pty::exec(
-            &exec_args,
+            &exec_command,
             &exec_extra_env,
             &mut *tty,
             (self.cols, self.rows),
@@ -147,7 +147,7 @@ fn capture_env(vars: &str) -> HashMap<String, String> {
         .collect::<HashMap<_, _>>()
 }
 
-fn build_exec_args(command: Option<String>) -> Vec<String> {
+fn build_exec_command(command: Option<String>) -> Vec<String> {
     let command = command
         .or(env::var("SHELL").ok())
         .unwrap_or("/bin/sh".to_owned());
