@@ -117,20 +117,22 @@ impl Cli {
         println!("asciinema: recording asciicast to {}", self.filename);
         println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
 
-        let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
-            Box::new(dev_tty)
-        } else {
-            println!("asciinema: TTY not available, recording in headless mode");
-            Box::new(tty::NullTty::open()?)
-        };
+        {
+            let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
+                Box::new(dev_tty)
+            } else {
+                println!("asciinema: TTY not available, recording in headless mode");
+                Box::new(tty::NullTty::open()?)
+            };
 
-        pty::exec(
-            &exec_command,
-            &exec_extra_env,
-            &mut *tty,
-            (self.cols, self.rows),
-            &mut recorder,
-        )?;
+            pty::exec(
+                &exec_command,
+                &exec_extra_env,
+                &mut *tty,
+                (self.cols, self.rows),
+                &mut recorder,
+            )?;
+        }
 
         println!("asciinema: recording finished");
         println!("asciinema: asciicast saved to {}", self.filename);
