@@ -1,4 +1,3 @@
-use crate::format;
 use crate::format::{asciicast, raw};
 use crate::locale;
 use crate::pty;
@@ -89,7 +88,7 @@ impl Cli {
             .truncate(overwrite)
             .open(&self.filename)?;
 
-        let writer: Box<dyn format::Writer + Send> = if self.raw {
+        let writer: Box<dyn recorder::EventWriter + Send> = if self.raw {
             Box::new(raw::Writer::new(file))
         } else {
             let time_offset = if append {
@@ -105,10 +104,12 @@ impl Cli {
             writer,
             append,
             self.stdin,
-            self.idle_time_limit,
-            self.command.clone(),
-            self.title,
-            capture_env(&self.env),
+            recorder::Metadata {
+                idle_time_limit: self.idle_time_limit,
+                command: self.command.clone(),
+                title: self.title,
+                env: capture_env(&self.env),
+            },
         );
 
         let exec_command = build_exec_command(self.command);

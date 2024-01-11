@@ -1,3 +1,4 @@
+use crate::recorder;
 use anyhow::Result;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
@@ -63,12 +64,16 @@ where
     }
 }
 
-impl<W> super::Writer for Writer<W>
+impl<W> recorder::EventWriter for Writer<W>
 where
     W: Write,
 {
-    fn header(&mut self, header: &super::Header) -> io::Result<()> {
-        self.write_header(&header.into())
+    fn start(&mut self, header: &recorder::Header, append: bool) -> io::Result<()> {
+        if append {
+            Ok(())
+        } else {
+            self.write_header(&header.into())
+        }
     }
 
     fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
@@ -267,7 +272,7 @@ fn format_time(time: u64) -> String {
     format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000)
 }
 
-impl From<&Header> for super::Header {
+impl From<&Header> for recorder::Header {
     fn from(header: &Header) -> Self {
         Self {
             cols: header.width,
@@ -281,8 +286,8 @@ impl From<&Header> for super::Header {
     }
 }
 
-impl From<&super::Header> for Header {
-    fn from(header: &super::Header) -> Self {
+impl From<&recorder::Header> for Header {
+    fn from(header: &recorder::Header) -> Self {
         Self {
             width: header.cols,
             height: header.rows,

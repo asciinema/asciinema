@@ -1,3 +1,4 @@
+use crate::recorder;
 use std::io::{self, Write};
 
 pub struct Writer<W> {
@@ -10,9 +11,13 @@ impl<W> Writer<W> {
     }
 }
 
-impl<W: Write> super::Writer for Writer<W> {
-    fn header(&mut self, header: &super::Header) -> io::Result<()> {
-        write!(self.writer, "\x1b[8;{};{}t", header.rows, header.cols)
+impl<W: Write> recorder::EventWriter for Writer<W> {
+    fn start(&mut self, header: &recorder::Header, append: bool) -> io::Result<()> {
+        if append {
+            Ok(())
+        } else {
+            write!(self.writer, "\x1b[8;{};{}t", header.rows, header.cols)
+        }
     }
 
     fn output(&mut self, _time: u64, data: &[u8]) -> io::Result<()> {

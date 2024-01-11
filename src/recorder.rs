@@ -1,4 +1,3 @@
-use crate::format;
 use crate::pty;
 use std::collections::HashMap;
 use std::io;
@@ -7,17 +6,38 @@ use std::thread;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 pub struct Recorder {
-    writer: Option<Box<dyn format::Writer + Send>>,
+    writer: Option<Box<dyn EventWriter + Send>>,
     start_time: Instant,
     append: bool,
     record_input: bool,
-    idle_time_limit: Option<f64>,
-    command: Option<String>,
-    title: Option<String>,
-    env: HashMap<String, String>,
+    metadata: Metadata,
     sender: mpsc::Sender<Message>,
     receiver: Option<mpsc::Receiver<Message>>,
     handle: Option<JoinHandle>,
+}
+
+pub trait EventWriter {
+    fn start(&mut self, header: &Header, append: bool) -> io::Result<()>;
+    fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
+    fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
+    fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
+}
+
+pub struct Header {
+    pub cols: u16,
+    pub rows: u16,
+    pub timestamp: Option<u64>,
+    pub idle_time_limit: Option<f64>,
+    pub command: Option<String>,
+    pub title: Option<String>,
+    pub env: HashMap<String, String>,
+}
+
+pub struct Metadata {
+    pub idle_time_limit: Option<f64>,
+    pub command: Option<String>,
+    pub title: Option<String>,
+    pub env: HashMap<String, String>,
 }
 
 enum Message {
@@ -30,13 +50,10 @@ struct JoinHandle(Option<thread::JoinHandle<()>>);
 
 impl Recorder {
     pub fn new(
-        writer: Box<dyn format::Writer + Send>,
+        writer: Box<dyn EventWriter + Send>,
         append: bool,
         record_input: bool,
-        idle_time_limit: Option<f64>,
-        command: Option<String>,
-        title: Option<String>,
-        env: HashMap<String, String>,
+        metadata: Metadata,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
 
@@ -45,10 +62,7 @@ impl Recorder {
             start_time: Instant::now(),
             append,
             record_input,
-            idle_time_limit,
-            command,
-            title,
-            env,
+            metadata,
             sender,
             receiver: Some(receiver),
             handle: None,
@@ -70,19 +84,17 @@ impl pty::Recorder for Recorder {
         let mut writer = self.writer.take().unwrap();
         let receiver = self.receiver.take().unwrap();
 
-        if !self.append {
-            let header = format::Header {
-                cols: size.0,
-                rows: size.1,
-                timestamp: Some(timestamp),
-                idle_time_limit: self.idle_time_limit,
-                command: self.command.clone(),
-                title: self.title.clone(),
-                env: self.env.clone(),
-            };
+        let header = Header {
+            cols: size.0,
+            rows: size.1,
+            timestamp: Some(timestamp),
+            idle_time_limit: self.metadata.idle_time_limit,
+            command: self.metadata.command.clone(),
+            title: self.metadata.title.clone(),
+            env: self.metadata.env.clone(),
+        };
 
-            writer.header(&header)?;
-        }
+        writer.start(&header, self.append)?;
 
         let handle = thread::spawn(move || {
             for msg in receiver {
