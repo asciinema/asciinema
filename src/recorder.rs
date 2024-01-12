@@ -195,7 +195,11 @@ impl pty::Recorder for Recorder {
 
 impl Drop for JoinHandle {
     fn drop(&mut self) {
-        self.0.take().unwrap().join().expect("Thread panicked");
+        self.0
+            .take()
+            .unwrap()
+            .join()
+            .expect("worker thread should finish cleanly");
     }
 }
 
