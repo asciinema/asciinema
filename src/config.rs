@@ -10,6 +10,8 @@ use uuid::Uuid;
 const DEFAULT_SERVER_URL: &str = "https://asciinema.org";
 const INSTALL_ID_FILENAME: &str = "install-id";
 
+pub type Key = Option<Vec<u8>>;
+
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Config {
@@ -108,15 +110,15 @@ impl Config {
         }
     }
 
-    pub fn cmd_play_pause_key(&self) -> Result<Option<Option<char>>> {
+    pub fn cmd_play_pause_key(&self) -> Result<Option<Key>> {
         self.cmd.play.pause_key.as_ref().map(parse_key).transpose()
     }
 
-    pub fn cmd_play_step_key(&self) -> Result<Option<Option<char>>> {
+    pub fn cmd_play_step_key(&self) -> Result<Option<Key>> {
         self.cmd.play.step_key.as_ref().map(parse_key).transpose()
     }
 
-    pub fn cmd_play_next_marker_key(&self) -> Result<Option<Option<char>>> {
+    pub fn cmd_play_next_marker_key(&self) -> Result<Option<Key>> {
         self.cmd
             .play
             .next_marker_key
@@ -198,25 +200,34 @@ fn home() -> Result<PathBuf> {
         .map_err(|_| anyhow!("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME"))
 }
 
-fn parse_key<S: AsRef<str>>(key: S) -> Result<Option<char>> {
+fn parse_key<S: AsRef<str>>(key: S) -> Result<Option<Vec<u8>>> {
     let key = key.as_ref();
     let chars: Vec<char> = key.chars().collect();
 
     match chars.len() {
         0 => return Ok(None),
-        1 => return Ok(Some(chars[0])),
+
+        1 => {
+            let mut buf = [0; 4];
+            let str = chars[0].encode_utf8(&mut buf);
+
+            return Ok(Some(str.as_bytes().into()));
+        }
 
         2 => {
-            if chars[0] == '^' {
-                let key = (chars[1].to_ascii_uppercase() as u8 - 0x40) as char;
+            if chars[0] == '^' && chars[1].is_ascii_alphabetic() {
+                let key = vec![chars[1].to_ascii_uppercase() as u8 - 0x40];
 
                 return Ok(Some(key));
             }
         }
 
         3 => {
-            if chars[0].to_ascii_uppercase() == 'C' && ['+', '-'].contains(&chars[1]) {
-                let key = (chars[2].to_ascii_uppercase() as u8 - 0x40) as char;
+            if chars[0].to_ascii_uppercase() == 'C'
+                && ['+', '-'].contains(&chars[1])
+                && chars[2].is_ascii_alphabetic()
+            {
+                let key = vec![chars[2].to_ascii_uppercase() as u8 - 0x40];
 
                 return Ok(Some(key));
             }
