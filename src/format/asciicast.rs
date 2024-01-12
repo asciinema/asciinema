@@ -401,6 +401,8 @@ mod tests {
             fw.write_event(Event::input(2000002, " ".as_bytes()))
                 .unwrap();
             fw.write_event(Event::resize(3000003, (100, 40))).unwrap();
+            fw.write_event(Event::output(4000004, "żółć".as_bytes()))
+                .unwrap();
         }
 
         let lines = parse(data);
@@ -421,6 +423,9 @@ mod tests {
         assert_eq!(lines[4][0], 4.000004);
         assert_eq!(lines[4][1], "r");
         assert_eq!(lines[4][2], "100x40");
+        assert_eq!(lines[5][0], 5.000005);
+        assert_eq!(lines[5][1], "o");
+        assert_eq!(lines[5][2], "żółć");
     }
 
     #[test]
