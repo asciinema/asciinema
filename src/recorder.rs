@@ -144,8 +144,7 @@ impl pty::Recorder for Recorder {
         }
 
         let msg = Message::Output(self.elapsed_time(), data.into());
-        let _ = self.sender.send(msg);
-        // TODO use notifier for error reporting
+        self.sender.send(msg).expect("output send should succeed");
     }
 
     fn input(&mut self, data: &[u8]) -> bool {
@@ -174,8 +173,7 @@ impl pty::Recorder for Recorder {
                 return false;
             } else if add_marker_key.is_some_and(|key| data == key) {
                 let msg = Message::Marker(self.elapsed_time());
-                let _ = self.sender.send(msg);
-                // notify("Marker added")
+                self.sender.send(msg).expect("marker send should succeed");
                 return false;
             }
         }
@@ -183,8 +181,7 @@ impl pty::Recorder for Recorder {
         if self.record_input && self.pause_time.is_none() {
             // TODO ignore OSC responses
             let msg = Message::Input(self.elapsed_time(), data.into());
-            let _ = self.sender.send(msg);
-            // TODO use notifier for error reporting
+            self.sender.send(msg).expect("input send should succeed");
         }
 
         true
@@ -192,8 +189,7 @@ impl pty::Recorder for Recorder {
 
     fn resize(&mut self, size: (u16, u16)) {
         let msg = Message::Resize(self.elapsed_time(), size);
-        let _ = self.sender.send(msg);
-        // TODO use notifier for error reporting
+        self.sender.send(msg).expect("resize send should succeed");
     }
 }
 
