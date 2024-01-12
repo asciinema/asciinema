@@ -74,8 +74,8 @@ copy the binary to a directory in your `$PATH`.
 
 ## Development
 
-This branch contains the next generation asciinema CLI, written in Rust ([about
-the
+This branch contains the next generation of the asciinema CLI, written in Rust
+([about the
 rewrite](https://discourse.asciinema.org/t/rust-rewrite-of-the-asciinema-cli/777)).
 It is still in a heavy work-in-progress stage, so if you wish to propose any
 code changes, please first reach out to the team via
@@ -83,8 +83,8 @@ code changes, please first reach out to the team via
 [Matrix](https://matrix.to/#/#asciinema:matrix.org) or
 [IRC](https://web.libera.chat/#asciinema).
 
-The previous generation of asciinema CLI, written in Python, can be found in the
-`main` branch.
+The previous generation of the asciinema CLI, written in Python, can be found in
+the `main` branch.
 
 ## Donations
 
