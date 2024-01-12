@@ -216,7 +216,7 @@ fn home() -> Result<PathBuf> {
         .map_err(|_| anyhow!("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME"))
 }
 
-fn parse_key<S: AsRef<str>>(key: S) -> Result<Option<Vec<u8>>> {
+fn parse_key<S: AsRef<str>>(key: S) -> Result<Key> {
     let key = key.as_ref();
     let chars: Vec<char> = key.chars().collect();
 
