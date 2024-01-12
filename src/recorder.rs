@@ -1,3 +1,4 @@
+use crate::config::Key;
 use crate::pty;
 use std::collections::HashMap;
 use std::io;
@@ -8,12 +9,15 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 pub struct Recorder {
     writer: Option<Box<dyn EventWriter + Send>>,
     start_time: Instant,
+    pause_time: Option<Instant>,
     append: bool,
     record_input: bool,
     metadata: Metadata,
+    keys: KeyBindings,
     sender: mpsc::Sender<Message>,
     receiver: Option<mpsc::Receiver<Message>>,
     handle: Option<JoinHandle>,
+    prefix_mode: bool,
 }
 
 pub trait EventWriter {
@@ -54,18 +58,22 @@ impl Recorder {
         append: bool,
         record_input: bool,
         metadata: Metadata,
+        keys: KeyBindings,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
 
         Recorder {
             writer: Some(writer),
             start_time: Instant::now(),
+            pause_time: None,
             append,
             record_input,
             metadata,
+            keys,
             sender,
             receiver: Some(receiver),
             handle: None,
+            prefix_mode: false,
         }
     }
 
@@ -121,17 +129,56 @@ impl pty::Recorder for Recorder {
     }
 
     fn output(&mut self, data: &[u8]) {
+        if self.pause_time.is_some() {
+            return;
+        }
+
         let msg = Message::Output(self.elapsed_time(), data.into());
         let _ = self.sender.send(msg);
         // TODO use notifier for error reporting
     }
 
-    fn input(&mut self, data: &[u8]) {
-        if self.record_input {
+    fn input(&mut self, data: &[u8]) -> bool {
+        let prefix_key = self.keys.prefix.as_ref();
+        let pause_key = self.keys.pause.as_ref();
+        let add_marker_key = self.keys.add_marker.as_ref();
+
+        if !self.prefix_mode && prefix_key.is_some_and(|key| data == key) {
+            self.prefix_mode = true;
+            return false;
+        }
+
+        if self.prefix_mode || prefix_key.is_none() {
+            self.prefix_mode = false;
+
+            if pause_key.is_some_and(|key| data == key) {
+                if let Some(pt) = self.pause_time {
+                    self.start_time += pt.elapsed();
+                    self.pause_time = None;
+                    // notify("Resumed recording")
+                } else {
+                    self.pause_time = Some(Instant::now());
+                    // notify("Paused recording")
+                }
+
+                return false;
+            } else if add_marker_key.is_some_and(|key| data == key) {
+                // TODO
+                // let msg = Message::AddMarker(self.elapsed_time());
+                // let _ = self.sender.send(msg);
+                // notify("Marker added")
+                return false;
+            }
+        }
+
+        if self.record_input && self.pause_time.is_none() {
+            // TODO ignore OSC responses
             let msg = Message::Input(self.elapsed_time(), data.into());
             let _ = self.sender.send(msg);
             // TODO use notifier for error reporting
         }
+
+        true
     }
 
     fn resize(&mut self, size: (u16, u16)) {
@@ -144,5 +191,21 @@ impl pty::Recorder for Recorder {
 impl Drop for JoinHandle {
     fn drop(&mut self) {
         self.0.take().unwrap().join().expect("Thread panicked");
+    }
+}
+
+pub struct KeyBindings {
+    pub prefix: Key,
+    pub pause: Key,
+    pub add_marker: Key,
+}
+
+impl Default for KeyBindings {
+    fn default() -> Self {
+        Self {
+            prefix: None,
+            pause: Some(vec![0x1c]), // ^\
+            add_marker: None,
+        }
     }
 }

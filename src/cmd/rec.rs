@@ -1,7 +1,8 @@
+use crate::config::Config;
 use crate::format::{asciicast, raw};
 use crate::locale;
 use crate::pty;
-use crate::recorder;
+use crate::recorder::{self, KeyBindings};
 use crate::tty;
 use anyhow::Result;
 use clap::Args;
@@ -60,7 +61,7 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn run(self) -> Result<()> {
+    pub fn run(self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
         let mut overwrite = self.overwrite;
@@ -100,17 +101,16 @@ impl Cli {
             Box::new(asciicast::Writer::new(file, time_offset))
         };
 
-        let mut recorder = recorder::Recorder::new(
-            writer,
-            append,
-            self.stdin,
-            recorder::Metadata {
-                idle_time_limit: self.idle_time_limit,
-                command: self.command.clone(),
-                title: self.title,
-                env: capture_env(&self.env),
-            },
-        );
+        let metadata = recorder::Metadata {
+            idle_time_limit: self.idle_time_limit,
+            command: self.command.clone(),
+            title: self.title,
+            env: capture_env(&self.env),
+        };
+
+        let keys = get_key_bindings(config)?;
+
+        let mut recorder = recorder::Recorder::new(writer, append, self.stdin, metadata, keys);
 
         let exec_command = build_exec_command(self.command);
         let exec_extra_env = build_exec_extra_env();
@@ -140,6 +140,24 @@ impl Cli {
 
         Ok(())
     }
+}
+
+fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
+    let mut keys = KeyBindings::default();
+
+    if let Some(key) = config.cmd_rec_prefix_key()? {
+        keys.prefix = key;
+    }
+
+    if let Some(key) = config.cmd_rec_pause_key()? {
+        keys.pause = key;
+    }
+
+    if let Some(key) = config.cmd_rec_add_marker_key()? {
+        keys.add_marker = key;
+    }
+
+    Ok(keys)
 }
 
 fn capture_env(vars: &str) -> HashMap<String, String> {

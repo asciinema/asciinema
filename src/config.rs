@@ -40,7 +40,7 @@ pub struct Rec {
     pub env: String,
     pub idle_time_limit: Option<f64>,
     pub prefix_key: Option<String>,
-    pub pause_key: String,
+    pub pause_key: Option<String>,
     pub add_marker_key: Option<String>,
 }
 
@@ -60,7 +60,6 @@ impl Config {
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
             .set_default("cmd.rec.env", "SHELL,TERM")?
-            .set_default("cmd.rec.pause_key", "C-\\")?
             .set_default("cmd.play.speed", 1.0)?
             .add_source(
                 config::File::with_name(&user_defaults_path()?.to_string_lossy()).required(false),
@@ -108,6 +107,23 @@ impl Config {
 
             Ok(id)
         }
+    }
+
+    pub fn cmd_rec_prefix_key(&self) -> Result<Option<Key>> {
+        self.cmd.rec.prefix_key.as_ref().map(parse_key).transpose()
+    }
+
+    pub fn cmd_rec_pause_key(&self) -> Result<Option<Key>> {
+        self.cmd.rec.pause_key.as_ref().map(parse_key).transpose()
+    }
+
+    pub fn cmd_rec_add_marker_key(&self) -> Result<Option<Key>> {
+        self.cmd
+            .rec
+            .add_marker_key
+            .as_ref()
+            .map(parse_key)
+            .transpose()
     }
 
     pub fn cmd_play_pause_key(&self) -> Result<Option<Key>> {

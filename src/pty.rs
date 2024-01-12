@@ -19,7 +19,7 @@ type ExtraEnv = HashMap<String, String>;
 pub trait Recorder {
     fn start(&mut self, size: (u16, u16)) -> io::Result<()>;
     fn output(&mut self, data: &[u8]);
-    fn input(&mut self, data: &[u8]);
+    fn input(&mut self, data: &[u8]) -> bool;
     fn resize(&mut self, size: (u16, u16));
 }
 
@@ -199,8 +199,9 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         if tty_read {
             while let Some(n) = read_non_blocking(tty, &mut buf)? {
                 if n > 0 {
-                    recorder.input(&buf[0..n]);
-                    input.extend_from_slice(&buf[0..n]);
+                    if recorder.input(&buf[0..n]) {
+                        input.extend_from_slice(&buf[0..n]);
+                    }
                 } else {
                     return Ok(());
                 }
@@ -377,7 +378,10 @@ mod tests {
             self.output.push(data.into());
         }
 
-        fn input(&mut self, _data: &[u8]) {}
+        fn input(&mut self, _data: &[u8]) -> bool {
+            true
+        }
+
         fn resize(&mut self, _size: (u16, u16)) {}
     }
 
