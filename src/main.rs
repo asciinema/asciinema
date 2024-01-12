@@ -46,7 +46,7 @@ fn main() -> Result<()> {
     let config = Config::new(cli.server_url.clone())?;
 
     match cli.command {
-        Commands::Rec(record) => record.run(),
+        Commands::Rec(record) => record.run(&config),
         Commands::Play(play) => play.run(&config),
         Commands::Cat(cat) => cat.run(),
         Commands::Upload(upload) => upload.run(&config),
