@@ -4,12 +4,12 @@ use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub struct Recorder {
     writer: Option<Box<dyn EventWriter + Send>>,
     start_time: Instant,
-    pause_time: Option<Instant>,
+    pause_time: Option<u64>,
     append: bool,
     record_input: bool,
     metadata: Metadata,
@@ -25,6 +25,7 @@ pub trait EventWriter {
     fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
+    fn marker(&mut self, time: u64) -> io::Result<()>;
 }
 
 pub struct Header {
@@ -48,6 +49,7 @@ enum Message {
     Output(u64, Vec<u8>),
     Input(u64, Vec<u8>),
     Resize(u64, (u16, u16)),
+    Marker(u64),
 }
 
 struct JoinHandle(Option<thread::JoinHandle<()>>);
@@ -78,7 +80,11 @@ impl Recorder {
     }
 
     fn elapsed_time(&self) -> u64 {
-        self.start_time.elapsed().as_micros() as u64
+        if let Some(pause_time) = self.pause_time {
+            pause_time
+        } else {
+            self.start_time.elapsed().as_micros() as u64
+        }
     }
 }
 
@@ -118,6 +124,10 @@ impl pty::Recorder for Recorder {
                     Message::Resize(time, size) => {
                         let _ = writer.resize(time, size);
                     }
+
+                    Message::Marker(time) => {
+                        let _ = writer.marker(time);
+                    }
                 }
             }
         });
@@ -153,19 +163,18 @@ impl pty::Recorder for Recorder {
 
             if pause_key.is_some_and(|key| data == key) {
                 if let Some(pt) = self.pause_time {
-                    self.start_time += pt.elapsed();
+                    self.start_time = Instant::now() - Duration::from_micros(pt);
                     self.pause_time = None;
                     // notify("Resumed recording")
                 } else {
-                    self.pause_time = Some(Instant::now());
+                    self.pause_time = Some(self.elapsed_time());
                     // notify("Paused recording")
                 }
 
                 return false;
             } else if add_marker_key.is_some_and(|key| data == key) {
-                // TODO
-                // let msg = Message::AddMarker(self.elapsed_time());
-                // let _ = self.sender.send(msg);
+                let msg = Message::Marker(self.elapsed_time());
+                let _ = self.sender.send(msg);
                 // notify("Marker added")
                 return false;
             }

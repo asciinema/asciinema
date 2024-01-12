@@ -87,6 +87,10 @@ where
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()> {
         self.write_event(Event::resize(time, size))
     }
+
+    fn marker(&mut self, time: u64) -> io::Result<()> {
+        self.write_event(Event::marker(time))
+    }
 }
 
 pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
@@ -188,6 +192,14 @@ impl Event {
             time,
             code: EventCode::Resize,
             data: format!("{}x{}", size.0, size.1),
+        }
+    }
+
+    pub fn marker(time: u64) -> Self {
+        Event {
+            time,
+            code: EventCode::Marker,
+            data: "".to_owned(),
         }
     }
 }

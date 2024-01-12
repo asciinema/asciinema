@@ -31,4 +31,8 @@ impl<W: Write> recorder::EventWriter for Writer<W> {
     fn resize(&mut self, _time: u64, _size: (u16, u16)) -> io::Result<()> {
         Ok(())
     }
+
+    fn marker(&mut self, _time: u64) -> io::Result<()> {
+        Ok(())
+    }
 }
