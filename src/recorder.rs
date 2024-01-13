@@ -1,4 +1,5 @@
 use crate::config::Key;
+use crate::notifier::Notifier;
 use crate::pty;
 use std::collections::HashMap;
 use std::io;
@@ -14,6 +15,7 @@ pub struct Recorder {
     record_input: bool,
     metadata: Metadata,
     keys: KeyBindings,
+    notifier: Option<Box<dyn Notifier>>,
     sender: mpsc::Sender<Message>,
     receiver: Option<mpsc::Receiver<Message>>,
     handle: Option<JoinHandle>,
@@ -50,6 +52,7 @@ enum Message {
     Input(u64, Vec<u8>),
     Resize(u64, (u16, u16)),
     Marker(u64),
+    Notification(String),
 }
 
 struct JoinHandle(Option<thread::JoinHandle<()>>);
@@ -61,6 +64,7 @@ impl Recorder {
         record_input: bool,
         metadata: Metadata,
         keys: KeyBindings,
+        notifier: Box<dyn Notifier>,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
 
@@ -72,6 +76,7 @@ impl Recorder {
             record_input,
             metadata,
             keys,
+            notifier: Some(notifier),
             sender,
             receiver: Some(receiver),
             handle: None,
@@ -85,6 +90,14 @@ impl Recorder {
         } else {
             self.start_time.elapsed().as_micros() as u64
         }
+    }
+
+    fn notify<S: ToString>(&self, text: S) {
+        let msg = Message::Notification(text.to_string());
+
+        self.sender
+            .send(msg)
+            .expect("notification send should succeed");
     }
 }
 
@@ -109,24 +122,31 @@ impl pty::Recorder for Recorder {
         };
 
         writer.start(&header, self.append)?;
+        let notifier = self.notifier.take().unwrap();
 
         let handle = thread::spawn(move || {
+            use Message::*;
+
             for msg in receiver {
                 match msg {
-                    Message::Output(time, data) => {
+                    Output(time, data) => {
                         let _ = writer.output(time, &data);
                     }
 
-                    Message::Input(time, data) => {
+                    Input(time, data) => {
                         let _ = writer.input(time, &data);
                     }
 
-                    Message::Resize(time, size) => {
+                    Resize(time, size) => {
                         let _ = writer.resize(time, size);
                     }
 
-                    Message::Marker(time) => {
+                    Marker(time) => {
                         let _ = writer.marker(time);
+                    }
+
+                    Notification(text) => {
+                        let _ = notifier.notify(text);
                     }
                 }
             }
@@ -164,10 +184,10 @@ impl pty::Recorder for Recorder {
                 if let Some(pt) = self.pause_time {
                     self.start_time = Instant::now() - Duration::from_micros(pt);
                     self.pause_time = None;
-                    // notify("Resumed recording")
+                    self.notify("Resumed recording");
                 } else {
                     self.pause_time = Some(self.elapsed_time());
-                    // notify("Paused recording")
+                    self.notify("Paused recording");
                 }
 
                 return false;

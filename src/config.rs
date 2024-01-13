@@ -17,6 +17,7 @@ pub type Key = Option<Vec<u8>>;
 pub struct Config {
     server: Server,
     cmd: Cmd,
+    pub notifications: Notifications,
 }
 
 #[derive(Debug, Deserialize)]
@@ -54,6 +55,13 @@ pub struct Play {
     pub next_marker_key: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[allow(unused)]
+pub struct Notifications {
+    pub enabled: bool,
+    pub command: Option<String>,
+}
+
 impl Config {
     pub fn new(server_url: Option<String>) -> Result<Self> {
         let mut config = config::Config::builder()
@@ -61,6 +69,7 @@ impl Config {
             .set_default("cmd.rec.input", false)?
             .set_default("cmd.rec.env", "SHELL,TERM")?
             .set_default("cmd.play.speed", 1.0)?
+            .set_default("notifications.enabled", true)?
             .add_source(
                 config::File::with_name(&user_defaults_path()?.to_string_lossy()).required(false),
             )

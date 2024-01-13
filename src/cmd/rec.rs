@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::format::{asciicast, raw};
 use crate::locale;
+use crate::notifier;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
@@ -109,8 +110,10 @@ impl Cli {
         };
 
         let keys = get_key_bindings(config)?;
+        let notifier = get_notifier(config);
 
-        let mut recorder = recorder::Recorder::new(writer, append, self.stdin, metadata, keys);
+        let mut recorder =
+            recorder::Recorder::new(writer, append, self.stdin, metadata, keys, notifier);
 
         let exec_command = build_exec_command(self.command);
         let exec_extra_env = build_exec_extra_env();
@@ -158,6 +161,14 @@ fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
     }
 
     Ok(keys)
+}
+
+fn get_notifier(config: &Config) -> Box<dyn notifier::Notifier> {
+    if config.notifications.enabled {
+        notifier::get_notifier(config.notifications.command.clone())
+    } else {
+        Box::new(notifier::NullNotifier)
+    }
 }
 
 fn capture_env(vars: &str) -> HashMap<String, String> {

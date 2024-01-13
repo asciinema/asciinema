@@ -3,6 +3,7 @@ mod config;
 mod format;
 mod io;
 mod locale;
+mod notifier;
 mod player;
 mod pty;
 mod recorder;
