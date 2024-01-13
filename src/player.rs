@@ -19,9 +19,9 @@ impl Default for KeyBindings {
     fn default() -> Self {
         Self {
             quit: Some(vec![0x03]),
-            pause: Some(vec![' ' as u8]),
-            step: Some(vec!['.' as u8]),
-            next_marker: Some(vec![']' as u8]),
+            pause: Some(vec![b' ']),
+            step: Some(vec![b'.']),
+            next_marker: Some(vec![b']']),
         }
     }
 }
