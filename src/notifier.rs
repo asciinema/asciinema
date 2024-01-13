@@ -7,7 +7,7 @@ use std::{
 use which::which;
 
 pub trait Notifier: Send {
-    fn notify(&self, message: String) -> Result<()>;
+    fn notify(&mut self, message: String) -> Result<()>;
 }
 
 pub fn get_notifier(custom_command: Option<String>) -> Box<dyn Notifier> {
@@ -21,17 +21,39 @@ pub fn get_notifier(custom_command: Option<String>) -> Box<dyn Notifier> {
     }
 }
 
-pub struct LibNotifyNotifier(PathBuf);
+pub struct LibNotifyNotifier {
+    binary_path: PathBuf,
+    last_notification_id: Option<String>,
+}
 
 impl LibNotifyNotifier {
     fn get() -> Option<Self> {
-        which("notify-send").ok().map(LibNotifyNotifier)
+        which("notify-send").ok().map(|path| LibNotifyNotifier {
+            binary_path: path,
+            last_notification_id: None,
+        })
     }
 }
 
 impl Notifier for LibNotifyNotifier {
-    fn notify(&self, message: String) -> Result<()> {
-        exec(&mut Command::new(&self.0), &["asciinema", &message])
+    fn notify(&mut self, message: String) -> Result<()> {
+        let mut args: Vec<&str> = Vec::new();
+
+        if let Some(id) = &self.last_notification_id {
+            args.extend_from_slice(&["-r", id]);
+        }
+
+        args.extend_from_slice(&["-p", "asciinema", &message]);
+
+        let output = Command::new(&self.binary_path).args(args).output()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let id = stdout.trim();
+
+        if !id.is_empty() {
+            self.last_notification_id = Some(id.to_owned())
+        }
+
+        Ok(())
     }
 }
 
@@ -44,7 +66,7 @@ impl AppleScriptNotifier {
 }
 
 impl Notifier for AppleScriptNotifier {
-    fn notify(&self, message: String) -> Result<()> {
+    fn notify(&mut self, message: String) -> Result<()> {
         let text = message.replace('\"', "\\\"");
         let script = format!("display notification \"{text}\" with title \"asciinema\"");
 
@@ -55,7 +77,7 @@ impl Notifier for AppleScriptNotifier {
 pub struct CustomNotifier(String);
 
 impl Notifier for CustomNotifier {
-    fn notify(&self, text: String) -> Result<()> {
+    fn notify(&mut self, text: String) -> Result<()> {
         exec::<&str>(
             Command::new("/bin/sh")
                 .args(["-c", &self.0])
@@ -68,7 +90,7 @@ impl Notifier for CustomNotifier {
 pub struct NullNotifier;
 
 impl Notifier for NullNotifier {
-    fn notify(&self, _text: String) -> Result<()> {
+    fn notify(&mut self, _text: String) -> Result<()> {
         Ok(())
     }
 }

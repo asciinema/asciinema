@@ -122,7 +122,7 @@ impl pty::Recorder for Recorder {
         };
 
         writer.start(&header, self.append)?;
-        let notifier = self.notifier.take().unwrap();
+        let mut notifier = self.notifier.take().unwrap();
 
         let handle = thread::spawn(move || {
             use Message::*;
