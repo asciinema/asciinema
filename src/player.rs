@@ -165,7 +165,7 @@ fn read_input<T: Tty>(tty: &mut T, timeout: i64) -> Result<Option<Vec<u8>>> {
             input.extend_from_slice(&buf[0..n]);
         }
 
-        if input.len() > 0 {
+        if !input.is_empty() {
             Ok(Some(input))
         } else {
             Ok(None)
