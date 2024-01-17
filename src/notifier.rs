@@ -1,5 +1,6 @@
 use anyhow::Result;
 use std::{
+    env,
     ffi::OsStr,
     path::PathBuf,
     process::{Command, Stdio},
@@ -14,10 +15,29 @@ pub fn get_notifier(custom_command: Option<String>) -> Box<dyn Notifier> {
     if let Some(command) = custom_command {
         Box::new(CustomNotifier(command))
     } else {
-        LibNotifyNotifier::get()
+        TmuxNotifier::get()
             .map(|n| Box::new(n) as Box<dyn Notifier>)
+            .or_else(|| LibNotifyNotifier::get().map(|n| Box::new(n) as Box<dyn Notifier>))
             .or_else(|| AppleScriptNotifier::get().map(|n| Box::new(n) as Box<dyn Notifier>))
             .unwrap_or_else(|| Box::new(NullNotifier))
+    }
+}
+
+pub struct TmuxNotifier(PathBuf);
+
+impl TmuxNotifier {
+    fn get() -> Option<Self> {
+        env::var("TMUX")
+            .ok()
+            .and_then(|_| which("tmux").ok().map(TmuxNotifier))
+    }
+}
+
+impl Notifier for TmuxNotifier {
+    fn notify(&mut self, message: String) -> Result<()> {
+        let args = ["display-message", &format!("asciinema: {}", message)];
+
+        exec(&mut Command::new(&self.0), &args)
     }
 }
 
