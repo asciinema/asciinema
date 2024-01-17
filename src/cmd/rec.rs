@@ -6,7 +6,7 @@ use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
 use anyhow::Result;
-use clap::Args;
+use clap::{Args, ValueEnum};
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
@@ -24,8 +24,11 @@ pub struct Cli {
     #[arg(short, long)]
     append: bool,
 
-    /// Save raw output only
-    #[arg(long)]
+    /// Recording file format
+    #[arg(short, long, value_enum, default_value_t = Format::Asciicast)]
+    format: Format,
+
+    #[arg(long, hide = true)]
     raw: bool,
 
     /// Overwrite target file if it already exists
@@ -61,6 +64,12 @@ pub struct Cli {
     quiet: bool,
 }
 
+#[derive(Clone, Debug, ValueEnum)]
+enum Format {
+    Asciicast,
+    Raw,
+}
+
 impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
@@ -90,16 +99,20 @@ impl Cli {
             .truncate(overwrite)
             .open(&self.filename)?;
 
-        let writer: Box<dyn recorder::EventWriter + Send> = if self.raw {
-            Box::new(raw::Writer::new(file))
-        } else {
-            let time_offset = if append {
-                asciicast::get_duration(&self.filename)?
-            } else {
-                0
-            };
+        let format = if self.raw { Format::Raw } else { self.format };
 
-            Box::new(asciicast::Writer::new(file, time_offset))
+        let writer: Box<dyn recorder::EventWriter + Send> = match format {
+            Format::Asciicast => {
+                let time_offset = if append {
+                    asciicast::get_duration(&self.filename)?
+                } else {
+                    0
+                };
+
+                Box::new(asciicast::Writer::new(file, time_offset))
+            }
+
+            Format::Raw => Box::new(raw::Writer::new(file)),
         };
 
         let metadata = recorder::Metadata {
