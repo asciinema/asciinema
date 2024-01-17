@@ -17,7 +17,7 @@ pub struct Cli {
     filename: String,
 
     /// Enable input recording
-    #[arg(long, alias = "stdin")]
+    #[arg(long, short = 'I', alias = "stdin")]
     input: bool,
 
     /// Append to an existing asciicast file
