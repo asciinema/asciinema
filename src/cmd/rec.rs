@@ -21,7 +21,7 @@ pub struct Cli {
     input: bool,
 
     /// Append to an existing asciicast file
-    #[arg(long)]
+    #[arg(short, long)]
     append: bool,
 
     /// Save raw output only
