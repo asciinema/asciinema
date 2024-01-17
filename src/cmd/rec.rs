@@ -17,8 +17,8 @@ pub struct Cli {
     filename: String,
 
     /// Enable input recording
-    #[arg(long)]
-    stdin: bool,
+    #[arg(long, alias = "stdin")]
+    input: bool,
 
     /// Append to an existing asciicast file
     #[arg(long)]
@@ -113,7 +113,7 @@ impl Cli {
         let notifier = get_notifier(config);
 
         let mut recorder =
-            recorder::Recorder::new(writer, append, self.stdin, metadata, keys, notifier);
+            recorder::Recorder::new(writer, append, self.input, metadata, keys, notifier);
 
         let exec_command = build_exec_command(self.command);
         let exec_extra_env = build_exec_extra_env();
