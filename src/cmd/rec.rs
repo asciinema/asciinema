@@ -60,10 +60,6 @@ pub struct Cli {
 
     #[arg(long, hide = true)]
     rows: Option<u16>,
-
-    /// Quiet mode - suppress all notices/warnings
-    #[arg(short, long)]
-    quiet: bool,
 }
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
