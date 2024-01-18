@@ -102,7 +102,7 @@ impl Recorder {
 }
 
 impl pty::Recorder for Recorder {
-    fn start(&mut self, size: tty::TtySize) -> io::Result<()> {
+    fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -112,7 +112,7 @@ impl pty::Recorder for Recorder {
         let receiver = self.receiver.take().unwrap();
 
         let header = Header {
-            tty_size: size.into(),
+            tty_size: tty_size.into(),
             timestamp: Some(timestamp),
             idle_time_limit: self.metadata.idle_time_limit,
             command: self.metadata.command.clone(),
@@ -125,6 +125,7 @@ impl pty::Recorder for Recorder {
 
         let handle = thread::spawn(move || {
             use Message::*;
+            let mut last_tty_size = tty_size;
 
             for msg in receiver {
                 match msg {
@@ -136,8 +137,11 @@ impl pty::Recorder for Recorder {
                         let _ = writer.input(time, &data);
                     }
 
-                    Resize(time, size) => {
-                        let _ = writer.resize(time, size.into());
+                    Resize(time, new_tty_size) => {
+                        if new_tty_size != last_tty_size {
+                            let _ = writer.resize(time, new_tty_size.into());
+                            last_tty_size = new_tty_size;
+                        }
                     }
 
                     Marker(time) => {

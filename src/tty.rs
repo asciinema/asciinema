@@ -6,7 +6,7 @@ use std::{
 };
 use termion::raw::{IntoRawMode, RawTerminal};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TtySize(pub u16, pub u16);
 
 impl From<pty::Winsize> for TtySize {
