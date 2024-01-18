@@ -3,17 +3,18 @@ use std::io::{self, Write};
 
 pub struct Writer<W> {
     writer: W,
+    append: bool,
 }
 
 impl<W> Writer<W> {
-    pub fn new(writer: W) -> Self {
-        Writer { writer }
+    pub fn new(writer: W, append: bool) -> Self {
+        Writer { writer, append }
     }
 }
 
 impl<W: Write> recorder::EventWriter for Writer<W> {
-    fn start(&mut self, header: &recorder::Header, append: bool) -> io::Result<()> {
-        if append {
+    fn start(&mut self, header: &recorder::Header) -> io::Result<()> {
+        if self.append {
             Ok(())
         } else {
             let (cols, rows) = header.tty_size;

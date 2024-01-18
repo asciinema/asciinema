@@ -10,6 +10,7 @@ use std::path::Path;
 
 pub struct Writer<W: Write> {
     writer: io::LineWriter<W>,
+    append: bool,
     time_offset: u64,
 }
 
@@ -46,9 +47,10 @@ impl<W> Writer<W>
 where
     W: Write,
 {
-    pub fn new(writer: W, time_offset: u64) -> Self {
+    pub fn new(writer: W, append: bool, time_offset: u64) -> Self {
         Self {
             writer: io::LineWriter::new(writer),
+            append,
             time_offset,
         }
     }
@@ -68,8 +70,8 @@ impl<W> recorder::EventWriter for Writer<W>
 where
     W: Write,
 {
-    fn start(&mut self, header: &recorder::Header, append: bool) -> io::Result<()> {
-        if append {
+    fn start(&mut self, header: &recorder::Header) -> io::Result<()> {
+        if self.append {
             Ok(())
         } else {
             self.write_header(&header.into())
@@ -385,8 +387,7 @@ mod tests {
         let mut data = Vec::new();
 
         {
-            let cursor = io::Cursor::new(&mut data);
-            let mut fw = Writer::new(cursor, 0);
+            let mut fw = Writer::new(&mut data, false, 0);
 
             let header = Header {
                 width: 80,
@@ -404,10 +405,7 @@ mod tests {
         }
 
         {
-            let data_len = data.len() as u64;
-            let mut cursor = io::Cursor::new(&mut data);
-            cursor.set_position(data_len);
-            let mut fw = Writer::new(cursor, 1000001);
+            let mut fw = Writer::new(&mut data, false, 1000001);
 
             fw.write_event(Event::output(1000001, "world".as_bytes()))
                 .unwrap();
@@ -446,8 +444,7 @@ mod tests {
         let mut data = Vec::new();
 
         {
-            let mut fw = Writer::new(io::Cursor::new(&mut data), 0);
-
+            let mut fw = Writer::new(io::Cursor::new(&mut data), false, 0);
             let mut env = HashMap::new();
             env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
             env.insert("TERM".to_owned(), "xterm256-color".to_owned());

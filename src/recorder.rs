@@ -12,7 +12,6 @@ pub struct Recorder {
     writer: Option<Box<dyn EventWriter + Send>>,
     start_time: Instant,
     pause_time: Option<u64>,
-    append: bool,
     record_input: bool,
     metadata: Metadata,
     keys: KeyBindings,
@@ -24,7 +23,7 @@ pub struct Recorder {
 }
 
 pub trait EventWriter {
-    fn start(&mut self, header: &Header, append: bool) -> io::Result<()>;
+    fn start(&mut self, header: &Header) -> io::Result<()>;
     fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
@@ -60,7 +59,6 @@ struct JoinHandle(Option<thread::JoinHandle<()>>);
 impl Recorder {
     pub fn new(
         writer: Box<dyn EventWriter + Send>,
-        append: bool,
         record_input: bool,
         metadata: Metadata,
         keys: KeyBindings,
@@ -72,7 +70,6 @@ impl Recorder {
             writer: Some(writer),
             start_time: Instant::now(),
             pause_time: None,
-            append,
             record_input,
             metadata,
             keys,
@@ -120,7 +117,7 @@ impl pty::Recorder for Recorder {
             env: self.metadata.env.clone(),
         };
 
-        writer.start(&header, self.append)?;
+        writer.start(&header)?;
         let mut notifier = self.notifier.take().unwrap();
 
         let handle = thread::spawn(move || {

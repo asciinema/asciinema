@@ -82,10 +82,7 @@ impl Cli {
         let metadata = self.build_metadata(command.as_ref().cloned());
         let keys = get_key_bindings(config)?;
         let notifier = get_notifier(config);
-
-        let mut recorder =
-            recorder::Recorder::new(writer, append, self.input, metadata, keys, notifier);
-
+        let mut recorder = recorder::Recorder::new(writer, self.input, metadata, keys, notifier);
         let exec_command = build_exec_command(command);
         let exec_extra_env = build_exec_extra_env();
         let tty_size = self.get_tty_size();
@@ -166,10 +163,10 @@ impl Cli {
                     0
                 };
 
-                Ok(Box::new(asciicast::Writer::new(file, time_offset)))
+                Ok(Box::new(asciicast::Writer::new(file, append, time_offset)))
             }
 
-            Format::Raw => Ok(Box::new(raw::Writer::new(file))),
+            Format::Raw => Ok(Box::new(raw::Writer::new(file, append))),
         }
     }
 
