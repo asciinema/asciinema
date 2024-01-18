@@ -5,7 +5,7 @@ use crate::notifier;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::{Args, ValueEnum};
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -51,12 +51,14 @@ pub struct Cli {
     #[arg(short, long, value_name = "SECS")]
     idle_time_limit: Option<f64>,
 
-    /// Override terminal width (columns) for the recorded command
-    #[arg(long)]
+    /// Override terminal size for the recorded command
+    #[arg(long, short = 's', value_parser = parse_tty_size, value_name = "COLSxROWS")]
+    tty_size: Option<TtySize>,
+
+    #[arg(long, hide = true)]
     cols: Option<u16>,
 
-    /// Override terminal height (rows) for the recorded command
-    #[arg(long)]
+    #[arg(long, hide = true)]
     rows: Option<u16>,
 
     /// Quiet mode - suppress all notices/warnings
@@ -64,11 +66,14 @@ pub struct Cli {
     quiet: bool,
 }
 
-#[derive(Clone, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, ValueEnum)]
 enum Format {
     Asciicast,
     Raw,
 }
+
+#[derive(Clone, Debug)]
+struct TtySize((Option<u16>, Option<u16>));
 
 impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
@@ -118,7 +123,7 @@ impl Cli {
         let metadata = recorder::Metadata {
             idle_time_limit: self.idle_time_limit,
             command: self.command.clone(),
-            title: self.title,
+            title: self.title.clone(),
             env: capture_env(&self.env),
         };
 
@@ -128,8 +133,9 @@ impl Cli {
         let mut recorder =
             recorder::Recorder::new(writer, append, self.input, metadata, keys, notifier);
 
-        let exec_command = build_exec_command(self.command);
+        let exec_command = build_exec_command(self.command.as_ref());
         let exec_extra_env = build_exec_extra_env();
+        let tty_size = self.tty_size();
 
         println!("asciinema: recording asciicast to {}", self.filename);
         println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
@@ -146,7 +152,7 @@ impl Cli {
                 &exec_command,
                 &exec_extra_env,
                 &mut *tty,
-                (self.cols, self.rows),
+                tty_size,
                 &mut recorder,
             )?;
         }
@@ -155,6 +161,40 @@ impl Cli {
         println!("asciinema: asciicast saved to {}", self.filename);
 
         Ok(())
+    }
+
+    fn tty_size(&self) -> (Option<u16>, Option<u16>) {
+        self.tty_size
+            .as_ref()
+            .map(|s| s.0)
+            .unwrap_or((self.cols, self.rows))
+    }
+}
+
+fn parse_tty_size(s: &str) -> Result<TtySize> {
+    match s.split_once('x') {
+        Some((cols, "")) => {
+            let cols: u16 = cols.parse()?;
+
+            Ok(TtySize((Some(cols), None)))
+        }
+
+        Some(("", rows)) => {
+            let rows: u16 = rows.parse()?;
+
+            Ok(TtySize((None, Some(rows))))
+        }
+
+        Some((cols, rows)) => {
+            let cols: u16 = cols.parse()?;
+            let rows: u16 = rows.parse()?;
+
+            Ok(TtySize((Some(cols), Some(rows))))
+        }
+
+        None => {
+            bail!("{s}")
+        }
     }
 }
 
@@ -192,8 +232,9 @@ fn capture_env(vars: &str) -> HashMap<String, String> {
         .collect::<HashMap<_, _>>()
 }
 
-fn build_exec_command(command: Option<String>) -> Vec<String> {
+fn build_exec_command<S: ToString>(command: Option<S>) -> Vec<String> {
     let command = command
+        .map(|s| s.to_string())
         .or(env::var("SHELL").ok())
         .unwrap_or("/bin/sh".to_owned());
 
