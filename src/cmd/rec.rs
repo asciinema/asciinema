@@ -52,7 +52,7 @@ pub struct Cli {
     idle_time_limit: Option<f64>,
 
     /// Override terminal size for the recorded command
-    #[arg(long, short = 's', value_parser = parse_tty_size, value_name = "COLSxROWS")]
+    #[arg(long, value_parser = parse_tty_size, value_name = "COLSxROWS")]
     tty_size: Option<TtySize>,
 
     #[arg(long, hide = true)]
