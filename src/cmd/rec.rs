@@ -121,14 +121,7 @@ impl Cli {
         };
 
         let command = self.get_command(config);
-
-        let metadata = recorder::Metadata {
-            idle_time_limit: self.idle_time_limit,
-            command: command.as_ref().cloned(),
-            title: self.title.clone(),
-            env: capture_env(&self.env),
-        };
-
+        let metadata = self.build_metadata(command.as_ref().cloned());
         let keys = get_key_bindings(config)?;
         let notifier = get_notifier(config);
 
@@ -167,6 +160,15 @@ impl Cli {
 
     fn get_command(&self, config: &Config) -> Option<String> {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
+    }
+
+    fn build_metadata(&self, command: Option<String>) -> recorder::Metadata {
+        recorder::Metadata {
+            idle_time_limit: self.idle_time_limit,
+            command,
+            title: self.title.clone(),
+            env: capture_env(&self.env),
+        }
     }
 
     fn get_tty_size(&self) -> (Option<u16>, Option<u16>) {
