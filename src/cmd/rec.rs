@@ -104,22 +104,7 @@ impl Cli {
             .truncate(overwrite)
             .open(&self.filename)?;
 
-        let format = if self.raw { Format::Raw } else { self.format };
-
-        let writer: Box<dyn recorder::EventWriter + Send> = match format {
-            Format::Asciicast => {
-                let time_offset = if append {
-                    asciicast::get_duration(&self.filename)?
-                } else {
-                    0
-                };
-
-                Box::new(asciicast::Writer::new(file, time_offset))
-            }
-
-            Format::Raw => Box::new(raw::Writer::new(file)),
-        };
-
+        let writer = self.get_writer(file, append)?;
         let command = self.get_command(config);
         let metadata = self.build_metadata(command.as_ref().cloned());
         let keys = get_key_bindings(config)?;
@@ -156,6 +141,28 @@ impl Cli {
         println!("asciinema: asciicast saved to {}", self.filename);
 
         Ok(())
+    }
+
+    fn get_writer(
+        &self,
+        file: fs::File,
+        append: bool,
+    ) -> Result<Box<dyn recorder::EventWriter + Send>> {
+        let format = if self.raw { Format::Raw } else { self.format };
+
+        match format {
+            Format::Asciicast => {
+                let time_offset = if append {
+                    asciicast::get_duration(&self.filename)?
+                } else {
+                    0
+                };
+
+                Ok(Box::new(asciicast::Writer::new(file, time_offset)))
+            }
+
+            Format::Raw => Ok(Box::new(raw::Writer::new(file))),
+        }
     }
 
     fn get_command(&self, config: &Config) -> Option<String> {
