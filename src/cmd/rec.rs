@@ -122,13 +122,16 @@ impl Cli {
         let path = Path::new(&self.filename);
 
         if path.exists() {
+            if !append && !overwrite {
+                bail!("file exists, use --overwrite or --append");
+            }
+
             let metadata = fs::metadata(path)?;
 
             if metadata.len() == 0 {
                 overwrite = true;
                 append = false;
             }
-            // TODO if !append && !overwrite - error message
         } else {
             append = false;
         }
