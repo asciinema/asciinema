@@ -137,7 +137,7 @@ impl Cli {
 
         let exec_command = build_exec_command(command);
         let exec_extra_env = build_exec_extra_env();
-        let tty_size = self.tty_size();
+        let tty_size = self.get_tty_size();
 
         println!("asciinema: recording asciicast to {}", self.filename);
         println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
@@ -169,7 +169,7 @@ impl Cli {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
-    fn tty_size(&self) -> (Option<u16>, Option<u16>) {
+    fn get_tty_size(&self) -> (Option<u16>, Option<u16>) {
         self.tty_size
             .as_ref()
             .map(|s| s.0)
