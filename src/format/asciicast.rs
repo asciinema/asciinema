@@ -299,7 +299,7 @@ impl From<&Header> for recorder::Header {
 
 impl From<&recorder::Header> for Header {
     fn from(header: &recorder::Header) -> Self {
-        let (width, height) = header.tty_size.into();
+        let (width, height) = header.tty_size;
 
         Self {
             width,
