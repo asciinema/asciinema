@@ -287,8 +287,7 @@ fn format_time(time: u64) -> String {
 impl From<&Header> for recorder::Header {
     fn from(header: &Header) -> Self {
         Self {
-            cols: header.width,
-            rows: header.height,
+            tty_size: (header.width, header.height),
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
@@ -300,9 +299,11 @@ impl From<&Header> for recorder::Header {
 
 impl From<&recorder::Header> for Header {
     fn from(header: &recorder::Header) -> Self {
+        let (width, height) = header.tty_size.into();
+
         Self {
-            width: header.cols,
-            height: header.rows,
+            width,
+            height,
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),

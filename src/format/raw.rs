@@ -16,7 +16,8 @@ impl<W: Write> recorder::EventWriter for Writer<W> {
         if append {
             Ok(())
         } else {
-            write!(self.writer, "\x1b[8;{};{}t", header.rows, header.cols)
+            let (cols, rows) = header.tty_size.into();
+            write!(self.writer, "\x1b[8;{rows};{cols}t")
         }
     }
 

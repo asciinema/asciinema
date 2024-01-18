@@ -6,6 +6,21 @@ use std::{
 };
 use termion::raw::{IntoRawMode, RawTerminal};
 
+#[derive(Debug, PartialEq)]
+pub struct TtySize(pub u16, pub u16);
+
+impl From<pty::Winsize> for TtySize {
+    fn from(winsize: pty::Winsize) -> Self {
+        TtySize(winsize.ws_col, winsize.ws_row)
+    }
+}
+
+impl From<TtySize> for (u16, u16) {
+    fn from(tty_size: TtySize) -> Self {
+        (tty_size.0, tty_size.1)
+    }
+}
+
 pub trait Tty: io::Write + io::Read + AsFd {
     fn get_size(&self) -> pty::Winsize;
 }

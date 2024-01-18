@@ -1,6 +1,7 @@
 use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
+use crate::tty;
 use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc;
@@ -31,8 +32,7 @@ pub trait EventWriter {
 }
 
 pub struct Header {
-    pub cols: u16,
-    pub rows: u16,
+    pub tty_size: (u16, u16),
     pub timestamp: Option<u64>,
     pub idle_time_limit: Option<f64>,
     pub command: Option<String>,
@@ -50,7 +50,7 @@ pub struct Metadata {
 enum Message {
     Output(u64, Vec<u8>),
     Input(u64, Vec<u8>),
-    Resize(u64, (u16, u16)),
+    Resize(u64, tty::TtySize),
     Marker(u64),
     Notification(String),
 }
@@ -102,7 +102,7 @@ impl Recorder {
 }
 
 impl pty::Recorder for Recorder {
-    fn start(&mut self, size: (u16, u16)) -> io::Result<()> {
+    fn start(&mut self, size: tty::TtySize) -> io::Result<()> {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -112,8 +112,7 @@ impl pty::Recorder for Recorder {
         let receiver = self.receiver.take().unwrap();
 
         let header = Header {
-            cols: size.0,
-            rows: size.1,
+            tty_size: size.into(),
             timestamp: Some(timestamp),
             idle_time_limit: self.metadata.idle_time_limit,
             command: self.metadata.command.clone(),
@@ -138,7 +137,7 @@ impl pty::Recorder for Recorder {
                     }
 
                     Resize(time, size) => {
-                        let _ = writer.resize(time, size);
+                        let _ = writer.resize(time, size.into());
                     }
 
                     Marker(time) => {
@@ -207,7 +206,7 @@ impl pty::Recorder for Recorder {
         true
     }
 
-    fn resize(&mut self, size: (u16, u16)) {
+    fn resize(&mut self, size: tty::TtySize) {
         let msg = Message::Resize(self.elapsed_time(), size);
         self.sender.send(msg).expect("resize send should succeed");
     }

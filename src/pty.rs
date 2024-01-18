@@ -1,5 +1,5 @@
 use crate::io::set_non_blocking;
-use crate::tty::Tty;
+use crate::tty::{Tty, TtySize};
 use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::sys::select::{select, FdSet};
@@ -17,10 +17,10 @@ use std::{env, fs};
 type ExtraEnv = HashMap<String, String>;
 
 pub trait Recorder {
-    fn start(&mut self, size: (u16, u16)) -> io::Result<()>;
+    fn start(&mut self, size: TtySize) -> io::Result<()>;
     fn output(&mut self, data: &[u8]);
     fn input(&mut self, data: &[u8]) -> bool;
-    fn resize(&mut self, size: (u16, u16));
+    fn resize(&mut self, size: TtySize);
 }
 
 pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
@@ -31,7 +31,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
     recorder: &mut R,
 ) -> Result<i32> {
     let winsize = get_tty_size(&*tty, winsize_override);
-    recorder.start((winsize.ws_col, winsize.ws_row))?;
+    recorder.start(winsize.into())?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
@@ -212,7 +212,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             sigwinch_fd.flush();
             let winsize = get_tty_size(&*tty, winsize_override);
             set_pty_size(master_raw_fd, &winsize);
-            recorder.resize((winsize.ws_col, winsize.ws_row));
+            recorder.resize(winsize.into());
         }
 
         if sigint_read {
@@ -359,18 +359,19 @@ impl Drop for SignalFd {
 
 #[cfg(test)]
 mod tests {
+    use super::Recorder;
     use crate::pty::ExtraEnv;
-    use crate::tty::NullTty;
+    use crate::tty::{NullTty, TtySize};
 
     #[derive(Default)]
     struct TestRecorder {
-        size: Option<(u16, u16)>,
+        tty_size: Option<TtySize>,
         output: Vec<Vec<u8>>,
     }
 
-    impl super::Recorder for TestRecorder {
-        fn start(&mut self, size: (u16, u16)) -> std::io::Result<()> {
-            self.size = Some(size);
+    impl Recorder for TestRecorder {
+        fn start(&mut self, tty_size: TtySize) -> std::io::Result<()> {
+            self.tty_size = Some(tty_size);
             Ok(())
         }
 
@@ -382,7 +383,7 @@ mod tests {
             true
         }
 
-        fn resize(&mut self, _size: (u16, u16)) {}
+        fn resize(&mut self, _size: TtySize) {}
     }
 
     impl TestRecorder {
@@ -417,7 +418,7 @@ sys.stdout.write('bar');
         .unwrap();
 
         assert_eq!(recorder.output(), vec!["foo", "bar"]);
-        assert_eq!(recorder.size, Some((80, 24)));
+        assert_eq!(recorder.tty_size, Some(TtySize(80, 24)));
     }
 
     #[test]
@@ -484,6 +485,6 @@ sys.stdout.write('bar');
         )
         .unwrap();
 
-        assert_eq!(recorder.size, Some((100, 50)));
+        assert_eq!(recorder.tty_size, Some(TtySize(100, 50)));
     }
 }
