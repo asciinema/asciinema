@@ -70,6 +70,7 @@ impl Config {
             .set_default("cmd.rec.env", "SHELL,TERM")?
             .set_default("cmd.play.speed", 1.0)?
             .set_default("notifications.enabled", true)?
+            .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(
                 config::File::with_name(&user_defaults_path()?.to_string_lossy()).required(false),
             )
