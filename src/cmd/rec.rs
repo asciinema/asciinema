@@ -79,31 +79,8 @@ impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
-        let mut overwrite = self.overwrite;
-        let mut append = self.append;
-
-        let path = Path::new(&self.filename);
-
-        if path.exists() {
-            let metadata = fs::metadata(path)?;
-
-            if metadata.len() == 0 {
-                overwrite = true;
-                append = false;
-            }
-            // TODO if !append && !overwrite - error message
-        } else {
-            append = false;
-        }
-
-        let file = fs::OpenOptions::new()
-            .write(true)
-            .append(append)
-            .create(overwrite)
-            .create_new(!overwrite && !append)
-            .truncate(overwrite)
-            .open(&self.filename)?;
-
+        let (append, overwrite) = self.get_mode()?;
+        let file = self.open_file(append, overwrite)?;
         let writer = self.get_writer(file, append)?;
         let command = self.get_command(config);
         let metadata = self.build_metadata(command.as_ref().cloned());
@@ -141,6 +118,38 @@ impl Cli {
         println!("asciinema: asciicast saved to {}", self.filename);
 
         Ok(())
+    }
+
+    fn get_mode(&self) -> Result<(bool, bool)> {
+        let mut overwrite = self.overwrite;
+        let mut append = self.append;
+        let path = Path::new(&self.filename);
+
+        if path.exists() {
+            let metadata = fs::metadata(path)?;
+
+            if metadata.len() == 0 {
+                overwrite = true;
+                append = false;
+            }
+            // TODO if !append && !overwrite - error message
+        } else {
+            append = false;
+        }
+
+        Ok((append, overwrite))
+    }
+
+    fn open_file(&self, append: bool, overwrite: bool) -> Result<fs::File> {
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .append(append)
+            .create(overwrite)
+            .create_new(!overwrite && !append)
+            .truncate(overwrite)
+            .open(&self.filename)?;
+
+        Ok(file)
     }
 
     fn get_writer(
