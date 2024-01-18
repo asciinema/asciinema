@@ -119,6 +119,10 @@ impl Config {
         }
     }
 
+    pub fn cmd_rec_command(&self) -> Option<String> {
+        self.cmd.rec.command.as_ref().cloned()
+    }
+
     pub fn cmd_rec_prefix_key(&self) -> Result<Option<Key>> {
         self.cmd.rec.prefix_key.as_ref().map(parse_key).transpose()
     }

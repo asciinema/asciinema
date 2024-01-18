@@ -120,9 +120,11 @@ impl Cli {
             Format::Raw => Box::new(raw::Writer::new(file)),
         };
 
+        let command = self.get_command(config);
+
         let metadata = recorder::Metadata {
             idle_time_limit: self.idle_time_limit,
-            command: self.command.clone(),
+            command: command.as_ref().cloned(),
             title: self.title.clone(),
             env: capture_env(&self.env),
         };
@@ -133,7 +135,7 @@ impl Cli {
         let mut recorder =
             recorder::Recorder::new(writer, append, self.input, metadata, keys, notifier);
 
-        let exec_command = build_exec_command(self.command.as_ref());
+        let exec_command = build_exec_command(command);
         let exec_extra_env = build_exec_extra_env();
         let tty_size = self.tty_size();
 
@@ -161,6 +163,10 @@ impl Cli {
         println!("asciinema: asciicast saved to {}", self.filename);
 
         Ok(())
+    }
+
+    fn get_command(&self, config: &Config) -> Option<String> {
+        self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
     fn tty_size(&self) -> (Option<u16>, Option<u16>) {
@@ -232,9 +238,8 @@ fn capture_env(vars: &str) -> HashMap<String, String> {
         .collect::<HashMap<_, _>>()
 }
 
-fn build_exec_command<S: ToString>(command: Option<S>) -> Vec<String> {
+fn build_exec_command(command: Option<String>) -> Vec<String> {
     let command = command
-        .map(|s| s.to_string())
         .or(env::var("SHELL").ok())
         .unwrap_or("/bin/sh".to_owned());
 
