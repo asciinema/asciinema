@@ -43,6 +43,7 @@ impl Cli {
 
         if content_type.starts_with("application/json") {
             let json = response.json::<UploadResponse>()?;
+
             if let Some(message) = json.message {
                 println!("{}", message);
             } else {
