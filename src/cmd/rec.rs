@@ -85,12 +85,15 @@ impl Cli {
         let notifier = get_notifier(config);
         let input = self.input || config.cmd_rec_input();
         let mut recorder = recorder::Recorder::new(writer, input, metadata, keys, notifier);
-        let exec_command = build_exec_command(command);
+        let exec_command = build_exec_command(command.as_ref().cloned());
         let exec_extra_env = build_exec_extra_env();
         let tty_size = self.get_tty_size();
 
         logger::info!("Recording session started, writing to {}", self.filename);
-        logger::info!("Press <ctrl+d> or type 'exit' to end");
+
+        if command.is_none() {
+            logger::info!("Press <ctrl+d> or type 'exit' to end");
+        }
 
         {
             let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
