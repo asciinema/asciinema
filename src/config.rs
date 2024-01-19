@@ -154,6 +154,10 @@ impl Config {
         self.cmd.play.speed
     }
 
+    pub fn cmd_play_idle_time_limit(&self) -> Option<f64> {
+        self.cmd.play.idle_time_limit
+    }
+
     pub fn cmd_play_pause_key(&self) -> Result<Option<Key>> {
         self.cmd.play.pause_key.as_ref().map(parse_key).transpose()
     }
