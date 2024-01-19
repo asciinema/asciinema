@@ -127,6 +127,10 @@ impl Config {
         self.cmd.rec.input
     }
 
+    pub fn cmd_rec_idle_time_limit(&self) -> Option<f64> {
+        self.cmd.rec.idle_time_limit
+    }
+
     pub fn cmd_rec_prefix_key(&self) -> Result<Option<Key>> {
         self.cmd.rec.prefix_key.as_ref().map(parse_key).transpose()
     }
