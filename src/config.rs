@@ -36,8 +36,8 @@ pub struct Cmd {
 #[derive(Debug, Deserialize, Default)]
 #[allow(unused)]
 pub struct Rec {
-    pub input: bool,
     pub command: Option<String>,
+    pub input: bool,
     pub env: String,
     pub idle_time_limit: Option<f64>,
     pub prefix_key: Option<String>,
@@ -121,6 +121,10 @@ impl Config {
 
     pub fn cmd_rec_command(&self) -> Option<String> {
         self.cmd.rec.command.as_ref().cloned()
+    }
+
+    pub fn cmd_rec_input(&self) -> bool {
+        self.cmd.rec.input
     }
 
     pub fn cmd_rec_prefix_key(&self) -> Result<Option<Key>> {
