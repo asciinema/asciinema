@@ -41,7 +41,7 @@ pub struct Cli {
     command: Option<String>,
 
     /// List of env vars to save [default: TERM,SHELL]
-    #[arg(short, long)]
+    #[arg(long)]
     env: Option<String>,
 
     /// Title of the recording
