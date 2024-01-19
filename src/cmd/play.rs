@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::logger;
 use crate::{
     player::{self, KeyBindings},
     tty,
@@ -33,12 +34,14 @@ impl Cli {
         let speed = self.speed.or(config.cmd_play_speed()).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(config.cmd_play_idle_time_limit());
 
-        loop {
+        logger::info!("Replaying session from {}", self.filename);
+
+        let ended = loop {
             let file = fs::File::open(&self.filename)?;
             let tty = tty::DevTty::open()?;
             let keys = get_key_bindings(config)?;
 
-            player::play(
+            let ended = player::play(
                 file,
                 tty,
                 speed,
@@ -48,8 +51,14 @@ impl Cli {
             )?;
 
             if !self.loop_ {
-                break;
+                break ended;
             }
+        };
+
+        if ended {
+            logger::info!("Playback ended");
+        } else {
+            logger::info!("Playback interrupted");
         }
 
         Ok(())

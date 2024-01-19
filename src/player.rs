@@ -33,7 +33,7 @@ pub fn play(
     idle_time_limit: Option<f64>,
     pause_on_markers: bool,
     keys: &KeyBindings,
-) -> Result<()> {
+) -> Result<bool> {
     let mut events = open_recording(recording, speed, idle_time_limit)?;
     let mut stdout = io::stdout();
     let mut epoch = Instant::now();
@@ -45,7 +45,7 @@ pub fn play(
             if let Some(input) = read_input(&mut tty, 1_000_000)? {
                 if keys.quit.as_ref().is_some_and(|k| k == &input) {
                     stdout.write_all("\r\n".as_bytes())?;
-                    return Ok(());
+                    return Ok(false);
                 }
 
                 if keys.pause.as_ref().is_some_and(|k| k == &input) {
@@ -91,7 +91,7 @@ pub fn play(
                     if let Some(key) = read_input(&mut tty, delay)? {
                         if keys.quit.as_ref().is_some_and(|k| k == &key) {
                             stdout.write_all("\r\n".as_bytes())?;
-                            return Ok(());
+                            return Ok(false);
                         }
 
                         if keys.pause.as_ref().is_some_and(|k| k == &key) {
@@ -124,7 +124,7 @@ pub fn play(
         }
     }
 
-    Ok(())
+    Ok(true)
 }
 
 fn open_recording(
