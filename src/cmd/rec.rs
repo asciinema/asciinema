@@ -1,6 +1,7 @@
 use crate::config::Config;
 use crate::format::{asciicast, raw};
 use crate::locale;
+use crate::logger;
 use crate::notifier;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
@@ -88,14 +89,14 @@ impl Cli {
         let exec_extra_env = build_exec_extra_env();
         let tty_size = self.get_tty_size();
 
-        println!("asciinema: recording asciicast to {}", self.filename);
-        println!("asciinema: press <ctrl+d> or type \"exit\" when you're done");
+        logger::info!("Recording session started, writing to {}", self.filename);
+        logger::info!("Press <ctrl+d> or type 'exit' to end");
 
         {
             let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
                 Box::new(dev_tty)
             } else {
-                println!("asciinema: TTY not available, recording in headless mode");
+                logger::info!("TTY not available, recording in headless mode");
                 Box::new(tty::NullTty::open()?)
             };
 
@@ -108,8 +109,7 @@ impl Cli {
             )?;
         }
 
-        println!("asciinema: recording finished");
-        println!("asciinema: asciicast saved to {}", self.filename);
+        logger::info!("Recording session ended");
 
         Ok(())
     }
