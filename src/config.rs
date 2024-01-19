@@ -48,7 +48,7 @@ pub struct Rec {
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Play {
-    pub speed: f64,
+    pub speed: Option<f64>,
     pub idle_time_limit: Option<f64>,
     pub pause_key: Option<String>,
     pub step_key: Option<String>,
@@ -67,7 +67,6 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
-            .set_default("cmd.play.speed", 1.0)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(
@@ -149,6 +148,10 @@ impl Config {
             .as_ref()
             .map(parse_key)
             .transpose()
+    }
+
+    pub fn cmd_play_speed(&self) -> Option<f64> {
+        self.cmd.play.speed
     }
 
     pub fn cmd_play_pause_key(&self) -> Result<Option<Key>> {

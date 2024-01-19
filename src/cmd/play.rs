@@ -30,7 +30,7 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
-        let speed = self.speed.unwrap_or(1.0);
+        let speed = self.speed.or(config.cmd_play_speed()).unwrap_or(1.0);
 
         loop {
             let file = fs::File::open(&self.filename)?;
