@@ -39,9 +39,9 @@ pub struct Cli {
     #[arg(short, long)]
     command: Option<String>,
 
-    /// List of env vars to save
-    #[arg(short, long, default_value_t = String::from("SHELL,TERM"))]
-    env: String,
+    /// List of env vars to save [default: TERM,SHELL]
+    #[arg(short, long)]
+    env: Option<String>,
 
     /// Title of the recording
     #[arg(short, long)]
@@ -178,11 +178,18 @@ impl Cli {
     fn build_metadata(&self, config: &Config, command: Option<String>) -> recorder::Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.cmd_rec_idle_time_limit());
 
+        let env = self
+            .env
+            .as_ref()
+            .cloned()
+            .or(config.cmd_rec_env())
+            .unwrap_or(String::from("TERM,SHELL"));
+
         recorder::Metadata {
             idle_time_limit,
             command,
             title: self.title.clone(),
-            env: capture_env(&self.env),
+            env: capture_env(&env),
         }
     }
 

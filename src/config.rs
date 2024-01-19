@@ -38,7 +38,7 @@ pub struct Cmd {
 pub struct Rec {
     pub command: Option<String>,
     pub input: bool,
-    pub env: String,
+    pub env: Option<String>,
     pub idle_time_limit: Option<f64>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
@@ -67,7 +67,6 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
-            .set_default("cmd.rec.env", "SHELL,TERM")?
             .set_default("cmd.play.speed", 1.0)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
@@ -129,6 +128,10 @@ impl Config {
 
     pub fn cmd_rec_idle_time_limit(&self) -> Option<f64> {
         self.cmd.rec.idle_time_limit
+    }
+
+    pub fn cmd_rec_env(&self) -> Option<String> {
+        self.cmd.rec.env.as_ref().cloned()
     }
 
     pub fn cmd_rec_prefix_key(&self) -> Result<Option<Key>> {
