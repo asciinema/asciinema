@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::format::asciicast;
 use crate::logger;
 use crate::{
     player::{self, KeyBindings},
@@ -6,7 +7,6 @@ use crate::{
 };
 use anyhow::Result;
 use clap::Args;
-use std::fs;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -37,12 +37,12 @@ impl Cli {
         logger::info!("Replaying session from {}", self.filename);
 
         let ended = loop {
-            let file = fs::File::open(&self.filename)?;
+            let recording = asciicast::open_from_path(&self.filename)?;
             let tty = tty::DevTty::open()?;
             let keys = get_key_bindings(config)?;
 
             let ended = player::play(
-                file,
+                recording,
                 tty,
                 speed,
                 idle_time_limit,

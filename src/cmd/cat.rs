@@ -17,15 +17,15 @@ impl Cli {
 
         for path in self.filename.iter() {
             let reader = io::BufReader::new(fs::File::open(path)?);
-            let (header, events) = asciicast::open(reader)?;
+            let recording = asciicast::open(reader)?;
             let mut time = time_offset;
 
             if first {
-                writer.write_header(&header)?;
+                writer.write_header(&recording.header)?;
                 first = false;
             }
 
-            for event in events {
+            for event in recording.events {
                 let mut event = event?;
                 time = time_offset + event.time;
                 event.time = time;

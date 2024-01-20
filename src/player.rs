@@ -27,7 +27,7 @@ impl Default for KeyBindings {
 }
 
 pub fn play(
-    recording: impl io::Read,
+    recording: asciicast::Reader,
     mut tty: impl Tty,
     speed: f64,
     idle_time_limit: Option<f64>,
@@ -128,18 +128,15 @@ pub fn play(
 }
 
 fn open_recording(
-    recording: impl io::Read,
+    recording: asciicast::Reader<'_>,
     speed: f64,
     idle_time_limit: Option<f64>,
-) -> Result<impl Iterator<Item = Result<Event>>> {
-    let reader = io::BufReader::new(recording);
-    let (header, events) = asciicast::open(reader)?;
-
+) -> Result<impl Iterator<Item = Result<Event>> + '_> {
     let idle_time_limit = idle_time_limit
-        .or(header.idle_time_limit)
+        .or(recording.header.idle_time_limit)
         .unwrap_or(f64::MAX);
 
-    let events = asciicast::limit_idle_time(events, idle_time_limit);
+    let events = asciicast::limit_idle_time(recording.events, idle_time_limit);
     let events = asciicast::accelerate(events, speed);
 
     Ok(events)

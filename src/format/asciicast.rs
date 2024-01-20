@@ -8,6 +8,11 @@ use std::io::BufRead;
 use std::io::{self, Write};
 use std::path::Path;
 
+pub struct Reader<'a> {
+    pub header: Header,
+    pub events: Box<dyn Iterator<Item = Result<Event>> + 'a>,
+}
+
 pub struct Writer<W: Write> {
     writer: io::LineWriter<W>,
     append: bool,
@@ -96,21 +101,23 @@ where
 }
 
 pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
-    let file = fs::File::open(path)?;
-    let reader = io::BufReader::new(file);
-    let (_header, events) = open(reader)?;
+    let Reader { events, .. } = open_from_path(path)?;
     let time = events.last().map_or(Ok(0), |e| e.map(|e| e.time))?;
 
     Ok(time)
 }
 
-pub fn open<R: BufRead>(reader: R) -> Result<(Header, impl Iterator<Item = Result<Event>>)> {
+pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Reader<'static>> {
+    open(io::BufReader::new(fs::File::open(path)?))
+}
+
+pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Reader<'a>> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow::anyhow!("empty file"))??;
     let header: Header = serde_json::from_str(&first_line)?;
-    let events = lines.filter_map(parse_event);
+    let events = Box::new(lines.filter_map(parse_event));
 
-    Ok((header, events))
+    Ok(Reader { header, events })
 }
 
 fn parse_event(line: io::Result<String>) -> Option<Result<Event>> {
@@ -354,7 +361,7 @@ pub fn accelerate(
 
 #[cfg(test)]
 mod tests {
-    use super::{Event, EventCode, Header, Writer};
+    use super::{Event, EventCode, Header, Reader, Writer};
     use anyhow::Result;
     use std::collections::HashMap;
     use std::fs::File;
@@ -363,7 +370,7 @@ mod tests {
     #[test]
     fn open() {
         let file = File::open("tests/demo.cast").unwrap();
-        let (header, events) = super::open(io::BufReader::new(file)).unwrap();
+        let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
 
         let events = events.take(7).collect::<Result<Vec<Event>>>().unwrap();
 
