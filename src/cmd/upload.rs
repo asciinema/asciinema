@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::format::asciicast;
 use anyhow::{anyhow, Result};
 use clap::Args;
 use reqwest::{
@@ -22,6 +23,7 @@ struct UploadResponse {
 
 impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
+        let _ = asciicast::open_from_path(&self.filename)?;
         let client = Client::new();
         let form = Form::new().file("asciicast", self.filename)?;
 
