@@ -109,16 +109,17 @@ pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
 }
 
 pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Reader<'static>> {
-    open(io::BufReader::new(fs::File::open(path)?))
+    fs::File::open(path)
+        .map(io::BufReader::new)
+        .map_err(|e| anyhow!(e))
+        .and_then(open)
+        .map_err(|e| anyhow!("can't open asciicast file: {e}"))
 }
 
 pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Reader<'a>> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow!("empty file"))??;
-
-    let header: Header =
-        serde_json::from_str(&first_line).map_err(|e| anyhow!("invalid asciicast file: {e}"))?;
-
+    let header: Header = serde_json::from_str(&first_line)?;
     let events = Box::new(lines.filter_map(parse_event));
 
     Ok(Reader { header, events })
