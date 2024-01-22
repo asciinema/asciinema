@@ -23,3 +23,4 @@ reqwest = { version = "0.11.23", default-features = false, features = ["blocking
 rustyline = "13.0.0"
 config = { version = "0.13.4", default-features = false, features = ["toml", "ini"] }
 which = "5.0.0"
+tempfile = "3.9.0"
