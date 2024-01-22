@@ -1,5 +1,5 @@
 use crate::recorder;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
@@ -113,8 +113,11 @@ pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Reader<'static>> {
 
 pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Reader<'a>> {
     let mut lines = reader.lines();
-    let first_line = lines.next().ok_or(anyhow::anyhow!("empty file"))??;
-    let header: Header = serde_json::from_str(&first_line)?;
+    let first_line = lines.next().ok_or(anyhow!("empty file"))??;
+
+    let header: Header =
+        serde_json::from_str(&first_line).map_err(|e| anyhow!("invalid asciicast file: {e}"))?;
+
     let events = Box::new(lines.filter_map(parse_event));
 
     Ok(Reader { header, events })
