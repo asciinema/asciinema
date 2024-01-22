@@ -3,7 +3,7 @@ use crate::format::asciicast;
 use crate::logger;
 use crate::player::{self, KeyBindings};
 use crate::tty;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use clap::Args;
 use reqwest::Url;
 use std::io;
@@ -94,13 +94,43 @@ fn get_path(filename: &str) -> Result<LocalPath> {
     }
 }
 
+const LINK_REL_SELECTOR: &str = r#"link[rel="alternate"][type="application/x-asciicast"], link[rel="alternate"][type="application/asciicast+json"]"#;
+
 fn download_asciicast(url: &str) -> Result<NamedTempFile> {
-    let mut response = reqwest::blocking::get(Url::parse(url)?)?;
+    use reqwest::blocking::get;
+    use scraper::{Html, Selector};
+
+    let mut response = get(Url::parse(url)?)?;
     response.error_for_status_ref()?;
     let mut file = NamedTempFile::new()?;
-    io::copy(&mut response, &mut file)?;
 
-    Ok(file)
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .ok_or(anyhow!("no content-type header in the response"))?
+        .to_str()?;
+
+    if content_type.starts_with("text/html") {
+        let document = Html::parse_document(&response.text()?);
+        let selector = Selector::parse(LINK_REL_SELECTOR).unwrap();
+        let mut elements = document.select(&selector);
+
+        if let Some(url) = elements.find_map(|e| e.value().attr("href")) {
+            let mut response = get(Url::parse(url)?)?;
+            response.error_for_status_ref()?;
+            io::copy(&mut response, &mut file)?;
+
+            Ok(file)
+        } else {
+            bail!(
+                r#"<link rel="alternate" type="application/x-asciicast" href="..."> not found in the HTML page"#
+            );
+        }
+    } else {
+        io::copy(&mut response, &mut file)?;
+
+        Ok(file)
+    }
 }
 
 fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
