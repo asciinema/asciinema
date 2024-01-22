@@ -1,7 +1,7 @@
 use crate::format::asciicast;
 use anyhow::Result;
 use clap::Args;
-use std::{fs, io};
+use std::io;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -16,8 +16,7 @@ impl Cli {
         let mut first = true;
 
         for path in self.filename.iter() {
-            let reader = io::BufReader::new(fs::File::open(path)?);
-            let recording = asciicast::open(reader)?;
+            let recording = asciicast::open_from_path(path)?;
             let mut time = time_offset;
 
             if first {
