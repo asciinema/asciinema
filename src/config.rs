@@ -67,6 +67,7 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
+            .set_default("cmd.play.speed", None::<Option<f64>>)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(
