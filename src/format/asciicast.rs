@@ -21,6 +21,7 @@ pub struct Writer<W: Write> {
 
 #[derive(Deserialize)]
 pub struct Header {
+    version: u8,
     width: u16,
     height: u16,
     timestamp: Option<u64>,
@@ -256,7 +257,7 @@ impl serde::Serialize for Header {
         }
 
         let mut map = serializer.serialize_map(Some(len))?;
-        map.serialize_entry("version", &2)?;
+        map.serialize_entry("version", &self.version)?;
         map.serialize_entry("width", &self.width)?;
         map.serialize_entry("height", &self.height)?;
         map.serialize_entry("timestamp", &self.timestamp)?;
@@ -314,6 +315,7 @@ impl From<&recorder::Header> for Header {
         let (width, height) = header.tty_size;
 
         Self {
+            version: 2,
             width,
             height,
             timestamp: header.timestamp,
@@ -400,6 +402,7 @@ mod tests {
             let mut fw = Writer::new(&mut data, false, 0);
 
             let header = Header {
+                version: 2,
                 width: 80,
                 height: 24,
                 timestamp: None,
@@ -460,6 +463,7 @@ mod tests {
             env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
             let header = Header {
+                version: 2,
                 width: 80,
                 height: 24,
                 timestamp: Some(1704719152),
