@@ -114,7 +114,7 @@ where
     use serde::de::Error;
 
     let value: serde_json::Value = Deserialize::deserialize(deserializer)?;
-    let string = value.to_string();
+    let string = value.as_f64().map(|v| v.to_string()).unwrap_or_default();
     let parts: Vec<&str> = string.split('.').collect();
 
     match parts.as_slice() {
