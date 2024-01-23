@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::fmt::{self, Display};
@@ -17,8 +17,37 @@ pub struct Writer<W: Write> {
     time_offset: u64,
 }
 
-#[derive(Deserialize)]
 pub struct Header {
+    pub version: u8,
+    pub cols: u16,
+    pub rows: u16,
+    pub timestamp: Option<u64>,
+    pub idle_time_limit: Option<f64>,
+    pub command: Option<String>,
+    pub title: Option<String>,
+    pub env: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct V1 {
+    version: u8,
+    width: u16,
+    height: u16,
+    command: Option<String>,
+    title: Option<String>,
+    env: Option<HashMap<String, String>>,
+    stdout: Vec<V1Stdout>,
+}
+
+#[derive(Debug, Deserialize)]
+struct V1Stdout {
+    #[serde(deserialize_with = "deserialize_time")]
+    time: u64,
+    data: String,
+}
+
+#[derive(Deserialize)]
+pub struct V2Header {
     pub version: u8,
     pub width: u16,
     pub height: u16,
@@ -59,7 +88,8 @@ where
     }
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
-        writeln!(self.writer, "{}", serde_json::to_string(header)?)
+        let header: V2Header = header.into();
+        writeln!(self.writer, "{}", serde_json::to_string(&header)?)
     }
 
     pub fn write_event(&mut self, mut event: Event) -> io::Result<()> {
@@ -87,10 +117,38 @@ pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Reader<'static>> {
 pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Reader<'a>> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow!("empty file"))??;
-    let header: Header = serde_json::from_str(&first_line)?;
-    let events = Box::new(lines.filter_map(parse_event));
 
-    Ok(Reader { header, events })
+    if let Ok(header) = serde_json::from_str::<V2Header>(&first_line) {
+        if header.version != 2 {
+            bail!("unsupported asciicast version")
+        }
+
+        let header: Header = header.into();
+        let events = Box::new(lines.filter_map(parse_event));
+
+        Ok(Reader { header, events })
+    } else {
+        let json = std::iter::once(Ok(first_line))
+            .chain(lines)
+            .collect::<io::Result<String>>()?;
+
+        let asciicast: V1 = serde_json::from_str(&json)?;
+
+        if asciicast.version != 1 {
+            bail!("unsupported asciicast version")
+        }
+
+        let header: Header = (&asciicast).into();
+
+        let events = Box::new(
+            asciicast
+                .stdout
+                .into_iter()
+                .map(|e| Ok(Event::output(e.time, e.data.as_bytes()))),
+        );
+
+        Ok(Reader { header, events })
+    }
 }
 
 fn parse_event(line: io::Result<String>) -> Option<Result<Event>> {
@@ -200,7 +258,7 @@ impl Display for EventCode {
     }
 }
 
-impl serde::Serialize for Header {
+impl serde::Serialize for V2Header {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -250,6 +308,51 @@ impl serde::Serialize for Header {
         }
 
         map.end()
+    }
+}
+
+impl From<&Header> for V2Header {
+    fn from(header: &Header) -> Self {
+        V2Header {
+            version: 2,
+            width: header.cols,
+            height: header.rows,
+            timestamp: header.timestamp,
+            idle_time_limit: header.idle_time_limit,
+            command: header.command.clone(),
+            title: header.title.clone(),
+            env: header.env.clone(),
+        }
+    }
+}
+
+impl From<V2Header> for Header {
+    fn from(header: V2Header) -> Self {
+        Header {
+            version: 2,
+            cols: header.width,
+            rows: header.height,
+            timestamp: None,
+            idle_time_limit: None,
+            command: header.command,
+            title: header.title,
+            env: header.env,
+        }
+    }
+}
+
+impl From<&V1> for Header {
+    fn from(header: &V1) -> Self {
+        Header {
+            version: 1,
+            cols: header.width,
+            rows: header.height,
+            timestamp: None,
+            idle_time_limit: None,
+            command: header.command.clone(),
+            title: header.title.clone(),
+            env: header.env.clone(),
+        }
     }
 }
 
@@ -312,13 +415,48 @@ mod tests {
     use std::io;
 
     #[test]
-    fn open() {
-        let file = File::open("tests/demo.cast").unwrap();
+    fn open_v1_minimal() {
+        let file = File::open("tests/casts/minimal.json").unwrap();
         let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
+        let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
+        assert_eq!(header.version, 1);
+        assert_eq!((header.cols, header.rows), (100, 50));
+
+        assert_eq!(events[0].time, 1230000);
+        assert_eq!(events[0].code, EventCode::Output);
+        assert_eq!(events[0].data, "hello");
+    }
+
+    #[test]
+    fn open_v1_full() {
+        let file = File::open("tests/casts/full.json").unwrap();
+        let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
+        let events = events.collect::<Result<Vec<Event>>>().unwrap();
+
+        assert_eq!(header.version, 1);
+        assert_eq!((header.cols, header.rows), (100, 50));
+
+        assert_eq!(events[0].time, 1);
+        assert_eq!(events[0].code, EventCode::Output);
+        assert_eq!(events[0].data, "ż");
+
+        assert_eq!(events[1].time, 100000);
+        assert_eq!(events[1].code, EventCode::Output);
+        assert_eq!(events[1].data, "ółć");
+
+        assert_eq!(events[2].time, 10500000);
+        assert_eq!(events[2].code, EventCode::Output);
+        assert_eq!(events[2].data, "\r\n");
+    }
+
+    #[test]
+    fn open_v2() {
+        let file = File::open("tests/casts/demo.cast").unwrap();
+        let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
         let events = events.take(7).collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!((header.width, header.height), (75, 18));
+        assert_eq!((header.cols, header.rows), (75, 18));
 
         assert_eq!(events[1].time, 100989);
         assert_eq!(events[1].code, EventCode::Output);
@@ -342,8 +480,8 @@ mod tests {
 
             let header = Header {
                 version: 2,
-                width: 80,
-                height: 24,
+                cols: 80,
+                rows: 24,
                 timestamp: None,
                 idle_time_limit: None,
                 command: None,
@@ -403,8 +541,8 @@ mod tests {
 
             let header = Header {
                 version: 2,
-                width: 80,
-                height: 24,
+                cols: 80,
+                rows: 24,
                 timestamp: Some(1704719152),
                 idle_time_limit: Some(1.5),
                 command: Some("/bin/bash".to_owned()),
