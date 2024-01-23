@@ -1,4 +1,4 @@
-use crate::asciicast::{self, Event, EventCode};
+use crate::asciicast::{self, Event, EventData};
 use crate::config::Key;
 use crate::tty::Tty;
 use anyhow::Result;
@@ -27,7 +27,7 @@ impl Default for KeyBindings {
 }
 
 pub fn play(
-    recording: asciicast::Reader,
+    recording: asciicast::Asciicast,
     mut tty: impl Tty,
     speed: f64,
     idle_time_limit: Option<f64>,
@@ -40,7 +40,7 @@ pub fn play(
     let mut pause_elapsed_time: Option<u64> = None;
     let mut next_event = events.next().transpose()?;
 
-    while let Some(Event { time, code, data }) = &next_event {
+    while let Some(Event { time, data }) = &next_event {
         if let Some(pet) = pause_elapsed_time {
             if let Some(input) = read_input(&mut tty, 1_000_000)? {
                 if keys.quit.as_ref().is_some_and(|k| k == &input) {
@@ -54,22 +54,22 @@ pub fn play(
                 } else if keys.step.as_ref().is_some_and(|k| k == &input) {
                     pause_elapsed_time = Some(*time);
 
-                    if code == &EventCode::Output {
+                    if let EventData::Output(data) = data {
                         stdout.write_all(data.as_bytes())?;
                         stdout.flush()?;
                     }
 
                     next_event = events.next().transpose()?;
                 } else if keys.next_marker.as_ref().is_some_and(|k| k == &input) {
-                    while let Some(Event { time, code, data }) = next_event {
+                    while let Some(Event { time, data }) = next_event {
                         next_event = events.next().transpose()?;
 
-                        match code {
-                            EventCode::Output => {
+                        match data {
+                            EventData::Output(data) => {
                                 stdout.write_all(data.as_bytes())?;
                             }
 
-                            EventCode::Marker => {
+                            EventData::Marker(_) => {
                                 pause_elapsed_time = Some(time);
                                 break;
                             }
@@ -82,7 +82,7 @@ pub fn play(
                 }
             }
         } else {
-            while let Some(Event { time, code, data }) = &next_event {
+            while let Some(Event { time, data }) = &next_event {
                 let delay = *time as i64 - epoch.elapsed().as_micros() as i64;
 
                 if delay > 0 {
@@ -103,12 +103,12 @@ pub fn play(
                     }
                 }
 
-                match code {
-                    EventCode::Output => {
+                match data {
+                    EventData::Output(data) => {
                         stdout.write_all(data.as_bytes())?;
                     }
 
-                    EventCode::Marker => {
+                    EventData::Marker(_) => {
                         if pause_on_markers {
                             pause_elapsed_time = Some(*time);
                             next_event = events.next().transpose()?;
@@ -128,7 +128,7 @@ pub fn play(
 }
 
 fn open_recording(
-    recording: asciicast::Reader<'_>,
+    recording: asciicast::Asciicast<'_>,
     speed: f64,
     idle_time_limit: Option<f64>,
 ) -> Result<impl Iterator<Item = Result<Event>> + '_> {
