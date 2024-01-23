@@ -411,13 +411,11 @@ mod tests {
     use super::{Event, EventCode, Header, Reader, Writer};
     use anyhow::Result;
     use std::collections::HashMap;
-    use std::fs::File;
     use std::io;
 
     #[test]
     fn open_v1_minimal() {
-        let file = File::open("tests/casts/minimal.json").unwrap();
-        let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
+        let Reader { header, events } = super::open_from_path("tests/casts/minimal.json").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
         assert_eq!(header.version, 1);
@@ -430,8 +428,7 @@ mod tests {
 
     #[test]
     fn open_v1_full() {
-        let file = File::open("tests/casts/full.json").unwrap();
-        let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
+        let Reader { header, events } = super::open_from_path("tests/casts/full.json").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
         assert_eq!(header.version, 1);
@@ -452,8 +449,7 @@ mod tests {
 
     #[test]
     fn open_v2() {
-        let file = File::open("tests/casts/demo.cast").unwrap();
-        let Reader { header, events } = super::open(io::BufReader::new(file)).unwrap();
+        let Reader { header, events } = super::open_from_path("tests/casts/demo.cast").unwrap();
         let events = events.take(7).collect::<Result<Vec<Event>>>().unwrap();
 
         assert_eq!((header.cols, header.rows), (75, 18));
