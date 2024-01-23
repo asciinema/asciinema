@@ -30,12 +30,12 @@ where
     }
 
     fn build_header(&self, timestamp: u64, tty_size: &tty::TtySize) -> Header {
-        let (width, height) = (*tty_size).into();
+        let (cols, rows) = (*tty_size).into();
 
         Header {
             version: 2,
-            width,
-            height,
+            cols,
+            rows,
             timestamp: Some(timestamp),
             idle_time_limit: self.metadata.idle_time_limit,
             command: self.metadata.command.clone(),

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "width": 100,
+  "height": 50,
+  "duration": 10.5,
+  "command": "/bin/bash",
+  "title": null,
+  "env": {
+    "TERM": "xterm-256color",
+    "SHELL": "/bin/bash"
+  },
+  "stdout": [
+    [
+      0.000001,
+      "ż"
+    ],
+    [
+      1.000000,
+      "ółć"
+    ],
+    [
+      10.500000,
+      "\r\n"
+    ]
+  ]
+}
