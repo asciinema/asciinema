@@ -40,7 +40,7 @@ struct JoinHandle(Option<thread::JoinHandle<()>>);
 
 impl Recorder {
     pub fn new(
-        writer: Box<dyn Output + Send>,
+        output: Box<dyn Output + Send>,
         record_input: bool,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
@@ -48,7 +48,7 @@ impl Recorder {
         let (sender, receiver) = mpsc::channel();
 
         Recorder {
-            output: Some(writer),
+            output: Some(output),
             start_time: Instant::now(),
             pause_time: None,
             record_input,
