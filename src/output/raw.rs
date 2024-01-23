@@ -1,23 +1,25 @@
 use crate::recorder;
+use crate::tty;
 use std::io::{self, Write};
 
-pub struct Writer<W> {
+pub struct Raw<W> {
     writer: W,
     append: bool,
 }
 
-impl<W> Writer<W> {
+impl<W> Raw<W> {
     pub fn new(writer: W, append: bool) -> Self {
-        Writer { writer, append }
+        Raw { writer, append }
     }
 }
 
-impl<W: Write> recorder::EventWriter for Writer<W> {
-    fn start(&mut self, header: &recorder::Header) -> io::Result<()> {
+impl<W: Write> recorder::Output for Raw<W> {
+    fn start(&mut self, _timestamp: u64, tty_size: &tty::TtySize) -> io::Result<()> {
         if self.append {
             Ok(())
         } else {
-            let (cols, rows) = header.tty_size;
+            let (cols, rows): (u16, u16) = (*tty_size).into();
+
             write!(self.writer, "\x1b[8;{rows};{cols}t")
         }
     }

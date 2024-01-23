@@ -1,10 +1,11 @@
+mod asciicast;
 mod cmd;
 mod config;
-mod format;
 mod io;
 mod locale;
 mod logger;
 mod notifier;
+mod output;
 mod player;
 mod pty;
 mod recorder;

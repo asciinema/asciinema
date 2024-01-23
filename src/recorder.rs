@@ -2,18 +2,16 @@ use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
 use crate::tty;
-use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 pub struct Recorder {
-    writer: Option<Box<dyn EventWriter + Send>>,
+    output: Option<Box<dyn Output + Send>>,
     start_time: Instant,
     pause_time: Option<u64>,
     record_input: bool,
-    metadata: Metadata,
     keys: KeyBindings,
     notifier: Option<Box<dyn Notifier>>,
     sender: mpsc::Sender<Message>,
@@ -22,28 +20,12 @@ pub struct Recorder {
     prefix_mode: bool,
 }
 
-pub trait EventWriter {
-    fn start(&mut self, header: &Header) -> io::Result<()>;
+pub trait Output {
+    fn start(&mut self, timestamp: u64, tty_size: &tty::TtySize) -> io::Result<()>;
     fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
     fn marker(&mut self, time: u64) -> io::Result<()>;
-}
-
-pub struct Header {
-    pub tty_size: (u16, u16),
-    pub timestamp: Option<u64>,
-    pub idle_time_limit: Option<f64>,
-    pub command: Option<String>,
-    pub title: Option<String>,
-    pub env: HashMap<String, String>,
-}
-
-pub struct Metadata {
-    pub idle_time_limit: Option<f64>,
-    pub command: Option<String>,
-    pub title: Option<String>,
-    pub env: HashMap<String, String>,
 }
 
 enum Message {
@@ -58,20 +40,18 @@ struct JoinHandle(Option<thread::JoinHandle<()>>);
 
 impl Recorder {
     pub fn new(
-        writer: Box<dyn EventWriter + Send>,
+        writer: Box<dyn Output + Send>,
         record_input: bool,
-        metadata: Metadata,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
 
         Recorder {
-            writer: Some(writer),
+            output: Some(writer),
             start_time: Instant::now(),
             pause_time: None,
             record_input,
-            metadata,
             keys,
             notifier: Some(notifier),
             sender,
@@ -105,19 +85,9 @@ impl pty::Recorder for Recorder {
             .unwrap()
             .as_secs();
 
-        let mut writer = self.writer.take().unwrap();
+        let mut output = self.output.take().unwrap();
+        output.start(timestamp, &tty_size)?;
         let receiver = self.receiver.take().unwrap();
-
-        let header = Header {
-            tty_size: tty_size.into(),
-            timestamp: Some(timestamp),
-            idle_time_limit: self.metadata.idle_time_limit,
-            command: self.metadata.command.clone(),
-            title: self.metadata.title.clone(),
-            env: self.metadata.env.clone(),
-        };
-
-        writer.start(&header)?;
         let mut notifier = self.notifier.take().unwrap();
 
         let handle = thread::spawn(move || {
@@ -127,22 +97,22 @@ impl pty::Recorder for Recorder {
             for msg in receiver {
                 match msg {
                     Output(time, data) => {
-                        let _ = writer.output(time, &data);
+                        let _ = output.output(time, &data);
                     }
 
                     Input(time, data) => {
-                        let _ = writer.input(time, &data);
+                        let _ = output.input(time, &data);
                     }
 
                     Resize(time, new_tty_size) => {
                         if new_tty_size != last_tty_size {
-                            let _ = writer.resize(time, new_tty_size.into());
+                            let _ = output.resize(time, new_tty_size.into());
                             last_tty_size = new_tty_size;
                         }
                     }
 
                     Marker(time) => {
-                        let _ = writer.marker(time);
+                        let _ = output.marker(time);
                     }
 
                     Notification(text) => {

@@ -1,4 +1,3 @@
-use crate::recorder;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
@@ -15,23 +14,22 @@ pub struct Reader<'a> {
 
 pub struct Writer<W: Write> {
     writer: io::LineWriter<W>,
-    append: bool,
     time_offset: u64,
 }
 
 #[derive(Deserialize)]
 pub struct Header {
-    version: u8,
-    width: u16,
-    height: u16,
-    timestamp: Option<u64>,
+    pub version: u8,
+    pub width: u16,
+    pub height: u16,
+    pub timestamp: Option<u64>,
     pub idle_time_limit: Option<f64>,
-    command: Option<String>,
-    title: Option<String>,
-    env: Option<HashMap<String, String>>,
+    pub command: Option<String>,
+    pub title: Option<String>,
+    pub env: Option<HashMap<String, String>>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Event {
     #[serde(deserialize_with = "deserialize_time")]
     pub time: u64,
@@ -40,7 +38,7 @@ pub struct Event {
     pub data: String,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Debug)]
 pub enum EventCode {
     Output,
     Input,
@@ -53,10 +51,9 @@ impl<W> Writer<W>
 where
     W: Write,
 {
-    pub fn new(writer: W, append: bool, time_offset: u64) -> Self {
+    pub fn new(writer: W, time_offset: u64) -> Self {
         Self {
             writer: io::LineWriter::new(writer),
-            append,
             time_offset,
         }
     }
@@ -69,35 +66,6 @@ where
         event.time += self.time_offset;
 
         writeln!(self.writer, "{}", serialize_event(&event)?)
-    }
-}
-
-impl<W> recorder::EventWriter for Writer<W>
-where
-    W: Write,
-{
-    fn start(&mut self, header: &recorder::Header) -> io::Result<()> {
-        if self.append {
-            Ok(())
-        } else {
-            self.write_header(&header.into())
-        }
-    }
-
-    fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
-        self.write_event(Event::output(time, data))
-    }
-
-    fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
-        self.write_event(Event::input(time, data))
-    }
-
-    fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()> {
-        self.write_event(Event::resize(time, size))
-    }
-
-    fn marker(&mut self, time: u64) -> io::Result<()> {
-        self.write_event(Event::marker(time))
     }
 }
 
@@ -298,36 +266,6 @@ fn format_time(time: u64) -> String {
     format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000)
 }
 
-impl From<&Header> for recorder::Header {
-    fn from(header: &Header) -> Self {
-        Self {
-            tty_size: (header.width, header.height),
-            timestamp: header.timestamp,
-            idle_time_limit: header.idle_time_limit,
-            command: header.command.clone(),
-            title: header.title.clone(),
-            env: header.env.as_ref().cloned().unwrap_or_default(),
-        }
-    }
-}
-
-impl From<&recorder::Header> for Header {
-    fn from(header: &recorder::Header) -> Self {
-        let (width, height) = header.tty_size;
-
-        Self {
-            version: 2,
-            width,
-            height,
-            timestamp: header.timestamp,
-            idle_time_limit: header.idle_time_limit,
-            command: header.command.clone(),
-            title: header.title.clone(),
-            env: Some(header.env.clone()),
-        }
-    }
-}
-
 pub fn limit_idle_time(
     events: impl Iterator<Item = Result<Event>>,
     limit: f64,
@@ -400,7 +338,7 @@ mod tests {
         let mut data = Vec::new();
 
         {
-            let mut fw = Writer::new(&mut data, false, 0);
+            let mut fw = Writer::new(&mut data, 0);
 
             let header = Header {
                 version: 2,
@@ -419,7 +357,7 @@ mod tests {
         }
 
         {
-            let mut fw = Writer::new(&mut data, false, 1000001);
+            let mut fw = Writer::new(&mut data, 1000001);
 
             fw.write_event(Event::output(1000001, "world".as_bytes()))
                 .unwrap();
@@ -458,7 +396,7 @@ mod tests {
         let mut data = Vec::new();
 
         {
-            let mut fw = Writer::new(io::Cursor::new(&mut data), false, 0);
+            let mut fw = Writer::new(io::Cursor::new(&mut data), 0);
             let mut env = HashMap::new();
             env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
             env.insert("TERM".to_owned(), "xterm256-color".to_owned());

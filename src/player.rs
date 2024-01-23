@@ -1,5 +1,5 @@
+use crate::asciicast::{self, Event, EventCode};
 use crate::config::Key;
-use crate::format::asciicast::{self, Event, EventCode};
 use crate::tty::Tty;
 use anyhow::Result;
 use nix::sys::select::{pselect, FdSet};

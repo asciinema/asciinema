@@ -1,5 +1,5 @@
+use crate::asciicast;
 use crate::config::Config;
-use crate::format::asciicast;
 use crate::logger;
 use crate::player::{self, KeyBindings};
 use crate::tty;

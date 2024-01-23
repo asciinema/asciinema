@@ -1,8 +1,9 @@
+use crate::asciicast;
 use crate::config::Config;
-use crate::format::{asciicast, raw};
 use crate::locale;
 use crate::logger;
 use crate::notifier;
+use crate::output;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
@@ -78,13 +79,12 @@ impl Cli {
 
         let (append, overwrite) = self.get_mode()?;
         let file = self.open_file(append, overwrite)?;
-        let writer = self.get_writer(file, append)?;
         let command = self.get_command(config);
-        let metadata = self.build_metadata(config, command.as_ref().cloned());
+        let output = self.get_output(file, append, config)?;
         let keys = get_key_bindings(config)?;
         let notifier = get_notifier(config);
-        let input = self.input || config.cmd_rec_input();
-        let mut recorder = recorder::Recorder::new(writer, input, metadata, keys, notifier);
+        let record_input = self.input || config.cmd_rec_input();
+        let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
         let exec_command = build_exec_command(command.as_ref().cloned());
         let exec_extra_env = build_exec_extra_env();
         let tty_size = self.get_tty_size();
@@ -152,11 +152,12 @@ impl Cli {
         Ok(file)
     }
 
-    fn get_writer(
+    fn get_output(
         &self,
         file: fs::File,
         append: bool,
-    ) -> Result<Box<dyn recorder::EventWriter + Send>> {
+        config: &Config,
+    ) -> Result<Box<dyn recorder::Output + Send>> {
         let format = if self.raw { Format::Raw } else { self.format };
 
         match format {
@@ -167,10 +168,17 @@ impl Cli {
                     0
                 };
 
-                Ok(Box::new(asciicast::Writer::new(file, append, time_offset)))
+                let metadata = self.build_asciicast_metadata(config);
+
+                Ok(Box::new(output::Asciicast::new(
+                    file,
+                    append,
+                    time_offset,
+                    metadata,
+                )))
             }
 
-            Format::Raw => Ok(Box::new(raw::Writer::new(file, append))),
+            Format::Raw => Ok(Box::new(output::Raw::new(file, append))),
         }
     }
 
@@ -178,8 +186,9 @@ impl Cli {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
-    fn build_metadata(&self, config: &Config, command: Option<String>) -> recorder::Metadata {
+    fn build_asciicast_metadata(&self, config: &Config) -> output::Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.cmd_rec_idle_time_limit());
+        let command = self.get_command(config);
 
         let env = self
             .env
@@ -188,7 +197,7 @@ impl Cli {
             .or(config.cmd_rec_env())
             .unwrap_or(String::from("TERM,SHELL"));
 
-        recorder::Metadata {
+        output::Metadata {
             idle_time_limit,
             command,
             title: self.title.clone(),

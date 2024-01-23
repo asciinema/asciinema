@@ -1,5 +1,5 @@
+use crate::asciicast;
 use crate::config::Config;
-use crate::format::asciicast;
 use anyhow::{anyhow, Result};
 use clap::Args;
 use reqwest::{

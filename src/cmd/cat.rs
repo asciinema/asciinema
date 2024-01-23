@@ -1,4 +1,4 @@
-use crate::format::asciicast;
+use crate::asciicast;
 use anyhow::Result;
 use clap::Args;
 use std::io;
@@ -11,7 +11,7 @@ pub struct Cli {
 
 impl Cli {
     pub fn run(self) -> Result<()> {
-        let mut writer = asciicast::Writer::new(io::stdout(), false, 0);
+        let mut writer = asciicast::Writer::new(io::stdout(), 0);
         let mut time_offset: u64 = 0;
         let mut first = true;
 
