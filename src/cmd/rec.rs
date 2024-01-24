@@ -26,9 +26,9 @@ pub struct Cli {
     #[arg(short, long)]
     append: bool,
 
-    /// Recording file format
-    #[arg(short, long, value_enum, default_value_t = Format::Asciicast)]
-    format: Format,
+    /// Recording file format [default: asciicast]
+    #[arg(short, long, value_enum)]
+    format: Option<Format>,
 
     #[arg(long, hide = true)]
     raw: bool,
@@ -160,7 +160,15 @@ impl Cli {
         append: bool,
         config: &Config,
     ) -> Result<Box<dyn recorder::Output + Send>> {
-        let format = if self.raw { Format::Raw } else { self.format };
+        let format = self.format.unwrap_or_else(|| {
+            if self.raw {
+                Format::Raw
+            } else if self.filename.to_lowercase().ends_with(".txt") {
+                Format::Txt
+            } else {
+                Format::Asciicast
+            }
+        });
 
         match format {
             Format::Asciicast => {
