@@ -25,3 +25,4 @@ config = { version = "0.13.4", default-features = false, features = ["toml", "in
 which = "5.0.0"
 tempfile = "3.9.0"
 scraper = { version = "0.15.0", default-features = false }
+avt = { git = "https://github.com/asciinema/avt", tag = "v0.8.3" }

@@ -26,6 +26,10 @@ pub trait Output {
     fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
     fn marker(&mut self, time: u64) -> io::Result<()>;
+
+    fn finish(&mut self) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 enum Message {
@@ -120,6 +124,8 @@ impl pty::Recorder for Recorder {
                     }
                 }
             }
+
+            let _ = output.finish();
         });
 
         self.handle = Some(JoinHandle(Some(handle)));

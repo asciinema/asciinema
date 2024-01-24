@@ -26,9 +26,9 @@ pub struct Cli {
     #[arg(short, long)]
     append: bool,
 
-    /// Recording file format
-    #[arg(short, long, value_enum, default_value_t = Format::Asciicast)]
-    format: Format,
+    /// Recording file format [default: asciicast]
+    #[arg(short, long, value_enum)]
+    format: Option<Format>,
 
     #[arg(long, hide = true)]
     raw: bool,
@@ -68,6 +68,7 @@ pub struct Cli {
 enum Format {
     Asciicast,
     Raw,
+    Txt,
 }
 
 #[derive(Clone, Debug)]
@@ -84,7 +85,6 @@ impl Cli {
         let keys = get_key_bindings(config)?;
         let notifier = get_notifier(config);
         let record_input = self.input || config.cmd_rec_input();
-        let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
         let exec_command = build_exec_command(command.as_ref().cloned());
         let exec_extra_env = build_exec_extra_env();
         let tty_size = self.get_tty_size();
@@ -102,6 +102,8 @@ impl Cli {
                 logger::info!("TTY not available, recording in headless mode");
                 Box::new(tty::NullTty::open()?)
             };
+
+            let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
 
             pty::exec(
                 &exec_command,
@@ -158,7 +160,15 @@ impl Cli {
         append: bool,
         config: &Config,
     ) -> Result<Box<dyn recorder::Output + Send>> {
-        let format = if self.raw { Format::Raw } else { self.format };
+        let format = self.format.unwrap_or_else(|| {
+            if self.raw {
+                Format::Raw
+            } else if self.filename.to_lowercase().ends_with(".txt") {
+                Format::Txt
+            } else {
+                Format::Asciicast
+            }
+        });
 
         match format {
             Format::Asciicast => {
@@ -179,6 +189,7 @@ impl Cli {
             }
 
             Format::Raw => Ok(Box::new(output::Raw::new(file, append))),
+            Format::Txt => Ok(Box::new(output::Txt::new(file))),
         }
     }
 
