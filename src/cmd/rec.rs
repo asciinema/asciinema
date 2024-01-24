@@ -22,7 +22,7 @@ pub struct Cli {
     #[arg(long, short = 'I', alias = "stdin")]
     input: bool,
 
-    /// Append to an existing asciicast file
+    /// Append to an existing recording file
     #[arg(short, long)]
     append: bool,
 
