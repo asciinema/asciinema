@@ -89,10 +89,10 @@ impl Event {
         }
     }
 
-    pub fn marker(time: u64) -> Self {
+    pub fn marker(time: u64, label: String) -> Self {
         Event {
             time,
-            data: EventData::Marker("".to_owned()),
+            data: EventData::Marker(label),
         }
     }
 }
@@ -209,19 +209,23 @@ mod tests {
             };
 
             fw.write_header(&header).unwrap();
-            fw.write_event(Event::output(1000001, "hello\r\n".as_bytes()))
+
+            fw.write_event(&Event::output(1000001, "hello\r\n".as_bytes()))
                 .unwrap();
         }
 
         {
             let mut fw = Writer::new(&mut data, 1000001);
 
-            fw.write_event(Event::output(1000001, "world".as_bytes()))
+            fw.write_event(&Event::output(1000001, "world".as_bytes()))
                 .unwrap();
-            fw.write_event(Event::input(2000002, " ".as_bytes()))
+
+            fw.write_event(&Event::input(2000002, " ".as_bytes()))
                 .unwrap();
-            fw.write_event(Event::resize(3000003, (100, 40))).unwrap();
-            fw.write_event(Event::output(4000004, "żółć".as_bytes()))
+
+            fw.write_event(&Event::resize(3000003, (100, 40))).unwrap();
+
+            fw.write_event(&Event::output(4000004, "żółć".as_bytes()))
                 .unwrap();
         }
 

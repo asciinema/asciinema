@@ -28,7 +28,7 @@ impl Cli {
                 let mut event = event?;
                 time = time_offset + event.time;
                 event.time = time;
-                writer.write_event(event)?;
+                writer.write_event(&event)?;
             }
 
             time_offset = time;
