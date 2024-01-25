@@ -10,6 +10,7 @@ pub use txt::TxtEncoder;
 use crate::asciicast::Event;
 use crate::recorder;
 use crate::tty;
+use anyhow::Result;
 use std::io;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -18,6 +19,25 @@ pub trait Encoder {
     fn event(&mut self, event: &Event) -> io::Result<()>;
 
     fn finish(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+pub trait EncoderExt {
+    fn encode(&mut self, recording: crate::asciicast::Asciicast) -> Result<()>;
+}
+
+impl<E: Encoder + ?Sized> EncoderExt for E {
+    fn encode(&mut self, recording: crate::asciicast::Asciicast) -> Result<()> {
+        let tty_size = tty::TtySize(recording.header.cols, recording.header.rows);
+        self.start(recording.header.timestamp, &tty_size)?;
+
+        for event in recording.events {
+            self.event(&event?)?;
+        }
+
+        self.finish()?;
+
         Ok(())
     }
 }

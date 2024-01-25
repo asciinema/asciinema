@@ -195,6 +195,10 @@ impl serde::Serialize for V2Header {
 
         let mut len = 4;
 
+        if self.timestamp.is_some() {
+            len += 1;
+        }
+
         if self.idle_time_limit.is_some() {
             len += 1;
         }
@@ -215,7 +219,10 @@ impl serde::Serialize for V2Header {
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.width)?;
         map.serialize_entry("height", &self.height)?;
-        map.serialize_entry("timestamp", &self.timestamp)?;
+
+        if let Some(timestamp) = self.timestamp {
+            map.serialize_entry("timestamp", &timestamp)?;
+        }
 
         if let Some(limit) = self.idle_time_limit {
             map.serialize_entry("idle_time_limit", &limit)?;

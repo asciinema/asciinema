@@ -60,3 +60,14 @@ where
         self.writer.write_event(event)
     }
 }
+
+impl From<&Header> for Metadata {
+    fn from(header: &Header) -> Self {
+        Metadata {
+            idle_time_limit: header.idle_time_limit.as_ref().cloned(),
+            command: header.command.as_ref().cloned(),
+            title: header.title.as_ref().cloned(),
+            env: header.env.as_ref().cloned(),
+        }
+    }
+}
