@@ -158,28 +158,28 @@ where
         writeln!(self.writer, "{}", serde_json::to_string(&header)?)
     }
 
-    pub fn write_event(&mut self, mut event: Event) -> io::Result<()> {
-        event.time += self.time_offset;
-
-        writeln!(self.writer, "{}", serialize_event(&event)?)
+    pub fn write_event(&mut self, event: &Event) -> io::Result<()> {
+        writeln!(self.writer, "{}", self.serialize_event(event)?)
     }
-}
 
-fn serialize_event(event: &Event) -> Result<String, serde_json::Error> {
-    let (code, data) = match &event.data {
-        EventData::Output(data) => ('o', data.clone()),
-        EventData::Input(data) => ('i', data.clone()),
-        EventData::Resize(cols, rows) => ('r', format!("{cols}x{rows}")),
-        EventData::Marker(data) => ('m', data.clone()),
-        EventData::Other(code, data) => (*code, data.clone()),
-    };
+    fn serialize_event(&self, event: &Event) -> Result<String, serde_json::Error> {
+        use EventData::*;
 
-    Ok(format!(
-        "[{}, {}, {}]",
-        format_time(event.time).trim_end_matches('0'),
-        serde_json::to_string(&code)?,
-        serde_json::to_string(&data)?
-    ))
+        let (code, data) = match &event.data {
+            Output(data) => ('o', serde_json::to_string(data)?),
+            Input(data) => ('i', serde_json::to_string(data)?),
+            Resize(cols, rows) => ('r', serde_json::to_string(&format!("{cols}x{rows}"))?),
+            Marker(data) => ('m', serde_json::to_string(data)?),
+            Other(code, data) => (*code, serde_json::to_string(data)?),
+        };
+
+        Ok(format!(
+            "[{}, {}, {}]",
+            format_time(event.time + self.time_offset).trim_end_matches('0'),
+            serde_json::to_string(&code)?,
+            data,
+        ))
+    }
 }
 
 fn format_time(time: u64) -> String {

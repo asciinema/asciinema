@@ -5,7 +5,7 @@ use crate::tty;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 pub struct Recorder {
     output: Option<Box<dyn Output + Send>>,
@@ -21,7 +21,7 @@ pub struct Recorder {
 }
 
 pub trait Output {
-    fn start(&mut self, timestamp: u64, tty_size: &tty::TtySize) -> io::Result<()>;
+    fn start(&mut self, tty_size: &tty::TtySize) -> io::Result<()>;
     fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
@@ -84,13 +84,8 @@ impl Recorder {
 
 impl pty::Recorder for Recorder {
     fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-
         let mut output = self.output.take().unwrap();
-        output.start(timestamp, &tty_size)?;
+        output.start(&tty_size)?;
         let receiver = self.receiver.take().unwrap();
         let mut notifier = self.notifier.take().unwrap();
 

@@ -1,9 +1,9 @@
 use crate::asciicast;
 use crate::config::Config;
+use crate::encoder;
 use crate::locale;
 use crate::logger;
 use crate::notifier;
-use crate::output;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
@@ -180,7 +180,7 @@ impl Cli {
 
                 let metadata = self.build_asciicast_metadata(config);
 
-                Ok(Box::new(output::Asciicast::new(
+                Ok(Box::new(encoder::AsciicastEncoder::new(
                     file,
                     append,
                     time_offset,
@@ -188,8 +188,8 @@ impl Cli {
                 )))
             }
 
-            Format::Raw => Ok(Box::new(output::Raw::new(file, append))),
-            Format::Txt => Ok(Box::new(output::Txt::new(file))),
+            Format::Raw => Ok(Box::new(encoder::RawEncoder::new(file, append))),
+            Format::Txt => Ok(Box::new(encoder::TxtEncoder::new(file))),
         }
     }
 
@@ -197,7 +197,7 @@ impl Cli {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
-    fn build_asciicast_metadata(&self, config: &Config) -> output::Metadata {
+    fn build_asciicast_metadata(&self, config: &Config) -> encoder::Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.cmd_rec_idle_time_limit());
         let command = self.get_command(config);
 
@@ -208,11 +208,11 @@ impl Cli {
             .or(config.cmd_rec_env())
             .unwrap_or(String::from("TERM,SHELL"));
 
-        output::Metadata {
+        encoder::Metadata {
             idle_time_limit,
             command,
             title: self.title.clone(),
-            env: capture_env(&env),
+            env: Some(capture_env(&env)),
         }
     }
 
