@@ -38,6 +38,9 @@ enum Commands {
     /// Concatenate multiple recordings
     Cat(cmd::cat::Cli),
 
+    /// Convert a recording into another format
+    Convert(cmd::convert::Cli),
+
     /// Upload a recording to an asciinema server
     Upload(cmd::upload::Cli),
 
@@ -53,6 +56,7 @@ fn main() -> Result<()> {
         Commands::Rec(record) => record.run(&config),
         Commands::Play(play) => play.run(&config),
         Commands::Cat(cat) => cat.run(),
+        Commands::Convert(convert) => convert.run(),
         Commands::Upload(upload) => upload.run(&config),
         Commands::Auth(auth) => auth.run(&config),
     }
