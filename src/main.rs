@@ -10,6 +10,7 @@ mod player;
 mod pty;
 mod recorder;
 mod tty;
+mod util;
 use crate::config::Config;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
