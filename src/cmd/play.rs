@@ -39,7 +39,7 @@ impl Cli {
         let path = util::get_local_path(&self.filename)?;
 
         let ended = loop {
-            let recording = asciicast::open_from_path(&path)?;
+            let recording = asciicast::open_from_path(&*path)?;
             let tty = tty::DevTty::open()?;
             let keys = get_key_bindings(config)?;
 

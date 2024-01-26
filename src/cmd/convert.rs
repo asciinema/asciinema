@@ -34,7 +34,7 @@ use crate::encoder::EncoderExt;
 impl Cli {
     pub fn run(self) -> Result<()> {
         let path = util::get_local_path(&self.input_filename)?;
-        let input = asciicast::open_from_path(&path)?;
+        let input = asciicast::open_from_path(&*path)?;
         let mut output = self.get_output(&input.header)?;
 
         output.encode(input)

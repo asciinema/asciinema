@@ -4,27 +4,14 @@ use std::io;
 use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
 
-pub enum LocalPath {
-    Normal(PathBuf),
-    Temporary(NamedTempFile),
-}
-
-impl AsRef<Path> for LocalPath {
-    fn as_ref(&self) -> &Path {
-        match self {
-            LocalPath::Normal(p) => p,
-            LocalPath::Temporary(f) => f.path(),
-        }
-    }
-}
-
-pub fn get_local_path(filename: &str) -> Result<LocalPath> {
+pub fn get_local_path(filename: &str) -> Result<Box<dyn AsRef<Path>>> {
     if filename.starts_with("https://") || filename.starts_with("http://") {
-        download_asciicast(filename)
-            .map(LocalPath::Temporary)
-            .map_err(|e| anyhow!("download failed: {e}"))
+        match download_asciicast(filename) {
+            Ok(path) => Ok(Box::new(path)),
+            Err(e) => bail!(anyhow!("download failed: {e}")),
+        }
     } else {
-        Ok(LocalPath::Normal(PathBuf::from(filename)))
+        Ok(Box::new(PathBuf::from(filename)))
     }
 }
 
