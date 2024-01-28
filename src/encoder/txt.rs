@@ -60,7 +60,7 @@ impl<W: Write> TextCollectorOutput for TextWriter<W> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::TextEncoder;
     use crate::asciicast::Event;
     use crate::encoder::Encoder;

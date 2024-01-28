@@ -32,7 +32,7 @@ impl<W: Write> super::Encoder for RawEncoder<W> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::RawEncoder;
     use crate::asciicast::Event;
     use crate::encoder::Encoder;
