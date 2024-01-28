@@ -136,7 +136,8 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 [[package]]
 name = "avt"
 version = "0.9.0"
-source = "git+https://github.com/asciinema/avt?tag=v0.9.0#4e086767d775b149f3fb92bae9b5d94a96f9b358"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "236c3bb5a0c8ae65a25ffda61e9a97bd41088dd01eb1b3d3616036f37f18eb3c"
 dependencies = [
  "rgb",
  "serde",
