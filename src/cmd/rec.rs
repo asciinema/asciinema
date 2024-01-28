@@ -189,7 +189,7 @@ impl Cli {
             }
 
             Format::Raw => Ok(Box::new(encoder::RawEncoder::new(file, append))),
-            Format::Txt => Ok(Box::new(encoder::TxtEncoder::new(file))),
+            Format::Txt => Ok(Box::new(encoder::TextEncoder::new(file))),
         }
     }
 

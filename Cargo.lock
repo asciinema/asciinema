@@ -135,8 +135,8 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "avt"
-version = "0.8.3"
-source = "git+https://github.com/asciinema/avt?tag=v0.8.3#28aed2b5a65a4ff07344fd6bc51b8ccb8542389c"
+version = "0.9.0"
+source = "git+https://github.com/asciinema/avt?tag=v0.9.0#4e086767d775b149f3fb92bae9b5d94a96f9b358"
 dependencies = [
  "rgb",
  "serde",

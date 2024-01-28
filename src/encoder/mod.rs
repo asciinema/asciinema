@@ -5,7 +5,7 @@ mod txt;
 pub use asciicast::AsciicastEncoder;
 pub use asciicast::Metadata;
 pub use raw::RawEncoder;
-pub use txt::TxtEncoder;
+pub use txt::TextEncoder;
 
 use crate::asciicast::Event;
 use crate::recorder;
