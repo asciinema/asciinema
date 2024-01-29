@@ -1,6 +1,6 @@
 use crate::asciicast;
 use crate::config::Config;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use clap::Args;
 use reqwest::{
     blocking::{multipart::Form, Client},
@@ -35,7 +35,11 @@ impl Cli {
             .header(header::ACCEPT, "application/json")
             .send()?;
 
-        response.error_for_status_ref()?;
+        if response.status().as_u16() == 413 {
+            bail!("The size of the recording exceeds the server's configured limit");
+        } else {
+            response.error_for_status_ref()?;
+        }
 
         let content_type = response
             .headers()
