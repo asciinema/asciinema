@@ -2,6 +2,7 @@ use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
 use crate::tty;
+use crate::util;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
@@ -9,14 +10,14 @@ use std::time::{Duration, Instant};
 
 pub struct Recorder {
     output: Option<Box<dyn Output + Send>>,
-    start_time: Instant,
-    pause_time: Option<u64>,
     record_input: bool,
     keys: KeyBindings,
     notifier: Option<Box<dyn Notifier>>,
     sender: mpsc::Sender<Message>,
     receiver: Option<mpsc::Receiver<Message>>,
-    handle: Option<JoinHandle>,
+    handle: Option<util::JoinHandle>,
+    start_time: Instant,
+    pause_time: Option<u64>,
     prefix_mode: bool,
 }
 
@@ -39,8 +40,6 @@ enum Message {
     Marker(u64),
     Notification(String),
 }
-
-struct JoinHandle(Option<thread::JoinHandle<()>>);
 
 impl Recorder {
     pub fn new(
@@ -123,7 +122,7 @@ impl pty::Recorder for Recorder {
             let _ = output.finish();
         });
 
-        self.handle = Some(JoinHandle(Some(handle)));
+        self.handle = Some(util::JoinHandle::new(handle));
         self.start_time = Instant::now();
 
         Ok(())
@@ -181,16 +180,6 @@ impl pty::Recorder for Recorder {
     fn resize(&mut self, size: tty::TtySize) {
         let msg = Message::Resize(self.elapsed_time(), size);
         self.sender.send(msg).expect("resize send should succeed");
-    }
-}
-
-impl Drop for JoinHandle {
-    fn drop(&mut self) {
-        self.0
-            .take()
-            .unwrap()
-            .join()
-            .expect("worker thread should finish cleanly");
     }
 }
 

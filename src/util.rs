@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail, Result};
 use reqwest::Url;
-use std::io;
 use std::path::{Path, PathBuf};
+use std::{io, thread};
 use tempfile::NamedTempFile;
 
 pub fn get_local_path(filename: &str) -> Result<Box<dyn AsRef<Path>>> {
@@ -51,5 +51,23 @@ fn download_asciicast(url: &str) -> Result<NamedTempFile> {
         io::copy(&mut response, &mut file)?;
 
         Ok(file)
+    }
+}
+
+pub struct JoinHandle(Option<thread::JoinHandle<()>>);
+
+impl JoinHandle {
+    pub fn new(handle: thread::JoinHandle<()>) -> Self {
+        Self(Some(handle))
+    }
+}
+
+impl Drop for JoinHandle {
+    fn drop(&mut self) {
+        self.0
+            .take()
+            .unwrap()
+            .join()
+            .expect("worker thread should finish cleanly");
     }
 }
