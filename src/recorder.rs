@@ -52,14 +52,14 @@ impl Recorder {
 
         Recorder {
             output: Some(output),
-            start_time: Instant::now(),
-            pause_time: None,
             record_input,
             keys,
             notifier: Some(notifier),
             sender,
             receiver: Some(receiver),
             handle: None,
+            start_time: Instant::now(),
+            pause_time: None,
             prefix_mode: false,
         }
     }
