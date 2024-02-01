@@ -12,6 +12,7 @@ use std::io::{self, ErrorKind, Read, Write};
 use std::os::fd::{AsFd, RawFd};
 use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::str::FromStr;
 use std::{env, fs};
 
 type ExtraEnv = HashMap<String, String>;
@@ -27,10 +28,10 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
     command: &[S],
     extra_env: &ExtraEnv,
     tty: &mut T,
-    winsize_override: (Option<u16>, Option<u16>),
+    winsize_override: Option<WinsizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
-    let winsize = get_tty_size(&*tty, winsize_override);
+    let winsize = get_winsize(&*tty, winsize_override.as_ref());
     recorder.start(winsize.into())?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
@@ -54,7 +55,7 @@ fn handle_parent<T: Tty + ?Sized, R: Recorder>(
     master_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    winsize_override: (Option<u16>, Option<u16>),
+    winsize_override: Option<WinsizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
     let copy_result = copy(master_fd, child, tty, winsize_override, recorder);
@@ -75,7 +76,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
     master_raw_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    winsize_override: (Option<u16>, Option<u16>),
+    winsize_override: Option<WinsizeOverride>,
     recorder: &mut R,
 ) -> Result<()> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
@@ -210,7 +211,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
 
         if sigwinch_read {
             sigwinch_fd.flush();
-            let winsize = get_tty_size(&*tty, winsize_override);
+            let winsize = get_winsize(&*tty, winsize_override.as_ref());
             set_pty_size(master_raw_fd, &winsize);
             recorder.resize(winsize.into());
         }
@@ -256,18 +257,65 @@ fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> Result<()
     unsafe { libc::_exit(1) }
 }
 
-fn get_tty_size<T: Tty + ?Sized>(
+#[derive(Clone, Debug)]
+pub enum WinsizeOverride {
+    Full(u16, u16),
+    Cols(u16),
+    Rows(u16),
+}
+
+impl FromStr for WinsizeOverride {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_once('x') {
+            Some((cols, "")) => {
+                let cols: u16 = cols.parse()?;
+
+                Ok(WinsizeOverride::Cols(cols))
+            }
+
+            Some(("", rows)) => {
+                let rows: u16 = rows.parse()?;
+
+                Ok(WinsizeOverride::Rows(rows))
+            }
+
+            Some((cols, rows)) => {
+                let cols: u16 = cols.parse()?;
+                let rows: u16 = rows.parse()?;
+
+                Ok(WinsizeOverride::Full(cols, rows))
+            }
+
+            None => {
+                bail!("{s}")
+            }
+        }
+    }
+}
+
+fn get_winsize<T: Tty + ?Sized>(
     tty: &T,
-    winsize_override: (Option<u16>, Option<u16>),
+    winsize_override: Option<&WinsizeOverride>,
 ) -> pty::Winsize {
     let mut winsize = tty.get_size();
 
-    if let Some(cols) = winsize_override.0 {
-        winsize.ws_col = cols;
-    }
+    match winsize_override {
+        Some(WinsizeOverride::Full(cols, rows)) => {
+            winsize.ws_col = *cols;
+            winsize.ws_row = *rows;
+        }
 
-    if let Some(rows) = winsize_override.1 {
-        winsize.ws_row = rows;
+        Some(WinsizeOverride::Cols(cols)) => {
+            winsize.ws_col = *cols;
+        }
+
+        Some(WinsizeOverride::Rows(rows)) => {
+            winsize.ws_row = *rows;
+        }
+
+        None => (),
     }
 
     winsize
@@ -360,7 +408,7 @@ impl Drop for SignalFd {
 #[cfg(test)]
 mod tests {
     use super::Recorder;
-    use crate::pty::ExtraEnv;
+    use crate::pty::{ExtraEnv, WinsizeOverride};
     use crate::tty::{NullTty, TtySize};
 
     #[derive(Default)]
@@ -412,7 +460,7 @@ sys.stdout.write('bar');
             &["python3", "-c", code],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            (None, None),
+            None,
             &mut recorder,
         )
         .unwrap();
@@ -429,7 +477,7 @@ sys.stdout.write('bar');
             &["true"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            (None, None),
+            None,
             &mut recorder,
         )
         .unwrap();
@@ -445,7 +493,7 @@ sys.stdout.write('bar');
             &["w"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            (None, None),
+            None,
             &mut recorder,
         )
         .unwrap();
@@ -464,7 +512,7 @@ sys.stdout.write('bar');
             &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
             &env,
             &mut NullTty::open().unwrap(),
-            (None, None),
+            None,
             &mut recorder,
         )
         .unwrap();
@@ -480,7 +528,7 @@ sys.stdout.write('bar');
             &["true"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            (Some(100), Some(50)),
+            Some(WinsizeOverride::Full(100, 50)),
             &mut recorder,
         )
         .unwrap();

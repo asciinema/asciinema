@@ -53,8 +53,8 @@ pub struct Cli {
     idle_time_limit: Option<f64>,
 
     /// Override terminal size for the recorded command
-    #[arg(long, value_parser = parse_tty_size, value_name = "COLSxROWS")]
-    tty_size: Option<TtySize>,
+    #[arg(long, value_name = "COLSxROWS")]
+    tty_size: Option<pty::WinsizeOverride>,
 
     #[arg(long, hide = true)]
     cols: Option<u16>,
@@ -70,9 +70,6 @@ enum Format {
     Txt,
 }
 
-#[derive(Clone, Debug)]
-struct TtySize((Option<u16>, Option<u16>));
-
 impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
@@ -86,7 +83,6 @@ impl Cli {
         let record_input = self.input || config.cmd_rec_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let exec_extra_env = super::build_exec_extra_env();
-        let tty_size = self.get_tty_size();
 
         logger::info!("Recording session started, writing to {}", self.filename);
 
@@ -108,7 +104,7 @@ impl Cli {
                 &exec_command,
                 &exec_extra_env,
                 &mut *tty,
-                tty_size,
+                self.tty_size,
                 &mut recorder,
             )?;
         }
@@ -212,40 +208,6 @@ impl Cli {
             command,
             title: self.title.clone(),
             env: Some(capture_env(&env)),
-        }
-    }
-
-    fn get_tty_size(&self) -> (Option<u16>, Option<u16>) {
-        self.tty_size
-            .as_ref()
-            .map(|s| s.0)
-            .unwrap_or((self.cols, self.rows))
-    }
-}
-
-fn parse_tty_size(s: &str) -> Result<TtySize> {
-    match s.split_once('x') {
-        Some((cols, "")) => {
-            let cols: u16 = cols.parse()?;
-
-            Ok(TtySize((Some(cols), None)))
-        }
-
-        Some(("", rows)) => {
-            let rows: u16 = rows.parse()?;
-
-            Ok(TtySize((None, Some(rows))))
-        }
-
-        Some((cols, rows)) => {
-            let cols: u16 = cols.parse()?;
-            let rows: u16 = rows.parse()?;
-
-            Ok(TtySize((Some(cols), Some(rows))))
-        }
-
-        None => {
-            bail!("{s}")
         }
     }
 }
