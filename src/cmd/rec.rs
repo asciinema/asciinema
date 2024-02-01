@@ -3,7 +3,6 @@ use crate::config::Config;
 use crate::encoder;
 use crate::locale;
 use crate::logger;
-use crate::notifier;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
@@ -83,10 +82,10 @@ impl Cli {
         let command = self.get_command(config);
         let output = self.get_output(file, append, config)?;
         let keys = get_key_bindings(config)?;
-        let notifier = get_notifier(config);
+        let notifier = super::get_notifier(config);
         let record_input = self.input || config.cmd_rec_input();
-        let exec_command = build_exec_command(command.as_ref().cloned());
-        let exec_extra_env = build_exec_extra_env();
+        let exec_command = super::build_exec_command(command.as_ref().cloned());
+        let exec_extra_env = super::build_exec_extra_env();
         let tty_size = self.get_tty_size();
 
         logger::info!("Recording session started, writing to {}", self.filename);
@@ -269,34 +268,10 @@ fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
     Ok(keys)
 }
 
-fn get_notifier(config: &Config) -> Box<dyn notifier::Notifier> {
-    if config.notifications.enabled {
-        notifier::get_notifier(config.notifications.command.clone())
-    } else {
-        Box::new(notifier::NullNotifier)
-    }
-}
-
 fn capture_env(vars: &str) -> HashMap<String, String> {
     let vars = vars.split(',').collect::<HashSet<_>>();
 
     env::vars()
         .filter(|(k, _v)| vars.contains(&k.as_str()))
         .collect::<HashMap<_, _>>()
-}
-
-fn build_exec_command(command: Option<String>) -> Vec<String> {
-    let command = command
-        .or(env::var("SHELL").ok())
-        .unwrap_or("/bin/sh".to_owned());
-
-    vec!["/bin/sh".to_owned(), "-c".to_owned(), command]
-}
-
-fn build_exec_extra_env() -> HashMap<String, String> {
-    let mut env = HashMap::new();
-
-    env.insert("ASCIINEMA_REC".to_owned(), "1".to_owned());
-
-    env
 }
