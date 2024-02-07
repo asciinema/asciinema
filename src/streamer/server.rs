@@ -30,7 +30,6 @@ pub async fn serve(
     listener.set_nonblocking(true)?;
     let listener = tokio::net::TcpListener::from_std(listener)?;
 
-
     let app = Router::new()
         .route("/ws", get(ws_handler))
         .with_state(clients_tx)
