@@ -3,6 +3,7 @@ pub mod cat;
 pub mod convert;
 pub mod play;
 pub mod rec;
+pub mod stream;
 pub mod upload;
 use crate::config::Config;
 use crate::notifier;

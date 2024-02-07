@@ -9,6 +9,7 @@ mod notifier;
 mod player;
 mod pty;
 mod recorder;
+mod streamer;
 mod tty;
 mod util;
 use crate::config::Config;
@@ -35,6 +36,9 @@ enum Commands {
     /// Replay a terminal session
     Play(cmd::play::Cli),
 
+    /// Stream a terminal session
+    Stream(cmd::stream::Cli),
+
     /// Concatenate multiple recordings
     Cat(cmd::cat::Cli),
 
@@ -55,6 +59,7 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Rec(record) => record.run(&config),
         Commands::Play(play) => play.run(&config),
+        Commands::Stream(stream) => stream.run(&config),
         Commands::Cat(cat) => cat.run(),
         Commands::Convert(convert) => convert.run(),
         Commands::Upload(upload) => upload.run(&config),
