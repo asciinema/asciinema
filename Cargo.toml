@@ -26,3 +26,10 @@ which = "5.0.0"
 tempfile = "3.9.0"
 scraper = { version = "0.15.0", default-features = false }
 avt = "0.9.0"
+axum = { version = "0.7.4", features = ["ws"] }
+tokio = { version = "1.35.1", features = ["full"] }
+futures-util = "0.3.30"
+tokio-stream = { version = "0.1.14", features = ["sync"] }
+rust-embed = "8.2.0"
+mime_guess = "2.0.4"
+tower-http = "0.5.1"

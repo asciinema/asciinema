@@ -31,6 +31,7 @@ pub struct Server {
 pub struct Cmd {
     rec: Rec,
     play: Play,
+    stream: Stream,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -55,6 +56,16 @@ pub struct Play {
     pub next_marker_key: Option<String>,
 }
 
+#[derive(Debug, Deserialize, Default)]
+#[allow(unused)]
+pub struct Stream {
+    pub command: Option<String>,
+    pub input: bool,
+    pub env: Option<String>,
+    pub prefix_key: Option<String>,
+    pub pause_key: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Notifications {
@@ -68,6 +79,7 @@ impl Config {
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
             .set_default("cmd.play.speed", None::<Option<f64>>)?
+            .set_default("cmd.stream.input", false)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(
@@ -171,6 +183,32 @@ impl Config {
         self.cmd
             .play
             .next_marker_key
+            .as_ref()
+            .map(parse_key)
+            .transpose()
+    }
+
+    pub fn cmd_stream_command(&self) -> Option<String> {
+        self.cmd.stream.command.as_ref().cloned()
+    }
+
+    pub fn cmd_stream_input(&self) -> bool {
+        self.cmd.stream.input
+    }
+
+    pub fn cmd_stream_prefix_key(&self) -> Result<Option<Key>> {
+        self.cmd
+            .stream
+            .prefix_key
+            .as_ref()
+            .map(parse_key)
+            .transpose()
+    }
+
+    pub fn cmd_stream_pause_key(&self) -> Result<Option<Key>> {
+        self.cmd
+            .stream
+            .pause_key
             .as_ref()
             .map(parse_key)
             .transpose()
