@@ -6,6 +6,7 @@ use crate::streamer::{self, KeyBindings};
 use crate::tty;
 use anyhow::Result;
 use clap::Args;
+use std::net::SocketAddr;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -16,6 +17,10 @@ pub struct Cli {
     /// Command to stream [default: $SHELL]
     #[arg(short, long)]
     command: Option<String>,
+
+    /// HTTP listen address
+    #[clap(short, long, default_value = "127.0.0.1:8080")]
+    listen_addr: SocketAddr,
 
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS")]
@@ -32,11 +37,11 @@ impl Cli {
         let record_input = self.input || config.cmd_stream_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let exec_extra_env = super::build_exec_extra_env();
-        let mut streamer = streamer::Streamer::new(record_input, keys, notifier);
+        let mut streamer = streamer::Streamer::new(self.listen_addr, record_input, keys, notifier);
 
         logger::info!(
-            "Streaming session started, listening on {}",
-            "127.0.0.1:3000" // TODO
+            "Streaming session started, web server listening on {}",
+            &self.listen_addr
         );
 
         if command.is_none() {

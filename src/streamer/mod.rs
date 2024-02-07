@@ -7,7 +7,7 @@ use crate::pty;
 use crate::tty;
 use crate::util;
 use std::io;
-use std::net::TcpListener;
+use std::net::{self, TcpListener};
 use std::thread;
 use std::time::Instant;
 use tokio::sync::{mpsc, oneshot};
@@ -25,6 +25,7 @@ pub struct Streamer {
     start_time: Instant,
     paused: bool,
     prefix_mode: bool,
+    listen_addr: net::SocketAddr,
 }
 
 enum Event {
@@ -34,7 +35,12 @@ enum Event {
 }
 
 impl Streamer {
-    pub fn new(record_input: bool, keys: KeyBindings, notifier: Box<dyn Notifier>) -> Self {
+    pub fn new(
+        listen_addr: net::SocketAddr,
+        record_input: bool,
+        keys: KeyBindings,
+        notifier: Box<dyn Notifier>,
+    ) -> Self {
         let (notifier_tx, notifier_rx) = std::sync::mpsc::channel();
         let (pty_tx, pty_rx) = mpsc::unbounded_channel();
 
@@ -51,6 +57,7 @@ impl Streamer {
             start_time: Instant::now(),
             paused: false,
             prefix_mode: false,
+            listen_addr,
         }
     }
 
@@ -70,7 +77,7 @@ impl pty::Recorder for Streamer {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
         let (server_shutdown_tx, server_shutdown_rx) = oneshot::channel::<()>();
-        let listener = TcpListener::bind("0.0.0.0:3000")?;
+        let listener = TcpListener::bind(self.listen_addr)?;
         let runtime = build_tokio_runtime();
         let server = runtime.spawn(server::serve(listener, clients_tx, server_shutdown_rx));
 
