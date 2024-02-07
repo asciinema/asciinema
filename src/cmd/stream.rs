@@ -40,7 +40,7 @@ impl Cli {
         let mut streamer = streamer::Streamer::new(self.listen_addr, record_input, keys, notifier);
 
         logger::info!(
-            "Streaming session started, web server listening on {}",
+            "Streaming session started, web server listening on http://{}",
             &self.listen_addr
         );
 
