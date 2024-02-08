@@ -190,6 +190,7 @@ async fn event_loop(
                 match client {
                     Some(client) => {
                         client.accept(session.subscribe());
+                        info!("viewer count: {}", session.subscriber_count());
                     }
 
                     None => break,
