@@ -9,6 +9,8 @@ use clap::Args;
 use std::fs;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -93,9 +95,13 @@ impl Cli {
                 .open(path)
                 .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))?;
 
+            let filter = EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy();
+
             tracing_subscriber::fmt()
                 .with_ansi(false)
-                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                .with_env_filter(filter)
                 .with_writer(file)
                 .init();
         }
