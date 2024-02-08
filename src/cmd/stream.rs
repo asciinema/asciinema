@@ -20,7 +20,7 @@ pub struct Cli {
     #[arg(short, long)]
     command: Option<String>,
 
-    /// HTTP listen address
+    /// HTTP server listen address
     #[clap(short, long, default_value = "127.0.0.1:8080")]
     listen_addr: SocketAddr,
 
