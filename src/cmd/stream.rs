@@ -64,7 +64,7 @@ impl Cli {
                 Box::new(tty::NullTty::open()?)
             };
 
-            self.init_logging()?;
+            self.init_logging(config)?;
 
             pty::exec(
                 &exec_command,
@@ -87,8 +87,14 @@ impl Cli {
             .or(config.cmd_stream_command())
     }
 
-    fn init_logging(&self) -> Result<()> {
-        if let Some(path) = self.log_file.as_ref() {
+    fn init_logging(&self, config: &Config) -> Result<()> {
+        let log_file = self
+            .log_file
+            .as_ref()
+            .cloned()
+            .or(config.cmd_stream_log_file());
+
+        if let Some(path) = &log_file {
             let file = fs::OpenOptions::new()
                 .create(true)
                 .append(true)
