@@ -4,9 +4,13 @@ use crate::logger;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
 use crate::tty;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Args;
+use std::fs;
 use std::net::SocketAddr;
+use std::path::PathBuf;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -18,13 +22,17 @@ pub struct Cli {
     #[arg(short, long)]
     command: Option<String>,
 
-    /// HTTP listen address
+    /// HTTP server listen address
     #[clap(short, long, default_value = "127.0.0.1:8080")]
     listen_addr: SocketAddr,
 
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS")]
     tty_size: Option<pty::WinsizeOverride>,
+
+    /// Log file path
+    #[arg(long)]
+    log_file: Option<PathBuf>,
 }
 
 impl Cli {
@@ -56,6 +64,8 @@ impl Cli {
                 Box::new(tty::NullTty::open()?)
             };
 
+            self.init_logging(config)?;
+
             pty::exec(
                 &exec_command,
                 &exec_extra_env,
@@ -75,6 +85,34 @@ impl Cli {
             .as_ref()
             .cloned()
             .or(config.cmd_stream_command())
+    }
+
+    fn init_logging(&self, config: &Config) -> Result<()> {
+        let log_file = self
+            .log_file
+            .as_ref()
+            .cloned()
+            .or(config.cmd_stream_log_file());
+
+        if let Some(path) = &log_file {
+            let file = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+                .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))?;
+
+            let filter = EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy();
+
+            tracing_subscriber::fmt()
+                .with_ansi(false)
+                .with_env_filter(filter)
+                .with_writer(file)
+                .init();
+        }
+
+        Ok(())
     }
 }
 

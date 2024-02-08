@@ -64,6 +64,7 @@ pub struct Stream {
     pub env: Option<String>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
+    pub log_file: Option<PathBuf>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -212,6 +213,10 @@ impl Config {
             .as_ref()
             .map(parse_key)
             .transpose()
+    }
+
+    pub fn cmd_stream_log_file(&self) -> Option<PathBuf> {
+        self.cmd.stream.log_file.as_ref().cloned()
     }
 }
 

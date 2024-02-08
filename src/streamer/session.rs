@@ -69,6 +69,10 @@ impl Session {
         Subscription { init, broadcast_rx }
     }
 
+    pub fn subscriber_count(&self) -> usize {
+        self.broadcast_tx.receiver_count()
+    }
+
     fn elapsed_time(&self) -> u64 {
         self.stream_time + self.last_event_time.elapsed().as_micros() as u64
     }

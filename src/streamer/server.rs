@@ -9,6 +9,7 @@ use axum::{
     routing::get,
     Router,
 };
+use futures_util::sink;
 use futures_util::{stream, StreamExt};
 use rust_embed::RustEmbed;
 use std::borrow::Cow;
@@ -17,6 +18,8 @@ use std::io;
 use std::net::SocketAddr;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
+use tower_http::trace;
+use tracing::info;
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -30,14 +33,23 @@ pub async fn serve(
     listener.set_nonblocking(true)?;
     let listener = tokio::net::TcpListener::from_std(listener)?;
 
+    let trace = trace::TraceLayer::new_for_http()
+        .make_span_with(trace::DefaultMakeSpan::default().include_headers(true));
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
         .with_state(clients_tx)
-        .fallback(static_handler);
+        .fallback(static_handler)
+        .layer(trace);
 
     let signal = async {
         let _ = shutdown_rx.await;
     };
+
+    info!(
+        "HTTP server listening on {}",
+        listener.local_addr().unwrap()
+    );
 
     axum::serve(
         listener,
@@ -67,11 +79,13 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 
 async fn ws_handler(
     ws: ws::WebSocketUpgrade,
-    ConnectInfo(_addr): ConnectInfo<SocketAddr>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(clients_tx): State<mpsc::Sender<session::Client>>,
 ) -> impl IntoResponse {
     ws.on_upgrade(move |socket| async move {
+        info!("websocket client {addr} connected");
         let _ = handle_socket(socket, clients_tx).await;
+        info!("websocket client {addr} disconnected");
     })
 }
 
@@ -79,11 +93,17 @@ async fn handle_socket(
     socket: ws::WebSocket,
     clients_tx: mpsc::Sender<session::Client>,
 ) -> anyhow::Result<()> {
+    let (sink, stream) = socket.split();
+
+    tokio::spawn(async {
+        let _ = stream.map(Ok).forward(sink::drain()).await;
+    });
+
     alis::stream(&clients_tx)
         .await?
         .map(ws_result)
         .chain(stream::once(future::ready(Ok(close_message()))))
-        .forward(socket)
+        .forward(sink)
         .await?;
 
     Ok(())
