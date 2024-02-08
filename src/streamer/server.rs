@@ -9,6 +9,7 @@ use axum::{
     routing::get,
     Router,
 };
+use futures_util::sink;
 use futures_util::{stream, StreamExt};
 use rust_embed::RustEmbed;
 use std::borrow::Cow;
@@ -92,11 +93,17 @@ async fn handle_socket(
     socket: ws::WebSocket,
     clients_tx: mpsc::Sender<session::Client>,
 ) -> anyhow::Result<()> {
+    let (sink, stream) = socket.split();
+
+    tokio::spawn(async {
+        let _ = stream.map(Ok).forward(sink::drain()).await;
+    });
+
     alis::stream(&clients_tx)
         .await?
         .map(ws_result)
         .chain(stream::once(future::ready(Ok(close_message()))))
-        .forward(socket)
+        .forward(sink)
         .await?;
 
     Ok(())
