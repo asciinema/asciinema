@@ -94,6 +94,7 @@ impl Cli {
                 .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))?;
 
             tracing_subscriber::fmt()
+                .with_ansi(false)
                 .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
                 .with_writer(file)
                 .init();
