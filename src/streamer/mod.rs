@@ -144,7 +144,6 @@ impl pty::Recorder for Streamer {
         }
 
         if self.record_input && !self.paused {
-            // TODO ignore OSC responses
             let data = String::from_utf8_lossy(data).to_string();
             let event = Event::Input(self.elapsed_time(), data);
             self.pty_tx.send(event).expect("input send should succeed");

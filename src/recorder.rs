@@ -169,7 +169,6 @@ impl pty::Recorder for Recorder {
         }
 
         if self.record_input && self.pause_time.is_none() {
-            // TODO ignore OSC responses
             let msg = Message::Input(self.elapsed_time(), data.into());
             self.sender.send(msg).expect("input send should succeed");
         }
