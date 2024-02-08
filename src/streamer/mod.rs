@@ -11,6 +11,7 @@ use std::net::{self, TcpListener};
 use std::thread;
 use std::time::Instant;
 use tokio::sync::{mpsc, oneshot};
+use tracing::info;
 
 pub struct Streamer {
     record_input: bool,
@@ -66,8 +67,11 @@ impl Streamer {
     }
 
     fn notify<S: ToString>(&self, message: S) {
+        let message = message.to_string();
+        info!(message);
+
         self.notifier_tx
-            .send(message.to_string())
+            .send(message)
             .expect("notification send should succeed");
     }
 }

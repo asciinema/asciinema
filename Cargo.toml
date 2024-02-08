@@ -33,4 +33,5 @@ tokio-stream = { version = "0.1.14", features = ["sync"] }
 rust-embed = "8.2.0"
 mime_guess = "2.0.4"
 tower-http = { version = "0.5.1", features = ["trace"] }
+tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
