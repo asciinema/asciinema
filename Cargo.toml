@@ -32,4 +32,5 @@ futures-util = "0.3.30"
 tokio-stream = { version = "0.1.14", features = ["sync"] }
 rust-embed = "8.2.0"
 mime_guess = "2.0.4"
-tower-http = "0.5.1"
+tower-http = { version = "0.5.1", features = ["trace"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

@@ -4,9 +4,11 @@ use crate::logger;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
 use crate::tty;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Args;
+use std::fs;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -25,6 +27,10 @@ pub struct Cli {
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS")]
     tty_size: Option<pty::WinsizeOverride>,
+
+    /// Log file path
+    #[arg(long)]
+    log_file: Option<PathBuf>,
 }
 
 impl Cli {
@@ -56,6 +62,8 @@ impl Cli {
                 Box::new(tty::NullTty::open()?)
             };
 
+            self.init_logging()?;
+
             pty::exec(
                 &exec_command,
                 &exec_extra_env,
@@ -75,6 +83,23 @@ impl Cli {
             .as_ref()
             .cloned()
             .or(config.cmd_stream_command())
+    }
+
+    fn init_logging(&self) -> Result<()> {
+        if let Some(path) = self.log_file.as_ref() {
+            let file = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+                .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))?;
+
+            tracing_subscriber::fmt()
+                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+                .with_writer(file)
+                .init();
+        }
+
+        Ok(())
     }
 }
 
