@@ -18,6 +18,7 @@ use std::net::SocketAddr;
 use tokio::sync::{mpsc, oneshot};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tower_http::trace;
+use tracing::info;
 
 #[derive(RustEmbed)]
 #[folder = "assets/"]
@@ -43,6 +44,11 @@ pub async fn serve(
     let signal = async {
         let _ = shutdown_rx.await;
     };
+
+    info!(
+        "HTTP server listening on {}",
+        listener.local_addr().unwrap()
+    );
 
     axum::serve(
         listener,
@@ -72,11 +78,13 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 
 async fn ws_handler(
     ws: ws::WebSocketUpgrade,
-    ConnectInfo(_addr): ConnectInfo<SocketAddr>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(clients_tx): State<mpsc::Sender<session::Client>>,
 ) -> impl IntoResponse {
     ws.on_upgrade(move |socket| async move {
+        info!("websocket client {addr} connected");
         let _ = handle_socket(socket, clients_tx).await;
+        info!("websocket client {addr} disconnected");
     })
 }
 
