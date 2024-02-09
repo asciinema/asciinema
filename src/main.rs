@@ -26,6 +26,10 @@ struct Cli {
     /// asciinema server URL
     #[arg(long)]
     server_url: Option<String>,
+
+    /// Quiet mode, i.e. suppress diagnostic messages
+    #[clap(short, long, global = true)]
+    quiet: bool,
 }
 
 #[derive(Debug, Subcommand)]
@@ -55,6 +59,10 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let config = Config::new(cli.server_url.clone())?;
+
+    if cli.quiet {
+        logger::disable();
+    }
 
     match cli.command {
         Commands::Rec(record) => record.run(&config),
