@@ -41,39 +41,17 @@ impl Notifier for TmuxNotifier {
     }
 }
 
-pub struct LibNotifyNotifier {
-    binary_path: PathBuf,
-    last_notification_id: Option<String>,
-}
+pub struct LibNotifyNotifier(PathBuf);
 
 impl LibNotifyNotifier {
     fn get() -> Option<Self> {
-        which("notify-send").ok().map(|path| LibNotifyNotifier {
-            binary_path: path,
-            last_notification_id: None,
-        })
+        which("notify-send").ok().map(LibNotifyNotifier)
     }
 }
 
 impl Notifier for LibNotifyNotifier {
     fn notify(&mut self, message: String) -> Result<()> {
-        let mut args: Vec<&str> = Vec::new();
-
-        if let Some(id) = &self.last_notification_id {
-            args.extend_from_slice(&["-r", id]);
-        }
-
-        args.extend_from_slice(&["-p", "asciinema", &message]);
-
-        let output = Command::new(&self.binary_path).args(args).output()?;
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let id = stdout.trim();
-
-        if !id.is_empty() {
-            self.last_notification_id = Some(id.to_owned())
-        }
-
-        Ok(())
+        exec(&mut Command::new(&self.0), &["asciinema", &message])
     }
 }
 
