@@ -164,6 +164,7 @@ impl pty::Recorder for Recorder {
             } else if add_marker_key.is_some_and(|key| data == key) {
                 let msg = Message::Marker(self.elapsed_time());
                 self.sender.send(msg).expect("marker send should succeed");
+                self.notify("Marker added");
                 return false;
             }
         }
