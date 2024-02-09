@@ -24,7 +24,7 @@ struct Cli {
     command: Commands,
 
     /// asciinema server URL
-    #[arg(long)]
+    #[arg(long, global = true)]
     server_url: Option<String>,
 
     /// Quiet mode, i.e. suppress diagnostic messages
