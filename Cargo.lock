@@ -93,6 +93,7 @@ dependencies = [
  "mime_guess",
  "nix",
  "reqwest",
+ "rgb",
  "rust-embed",
  "rustyline",
  "scraper",

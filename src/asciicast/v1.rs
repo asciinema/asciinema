@@ -38,6 +38,7 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         command: asciicast.command.clone(),
         title: asciicast.title.clone(),
         env: asciicast.env.clone(),
+        theme: None,
     };
 
     let events = Box::new(

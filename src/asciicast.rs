@@ -1,6 +1,7 @@
 mod util;
 mod v1;
 mod v2;
+use crate::tty;
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use std::fs;
@@ -22,6 +23,7 @@ pub struct Header {
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
+    pub theme: Option<tty::Theme>,
 }
 
 pub struct Event {
@@ -137,7 +139,9 @@ pub fn accelerate(
 #[cfg(test)]
 mod tests {
     use super::{Asciicast, Event, EventData, Header, Writer};
+    use crate::tty;
     use anyhow::Result;
+    use rgb::RGB8;
     use std::collections::HashMap;
     use std::io;
 
@@ -150,6 +154,7 @@ mod tests {
 
         assert_eq!(header.version, 1);
         assert_eq!((header.cols, header.rows), (100, 50));
+        assert!(header.theme.is_none());
 
         assert_eq!(events[0].time, 1230000);
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
@@ -174,20 +179,45 @@ mod tests {
     }
 
     #[test]
-    fn open_v2() {
-        let Asciicast { header, events } = super::open_from_path("tests/casts/demo.cast").unwrap();
-        let events = events.take(7).collect::<Result<Vec<Event>>>().unwrap();
+    fn open_v2_minimal() {
+        let Asciicast { header, events } =
+            super::open_from_path("tests/casts/minimal.cast").unwrap();
+        let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!((header.cols, header.rows), (75, 18));
+        assert_eq!((header.cols, header.rows), (100, 50));
+        assert!(header.theme.is_none());
 
-        assert_eq!(events[1].time, 100989);
-        assert!(matches!(events[1].data, EventData::Output(ref s) if s == "\u{1b}[?2004h"));
+        assert_eq!(events[0].time, 1230000);
+        assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
+    }
 
-        assert_eq!(events[5].time, 1511526);
-        assert!(matches!(events[5].data, EventData::Input(ref s) if s == "v"));
+    #[test]
+    fn open_v2_full() {
+        let Asciicast { header, events } = super::open_from_path("tests/casts/full.cast").unwrap();
+        let events = events.take(5).collect::<Result<Vec<Event>>>().unwrap();
+        let theme = header.theme.unwrap();
 
-        assert_eq!(events[6].time, 1511937);
-        assert!(matches!(events[6].data, EventData::Output(ref s) if s == "v"));
+        assert_eq!((header.cols, header.rows), (100, 50));
+        assert_eq!(theme.fg, RGB8::new(0, 0, 0));
+        assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
+        assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
+
+        assert_eq!(events[0].time, 1);
+        assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
+
+        assert_eq!(events[1].time, 1_000_000);
+        assert!(matches!(events[1].data, EventData::Output(ref s) if s == "ółć"));
+
+        assert_eq!(events[2].time, 2_300_000);
+        assert!(matches!(events[2].data, EventData::Input(ref s) if s == "\n"));
+
+        assert_eq!(events[3].time, 5_600_001);
+        assert!(
+            matches!(events[3].data, EventData::Resize(ref cols, ref rows) if *cols == 80 && *rows == 40)
+        );
+
+        assert_eq!(events[4].time, 10_500_000);
+        assert!(matches!(events[4].data, EventData::Output(ref s) if s == "\r\n"));
     }
 
     #[test]
@@ -206,6 +236,7 @@ mod tests {
                 command: None,
                 title: None,
                 env: Default::default(),
+                theme: None,
             };
 
             fw.write_header(&header).unwrap();
@@ -262,6 +293,29 @@ mod tests {
             env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
             env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
+            let theme = tty::Theme {
+                fg: RGB8::new(0, 1, 2),
+                bg: RGB8::new(0, 100, 200),
+                palette: vec![
+                    RGB8::new(0, 0, 0),
+                    RGB8::new(10, 11, 12),
+                    RGB8::new(20, 21, 22),
+                    RGB8::new(30, 31, 32),
+                    RGB8::new(40, 41, 42),
+                    RGB8::new(50, 51, 52),
+                    RGB8::new(60, 61, 62),
+                    RGB8::new(70, 71, 72),
+                    RGB8::new(80, 81, 82),
+                    RGB8::new(90, 91, 92),
+                    RGB8::new(100, 101, 102),
+                    RGB8::new(110, 111, 112),
+                    RGB8::new(120, 121, 122),
+                    RGB8::new(130, 131, 132),
+                    RGB8::new(140, 141, 142),
+                    RGB8::new(150, 151, 152),
+                ],
+            };
+
             let header = Header {
                 version: 2,
                 cols: 80,
@@ -271,6 +325,7 @@ mod tests {
                 command: Some("/bin/bash".to_owned()),
                 title: Some("Demo".to_owned()),
                 env: Some(env),
+                theme: Some(theme),
             };
 
             fw.write_header(&header).unwrap();
@@ -288,6 +343,9 @@ mod tests {
         assert_eq!(lines[0]["env"].as_object().unwrap().len(), 2);
         assert_eq!(lines[0]["env"]["SHELL"], "/usr/bin/fish");
         assert_eq!(lines[0]["env"]["TERM"], "xterm256-color");
+        assert_eq!(lines[0]["theme"]["fg"], "#000102");
+        assert_eq!(lines[0]["theme"]["bg"], "#0064c8");
+        assert_eq!(lines[0]["theme"]["palette"], "#000000:#0a0b0c:#141516:#1e1f20:#28292a:#323334:#3c3d3e:#464748:#505152:#5a5b5c:#646566:#6e6f70:#78797a:#828384:#8c8d8e:#969798");
     }
 
     fn parse(json: Vec<u8>) -> Vec<serde_json::Value> {

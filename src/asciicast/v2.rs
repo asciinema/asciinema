@@ -1,6 +1,7 @@
 use super::{util, Asciicast, Event, EventData, Header};
+use crate::tty;
 use anyhow::{anyhow, bail, Result};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::io::{self, Write};
 
@@ -14,7 +15,24 @@ struct V2Header {
     command: Option<String>,
     title: Option<String>,
     env: Option<HashMap<String, String>>,
+    theme: Option<V2Theme>,
 }
+
+#[derive(Deserialize, Serialize, Clone)]
+struct V2Theme {
+    #[serde(deserialize_with = "deserialize_color")]
+    fg: RGB8,
+    #[serde(deserialize_with = "deserialize_color")]
+    bg: RGB8,
+    #[serde(deserialize_with = "deserialize_palette")]
+    palette: V2Palette,
+}
+
+#[derive(Clone)]
+struct RGB8(rgb::RGB8);
+
+#[derive(Clone)]
+struct V2Palette(Vec<RGB8>);
 
 #[derive(Debug, Deserialize)]
 struct V2Event {
@@ -60,6 +78,7 @@ impl Parser {
             command: self.0.command.clone(),
             title: self.0.title.clone(),
             env: self.0.env.clone(),
+            theme: self.0.theme.as_ref().map(|t| t.into()),
         };
 
         let events = Box::new(lines.filter_map(parse_line));
@@ -215,6 +234,10 @@ impl serde::Serialize for V2Header {
             len += 1;
         }
 
+        if self.theme.is_some() {
+            len += 1;
+        }
+
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.width)?;
@@ -242,7 +265,79 @@ impl serde::Serialize for V2Header {
             }
         }
 
+        if let Some(theme) = &self.theme {
+            map.serialize_entry("theme", &theme)?;
+        }
+
         map.end()
+    }
+}
+
+fn deserialize_color<'de, D>(deserializer: D) -> Result<RGB8, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: &str = Deserialize::deserialize(deserializer)?;
+    parse_hex_color(value).ok_or(serde::de::Error::custom("invalid hex triplet"))
+}
+
+fn parse_hex_color(rgb: &str) -> Option<RGB8> {
+    if rgb.len() != 7 {
+        return None;
+    }
+
+    let r = u8::from_str_radix(&rgb[1..3], 16).ok()?;
+    let g = u8::from_str_radix(&rgb[3..5], 16).ok()?;
+    let b = u8::from_str_radix(&rgb[5..7], 16).ok()?;
+
+    Some(RGB8(rgb::RGB8::new(r, g, b)))
+}
+
+fn deserialize_palette<'de, D>(deserializer: D) -> Result<V2Palette, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: &str = Deserialize::deserialize(deserializer)?;
+    let mut colors: Vec<RGB8> = value.split(':').filter_map(parse_hex_color).collect();
+    let len = colors.len();
+
+    if len == 8 {
+        colors.extend_from_within(..);
+    } else if len != 16 {
+        return Err(serde::de::Error::custom("expected 8 or 16 hex triplets"));
+    }
+
+    Ok(V2Palette(colors))
+}
+
+impl serde::Serialize for RGB8 {
+    fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl ToString for RGB8 {
+    fn to_string(&self) -> String {
+        format!("#{:0>2x}{:0>2x}{:0>2x}", self.0.r, self.0.g, self.0.b)
+    }
+}
+
+impl serde::Serialize for V2Palette {
+    fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let palette = self
+            .0
+            .iter()
+            .map(|c| c.to_string())
+            .collect::<Vec<_>>()
+            .join(":");
+
+        serializer.serialize_str(&palette)
     }
 }
 
@@ -257,6 +352,31 @@ impl From<&Header> for V2Header {
             command: header.command.clone(),
             title: header.title.clone(),
             env: header.env.clone(),
+            theme: header.theme.as_ref().map(|t| t.into()),
+        }
+    }
+}
+
+impl From<&tty::Theme> for V2Theme {
+    fn from(theme: &tty::Theme) -> Self {
+        let palette = theme.palette.iter().copied().map(RGB8).collect();
+
+        V2Theme {
+            fg: RGB8(theme.fg),
+            bg: RGB8(theme.bg),
+            palette: V2Palette(palette),
+        }
+    }
+}
+
+impl From<&V2Theme> for tty::Theme {
+    fn from(theme: &V2Theme) -> Self {
+        let palette = theme.palette.0.iter().map(|c| c.0).collect();
+
+        tty::Theme {
+            fg: theme.fg.0,
+            bg: theme.bg.0,
+            palette,
         }
     }
 }
