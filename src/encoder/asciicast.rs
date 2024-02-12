@@ -14,6 +14,7 @@ pub struct Metadata {
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
+    pub theme: Option<tty::Theme>,
 }
 
 impl<W> AsciicastEncoder<W>
@@ -38,6 +39,7 @@ where
             command: self.metadata.command.clone(),
             title: self.metadata.title.clone(),
             env: self.metadata.env.clone(),
+            theme: self.metadata.theme.clone(),
         }
     }
 }
@@ -68,6 +70,7 @@ impl From<&Header> for Metadata {
             command: header.command.as_ref().cloned(),
             title: header.title.as_ref().cloned(),
             env: header.env.as_ref().cloned(),
+            theme: header.theme.as_ref().cloned(),
         }
     }
 }

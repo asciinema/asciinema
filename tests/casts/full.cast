@@ -1,0 +1,6 @@
+{"version":2,"width":100,"height":50,"command":"/bin/bash","env":{"TERM":"xterm-256color","SHELL":"/bin/bash"},"theme":{"fg":"#000000","bg":"#ffffff","palette":"#241f31:#c01c28:#2ec27e:#f5c211:#1e78e4:#9841bb:#0ab9dc:#c0bfbc:#5e5c64:#ed333b:#57e389:#f8e45c:#51a1ff:#c061cb:#4fd2fd:#f6f5f4"}}
+[0.000001, "o", "ż"]
+[1.0, "o", "ółć"]
+[2.3, "i", "\n"]
+[5.600001, "r", "80x40"]
+[10.5, "o", "\r\n"]

@@ -63,7 +63,7 @@ pub struct Cli {
     rows: Option<u16>,
 }
 
-#[derive(Clone, Copy, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
 enum Format {
     Asciicast,
     Raw,
@@ -74,10 +74,11 @@ impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
+        let format = self.get_format();
         let (append, overwrite) = self.get_mode()?;
         let file = self.open_file(append, overwrite)?;
+        let time_offset = self.get_time_offset(append, format)?;
         let command = self.get_command(config);
-        let output = self.get_output(file, append, config)?;
         let keys = get_key_bindings(config)?;
         let notifier = super::get_notifier(config);
         let record_input = self.input || config.cmd_rec_input();
@@ -98,6 +99,8 @@ impl Cli {
                 Box::new(tty::NullTty::open()?)
             };
 
+            let theme = tty.get_theme();
+            let output = self.get_output(file, format, append, time_offset, theme, config);
             let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
 
             pty::exec(
@@ -149,13 +152,8 @@ impl Cli {
         Ok(file)
     }
 
-    fn get_output(
-        &self,
-        file: fs::File,
-        append: bool,
-        config: &Config,
-    ) -> Result<Box<dyn recorder::Output + Send>> {
-        let format = self.format.unwrap_or_else(|| {
+    fn get_format(&self) -> Format {
+        self.format.unwrap_or_else(|| {
             if self.raw {
                 Format::Raw
             } else if self.filename.to_lowercase().ends_with(".txt") {
@@ -163,28 +161,40 @@ impl Cli {
             } else {
                 Format::Asciicast
             }
-        });
+        })
+    }
 
+    fn get_time_offset(&self, append: bool, format: Format) -> Result<u64> {
+        if append && format == Format::Asciicast {
+            asciicast::get_duration(&self.filename)
+        } else {
+            Ok(0)
+        }
+    }
+
+    fn get_output(
+        &self,
+        file: fs::File,
+        format: Format,
+        append: bool,
+        time_offset: u64,
+        theme: Option<tty::Theme>,
+        config: &Config,
+    ) -> Box<dyn recorder::Output + Send> {
         match format {
             Format::Asciicast => {
-                let time_offset = if append {
-                    asciicast::get_duration(&self.filename)?
-                } else {
-                    0
-                };
+                let metadata = self.build_asciicast_metadata(theme, config);
 
-                let metadata = self.build_asciicast_metadata(config);
-
-                Ok(Box::new(encoder::AsciicastEncoder::new(
+                Box::new(encoder::AsciicastEncoder::new(
                     file,
                     append,
                     time_offset,
                     metadata,
-                )))
+                ))
             }
 
-            Format::Raw => Ok(Box::new(encoder::RawEncoder::new(file, append))),
-            Format::Txt => Ok(Box::new(encoder::TextEncoder::new(file))),
+            Format::Raw => Box::new(encoder::RawEncoder::new(file, append)),
+            Format::Txt => Box::new(encoder::TextEncoder::new(file)),
         }
     }
 
@@ -192,7 +202,11 @@ impl Cli {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
-    fn build_asciicast_metadata(&self, config: &Config) -> encoder::Metadata {
+    fn build_asciicast_metadata(
+        &self,
+        theme: Option<tty::Theme>,
+        config: &Config,
+    ) -> encoder::Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.cmd_rec_idle_time_limit());
         let command = self.get_command(config);
 
@@ -208,6 +222,7 @@ impl Cli {
             command,
             title: self.title.clone(),
             env: Some(capture_env(&env)),
+            theme,
         }
     }
 }
