@@ -228,7 +228,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             sigint_fd.flush();
         }
 
-        if sigterm_read || sigquit_read || sighup_read || sigchld_read || sigalrm_read {
+        if sigterm_read || sigquit_read || sighup_read || sigalrm_read || sigchld_read {
             if sigterm_read {
                 sigterm_fd.flush();
             }
@@ -241,14 +241,13 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
                 sighup_fd.flush();
             }
 
-            if sigchld_read {
-                sigchld_fd.flush();
-            }
-
             if sigalrm_read {
                 sigalrm_fd.flush();
             }
 
+            if sigchld_read {
+                sigchld_fd.flush();
+            }
             unsafe { libc::kill(child.as_raw(), SIGTERM) };
 
             return Ok(());
