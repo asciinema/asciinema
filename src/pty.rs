@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::sys::select::{select, FdSet};
 use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
-use signal_hook::consts::{SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
+use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
 use std::collections::HashMap;
 use std::ffi::{CString, NulError};
@@ -84,11 +84,14 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut master_closed = false;
+
     let sigwinch_fd = SignalFd::open(SIGWINCH)?;
     let sigint_fd = SignalFd::open(SIGINT)?;
     let sigterm_fd = SignalFd::open(SIGTERM)?;
     let sigquit_fd = SignalFd::open(SIGQUIT)?;
     let sighup_fd = SignalFd::open(SIGHUP)?;
+    let sigalrm_fd = SignalFd::open(SIGALRM)?;
+    let sigchld_fd = SignalFd::open(SIGCHLD)?;
 
     set_non_blocking(&master_raw_fd)?;
 
@@ -104,6 +107,8 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         rfds.insert(&sigterm_fd);
         rfds.insert(&sigquit_fd);
         rfds.insert(&sighup_fd);
+        rfds.insert(&sigalrm_fd);
+        rfds.insert(&sigchld_fd);
 
         if !master_closed {
             rfds.insert(&master_fd);
@@ -134,6 +139,8 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         let sigterm_read = rfds.contains(&sigterm_fd);
         let sigquit_read = rfds.contains(&sigquit_fd);
         let sighup_read = rfds.contains(&sighup_fd);
+        let sigalrm_read = rfds.contains(&sigalrm_fd);
+        let sigchld_read = rfds.contains(&sigchld_fd);
 
         if master_read {
             while let Some(n) = read_non_blocking(&mut master, &mut buf)? {
@@ -220,7 +227,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             sigint_fd.flush();
         }
 
-        if sigterm_read || sigquit_read || sighup_read {
+        if sigterm_read || sigquit_read || sighup_read || sigalrm_read || sigchld_read {
             if sigterm_read {
                 sigterm_fd.flush();
             }
@@ -233,6 +240,13 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
                 sighup_fd.flush();
             }
 
+            if sigalrm_read {
+                sigalrm_fd.flush();
+            }
+
+            if sigchld_read {
+                sigchld_fd.flush();
+            }
             unsafe { libc::kill(child.as_raw(), SIGTERM) };
 
             return Ok(());
