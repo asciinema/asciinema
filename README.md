@@ -72,6 +72,9 @@ This produces the binary in _release mode_ (`--release`) at
 `target/release/asciinema`. There are no other build artifacts so you can just
 copy the binary to a directory in your `$PATH`.
 
+> [!NOTE]
+> Windows is currently not supported. _(See [#467](https://github.com/asciinema/asciinema/issues/467))_
+
 ## Development
 
 This branch contains the next generation of the asciinema CLI, written in Rust
