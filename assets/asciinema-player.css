@@ -488,16 +488,16 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   box-sizing: border-box;
   animation: ap-loader-rotation 1s linear infinite;
 }
-.ap-player .ap-overlay-offline span {
+.ap-player .ap-overlay-info span {
   font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace, 'Powerline Symbols';
   font-variant-ligatures: none;
   font-size: 2em;
 }
-.ap-player .ap-overlay-offline span .ap-line {
+.ap-player .ap-overlay-info span .ap-line {
   letter-spacing: normal;
   overflow: hidden;
 }
-.ap-player .ap-overlay-offline span .ap-line span {
+.ap-player .ap-overlay-info span .ap-line span {
   padding: 0;
   display: inline-block;
   height: 100%;
