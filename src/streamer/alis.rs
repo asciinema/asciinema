@@ -11,7 +11,7 @@ use std::future;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 
-static HEADER: &str = "ALiS\x01\x00\x00\x00\x00\x00";
+static HEADER: &str = "ALiS\x01";
 static SECOND: f64 = 1_000_000.0;
 
 pub async fn stream(
