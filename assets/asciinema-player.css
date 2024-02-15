@@ -1953,7 +1953,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
 .ap-terminal .bg-255 {
   background-color: #eeeeee;
 }
-.asciinema-theme-asciinema {
+.asciinema-player-theme-asciinema {
   --term-color-foreground: #cccccc;
   --term-color-background: #121314;
   --term-color-0: hsl(0, 0%, 0%);
@@ -1976,7 +1976,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
 /*
   Based on Dracula: https://draculatheme.com
  */
-.asciinema-theme-dracula {
+.asciinema-player-theme-dracula {
   --term-color-foreground: #f8f8f2;
   --term-color-background: #282a36;
   --term-color-0: #21222c;
@@ -1997,7 +1997,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   --term-color-15: #ffffff;
 }
 /* Based on Monokai from base16 collection - https://github.com/chriskempson/base16 */
-.asciinema-theme-monokai {
+.asciinema-player-theme-monokai {
   --term-color-foreground: #f8f8f2;
   --term-color-background: #272822;
   --term-color-0: #272822;
@@ -2015,7 +2015,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   Based on Nord: https://github.com/arcticicestudio/nord
   Via: https://github.com/neilotoole/asciinema-theme-nord
  */
-.asciinema-theme-nord {
+.asciinema-player-theme-nord {
   --term-color-foreground: #eceff4;
   --term-color-background: #2e3440;
   --term-color-0: #3b4252;
@@ -2027,7 +2027,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   --term-color-6: #88c0d0;
   --term-color-7: #eceff4;
 }
-.asciinema-theme-seti {
+.asciinema-player-theme-seti {
   --term-color-foreground: #cacecd;
   --term-color-background: #111213;
   --term-color-0: #323232;
@@ -2043,7 +2043,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
 /*
   Based on Solarized Dark: https://ethanschoonover.com/solarized/
  */
-.asciinema-theme-solarized-dark {
+.asciinema-player-theme-solarized-dark {
   --term-color-foreground: #839496;
   --term-color-background: #002b36;
   --term-color-0: #073642;
@@ -2066,7 +2066,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
 /*
   Based on Solarized Light: https://ethanschoonover.com/solarized/
  */
-.asciinema-theme-solarized-light {
+.asciinema-player-theme-solarized-light {
   --term-color-foreground: #657b83;
   --term-color-background: #fdf6e3;
   --term-color-0: #073642;
@@ -2086,16 +2086,16 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   --term-color-14: #93a1a1;
   --term-color-15: #fdf6e3;
 }
-.asciinema-theme-solarized-light .ap-overlay-start .ap-play-button svg .ap-play-btn-fill {
+.asciinema-player-theme-solarized-light .ap-overlay-start .ap-play-button svg .ap-play-btn-fill {
   fill: var(--term-color-1);
 }
-.asciinema-theme-solarized-light .ap-overlay-start .ap-play-button svg .ap-play-btn-stroke {
+.asciinema-player-theme-solarized-light .ap-overlay-start .ap-play-button svg .ap-play-btn-stroke {
   stroke: var(--term-color-1);
 }
 /*
   Based on Tango: https://en.wikipedia.org/wiki/Tango_Desktop_Project
  */
-.asciinema-theme-tango {
+.asciinema-player-theme-tango {
   --term-color-foreground: #cccccc;
   --term-color-background: #121314;
   --term-color-0: #000000;

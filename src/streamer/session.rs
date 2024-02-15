@@ -11,11 +11,12 @@ pub struct Session {
     stream_time: u64,
     last_event_time: Instant,
     tty_size: tty::TtySize,
+    theme: Option<tty::Theme>,
 }
 
 #[derive(Clone)]
 pub enum Event {
-    Init(tty::TtySize, u64, Option<String>),
+    Init(tty::TtySize, u64, Option<tty::Theme>, Option<String>),
     Stdout(u64, String),
     Resize(u64, tty::TtySize),
 }
@@ -28,7 +29,7 @@ pub struct Subscription {
 }
 
 impl Session {
-    pub fn new(tty_size: tty::TtySize) -> Self {
+    pub fn new(tty_size: tty::TtySize, theme: Option<tty::Theme>) -> Self {
         let (broadcast_tx, _) = broadcast::channel(1024);
 
         Self {
@@ -37,6 +38,7 @@ impl Session {
             stream_time: 0,
             last_event_time: Instant::now(),
             tty_size,
+            theme,
         }
     }
 
@@ -63,7 +65,13 @@ impl Session {
     }
 
     pub fn subscribe(&self) -> Subscription {
-        let init = Event::Init(self.tty_size, self.elapsed_time(), Some(self.vt.dump()));
+        let init = Event::Init(
+            self.tty_size,
+            self.elapsed_time(),
+            self.theme.clone(),
+            Some(self.vt.dump()),
+        );
+
         let broadcast_rx = self.broadcast_tx.subscribe();
 
         Subscription { init, broadcast_rx }

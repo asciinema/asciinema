@@ -27,7 +27,7 @@ fn encode_event(event: session::Event) -> Vec<u8> {
     use session::Event::*;
 
     match event {
-        Init(size, time, init) => {
+        Init(size, time, theme, init) => {
             let (cols, rows): (u16, u16) = (size.0, size.1);
             let cols_bytes = cols.to_le_bytes();
             let rows_bytes = rows.to_le_bytes();
@@ -40,6 +40,29 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             msg.extend_from_slice(&cols_bytes); // 2 bytes
             msg.extend_from_slice(&rows_bytes); // 2 bytes
             msg.extend_from_slice(&time_bytes); // 4 bytes
+
+            match theme {
+                Some(theme) => {
+                    msg.push(1);
+                    msg.push(theme.fg.r);
+                    msg.push(theme.fg.g);
+                    msg.push(theme.fg.b);
+                    msg.push(theme.bg.r);
+                    msg.push(theme.bg.g);
+                    msg.push(theme.bg.b);
+
+                    for color in &theme.palette {
+                        msg.push(color.r);
+                        msg.push(color.g);
+                        msg.push(color.b);
+                    }
+                }
+
+                None => {
+                    msg.push(0);
+                }
+            }
+
             msg.extend_from_slice(&init_len_bytes); // 4 bytes
             msg.extend_from_slice(init.as_bytes()); // init_len bytes
 

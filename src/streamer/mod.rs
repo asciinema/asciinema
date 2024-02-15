@@ -27,6 +27,7 @@ pub struct Streamer {
     paused: bool,
     prefix_mode: bool,
     listen_addr: net::SocketAddr,
+    theme: Option<tty::Theme>,
 }
 
 enum Event {
@@ -41,6 +42,7 @@ impl Streamer {
         record_input: bool,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
+        theme: Option<tty::Theme>,
     ) -> Self {
         let (notifier_tx, notifier_rx) = std::sync::mpsc::channel();
         let (pty_tx, pty_rx) = mpsc::unbounded_channel();
@@ -59,6 +61,7 @@ impl Streamer {
             paused: false,
             prefix_mode: false,
             listen_addr,
+            theme,
         }
     }
 
@@ -84,10 +87,11 @@ impl pty::Recorder for Streamer {
         let listener = TcpListener::bind(self.listen_addr)?;
         let runtime = build_tokio_runtime();
         let server = runtime.spawn(server::serve(listener, clients_tx, server_shutdown_rx));
+        let theme = self.theme.clone();
 
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
             runtime.block_on(async move {
-                event_loop(pty_rx, &mut clients_rx, tty_size).await;
+                event_loop(pty_rx, &mut clients_rx, tty_size, theme).await;
                 let _ = server_shutdown_tx.send(());
                 let _ = server.await;
                 let _ = clients_rx.recv().await;
@@ -162,8 +166,9 @@ async fn event_loop(
     mut events: mpsc::UnboundedReceiver<Event>,
     clients: &mut mpsc::Receiver<session::Client>,
     tty_size: tty::TtySize,
+    theme: Option<tty::Theme>,
 ) {
-    let mut session = session::Session::new(tty_size);
+    let mut session = session::Session::new(tty_size, theme);
 
     loop {
         tokio::select! {

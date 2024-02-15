@@ -45,7 +45,6 @@ impl Cli {
         let record_input = self.input || config.cmd_stream_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let exec_extra_env = super::build_exec_extra_env();
-        let mut streamer = streamer::Streamer::new(self.listen_addr, record_input, keys, notifier);
 
         logger::info!(
             "Streaming session started, web server listening on http://{}",
@@ -63,6 +62,14 @@ impl Cli {
                 logger::info!("TTY not available, streaming in headless mode");
                 Box::new(tty::NullTty::open()?)
             };
+
+            let mut streamer = streamer::Streamer::new(
+                self.listen_addr,
+                record_input,
+                keys,
+                notifier,
+                tty.get_theme(),
+            );
 
             self.init_logging()?;
 
