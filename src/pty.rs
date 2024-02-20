@@ -134,9 +134,9 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         if let Err(e) = select(None, &mut rfds, &mut wfds, None, None) {
             if e == Errno::EINTR {
                 continue;
-            } else {
-                bail!(e);
             }
+
+            bail!(e);
         }
 
         let master_read = rfds.contains(&master_fd);
@@ -203,9 +203,9 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             if left == 0 {
                 if master_closed {
                     return Ok(None);
-                } else {
-                    output.clear();
                 }
+
+                output.clear();
             } else {
                 let rot = output.len() - left;
                 output.rotate_left(rot);
