@@ -3,7 +3,10 @@ use crate::tty::{Tty, TtySize};
 use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::sys::select::{select, FdSet};
-use nix::{libc, pty, sys::signal, sys::wait, unistd, unistd::ForkResult};
+use nix::sys::signal;
+use nix::sys::wait::{self, WaitPidFlag, WaitStatus};
+use nix::unistd::{self, ForkResult};
+use nix::{libc, pty};
 use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
 use std::collections::HashMap;
@@ -58,13 +61,19 @@ fn handle_parent<T: Tty + ?Sized, R: Recorder>(
     winsize_override: Option<WinsizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
-    let copy_result = copy(master_fd, child, tty, winsize_override, recorder);
-    let wait_result = wait::waitpid(child, None);
-    copy_result?;
+    let wait_result = match copy(master_fd, child, tty, winsize_override, recorder) {
+        Ok(Some(status)) => Ok(status),
+        Ok(None) => wait::waitpid(child, None),
+
+        Err(e) => {
+            let _ = wait::waitpid(child, None);
+            return Err(e);
+        }
+    };
 
     match wait_result {
-        Ok(wait::WaitStatus::Exited(_pid, status)) => Ok(status),
-        Ok(wait::WaitStatus::Signaled(_pid, signal, ..)) => Ok(128 + signal as i32),
+        Ok(WaitStatus::Exited(_pid, status)) => Ok(status),
+        Ok(WaitStatus::Signaled(_pid, signal, ..)) => Ok(128 + signal as i32),
         Ok(_) => Ok(1),
         Err(e) => Err(anyhow::anyhow!(e)),
     }
@@ -78,7 +87,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
     tty: &mut T,
     winsize_override: Option<WinsizeOverride>,
     recorder: &mut R,
-) -> Result<()> {
+) -> Result<Option<WaitStatus>> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
@@ -148,7 +157,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
                     recorder.output(&buf[0..n]);
                     output.extend_from_slice(&buf[0..n]);
                 } else if output.is_empty() {
-                    return Ok(());
+                    return Ok(None);
                 } else {
                     master_closed = true;
                     break;
@@ -193,7 +202,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
 
             if left == 0 {
                 if master_closed {
-                    return Ok(());
+                    return Ok(None);
                 } else {
                     output.clear();
                 }
@@ -211,7 +220,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
                         input.extend_from_slice(&buf[0..n]);
                     }
                 } else {
-                    return Ok(());
+                    return Ok(None);
                 }
             }
         }
@@ -227,29 +236,40 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             sigint_fd.flush();
         }
 
-        if sigterm_read || sigquit_read || sighup_read || sigalrm_read || sigchld_read {
-            if sigterm_read {
-                sigterm_fd.flush();
-            }
+        let mut kill_the_child = false;
 
-            if sigquit_read {
-                sigquit_fd.flush();
-            }
+        if sigterm_read {
+            sigterm_fd.flush();
+            kill_the_child = true;
+        }
 
-            if sighup_read {
-                sighup_fd.flush();
-            }
+        if sigquit_read {
+            sigquit_fd.flush();
+            kill_the_child = true;
+        }
 
-            if sigalrm_read {
-                sigalrm_fd.flush();
-            }
+        if sighup_read {
+            sighup_fd.flush();
+            kill_the_child = true;
+        }
 
-            if sigchld_read {
-                sigchld_fd.flush();
+        if sigalrm_read {
+            sigalrm_fd.flush();
+        }
+
+        if sigchld_read {
+            sigchld_fd.flush();
+
+            if let Ok(status) = wait::waitpid(child, Some(WaitPidFlag::WNOHANG)) {
+                if status != WaitStatus::StillAlive {
+                    return Ok(Some(status));
+                }
             }
+        }
+
+        if kill_the_child {
             unsafe { libc::kill(child.as_raw(), SIGTERM) };
-
-            return Ok(());
+            return Ok(None);
         }
     }
 }
