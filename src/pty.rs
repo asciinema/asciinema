@@ -181,9 +181,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             if left == 0 {
                 input.clear();
             } else {
-                let rot = input.len() - left;
-                input.rotate_left(rot);
-                input.truncate(left);
+                input.drain(..input.len() - left);
             }
         }
 
@@ -207,9 +205,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
 
                 output.clear();
             } else {
-                let rot = output.len() - left;
-                output.rotate_left(rot);
-                output.truncate(left);
+                output.drain(..output.len() - left);
             }
         }
 
