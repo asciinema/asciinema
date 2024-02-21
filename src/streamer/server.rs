@@ -94,17 +94,17 @@ async fn handle_socket(
     clients_tx: mpsc::Sender<session::Client>,
 ) -> anyhow::Result<()> {
     let (sink, stream) = socket.split();
+    let drainer = tokio::spawn(stream.map(Ok).forward(sink::drain()));
 
-    tokio::spawn(async {
-        let _ = stream.map(Ok).forward(sink::drain()).await;
-    });
-
-    alis::stream(&clients_tx)
+    let result = alis::stream(&clients_tx)
         .await?
         .map(ws_result)
         .chain(stream::once(future::ready(Ok(close_message()))))
         .forward(sink)
-        .await?;
+        .await;
+
+    drainer.abort();
+    result?;
 
     Ok(())
 }
