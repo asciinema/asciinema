@@ -211,6 +211,7 @@ pre.ap-terminal {
   color: var(--term-color-foreground);
   background-color: var(--term-color-background);
   border-color: var(--term-color-background);
+  outline: none;
   font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace, 'Powerline Symbols';
   font-variant-ligatures: none;
 }
@@ -225,7 +226,11 @@ pre.ap-terminal .ap-line span {
 }
 pre.ap-terminal .ap-line {
   display: block;
-  width: 200%;
+  width: 100%;
+  position: relative;
+}
+pre.ap-terminal .ap-line span {
+  position: absolute;
 }
 pre.ap-terminal .ap-line .ap-cursor-a {
   display: inline-block;
@@ -474,7 +479,7 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   height: 100%;
 }
 .ap-player .ap-overlay-start .ap-play-button svg {
-  filter: drop-shadow(0px 0px 5px var(--term-color-background));
+  filter: drop-shadow(0px 0px 5px rgba(0, 0, 0, 0.4));
 }
 .ap-player .ap-overlay-loading .ap-loader {
   width: 48px;

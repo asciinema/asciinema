@@ -31,13 +31,7 @@
 
     let bufferTime = params.get('bufferTime');
 
-    if (bufferTime === null) {
-      if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
-        bufferTime = 0.01;
-       } else {
-         bufferTime = 0.1;
-      } 
-    } else {
+    if (bufferTime !== null) {
       bufferTime = parseFloat(bufferTime);
     };
 
