@@ -45,7 +45,7 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         asciicast
             .stdout
             .into_iter()
-            .map(|e| Ok(Event::output(e.time, e.data.as_bytes()))),
+            .map(|e| Ok(Event::output(e.time, e.data))),
     );
 
     Ok(Asciicast { header, events })

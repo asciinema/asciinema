@@ -52,12 +52,12 @@ impl<E: Encoder> recorder::Output for E {
         self.start(Some(timestamp), tty_size)
     }
 
-    fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
-        self.event(&Event::output(time, data))
+    fn output(&mut self, time: u64, text: String) -> io::Result<()> {
+        self.event(&Event::output(time, text))
     }
 
-    fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()> {
-        self.event(&Event::input(time, data))
+    fn input(&mut self, time: u64, text: String) -> io::Result<()> {
+        self.event(&Event::input(time, text))
     }
 
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()> {

@@ -39,18 +39,20 @@ mod tests {
     use crate::tty::TtySize;
 
     #[test]
-    fn encoder_impl() {
+    fn encoder_impl() -> anyhow::Result<()> {
         let mut out: Vec<u8> = Vec::new();
         let mut enc = RawEncoder::new(&mut out, false);
 
-        enc.start(None, &TtySize(100, 50)).unwrap();
-        enc.event(&Event::output(0, b"he\x1b[1mllo\r\n")).unwrap();
-        enc.event(&Event::output(1, b"world\r\n")).unwrap();
-        enc.event(&Event::input(2, b".")).unwrap();
-        enc.event(&Event::resize(3, (80, 24))).unwrap();
-        enc.event(&Event::marker(4, ".".to_owned())).unwrap();
-        enc.finish().unwrap();
+        enc.start(None, &TtySize(100, 50))?;
+        enc.event(&Event::output(0, "he\x1b[1mllo\r\n".to_owned()))?;
+        enc.event(&Event::output(1, "world\r\n".to_owned()))?;
+        enc.event(&Event::input(2, ".".to_owned()))?;
+        enc.event(&Event::resize(3, (80, 24)))?;
+        enc.event(&Event::marker(4, ".".to_owned()))?;
+        enc.finish()?;
 
         assert_eq!(out, b"\x1b[8;50;100the\x1b[1mllo\r\nworld\r\n");
+
+        Ok(())
     }
 }

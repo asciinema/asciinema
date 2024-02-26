@@ -31,8 +31,8 @@ pub struct Streamer {
 }
 
 enum Event {
-    Output(u64, String),
-    Input(u64, String),
+    Output(u64, Vec<u8>),
+    Input(u64, Vec<u8>),
     Resize(u64, tty::TtySize),
 }
 
@@ -112,21 +112,20 @@ impl pty::Recorder for Streamer {
         Ok(())
     }
 
-    fn output(&mut self, data: &[u8]) {
+    fn output(&mut self, raw: &[u8]) {
         if self.paused {
             return;
         }
 
-        let data = String::from_utf8_lossy(data).to_string();
-        let event = Event::Output(self.elapsed_time(), data);
+        let event = Event::Output(self.elapsed_time(), raw.into());
         self.pty_tx.send(event).expect("output send should succeed");
     }
 
-    fn input(&mut self, data: &[u8]) -> bool {
+    fn input(&mut self, raw: &[u8]) -> bool {
         let prefix_key = self.keys.prefix.as_ref();
         let pause_key = self.keys.pause.as_ref();
 
-        if !self.prefix_mode && prefix_key.is_some_and(|key| data == key) {
+        if !self.prefix_mode && prefix_key.is_some_and(|key| raw == key) {
             self.prefix_mode = true;
             return false;
         }
@@ -134,7 +133,7 @@ impl pty::Recorder for Streamer {
         if self.prefix_mode || prefix_key.is_none() {
             self.prefix_mode = false;
 
-            if pause_key.is_some_and(|key| data == key) {
+            if pause_key.is_some_and(|key| raw == key) {
                 if self.paused {
                     self.paused = false;
                     self.notify("Resumed streaming");
@@ -148,8 +147,7 @@ impl pty::Recorder for Streamer {
         }
 
         if self.record_input && !self.paused {
-            let data = String::from_utf8_lossy(data).to_string();
-            let event = Event::Input(self.elapsed_time(), data);
+            let event = Event::Input(self.elapsed_time(), raw.into());
             self.pty_tx.send(event).expect("input send should succeed");
         }
 
@@ -169,17 +167,27 @@ async fn event_loop(
     theme: Option<tty::Theme>,
 ) {
     let mut session = session::Session::new(tty_size, theme);
+    let mut input_decoder = util::Utf8Decoder::new();
+    let mut output_decoder = util::Utf8Decoder::new();
 
     loop {
         tokio::select! {
             event = events.recv() => {
                 match event {
                     Some(Event::Output(time, data)) => {
-                        session.output(time, data);
+                        let text = output_decoder.feed(&data);
+
+                        if !text.is_empty() {
+                            session.output(time, text);
+                        }
                     }
 
                     Some(Event::Input(time, data)) => {
-                        session.input(time, data);
+                        let text = input_decoder.feed(&data);
+
+                        if !text.is_empty() {
+                            session.input(time, text);
+                        }
                     }
 
                     Some(Event::Resize(time, new_tty_size)) => {

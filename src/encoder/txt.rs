@@ -67,15 +67,17 @@ mod tests {
     use crate::tty::TtySize;
 
     #[test]
-    fn encoder_impl() {
+    fn encoder_impl() -> anyhow::Result<()> {
         let mut out: Vec<u8> = Vec::new();
         let mut enc = TextEncoder::new(&mut out);
 
-        enc.start(None, &TtySize(3, 1)).unwrap();
-        enc.event(&Event::output(0, b"he\x1b[1mllo\r\n")).unwrap();
-        enc.event(&Event::output(1, b"world\r\n")).unwrap();
-        enc.finish().unwrap();
+        enc.start(None, &TtySize(3, 1))?;
+        enc.event(&Event::output(0, "he\x1b[1mllo\r\n".to_owned()))?;
+        enc.event(&Event::output(1, "world\r\n".to_owned()))?;
+        enc.finish()?;
 
         assert_eq!(out, b"hello\nworld\n");
+
+        Ok(())
     }
 }

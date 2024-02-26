@@ -23,8 +23,8 @@ pub struct Recorder {
 
 pub trait Output {
     fn start(&mut self, tty_size: &tty::TtySize) -> io::Result<()>;
-    fn output(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
-    fn input(&mut self, time: u64, data: &[u8]) -> io::Result<()>;
+    fn output(&mut self, time: u64, text: String) -> io::Result<()>;
+    fn input(&mut self, time: u64, text: String) -> io::Result<()>;
     fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
     fn marker(&mut self, time: u64) -> io::Result<()>;
 
@@ -91,15 +91,25 @@ impl pty::Recorder for Recorder {
         let handle = thread::spawn(move || {
             use Message::*;
             let mut last_tty_size = tty_size;
+            let mut input_decoder = util::Utf8Decoder::new();
+            let mut output_decoder = util::Utf8Decoder::new();
 
             for msg in receiver {
                 match msg {
                     Output(time, data) => {
-                        let _ = output.output(time, &data);
+                        let text = output_decoder.feed(&data);
+
+                        if !text.is_empty() {
+                            let _ = output.output(time, text);
+                        }
                     }
 
                     Input(time, data) => {
-                        let _ = output.input(time, &data);
+                        let text = input_decoder.feed(&data);
+
+                        if !text.is_empty() {
+                            let _ = output.input(time, text);
+                        }
                     }
 
                     Resize(time, new_tty_size) => {

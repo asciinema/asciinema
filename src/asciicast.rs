@@ -70,17 +70,17 @@ pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
 }
 
 impl Event {
-    pub fn output(time: u64, data: &[u8]) -> Self {
+    pub fn output(time: u64, text: String) -> Self {
         Event {
             time,
-            data: EventData::Output(String::from_utf8_lossy(data).to_string()),
+            data: EventData::Output(text),
         }
     }
 
-    pub fn input(time: u64, data: &[u8]) -> Self {
+    pub fn input(time: u64, text: String) -> Self {
         Event {
             time,
-            data: EventData::Input(String::from_utf8_lossy(data).to_string()),
+            data: EventData::Input(text),
         }
     }
 
@@ -241,22 +241,22 @@ mod tests {
 
             fw.write_header(&header).unwrap();
 
-            fw.write_event(&Event::output(1000001, "hello\r\n".as_bytes()))
+            fw.write_event(&Event::output(1000001, "hello\r\n".to_owned()))
                 .unwrap();
         }
 
         {
             let mut fw = Writer::new(&mut data, 1000001);
 
-            fw.write_event(&Event::output(1000001, "world".as_bytes()))
+            fw.write_event(&Event::output(1000001, "world".to_owned()))
                 .unwrap();
 
-            fw.write_event(&Event::input(2000002, " ".as_bytes()))
+            fw.write_event(&Event::input(2000002, " ".to_owned()))
                 .unwrap();
 
             fw.write_event(&Event::resize(3000003, (100, 40))).unwrap();
 
-            fw.write_event(&Event::output(4000004, "żółć".as_bytes()))
+            fw.write_event(&Event::output(4000004, "żółć".to_owned()))
                 .unwrap();
         }
 
@@ -361,7 +361,7 @@ mod tests {
     #[test]
     fn accelerate() {
         let events = [(0u64, "foo"), (20, "bar"), (50, "baz")]
-            .map(|(time, output)| Ok(Event::output(time, output.as_bytes())));
+            .map(|(time, output)| Ok(Event::output(time, output.to_owned())));
 
         let output = output(super::accelerate(events.into_iter(), 2.0));
 
@@ -379,7 +379,7 @@ mod tests {
             (4_000_000, "qux"),
             (7_500_000, "quux"),
         ]
-        .map(|(time, output)| Ok(Event::output(time, output.as_bytes())));
+        .map(|(time, output)| Ok(Event::output(time, output.to_owned())));
 
         let events = output(super::limit_idle_time(events.into_iter(), 2.0));
 
