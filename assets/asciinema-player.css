@@ -77,113 +77,101 @@ div.ap-wrapper div.ap-player {
   --term-color-14: var(--term-color-6);
   --term-color-15: var(--term-color-7);
 }
-.ap-player .fg-default {
-  color: var(--term-color-foreground);
-}
-.ap-player .fg-bg {
-  color: var(--term-color-background);
-}
-.ap-player .bg-default {
-  background-color: var(--term-color-background);
-}
-.ap-player .bg-fg {
-  background-color: var(--term-color-foreground);
-}
 .ap-player .fg-0 {
-  color: var(--term-color-0);
+  --fg: var(--term-color-0);
 }
 .ap-player .bg-0 {
-  background-color: var(--term-color-0);
+  --bg: var(--term-color-0);
 }
 .ap-player .fg-1 {
-  color: var(--term-color-1);
+  --fg: var(--term-color-1);
 }
 .ap-player .bg-1 {
-  background-color: var(--term-color-1);
+  --bg: var(--term-color-1);
 }
 .ap-player .fg-2 {
-  color: var(--term-color-2);
+  --fg: var(--term-color-2);
 }
 .ap-player .bg-2 {
-  background-color: var(--term-color-2);
+  --bg: var(--term-color-2);
 }
 .ap-player .fg-3 {
-  color: var(--term-color-3);
+  --fg: var(--term-color-3);
 }
 .ap-player .bg-3 {
-  background-color: var(--term-color-3);
+  --bg: var(--term-color-3);
 }
 .ap-player .fg-4 {
-  color: var(--term-color-4);
+  --fg: var(--term-color-4);
 }
 .ap-player .bg-4 {
-  background-color: var(--term-color-4);
+  --bg: var(--term-color-4);
 }
 .ap-player .fg-5 {
-  color: var(--term-color-5);
+  --fg: var(--term-color-5);
 }
 .ap-player .bg-5 {
-  background-color: var(--term-color-5);
+  --bg: var(--term-color-5);
 }
 .ap-player .fg-6 {
-  color: var(--term-color-6);
+  --fg: var(--term-color-6);
 }
 .ap-player .bg-6 {
-  background-color: var(--term-color-6);
+  --bg: var(--term-color-6);
 }
 .ap-player .fg-7 {
-  color: var(--term-color-7);
+  --fg: var(--term-color-7);
 }
 .ap-player .bg-7 {
-  background-color: var(--term-color-7);
+  --bg: var(--term-color-7);
 }
 .ap-player .fg-8 {
-  color: var(--term-color-8);
+  --fg: var(--term-color-8);
 }
 .ap-player .bg-8 {
-  background-color: var(--term-color-8);
+  --bg: var(--term-color-8);
 }
 .ap-player .fg-9 {
-  color: var(--term-color-9);
+  --fg: var(--term-color-9);
 }
 .ap-player .bg-9 {
-  background-color: var(--term-color-9);
+  --bg: var(--term-color-9);
 }
 .ap-player .fg-10 {
-  color: var(--term-color-10);
+  --fg: var(--term-color-10);
 }
 .ap-player .bg-10 {
-  background-color: var(--term-color-10);
+  --bg: var(--term-color-10);
 }
 .ap-player .fg-11 {
-  color: var(--term-color-11);
+  --fg: var(--term-color-11);
 }
 .ap-player .bg-11 {
-  background-color: var(--term-color-11);
+  --bg: var(--term-color-11);
 }
 .ap-player .fg-12 {
-  color: var(--term-color-12);
+  --fg: var(--term-color-12);
 }
 .ap-player .bg-12 {
-  background-color: var(--term-color-12);
+  --bg: var(--term-color-12);
 }
 .ap-player .fg-13 {
-  color: var(--term-color-13);
+  --fg: var(--term-color-13);
 }
 .ap-player .bg-13 {
-  background-color: var(--term-color-13);
+  --bg: var(--term-color-13);
 }
 .ap-player .fg-14 {
-  color: var(--term-color-14);
+  --fg: var(--term-color-14);
 }
 .ap-player .bg-14 {
-  background-color: var(--term-color-14);
+  --bg: var(--term-color-14);
 }
 .ap-player .fg-15 {
-  color: var(--term-color-15);
+  --fg: var(--term-color-15);
 }
 .ap-player .bg-15 {
-  background-color: var(--term-color-15);
+  --bg: var(--term-color-15);
 }
 .ap-player .fg-8,
 .ap-player .fg-9,
@@ -212,6 +200,7 @@ pre.ap-terminal {
   background-color: var(--term-color-background);
   border-color: var(--term-color-background);
   outline: none;
+  line-height: var(--term-line-height);
   font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace, 'Powerline Symbols';
   font-variant-ligatures: none;
 }
@@ -227,29 +216,208 @@ pre.ap-terminal .ap-line span {
 pre.ap-terminal .ap-line {
   display: block;
   width: 100%;
+  height: var(--term-line-height);
   position: relative;
 }
 pre.ap-terminal .ap-line span {
   position: absolute;
+  left: calc(100% * var(--offset) / var(--term-cols));
+  color: var(--fg);
+  background-color: var(--bg);
 }
-pre.ap-terminal .ap-line .ap-cursor-a {
-  display: inline-block;
+pre.ap-terminal .ap-line .ap-inverse {
+  color: var(--bg);
+  background-color: var(--fg);
 }
-pre.ap-terminal .ap-line .ap-cursor-b {
-  display: none;
+pre.ap-terminal .ap-line .cp-2580 {
+  border-top: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2581 {
+  border-bottom: calc(0.125em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2582 {
+  border-bottom: calc(0.25em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2583 {
+  border-bottom: calc(0.375em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2584 {
+  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2585 {
+  border-bottom: calc(0.625em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2586 {
+  border-bottom: calc(0.75em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2587 {
+  border-bottom: calc(0.875em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2588 {
+  background-color: var(--fg);
+}
+pre.ap-terminal .ap-line .cp-2589 {
+  border-left: 0.875ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-258a {
+  border-left: 0.75ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-258b {
+  border-left: 0.625ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-258c {
+  border-left: 0.5ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-258d {
+  border-left: 0.375ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-258e {
+  border-left: 0.25ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-258f {
+  border-left: 0.125ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2590 {
+  border-right: 0.5ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2591 {
+  background-color: color-mix(in srgb, var(--fg) 25%, var(--bg));
+}
+pre.ap-terminal .ap-line .cp-2592 {
+  background-color: color-mix(in srgb, var(--fg) 50%, var(--bg));
+}
+pre.ap-terminal .ap-line .cp-2593 {
+  background-color: color-mix(in srgb, var(--fg) 75%, var(--bg));
+}
+pre.ap-terminal .ap-line .cp-2594 {
+  border-top: calc(0.125em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2595 {
+  border-right: 0.125ch solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2596 {
+  border-right: 0.5ch solid var(--bg);
+  border-top: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  background-color: var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2597 {
+  border-left: 0.5ch solid var(--bg);
+  border-top: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  background-color: var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2598 {
+  border-right: 0.5ch solid var(--bg);
+  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  background-color: var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-2599 {
+  border-left: 0.5ch solid var(--fg);
+  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-259a {
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-259a::before,
+pre.ap-terminal .ap-line .cp-259a::after {
+  content: '';
+  position: absolute;
+  width: 0.5ch;
+  height: calc(0.5em * var(--term-line-height));
+  background-color: var(--fg);
+}
+pre.ap-terminal .ap-line .cp-259a::before {
+  top: 0;
+  left: 0;
+}
+pre.ap-terminal .ap-line .cp-259a::after {
+  bottom: 0;
+  right: 0;
+}
+pre.ap-terminal .ap-line .cp-259b {
+  border-left: 0.5ch solid var(--fg);
+  border-top: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-259c {
+  border-right: 0.5ch solid var(--fg);
+  border-top: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-259d {
+  border-left: 0.5ch solid var(--bg);
+  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  background-color: var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-259e {
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-259e::before,
+pre.ap-terminal .ap-line .cp-259e::after {
+  content: '';
+  position: absolute;
+  width: 0.5ch;
+  height: calc(0.5em * var(--term-line-height));
+  background-color: var(--fg);
+}
+pre.ap-terminal .ap-line .cp-259e::before {
+  top: 0;
+  right: 0;
+}
+pre.ap-terminal .ap-line .cp-259e::after {
+  bottom: 0;
+  left: 0;
+}
+pre.ap-terminal .ap-line .cp-259f {
+  border-right: 0.5ch solid var(--fg);
+  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-e0b0 {
+  border-left: 1ch solid var(--fg);
+  border-top: calc(0.5em * var(--term-line-height)) solid transparent;
+  border-bottom: calc(0.5em * var(--term-line-height)) solid transparent;
+  box-sizing: border-box;
+}
+pre.ap-terminal .ap-line .cp-e0b2 {
+  border-right: 1ch solid var(--fg);
+  border-top: calc(0.5em * var(--term-line-height)) solid transparent;
+  border-bottom: calc(0.5em * var(--term-line-height)) solid transparent;
+  box-sizing: border-box;
+}
+pre.ap-terminal.ap-cursor-on .ap-line .ap-cursor {
+  color: var(--bg);
+  background-color: var(--fg);
   border-radius: 0.05em;
 }
-pre.ap-terminal .ap-line .ap-blink {
-  visibility: hidden;
+pre.ap-terminal.ap-cursor-on .ap-line .ap-cursor.ap-inverse {
+  color: var(--fg);
+  background-color: var(--bg);
 }
-pre.ap-terminal.ap-cursor .ap-line .ap-cursor-a {
-  display: none;
-}
-pre.ap-terminal.ap-cursor .ap-line .ap-cursor-b {
-  display: inline-block;
-}
-pre.ap-terminal.ap-blink .ap-line .ap-blink {
-  visibility: visible;
+pre.ap-terminal:not(.ap-blink) .ap-line .ap-blink {
+  color: transparent;
 }
 pre.ap-terminal .ap-bright {
   font-weight: bold;
@@ -265,6 +433,10 @@ pre.ap-terminal .ap-italic {
 }
 pre.ap-terminal .ap-strikethrough {
   text-decoration: line-through;
+}
+.ap-line span {
+  --fg: var(--term-color-foreground);
+  --bg: var(--term-color-background);
 }
 div.ap-player div.ap-control-bar {
   width: 100%;
@@ -493,10 +665,14 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   box-sizing: border-box;
   animation: ap-loader-rotation 1s linear infinite;
 }
+.ap-player .ap-overlay-info {
+  background-color: var(--term-color-background);
+}
 .ap-player .ap-overlay-info span {
   font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace, 'Powerline Symbols';
   font-variant-ligatures: none;
   font-size: 2em;
+  color: var(--term-color-foreground);
 }
 .ap-player .ap-overlay-info span .ap-line {
   letter-spacing: normal;
@@ -519,1444 +695,1444 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   }
 }
 .ap-terminal .fg-16 {
-  color: #000000;
+  --fg: #000000;
 }
 .ap-terminal .bg-16 {
-  background-color: #000000;
+  --bg: #000000;
 }
 .ap-terminal .fg-17 {
-  color: #00005f;
+  --fg: #00005f;
 }
 .ap-terminal .bg-17 {
-  background-color: #00005f;
+  --bg: #00005f;
 }
 .ap-terminal .fg-18 {
-  color: #000087;
+  --fg: #000087;
 }
 .ap-terminal .bg-18 {
-  background-color: #000087;
+  --bg: #000087;
 }
 .ap-terminal .fg-19 {
-  color: #0000af;
+  --fg: #0000af;
 }
 .ap-terminal .bg-19 {
-  background-color: #0000af;
+  --bg: #0000af;
 }
 .ap-terminal .fg-20 {
-  color: #0000d7;
+  --fg: #0000d7;
 }
 .ap-terminal .bg-20 {
-  background-color: #0000d7;
+  --bg: #0000d7;
 }
 .ap-terminal .fg-21 {
-  color: #0000ff;
+  --fg: #0000ff;
 }
 .ap-terminal .bg-21 {
-  background-color: #0000ff;
+  --bg: #0000ff;
 }
 .ap-terminal .fg-22 {
-  color: #005f00;
+  --fg: #005f00;
 }
 .ap-terminal .bg-22 {
-  background-color: #005f00;
+  --bg: #005f00;
 }
 .ap-terminal .fg-23 {
-  color: #005f5f;
+  --fg: #005f5f;
 }
 .ap-terminal .bg-23 {
-  background-color: #005f5f;
+  --bg: #005f5f;
 }
 .ap-terminal .fg-24 {
-  color: #005f87;
+  --fg: #005f87;
 }
 .ap-terminal .bg-24 {
-  background-color: #005f87;
+  --bg: #005f87;
 }
 .ap-terminal .fg-25 {
-  color: #005faf;
+  --fg: #005faf;
 }
 .ap-terminal .bg-25 {
-  background-color: #005faf;
+  --bg: #005faf;
 }
 .ap-terminal .fg-26 {
-  color: #005fd7;
+  --fg: #005fd7;
 }
 .ap-terminal .bg-26 {
-  background-color: #005fd7;
+  --bg: #005fd7;
 }
 .ap-terminal .fg-27 {
-  color: #005fff;
+  --fg: #005fff;
 }
 .ap-terminal .bg-27 {
-  background-color: #005fff;
+  --bg: #005fff;
 }
 .ap-terminal .fg-28 {
-  color: #008700;
+  --fg: #008700;
 }
 .ap-terminal .bg-28 {
-  background-color: #008700;
+  --bg: #008700;
 }
 .ap-terminal .fg-29 {
-  color: #00875f;
+  --fg: #00875f;
 }
 .ap-terminal .bg-29 {
-  background-color: #00875f;
+  --bg: #00875f;
 }
 .ap-terminal .fg-30 {
-  color: #008787;
+  --fg: #008787;
 }
 .ap-terminal .bg-30 {
-  background-color: #008787;
+  --bg: #008787;
 }
 .ap-terminal .fg-31 {
-  color: #0087af;
+  --fg: #0087af;
 }
 .ap-terminal .bg-31 {
-  background-color: #0087af;
+  --bg: #0087af;
 }
 .ap-terminal .fg-32 {
-  color: #0087d7;
+  --fg: #0087d7;
 }
 .ap-terminal .bg-32 {
-  background-color: #0087d7;
+  --bg: #0087d7;
 }
 .ap-terminal .fg-33 {
-  color: #0087ff;
+  --fg: #0087ff;
 }
 .ap-terminal .bg-33 {
-  background-color: #0087ff;
+  --bg: #0087ff;
 }
 .ap-terminal .fg-34 {
-  color: #00af00;
+  --fg: #00af00;
 }
 .ap-terminal .bg-34 {
-  background-color: #00af00;
+  --bg: #00af00;
 }
 .ap-terminal .fg-35 {
-  color: #00af5f;
+  --fg: #00af5f;
 }
 .ap-terminal .bg-35 {
-  background-color: #00af5f;
+  --bg: #00af5f;
 }
 .ap-terminal .fg-36 {
-  color: #00af87;
+  --fg: #00af87;
 }
 .ap-terminal .bg-36 {
-  background-color: #00af87;
+  --bg: #00af87;
 }
 .ap-terminal .fg-37 {
-  color: #00afaf;
+  --fg: #00afaf;
 }
 .ap-terminal .bg-37 {
-  background-color: #00afaf;
+  --bg: #00afaf;
 }
 .ap-terminal .fg-38 {
-  color: #00afd7;
+  --fg: #00afd7;
 }
 .ap-terminal .bg-38 {
-  background-color: #00afd7;
+  --bg: #00afd7;
 }
 .ap-terminal .fg-39 {
-  color: #00afff;
+  --fg: #00afff;
 }
 .ap-terminal .bg-39 {
-  background-color: #00afff;
+  --bg: #00afff;
 }
 .ap-terminal .fg-40 {
-  color: #00d700;
+  --fg: #00d700;
 }
 .ap-terminal .bg-40 {
-  background-color: #00d700;
+  --bg: #00d700;
 }
 .ap-terminal .fg-41 {
-  color: #00d75f;
+  --fg: #00d75f;
 }
 .ap-terminal .bg-41 {
-  background-color: #00d75f;
+  --bg: #00d75f;
 }
 .ap-terminal .fg-42 {
-  color: #00d787;
+  --fg: #00d787;
 }
 .ap-terminal .bg-42 {
-  background-color: #00d787;
+  --bg: #00d787;
 }
 .ap-terminal .fg-43 {
-  color: #00d7af;
+  --fg: #00d7af;
 }
 .ap-terminal .bg-43 {
-  background-color: #00d7af;
+  --bg: #00d7af;
 }
 .ap-terminal .fg-44 {
-  color: #00d7d7;
+  --fg: #00d7d7;
 }
 .ap-terminal .bg-44 {
-  background-color: #00d7d7;
+  --bg: #00d7d7;
 }
 .ap-terminal .fg-45 {
-  color: #00d7ff;
+  --fg: #00d7ff;
 }
 .ap-terminal .bg-45 {
-  background-color: #00d7ff;
+  --bg: #00d7ff;
 }
 .ap-terminal .fg-46 {
-  color: #00ff00;
+  --fg: #00ff00;
 }
 .ap-terminal .bg-46 {
-  background-color: #00ff00;
+  --bg: #00ff00;
 }
 .ap-terminal .fg-47 {
-  color: #00ff5f;
+  --fg: #00ff5f;
 }
 .ap-terminal .bg-47 {
-  background-color: #00ff5f;
+  --bg: #00ff5f;
 }
 .ap-terminal .fg-48 {
-  color: #00ff87;
+  --fg: #00ff87;
 }
 .ap-terminal .bg-48 {
-  background-color: #00ff87;
+  --bg: #00ff87;
 }
 .ap-terminal .fg-49 {
-  color: #00ffaf;
+  --fg: #00ffaf;
 }
 .ap-terminal .bg-49 {
-  background-color: #00ffaf;
+  --bg: #00ffaf;
 }
 .ap-terminal .fg-50 {
-  color: #00ffd7;
+  --fg: #00ffd7;
 }
 .ap-terminal .bg-50 {
-  background-color: #00ffd7;
+  --bg: #00ffd7;
 }
 .ap-terminal .fg-51 {
-  color: #00ffff;
+  --fg: #00ffff;
 }
 .ap-terminal .bg-51 {
-  background-color: #00ffff;
+  --bg: #00ffff;
 }
 .ap-terminal .fg-52 {
-  color: #5f0000;
+  --fg: #5f0000;
 }
 .ap-terminal .bg-52 {
-  background-color: #5f0000;
+  --bg: #5f0000;
 }
 .ap-terminal .fg-53 {
-  color: #5f005f;
+  --fg: #5f005f;
 }
 .ap-terminal .bg-53 {
-  background-color: #5f005f;
+  --bg: #5f005f;
 }
 .ap-terminal .fg-54 {
-  color: #5f0087;
+  --fg: #5f0087;
 }
 .ap-terminal .bg-54 {
-  background-color: #5f0087;
+  --bg: #5f0087;
 }
 .ap-terminal .fg-55 {
-  color: #5f00af;
+  --fg: #5f00af;
 }
 .ap-terminal .bg-55 {
-  background-color: #5f00af;
+  --bg: #5f00af;
 }
 .ap-terminal .fg-56 {
-  color: #5f00d7;
+  --fg: #5f00d7;
 }
 .ap-terminal .bg-56 {
-  background-color: #5f00d7;
+  --bg: #5f00d7;
 }
 .ap-terminal .fg-57 {
-  color: #5f00ff;
+  --fg: #5f00ff;
 }
 .ap-terminal .bg-57 {
-  background-color: #5f00ff;
+  --bg: #5f00ff;
 }
 .ap-terminal .fg-58 {
-  color: #5f5f00;
+  --fg: #5f5f00;
 }
 .ap-terminal .bg-58 {
-  background-color: #5f5f00;
+  --bg: #5f5f00;
 }
 .ap-terminal .fg-59 {
-  color: #5f5f5f;
+  --fg: #5f5f5f;
 }
 .ap-terminal .bg-59 {
-  background-color: #5f5f5f;
+  --bg: #5f5f5f;
 }
 .ap-terminal .fg-60 {
-  color: #5f5f87;
+  --fg: #5f5f87;
 }
 .ap-terminal .bg-60 {
-  background-color: #5f5f87;
+  --bg: #5f5f87;
 }
 .ap-terminal .fg-61 {
-  color: #5f5faf;
+  --fg: #5f5faf;
 }
 .ap-terminal .bg-61 {
-  background-color: #5f5faf;
+  --bg: #5f5faf;
 }
 .ap-terminal .fg-62 {
-  color: #5f5fd7;
+  --fg: #5f5fd7;
 }
 .ap-terminal .bg-62 {
-  background-color: #5f5fd7;
+  --bg: #5f5fd7;
 }
 .ap-terminal .fg-63 {
-  color: #5f5fff;
+  --fg: #5f5fff;
 }
 .ap-terminal .bg-63 {
-  background-color: #5f5fff;
+  --bg: #5f5fff;
 }
 .ap-terminal .fg-64 {
-  color: #5f8700;
+  --fg: #5f8700;
 }
 .ap-terminal .bg-64 {
-  background-color: #5f8700;
+  --bg: #5f8700;
 }
 .ap-terminal .fg-65 {
-  color: #5f875f;
+  --fg: #5f875f;
 }
 .ap-terminal .bg-65 {
-  background-color: #5f875f;
+  --bg: #5f875f;
 }
 .ap-terminal .fg-66 {
-  color: #5f8787;
+  --fg: #5f8787;
 }
 .ap-terminal .bg-66 {
-  background-color: #5f8787;
+  --bg: #5f8787;
 }
 .ap-terminal .fg-67 {
-  color: #5f87af;
+  --fg: #5f87af;
 }
 .ap-terminal .bg-67 {
-  background-color: #5f87af;
+  --bg: #5f87af;
 }
 .ap-terminal .fg-68 {
-  color: #5f87d7;
+  --fg: #5f87d7;
 }
 .ap-terminal .bg-68 {
-  background-color: #5f87d7;
+  --bg: #5f87d7;
 }
 .ap-terminal .fg-69 {
-  color: #5f87ff;
+  --fg: #5f87ff;
 }
 .ap-terminal .bg-69 {
-  background-color: #5f87ff;
+  --bg: #5f87ff;
 }
 .ap-terminal .fg-70 {
-  color: #5faf00;
+  --fg: #5faf00;
 }
 .ap-terminal .bg-70 {
-  background-color: #5faf00;
+  --bg: #5faf00;
 }
 .ap-terminal .fg-71 {
-  color: #5faf5f;
+  --fg: #5faf5f;
 }
 .ap-terminal .bg-71 {
-  background-color: #5faf5f;
+  --bg: #5faf5f;
 }
 .ap-terminal .fg-72 {
-  color: #5faf87;
+  --fg: #5faf87;
 }
 .ap-terminal .bg-72 {
-  background-color: #5faf87;
+  --bg: #5faf87;
 }
 .ap-terminal .fg-73 {
-  color: #5fafaf;
+  --fg: #5fafaf;
 }
 .ap-terminal .bg-73 {
-  background-color: #5fafaf;
+  --bg: #5fafaf;
 }
 .ap-terminal .fg-74 {
-  color: #5fafd7;
+  --fg: #5fafd7;
 }
 .ap-terminal .bg-74 {
-  background-color: #5fafd7;
+  --bg: #5fafd7;
 }
 .ap-terminal .fg-75 {
-  color: #5fafff;
+  --fg: #5fafff;
 }
 .ap-terminal .bg-75 {
-  background-color: #5fafff;
+  --bg: #5fafff;
 }
 .ap-terminal .fg-76 {
-  color: #5fd700;
+  --fg: #5fd700;
 }
 .ap-terminal .bg-76 {
-  background-color: #5fd700;
+  --bg: #5fd700;
 }
 .ap-terminal .fg-77 {
-  color: #5fd75f;
+  --fg: #5fd75f;
 }
 .ap-terminal .bg-77 {
-  background-color: #5fd75f;
+  --bg: #5fd75f;
 }
 .ap-terminal .fg-78 {
-  color: #5fd787;
+  --fg: #5fd787;
 }
 .ap-terminal .bg-78 {
-  background-color: #5fd787;
+  --bg: #5fd787;
 }
 .ap-terminal .fg-79 {
-  color: #5fd7af;
+  --fg: #5fd7af;
 }
 .ap-terminal .bg-79 {
-  background-color: #5fd7af;
+  --bg: #5fd7af;
 }
 .ap-terminal .fg-80 {
-  color: #5fd7d7;
+  --fg: #5fd7d7;
 }
 .ap-terminal .bg-80 {
-  background-color: #5fd7d7;
+  --bg: #5fd7d7;
 }
 .ap-terminal .fg-81 {
-  color: #5fd7ff;
+  --fg: #5fd7ff;
 }
 .ap-terminal .bg-81 {
-  background-color: #5fd7ff;
+  --bg: #5fd7ff;
 }
 .ap-terminal .fg-82 {
-  color: #5fff00;
+  --fg: #5fff00;
 }
 .ap-terminal .bg-82 {
-  background-color: #5fff00;
+  --bg: #5fff00;
 }
 .ap-terminal .fg-83 {
-  color: #5fff5f;
+  --fg: #5fff5f;
 }
 .ap-terminal .bg-83 {
-  background-color: #5fff5f;
+  --bg: #5fff5f;
 }
 .ap-terminal .fg-84 {
-  color: #5fff87;
+  --fg: #5fff87;
 }
 .ap-terminal .bg-84 {
-  background-color: #5fff87;
+  --bg: #5fff87;
 }
 .ap-terminal .fg-85 {
-  color: #5fffaf;
+  --fg: #5fffaf;
 }
 .ap-terminal .bg-85 {
-  background-color: #5fffaf;
+  --bg: #5fffaf;
 }
 .ap-terminal .fg-86 {
-  color: #5fffd7;
+  --fg: #5fffd7;
 }
 .ap-terminal .bg-86 {
-  background-color: #5fffd7;
+  --bg: #5fffd7;
 }
 .ap-terminal .fg-87 {
-  color: #5fffff;
+  --fg: #5fffff;
 }
 .ap-terminal .bg-87 {
-  background-color: #5fffff;
+  --bg: #5fffff;
 }
 .ap-terminal .fg-88 {
-  color: #870000;
+  --fg: #870000;
 }
 .ap-terminal .bg-88 {
-  background-color: #870000;
+  --bg: #870000;
 }
 .ap-terminal .fg-89 {
-  color: #87005f;
+  --fg: #87005f;
 }
 .ap-terminal .bg-89 {
-  background-color: #87005f;
+  --bg: #87005f;
 }
 .ap-terminal .fg-90 {
-  color: #870087;
+  --fg: #870087;
 }
 .ap-terminal .bg-90 {
-  background-color: #870087;
+  --bg: #870087;
 }
 .ap-terminal .fg-91 {
-  color: #8700af;
+  --fg: #8700af;
 }
 .ap-terminal .bg-91 {
-  background-color: #8700af;
+  --bg: #8700af;
 }
 .ap-terminal .fg-92 {
-  color: #8700d7;
+  --fg: #8700d7;
 }
 .ap-terminal .bg-92 {
-  background-color: #8700d7;
+  --bg: #8700d7;
 }
 .ap-terminal .fg-93 {
-  color: #8700ff;
+  --fg: #8700ff;
 }
 .ap-terminal .bg-93 {
-  background-color: #8700ff;
+  --bg: #8700ff;
 }
 .ap-terminal .fg-94 {
-  color: #875f00;
+  --fg: #875f00;
 }
 .ap-terminal .bg-94 {
-  background-color: #875f00;
+  --bg: #875f00;
 }
 .ap-terminal .fg-95 {
-  color: #875f5f;
+  --fg: #875f5f;
 }
 .ap-terminal .bg-95 {
-  background-color: #875f5f;
+  --bg: #875f5f;
 }
 .ap-terminal .fg-96 {
-  color: #875f87;
+  --fg: #875f87;
 }
 .ap-terminal .bg-96 {
-  background-color: #875f87;
+  --bg: #875f87;
 }
 .ap-terminal .fg-97 {
-  color: #875faf;
+  --fg: #875faf;
 }
 .ap-terminal .bg-97 {
-  background-color: #875faf;
+  --bg: #875faf;
 }
 .ap-terminal .fg-98 {
-  color: #875fd7;
+  --fg: #875fd7;
 }
 .ap-terminal .bg-98 {
-  background-color: #875fd7;
+  --bg: #875fd7;
 }
 .ap-terminal .fg-99 {
-  color: #875fff;
+  --fg: #875fff;
 }
 .ap-terminal .bg-99 {
-  background-color: #875fff;
+  --bg: #875fff;
 }
 .ap-terminal .fg-100 {
-  color: #878700;
+  --fg: #878700;
 }
 .ap-terminal .bg-100 {
-  background-color: #878700;
+  --bg: #878700;
 }
 .ap-terminal .fg-101 {
-  color: #87875f;
+  --fg: #87875f;
 }
 .ap-terminal .bg-101 {
-  background-color: #87875f;
+  --bg: #87875f;
 }
 .ap-terminal .fg-102 {
-  color: #878787;
+  --fg: #878787;
 }
 .ap-terminal .bg-102 {
-  background-color: #878787;
+  --bg: #878787;
 }
 .ap-terminal .fg-103 {
-  color: #8787af;
+  --fg: #8787af;
 }
 .ap-terminal .bg-103 {
-  background-color: #8787af;
+  --bg: #8787af;
 }
 .ap-terminal .fg-104 {
-  color: #8787d7;
+  --fg: #8787d7;
 }
 .ap-terminal .bg-104 {
-  background-color: #8787d7;
+  --bg: #8787d7;
 }
 .ap-terminal .fg-105 {
-  color: #8787ff;
+  --fg: #8787ff;
 }
 .ap-terminal .bg-105 {
-  background-color: #8787ff;
+  --bg: #8787ff;
 }
 .ap-terminal .fg-106 {
-  color: #87af00;
+  --fg: #87af00;
 }
 .ap-terminal .bg-106 {
-  background-color: #87af00;
+  --bg: #87af00;
 }
 .ap-terminal .fg-107 {
-  color: #87af5f;
+  --fg: #87af5f;
 }
 .ap-terminal .bg-107 {
-  background-color: #87af5f;
+  --bg: #87af5f;
 }
 .ap-terminal .fg-108 {
-  color: #87af87;
+  --fg: #87af87;
 }
 .ap-terminal .bg-108 {
-  background-color: #87af87;
+  --bg: #87af87;
 }
 .ap-terminal .fg-109 {
-  color: #87afaf;
+  --fg: #87afaf;
 }
 .ap-terminal .bg-109 {
-  background-color: #87afaf;
+  --bg: #87afaf;
 }
 .ap-terminal .fg-110 {
-  color: #87afd7;
+  --fg: #87afd7;
 }
 .ap-terminal .bg-110 {
-  background-color: #87afd7;
+  --bg: #87afd7;
 }
 .ap-terminal .fg-111 {
-  color: #87afff;
+  --fg: #87afff;
 }
 .ap-terminal .bg-111 {
-  background-color: #87afff;
+  --bg: #87afff;
 }
 .ap-terminal .fg-112 {
-  color: #87d700;
+  --fg: #87d700;
 }
 .ap-terminal .bg-112 {
-  background-color: #87d700;
+  --bg: #87d700;
 }
 .ap-terminal .fg-113 {
-  color: #87d75f;
+  --fg: #87d75f;
 }
 .ap-terminal .bg-113 {
-  background-color: #87d75f;
+  --bg: #87d75f;
 }
 .ap-terminal .fg-114 {
-  color: #87d787;
+  --fg: #87d787;
 }
 .ap-terminal .bg-114 {
-  background-color: #87d787;
+  --bg: #87d787;
 }
 .ap-terminal .fg-115 {
-  color: #87d7af;
+  --fg: #87d7af;
 }
 .ap-terminal .bg-115 {
-  background-color: #87d7af;
+  --bg: #87d7af;
 }
 .ap-terminal .fg-116 {
-  color: #87d7d7;
+  --fg: #87d7d7;
 }
 .ap-terminal .bg-116 {
-  background-color: #87d7d7;
+  --bg: #87d7d7;
 }
 .ap-terminal .fg-117 {
-  color: #87d7ff;
+  --fg: #87d7ff;
 }
 .ap-terminal .bg-117 {
-  background-color: #87d7ff;
+  --bg: #87d7ff;
 }
 .ap-terminal .fg-118 {
-  color: #87ff00;
+  --fg: #87ff00;
 }
 .ap-terminal .bg-118 {
-  background-color: #87ff00;
+  --bg: #87ff00;
 }
 .ap-terminal .fg-119 {
-  color: #87ff5f;
+  --fg: #87ff5f;
 }
 .ap-terminal .bg-119 {
-  background-color: #87ff5f;
+  --bg: #87ff5f;
 }
 .ap-terminal .fg-120 {
-  color: #87ff87;
+  --fg: #87ff87;
 }
 .ap-terminal .bg-120 {
-  background-color: #87ff87;
+  --bg: #87ff87;
 }
 .ap-terminal .fg-121 {
-  color: #87ffaf;
+  --fg: #87ffaf;
 }
 .ap-terminal .bg-121 {
-  background-color: #87ffaf;
+  --bg: #87ffaf;
 }
 .ap-terminal .fg-122 {
-  color: #87ffd7;
+  --fg: #87ffd7;
 }
 .ap-terminal .bg-122 {
-  background-color: #87ffd7;
+  --bg: #87ffd7;
 }
 .ap-terminal .fg-123 {
-  color: #87ffff;
+  --fg: #87ffff;
 }
 .ap-terminal .bg-123 {
-  background-color: #87ffff;
+  --bg: #87ffff;
 }
 .ap-terminal .fg-124 {
-  color: #af0000;
+  --fg: #af0000;
 }
 .ap-terminal .bg-124 {
-  background-color: #af0000;
+  --bg: #af0000;
 }
 .ap-terminal .fg-125 {
-  color: #af005f;
+  --fg: #af005f;
 }
 .ap-terminal .bg-125 {
-  background-color: #af005f;
+  --bg: #af005f;
 }
 .ap-terminal .fg-126 {
-  color: #af0087;
+  --fg: #af0087;
 }
 .ap-terminal .bg-126 {
-  background-color: #af0087;
+  --bg: #af0087;
 }
 .ap-terminal .fg-127 {
-  color: #af00af;
+  --fg: #af00af;
 }
 .ap-terminal .bg-127 {
-  background-color: #af00af;
+  --bg: #af00af;
 }
 .ap-terminal .fg-128 {
-  color: #af00d7;
+  --fg: #af00d7;
 }
 .ap-terminal .bg-128 {
-  background-color: #af00d7;
+  --bg: #af00d7;
 }
 .ap-terminal .fg-129 {
-  color: #af00ff;
+  --fg: #af00ff;
 }
 .ap-terminal .bg-129 {
-  background-color: #af00ff;
+  --bg: #af00ff;
 }
 .ap-terminal .fg-130 {
-  color: #af5f00;
+  --fg: #af5f00;
 }
 .ap-terminal .bg-130 {
-  background-color: #af5f00;
+  --bg: #af5f00;
 }
 .ap-terminal .fg-131 {
-  color: #af5f5f;
+  --fg: #af5f5f;
 }
 .ap-terminal .bg-131 {
-  background-color: #af5f5f;
+  --bg: #af5f5f;
 }
 .ap-terminal .fg-132 {
-  color: #af5f87;
+  --fg: #af5f87;
 }
 .ap-terminal .bg-132 {
-  background-color: #af5f87;
+  --bg: #af5f87;
 }
 .ap-terminal .fg-133 {
-  color: #af5faf;
+  --fg: #af5faf;
 }
 .ap-terminal .bg-133 {
-  background-color: #af5faf;
+  --bg: #af5faf;
 }
 .ap-terminal .fg-134 {
-  color: #af5fd7;
+  --fg: #af5fd7;
 }
 .ap-terminal .bg-134 {
-  background-color: #af5fd7;
+  --bg: #af5fd7;
 }
 .ap-terminal .fg-135 {
-  color: #af5fff;
+  --fg: #af5fff;
 }
 .ap-terminal .bg-135 {
-  background-color: #af5fff;
+  --bg: #af5fff;
 }
 .ap-terminal .fg-136 {
-  color: #af8700;
+  --fg: #af8700;
 }
 .ap-terminal .bg-136 {
-  background-color: #af8700;
+  --bg: #af8700;
 }
 .ap-terminal .fg-137 {
-  color: #af875f;
+  --fg: #af875f;
 }
 .ap-terminal .bg-137 {
-  background-color: #af875f;
+  --bg: #af875f;
 }
 .ap-terminal .fg-138 {
-  color: #af8787;
+  --fg: #af8787;
 }
 .ap-terminal .bg-138 {
-  background-color: #af8787;
+  --bg: #af8787;
 }
 .ap-terminal .fg-139 {
-  color: #af87af;
+  --fg: #af87af;
 }
 .ap-terminal .bg-139 {
-  background-color: #af87af;
+  --bg: #af87af;
 }
 .ap-terminal .fg-140 {
-  color: #af87d7;
+  --fg: #af87d7;
 }
 .ap-terminal .bg-140 {
-  background-color: #af87d7;
+  --bg: #af87d7;
 }
 .ap-terminal .fg-141 {
-  color: #af87ff;
+  --fg: #af87ff;
 }
 .ap-terminal .bg-141 {
-  background-color: #af87ff;
+  --bg: #af87ff;
 }
 .ap-terminal .fg-142 {
-  color: #afaf00;
+  --fg: #afaf00;
 }
 .ap-terminal .bg-142 {
-  background-color: #afaf00;
+  --bg: #afaf00;
 }
 .ap-terminal .fg-143 {
-  color: #afaf5f;
+  --fg: #afaf5f;
 }
 .ap-terminal .bg-143 {
-  background-color: #afaf5f;
+  --bg: #afaf5f;
 }
 .ap-terminal .fg-144 {
-  color: #afaf87;
+  --fg: #afaf87;
 }
 .ap-terminal .bg-144 {
-  background-color: #afaf87;
+  --bg: #afaf87;
 }
 .ap-terminal .fg-145 {
-  color: #afafaf;
+  --fg: #afafaf;
 }
 .ap-terminal .bg-145 {
-  background-color: #afafaf;
+  --bg: #afafaf;
 }
 .ap-terminal .fg-146 {
-  color: #afafd7;
+  --fg: #afafd7;
 }
 .ap-terminal .bg-146 {
-  background-color: #afafd7;
+  --bg: #afafd7;
 }
 .ap-terminal .fg-147 {
-  color: #afafff;
+  --fg: #afafff;
 }
 .ap-terminal .bg-147 {
-  background-color: #afafff;
+  --bg: #afafff;
 }
 .ap-terminal .fg-148 {
-  color: #afd700;
+  --fg: #afd700;
 }
 .ap-terminal .bg-148 {
-  background-color: #afd700;
+  --bg: #afd700;
 }
 .ap-terminal .fg-149 {
-  color: #afd75f;
+  --fg: #afd75f;
 }
 .ap-terminal .bg-149 {
-  background-color: #afd75f;
+  --bg: #afd75f;
 }
 .ap-terminal .fg-150 {
-  color: #afd787;
+  --fg: #afd787;
 }
 .ap-terminal .bg-150 {
-  background-color: #afd787;
+  --bg: #afd787;
 }
 .ap-terminal .fg-151 {
-  color: #afd7af;
+  --fg: #afd7af;
 }
 .ap-terminal .bg-151 {
-  background-color: #afd7af;
+  --bg: #afd7af;
 }
 .ap-terminal .fg-152 {
-  color: #afd7d7;
+  --fg: #afd7d7;
 }
 .ap-terminal .bg-152 {
-  background-color: #afd7d7;
+  --bg: #afd7d7;
 }
 .ap-terminal .fg-153 {
-  color: #afd7ff;
+  --fg: #afd7ff;
 }
 .ap-terminal .bg-153 {
-  background-color: #afd7ff;
+  --bg: #afd7ff;
 }
 .ap-terminal .fg-154 {
-  color: #afff00;
+  --fg: #afff00;
 }
 .ap-terminal .bg-154 {
-  background-color: #afff00;
+  --bg: #afff00;
 }
 .ap-terminal .fg-155 {
-  color: #afff5f;
+  --fg: #afff5f;
 }
 .ap-terminal .bg-155 {
-  background-color: #afff5f;
+  --bg: #afff5f;
 }
 .ap-terminal .fg-156 {
-  color: #afff87;
+  --fg: #afff87;
 }
 .ap-terminal .bg-156 {
-  background-color: #afff87;
+  --bg: #afff87;
 }
 .ap-terminal .fg-157 {
-  color: #afffaf;
+  --fg: #afffaf;
 }
 .ap-terminal .bg-157 {
-  background-color: #afffaf;
+  --bg: #afffaf;
 }
 .ap-terminal .fg-158 {
-  color: #afffd7;
+  --fg: #afffd7;
 }
 .ap-terminal .bg-158 {
-  background-color: #afffd7;
+  --bg: #afffd7;
 }
 .ap-terminal .fg-159 {
-  color: #afffff;
+  --fg: #afffff;
 }
 .ap-terminal .bg-159 {
-  background-color: #afffff;
+  --bg: #afffff;
 }
 .ap-terminal .fg-160 {
-  color: #d70000;
+  --fg: #d70000;
 }
 .ap-terminal .bg-160 {
-  background-color: #d70000;
+  --bg: #d70000;
 }
 .ap-terminal .fg-161 {
-  color: #d7005f;
+  --fg: #d7005f;
 }
 .ap-terminal .bg-161 {
-  background-color: #d7005f;
+  --bg: #d7005f;
 }
 .ap-terminal .fg-162 {
-  color: #d70087;
+  --fg: #d70087;
 }
 .ap-terminal .bg-162 {
-  background-color: #d70087;
+  --bg: #d70087;
 }
 .ap-terminal .fg-163 {
-  color: #d700af;
+  --fg: #d700af;
 }
 .ap-terminal .bg-163 {
-  background-color: #d700af;
+  --bg: #d700af;
 }
 .ap-terminal .fg-164 {
-  color: #d700d7;
+  --fg: #d700d7;
 }
 .ap-terminal .bg-164 {
-  background-color: #d700d7;
+  --bg: #d700d7;
 }
 .ap-terminal .fg-165 {
-  color: #d700ff;
+  --fg: #d700ff;
 }
 .ap-terminal .bg-165 {
-  background-color: #d700ff;
+  --bg: #d700ff;
 }
 .ap-terminal .fg-166 {
-  color: #d75f00;
+  --fg: #d75f00;
 }
 .ap-terminal .bg-166 {
-  background-color: #d75f00;
+  --bg: #d75f00;
 }
 .ap-terminal .fg-167 {
-  color: #d75f5f;
+  --fg: #d75f5f;
 }
 .ap-terminal .bg-167 {
-  background-color: #d75f5f;
+  --bg: #d75f5f;
 }
 .ap-terminal .fg-168 {
-  color: #d75f87;
+  --fg: #d75f87;
 }
 .ap-terminal .bg-168 {
-  background-color: #d75f87;
+  --bg: #d75f87;
 }
 .ap-terminal .fg-169 {
-  color: #d75faf;
+  --fg: #d75faf;
 }
 .ap-terminal .bg-169 {
-  background-color: #d75faf;
+  --bg: #d75faf;
 }
 .ap-terminal .fg-170 {
-  color: #d75fd7;
+  --fg: #d75fd7;
 }
 .ap-terminal .bg-170 {
-  background-color: #d75fd7;
+  --bg: #d75fd7;
 }
 .ap-terminal .fg-171 {
-  color: #d75fff;
+  --fg: #d75fff;
 }
 .ap-terminal .bg-171 {
-  background-color: #d75fff;
+  --bg: #d75fff;
 }
 .ap-terminal .fg-172 {
-  color: #d78700;
+  --fg: #d78700;
 }
 .ap-terminal .bg-172 {
-  background-color: #d78700;
+  --bg: #d78700;
 }
 .ap-terminal .fg-173 {
-  color: #d7875f;
+  --fg: #d7875f;
 }
 .ap-terminal .bg-173 {
-  background-color: #d7875f;
+  --bg: #d7875f;
 }
 .ap-terminal .fg-174 {
-  color: #d78787;
+  --fg: #d78787;
 }
 .ap-terminal .bg-174 {
-  background-color: #d78787;
+  --bg: #d78787;
 }
 .ap-terminal .fg-175 {
-  color: #d787af;
+  --fg: #d787af;
 }
 .ap-terminal .bg-175 {
-  background-color: #d787af;
+  --bg: #d787af;
 }
 .ap-terminal .fg-176 {
-  color: #d787d7;
+  --fg: #d787d7;
 }
 .ap-terminal .bg-176 {
-  background-color: #d787d7;
+  --bg: #d787d7;
 }
 .ap-terminal .fg-177 {
-  color: #d787ff;
+  --fg: #d787ff;
 }
 .ap-terminal .bg-177 {
-  background-color: #d787ff;
+  --bg: #d787ff;
 }
 .ap-terminal .fg-178 {
-  color: #d7af00;
+  --fg: #d7af00;
 }
 .ap-terminal .bg-178 {
-  background-color: #d7af00;
+  --bg: #d7af00;
 }
 .ap-terminal .fg-179 {
-  color: #d7af5f;
+  --fg: #d7af5f;
 }
 .ap-terminal .bg-179 {
-  background-color: #d7af5f;
+  --bg: #d7af5f;
 }
 .ap-terminal .fg-180 {
-  color: #d7af87;
+  --fg: #d7af87;
 }
 .ap-terminal .bg-180 {
-  background-color: #d7af87;
+  --bg: #d7af87;
 }
 .ap-terminal .fg-181 {
-  color: #d7afaf;
+  --fg: #d7afaf;
 }
 .ap-terminal .bg-181 {
-  background-color: #d7afaf;
+  --bg: #d7afaf;
 }
 .ap-terminal .fg-182 {
-  color: #d7afd7;
+  --fg: #d7afd7;
 }
 .ap-terminal .bg-182 {
-  background-color: #d7afd7;
+  --bg: #d7afd7;
 }
 .ap-terminal .fg-183 {
-  color: #d7afff;
+  --fg: #d7afff;
 }
 .ap-terminal .bg-183 {
-  background-color: #d7afff;
+  --bg: #d7afff;
 }
 .ap-terminal .fg-184 {
-  color: #d7d700;
+  --fg: #d7d700;
 }
 .ap-terminal .bg-184 {
-  background-color: #d7d700;
+  --bg: #d7d700;
 }
 .ap-terminal .fg-185 {
-  color: #d7d75f;
+  --fg: #d7d75f;
 }
 .ap-terminal .bg-185 {
-  background-color: #d7d75f;
+  --bg: #d7d75f;
 }
 .ap-terminal .fg-186 {
-  color: #d7d787;
+  --fg: #d7d787;
 }
 .ap-terminal .bg-186 {
-  background-color: #d7d787;
+  --bg: #d7d787;
 }
 .ap-terminal .fg-187 {
-  color: #d7d7af;
+  --fg: #d7d7af;
 }
 .ap-terminal .bg-187 {
-  background-color: #d7d7af;
+  --bg: #d7d7af;
 }
 .ap-terminal .fg-188 {
-  color: #d7d7d7;
+  --fg: #d7d7d7;
 }
 .ap-terminal .bg-188 {
-  background-color: #d7d7d7;
+  --bg: #d7d7d7;
 }
 .ap-terminal .fg-189 {
-  color: #d7d7ff;
+  --fg: #d7d7ff;
 }
 .ap-terminal .bg-189 {
-  background-color: #d7d7ff;
+  --bg: #d7d7ff;
 }
 .ap-terminal .fg-190 {
-  color: #d7ff00;
+  --fg: #d7ff00;
 }
 .ap-terminal .bg-190 {
-  background-color: #d7ff00;
+  --bg: #d7ff00;
 }
 .ap-terminal .fg-191 {
-  color: #d7ff5f;
+  --fg: #d7ff5f;
 }
 .ap-terminal .bg-191 {
-  background-color: #d7ff5f;
+  --bg: #d7ff5f;
 }
 .ap-terminal .fg-192 {
-  color: #d7ff87;
+  --fg: #d7ff87;
 }
 .ap-terminal .bg-192 {
-  background-color: #d7ff87;
+  --bg: #d7ff87;
 }
 .ap-terminal .fg-193 {
-  color: #d7ffaf;
+  --fg: #d7ffaf;
 }
 .ap-terminal .bg-193 {
-  background-color: #d7ffaf;
+  --bg: #d7ffaf;
 }
 .ap-terminal .fg-194 {
-  color: #d7ffd7;
+  --fg: #d7ffd7;
 }
 .ap-terminal .bg-194 {
-  background-color: #d7ffd7;
+  --bg: #d7ffd7;
 }
 .ap-terminal .fg-195 {
-  color: #d7ffff;
+  --fg: #d7ffff;
 }
 .ap-terminal .bg-195 {
-  background-color: #d7ffff;
+  --bg: #d7ffff;
 }
 .ap-terminal .fg-196 {
-  color: #ff0000;
+  --fg: #ff0000;
 }
 .ap-terminal .bg-196 {
-  background-color: #ff0000;
+  --bg: #ff0000;
 }
 .ap-terminal .fg-197 {
-  color: #ff005f;
+  --fg: #ff005f;
 }
 .ap-terminal .bg-197 {
-  background-color: #ff005f;
+  --bg: #ff005f;
 }
 .ap-terminal .fg-198 {
-  color: #ff0087;
+  --fg: #ff0087;
 }
 .ap-terminal .bg-198 {
-  background-color: #ff0087;
+  --bg: #ff0087;
 }
 .ap-terminal .fg-199 {
-  color: #ff00af;
+  --fg: #ff00af;
 }
 .ap-terminal .bg-199 {
-  background-color: #ff00af;
+  --bg: #ff00af;
 }
 .ap-terminal .fg-200 {
-  color: #ff00d7;
+  --fg: #ff00d7;
 }
 .ap-terminal .bg-200 {
-  background-color: #ff00d7;
+  --bg: #ff00d7;
 }
 .ap-terminal .fg-201 {
-  color: #ff00ff;
+  --fg: #ff00ff;
 }
 .ap-terminal .bg-201 {
-  background-color: #ff00ff;
+  --bg: #ff00ff;
 }
 .ap-terminal .fg-202 {
-  color: #ff5f00;
+  --fg: #ff5f00;
 }
 .ap-terminal .bg-202 {
-  background-color: #ff5f00;
+  --bg: #ff5f00;
 }
 .ap-terminal .fg-203 {
-  color: #ff5f5f;
+  --fg: #ff5f5f;
 }
 .ap-terminal .bg-203 {
-  background-color: #ff5f5f;
+  --bg: #ff5f5f;
 }
 .ap-terminal .fg-204 {
-  color: #ff5f87;
+  --fg: #ff5f87;
 }
 .ap-terminal .bg-204 {
-  background-color: #ff5f87;
+  --bg: #ff5f87;
 }
 .ap-terminal .fg-205 {
-  color: #ff5faf;
+  --fg: #ff5faf;
 }
 .ap-terminal .bg-205 {
-  background-color: #ff5faf;
+  --bg: #ff5faf;
 }
 .ap-terminal .fg-206 {
-  color: #ff5fd7;
+  --fg: #ff5fd7;
 }
 .ap-terminal .bg-206 {
-  background-color: #ff5fd7;
+  --bg: #ff5fd7;
 }
 .ap-terminal .fg-207 {
-  color: #ff5fff;
+  --fg: #ff5fff;
 }
 .ap-terminal .bg-207 {
-  background-color: #ff5fff;
+  --bg: #ff5fff;
 }
 .ap-terminal .fg-208 {
-  color: #ff8700;
+  --fg: #ff8700;
 }
 .ap-terminal .bg-208 {
-  background-color: #ff8700;
+  --bg: #ff8700;
 }
 .ap-terminal .fg-209 {
-  color: #ff875f;
+  --fg: #ff875f;
 }
 .ap-terminal .bg-209 {
-  background-color: #ff875f;
+  --bg: #ff875f;
 }
 .ap-terminal .fg-210 {
-  color: #ff8787;
+  --fg: #ff8787;
 }
 .ap-terminal .bg-210 {
-  background-color: #ff8787;
+  --bg: #ff8787;
 }
 .ap-terminal .fg-211 {
-  color: #ff87af;
+  --fg: #ff87af;
 }
 .ap-terminal .bg-211 {
-  background-color: #ff87af;
+  --bg: #ff87af;
 }
 .ap-terminal .fg-212 {
-  color: #ff87d7;
+  --fg: #ff87d7;
 }
 .ap-terminal .bg-212 {
-  background-color: #ff87d7;
+  --bg: #ff87d7;
 }
 .ap-terminal .fg-213 {
-  color: #ff87ff;
+  --fg: #ff87ff;
 }
 .ap-terminal .bg-213 {
-  background-color: #ff87ff;
+  --bg: #ff87ff;
 }
 .ap-terminal .fg-214 {
-  color: #ffaf00;
+  --fg: #ffaf00;
 }
 .ap-terminal .bg-214 {
-  background-color: #ffaf00;
+  --bg: #ffaf00;
 }
 .ap-terminal .fg-215 {
-  color: #ffaf5f;
+  --fg: #ffaf5f;
 }
 .ap-terminal .bg-215 {
-  background-color: #ffaf5f;
+  --bg: #ffaf5f;
 }
 .ap-terminal .fg-216 {
-  color: #ffaf87;
+  --fg: #ffaf87;
 }
 .ap-terminal .bg-216 {
-  background-color: #ffaf87;
+  --bg: #ffaf87;
 }
 .ap-terminal .fg-217 {
-  color: #ffafaf;
+  --fg: #ffafaf;
 }
 .ap-terminal .bg-217 {
-  background-color: #ffafaf;
+  --bg: #ffafaf;
 }
 .ap-terminal .fg-218 {
-  color: #ffafd7;
+  --fg: #ffafd7;
 }
 .ap-terminal .bg-218 {
-  background-color: #ffafd7;
+  --bg: #ffafd7;
 }
 .ap-terminal .fg-219 {
-  color: #ffafff;
+  --fg: #ffafff;
 }
 .ap-terminal .bg-219 {
-  background-color: #ffafff;
+  --bg: #ffafff;
 }
 .ap-terminal .fg-220 {
-  color: #ffd700;
+  --fg: #ffd700;
 }
 .ap-terminal .bg-220 {
-  background-color: #ffd700;
+  --bg: #ffd700;
 }
 .ap-terminal .fg-221 {
-  color: #ffd75f;
+  --fg: #ffd75f;
 }
 .ap-terminal .bg-221 {
-  background-color: #ffd75f;
+  --bg: #ffd75f;
 }
 .ap-terminal .fg-222 {
-  color: #ffd787;
+  --fg: #ffd787;
 }
 .ap-terminal .bg-222 {
-  background-color: #ffd787;
+  --bg: #ffd787;
 }
 .ap-terminal .fg-223 {
-  color: #ffd7af;
+  --fg: #ffd7af;
 }
 .ap-terminal .bg-223 {
-  background-color: #ffd7af;
+  --bg: #ffd7af;
 }
 .ap-terminal .fg-224 {
-  color: #ffd7d7;
+  --fg: #ffd7d7;
 }
 .ap-terminal .bg-224 {
-  background-color: #ffd7d7;
+  --bg: #ffd7d7;
 }
 .ap-terminal .fg-225 {
-  color: #ffd7ff;
+  --fg: #ffd7ff;
 }
 .ap-terminal .bg-225 {
-  background-color: #ffd7ff;
+  --bg: #ffd7ff;
 }
 .ap-terminal .fg-226 {
-  color: #ffff00;
+  --fg: #ffff00;
 }
 .ap-terminal .bg-226 {
-  background-color: #ffff00;
+  --bg: #ffff00;
 }
 .ap-terminal .fg-227 {
-  color: #ffff5f;
+  --fg: #ffff5f;
 }
 .ap-terminal .bg-227 {
-  background-color: #ffff5f;
+  --bg: #ffff5f;
 }
 .ap-terminal .fg-228 {
-  color: #ffff87;
+  --fg: #ffff87;
 }
 .ap-terminal .bg-228 {
-  background-color: #ffff87;
+  --bg: #ffff87;
 }
 .ap-terminal .fg-229 {
-  color: #ffffaf;
+  --fg: #ffffaf;
 }
 .ap-terminal .bg-229 {
-  background-color: #ffffaf;
+  --bg: #ffffaf;
 }
 .ap-terminal .fg-230 {
-  color: #ffffd7;
+  --fg: #ffffd7;
 }
 .ap-terminal .bg-230 {
-  background-color: #ffffd7;
+  --bg: #ffffd7;
 }
 .ap-terminal .fg-231 {
-  color: #ffffff;
+  --fg: #ffffff;
 }
 .ap-terminal .bg-231 {
-  background-color: #ffffff;
+  --bg: #ffffff;
 }
 .ap-terminal .fg-232 {
-  color: #080808;
+  --fg: #080808;
 }
 .ap-terminal .bg-232 {
-  background-color: #080808;
+  --bg: #080808;
 }
 .ap-terminal .fg-233 {
-  color: #121212;
+  --fg: #121212;
 }
 .ap-terminal .bg-233 {
-  background-color: #121212;
+  --bg: #121212;
 }
 .ap-terminal .fg-234 {
-  color: #1c1c1c;
+  --fg: #1c1c1c;
 }
 .ap-terminal .bg-234 {
-  background-color: #1c1c1c;
+  --bg: #1c1c1c;
 }
 .ap-terminal .fg-235 {
-  color: #262626;
+  --fg: #262626;
 }
 .ap-terminal .bg-235 {
-  background-color: #262626;
+  --bg: #262626;
 }
 .ap-terminal .fg-236 {
-  color: #303030;
+  --fg: #303030;
 }
 .ap-terminal .bg-236 {
-  background-color: #303030;
+  --bg: #303030;
 }
 .ap-terminal .fg-237 {
-  color: #3a3a3a;
+  --fg: #3a3a3a;
 }
 .ap-terminal .bg-237 {
-  background-color: #3a3a3a;
+  --bg: #3a3a3a;
 }
 .ap-terminal .fg-238 {
-  color: #444444;
+  --fg: #444444;
 }
 .ap-terminal .bg-238 {
-  background-color: #444444;
+  --bg: #444444;
 }
 .ap-terminal .fg-239 {
-  color: #4e4e4e;
+  --fg: #4e4e4e;
 }
 .ap-terminal .bg-239 {
-  background-color: #4e4e4e;
+  --bg: #4e4e4e;
 }
 .ap-terminal .fg-240 {
-  color: #585858;
+  --fg: #585858;
 }
 .ap-terminal .bg-240 {
-  background-color: #585858;
+  --bg: #585858;
 }
 .ap-terminal .fg-241 {
-  color: #626262;
+  --fg: #626262;
 }
 .ap-terminal .bg-241 {
-  background-color: #626262;
+  --bg: #626262;
 }
 .ap-terminal .fg-242 {
-  color: #6c6c6c;
+  --fg: #6c6c6c;
 }
 .ap-terminal .bg-242 {
-  background-color: #6c6c6c;
+  --bg: #6c6c6c;
 }
 .ap-terminal .fg-243 {
-  color: #767676;
+  --fg: #767676;
 }
 .ap-terminal .bg-243 {
-  background-color: #767676;
+  --bg: #767676;
 }
 .ap-terminal .fg-244 {
-  color: #808080;
+  --fg: #808080;
 }
 .ap-terminal .bg-244 {
-  background-color: #808080;
+  --bg: #808080;
 }
 .ap-terminal .fg-245 {
-  color: #8a8a8a;
+  --fg: #8a8a8a;
 }
 .ap-terminal .bg-245 {
-  background-color: #8a8a8a;
+  --bg: #8a8a8a;
 }
 .ap-terminal .fg-246 {
-  color: #949494;
+  --fg: #949494;
 }
 .ap-terminal .bg-246 {
-  background-color: #949494;
+  --bg: #949494;
 }
 .ap-terminal .fg-247 {
-  color: #9e9e9e;
+  --fg: #9e9e9e;
 }
 .ap-terminal .bg-247 {
-  background-color: #9e9e9e;
+  --bg: #9e9e9e;
 }
 .ap-terminal .fg-248 {
-  color: #a8a8a8;
+  --fg: #a8a8a8;
 }
 .ap-terminal .bg-248 {
-  background-color: #a8a8a8;
+  --bg: #a8a8a8;
 }
 .ap-terminal .fg-249 {
-  color: #b2b2b2;
+  --fg: #b2b2b2;
 }
 .ap-terminal .bg-249 {
-  background-color: #b2b2b2;
+  --bg: #b2b2b2;
 }
 .ap-terminal .fg-250 {
-  color: #bcbcbc;
+  --fg: #bcbcbc;
 }
 .ap-terminal .bg-250 {
-  background-color: #bcbcbc;
+  --bg: #bcbcbc;
 }
 .ap-terminal .fg-251 {
-  color: #c6c6c6;
+  --fg: #c6c6c6;
 }
 .ap-terminal .bg-251 {
-  background-color: #c6c6c6;
+  --bg: #c6c6c6;
 }
 .ap-terminal .fg-252 {
-  color: #d0d0d0;
+  --fg: #d0d0d0;
 }
 .ap-terminal .bg-252 {
-  background-color: #d0d0d0;
+  --bg: #d0d0d0;
 }
 .ap-terminal .fg-253 {
-  color: #dadada;
+  --fg: #dadada;
 }
 .ap-terminal .bg-253 {
-  background-color: #dadada;
+  --bg: #dadada;
 }
 .ap-terminal .fg-254 {
-  color: #e4e4e4;
+  --fg: #e4e4e4;
 }
 .ap-terminal .bg-254 {
-  background-color: #e4e4e4;
+  --bg: #e4e4e4;
 }
 .ap-terminal .fg-255 {
-  color: #eeeeee;
+  --fg: #eeeeee;
 }
 .ap-terminal .bg-255 {
-  background-color: #eeeeee;
+  --bg: #eeeeee;
 }
 .asciinema-player-theme-asciinema {
   --term-color-foreground: #cccccc;
