@@ -1,5 +1,9 @@
 # asciinema changelog
 
+## 0.0.1-alpha
+
+* test github-action build
+
 ## 3.0.0 (wip)
 
 * Full rewrite in Rust
