@@ -1,12 +1,16 @@
 use super::alis;
 use super::session;
+use futures_util::future;
+use futures_util::stream;
 use futures_util::Sink;
 use futures_util::{sink, SinkExt, Stream, StreamExt};
+use std::borrow::Cow;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::IntervalStream;
-use tokio_tungstenite::tungstenite;
+use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{debug, info};
 
@@ -48,11 +52,22 @@ async fn forward_once(
     info!("connected to the endpoint");
     let (sink, stream) = ws.split();
     let drainer = tokio::spawn(stream.map(Ok).forward(sink::drain()));
-    let events = alis::stream(clients_tx).await?.map(ws_result);
+    let events = event_stream(clients_tx).await?;
     let result = forward_with_pings(events, sink).await;
     drainer.abort();
 
     result
+}
+
+async fn event_stream(
+    clients_tx: &mpsc::Sender<session::Client>,
+) -> anyhow::Result<impl Stream<Item = anyhow::Result<Message>>> {
+    let stream = alis::stream(clients_tx)
+        .await?
+        .map(ws_result)
+        .chain(stream::once(future::ready(Ok(close_message()))));
+
+    Ok(stream)
 }
 
 async fn forward_with_pings<T, U>(events: T, mut sink: U) -> anyhow::Result<()>
@@ -87,17 +102,24 @@ fn exponential_delay(attempt: usize) -> u64 {
     (2_u64.pow(attempt as u32) * 500).min(MAX_RECONNECT_DELAY)
 }
 
-fn ws_result(m: Result<Vec<u8>, BroadcastStreamRecvError>) -> anyhow::Result<tungstenite::Message> {
+fn ws_result(m: Result<Vec<u8>, BroadcastStreamRecvError>) -> anyhow::Result<Message> {
     match m {
-        Ok(bytes) => Ok(tungstenite::Message::binary(bytes)),
+        Ok(bytes) => Ok(Message::binary(bytes)),
         Err(e) => Err(anyhow::anyhow!(e)),
     }
 }
 
-fn ping_stream() -> impl Stream<Item = tungstenite::Message> {
+fn close_message() -> Message {
+    Message::Close(Some(CloseFrame {
+        code: CloseCode::Normal,
+        reason: Cow::from("ended"),
+    }))
+}
+
+fn ping_stream() -> impl Stream<Item = Message> {
     let interval = tokio::time::interval(Duration::from_secs(WS_PING_INTERVAL));
 
     IntervalStream::new(interval)
         .skip(1)
-        .map(|_| tungstenite::Message::Ping(vec![]))
+        .map(|_| Message::Ping(vec![]))
 }
