@@ -87,7 +87,7 @@ impl pty::Recorder for Streamer {
         let listener = TcpListener::bind(self.listen_addr)?;
         let runtime = build_tokio_runtime();
         let server = runtime.spawn(server::serve(listener, clients_tx, server_shutdown_rx));
-        let theme = self.theme.clone();
+        let theme = self.theme.take();
 
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
             runtime.block_on(async move {
