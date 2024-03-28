@@ -1,4 +1,5 @@
 mod alis;
+mod forwarder;
 mod server;
 mod session;
 use crate::config::Key;
@@ -27,6 +28,7 @@ pub struct Streamer {
     paused: bool,
     prefix_mode: bool,
     listen_addr: net::SocketAddr,
+    forward_url: Option<url::Url>,
     theme: Option<tty::Theme>,
 }
 
@@ -39,6 +41,7 @@ enum Event {
 impl Streamer {
     pub fn new(
         listen_addr: net::SocketAddr,
+        forward_url: Option<url::Url>,
         record_input: bool,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
@@ -61,6 +64,7 @@ impl Streamer {
             paused: false,
             prefix_mode: false,
             listen_addr,
+            forward_url,
             theme,
         }
     }
@@ -86,7 +90,18 @@ impl pty::Recorder for Streamer {
         let (server_shutdown_tx, server_shutdown_rx) = oneshot::channel::<()>();
         let listener = TcpListener::bind(self.listen_addr)?;
         let runtime = build_tokio_runtime();
-        let server = runtime.spawn(server::serve(listener, clients_tx, server_shutdown_rx));
+
+        let server = runtime.spawn(server::serve(
+            listener,
+            clients_tx.clone(),
+            server_shutdown_rx,
+        ));
+
+        let forwarder = self
+            .forward_url
+            .take()
+            .map(|url| runtime.spawn(forwarder::forward(clients_tx, url)));
+
         let theme = self.theme.take();
 
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
@@ -95,6 +110,7 @@ impl pty::Recorder for Streamer {
                 let _ = server_shutdown_tx.send(());
                 let _ = server.await;
                 let _ = clients_rx.recv().await;
+                let _ = forwarder.map(|task| task.abort());
             });
         }));
 

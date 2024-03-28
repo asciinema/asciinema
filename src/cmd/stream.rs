@@ -26,6 +26,10 @@ pub struct Cli {
     #[clap(short, long, default_value = "127.0.0.1:8080")]
     listen_addr: SocketAddr,
 
+    /// WebSocket forwarding address
+    #[clap(short, long, value_parser = validate_forward_url)]
+    forward_url: Option<url::Url>,
+
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS")]
     tty_size: Option<pty::WinsizeOverride>,
@@ -35,8 +39,19 @@ pub struct Cli {
     log_file: Option<PathBuf>,
 }
 
+fn validate_forward_url(s: &str) -> Result<url::Url, String> {
+    let url = url::Url::parse(s).map_err(|e| e.to_string())?;
+    let scheme = url.scheme();
+
+    if scheme == "ws" || scheme == "wss" {
+        Ok(url)
+    } else {
+        Err("must be WebSocket URL (ws:// or wss://)".to_owned())
+    }
+}
+
 impl Cli {
-    pub fn run(self, config: &Config) -> Result<()> {
+    pub fn run(mut self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
         let command = self.get_command(config);
@@ -65,6 +80,7 @@ impl Cli {
 
             let mut streamer = streamer::Streamer::new(
                 self.listen_addr,
+                self.forward_url.take(),
                 record_input,
                 keys,
                 notifier,
