@@ -230,35 +230,35 @@ pre.ap-terminal .ap-line .ap-inverse {
   background-color: var(--fg);
 }
 pre.ap-terminal .ap-line .cp-2580 {
-  border-top: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  border-top: calc(0.5 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2581 {
-  border-bottom: calc(0.125em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.125 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2582 {
-  border-bottom: calc(0.25em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.25 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2583 {
-  border-bottom: calc(0.375em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.375 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2584 {
-  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.5 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2585 {
-  border-bottom: calc(0.625em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.625 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2586 {
-  border-bottom: calc(0.75em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.75 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2587 {
-  border-bottom: calc(0.875em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.875 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2588 {
@@ -306,7 +306,7 @@ pre.ap-terminal .ap-line .cp-2593 {
   background-color: color-mix(in srgb, var(--fg) 75%, var(--bg));
 }
 pre.ap-terminal .ap-line .cp-2594 {
-  border-top: calc(0.125em * var(--term-line-height)) solid var(--fg);
+  border-top: calc(0.125 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2595 {
@@ -315,25 +315,25 @@ pre.ap-terminal .ap-line .cp-2595 {
 }
 pre.ap-terminal .ap-line .cp-2596 {
   border-right: 0.5ch solid var(--bg);
-  border-top: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  border-top: calc(0.5 * var(--term-line-height)) solid var(--bg);
   background-color: var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2597 {
   border-left: 0.5ch solid var(--bg);
-  border-top: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  border-top: calc(0.5 * var(--term-line-height)) solid var(--bg);
   background-color: var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2598 {
   border-right: 0.5ch solid var(--bg);
-  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  border-bottom: calc(0.5 * var(--term-line-height)) solid var(--bg);
   background-color: var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-2599 {
   border-left: 0.5ch solid var(--fg);
-  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.5 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-259a {
@@ -344,7 +344,7 @@ pre.ap-terminal .ap-line .cp-259a::after {
   content: '';
   position: absolute;
   width: 0.5ch;
-  height: calc(0.5em * var(--term-line-height));
+  height: calc(0.5 * var(--term-line-height));
   background-color: var(--fg);
 }
 pre.ap-terminal .ap-line .cp-259a::before {
@@ -357,17 +357,17 @@ pre.ap-terminal .ap-line .cp-259a::after {
 }
 pre.ap-terminal .ap-line .cp-259b {
   border-left: 0.5ch solid var(--fg);
-  border-top: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  border-top: calc(0.5 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-259c {
   border-right: 0.5ch solid var(--fg);
-  border-top: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  border-top: calc(0.5 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-259d {
   border-left: 0.5ch solid var(--bg);
-  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--bg);
+  border-bottom: calc(0.5 * var(--term-line-height)) solid var(--bg);
   background-color: var(--fg);
   box-sizing: border-box;
 }
@@ -379,7 +379,7 @@ pre.ap-terminal .ap-line .cp-259e::after {
   content: '';
   position: absolute;
   width: 0.5ch;
-  height: calc(0.5em * var(--term-line-height));
+  height: calc(0.5 * var(--term-line-height));
   background-color: var(--fg);
 }
 pre.ap-terminal .ap-line .cp-259e::before {
@@ -392,19 +392,19 @@ pre.ap-terminal .ap-line .cp-259e::after {
 }
 pre.ap-terminal .ap-line .cp-259f {
   border-right: 0.5ch solid var(--fg);
-  border-bottom: calc(0.5em * var(--term-line-height)) solid var(--fg);
+  border-bottom: calc(0.5 * var(--term-line-height)) solid var(--fg);
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-e0b0 {
   border-left: 1ch solid var(--fg);
-  border-top: calc(0.5em * var(--term-line-height)) solid transparent;
-  border-bottom: calc(0.5em * var(--term-line-height)) solid transparent;
+  border-top: calc(0.5 * var(--term-line-height)) solid transparent;
+  border-bottom: calc(0.5 * var(--term-line-height)) solid transparent;
   box-sizing: border-box;
 }
 pre.ap-terminal .ap-line .cp-e0b2 {
   border-right: 1ch solid var(--fg);
-  border-top: calc(0.5em * var(--term-line-height)) solid transparent;
-  border-bottom: calc(0.5em * var(--term-line-height)) solid transparent;
+  border-top: calc(0.5 * var(--term-line-height)) solid transparent;
+  border-bottom: calc(0.5 * var(--term-line-height)) solid transparent;
   box-sizing: border-box;
 }
 pre.ap-terminal.ap-cursor-on .ap-line .ap-cursor {
