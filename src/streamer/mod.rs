@@ -10,6 +10,7 @@ use crate::util;
 use std::io;
 use std::net::{self, TcpListener};
 use std::thread;
+use std::time::Duration;
 use std::time::Instant;
 use tokio::sync::{broadcast, mpsc};
 use tracing::info;
@@ -108,10 +109,10 @@ impl pty::Recorder for Streamer {
             runtime.block_on(async move {
                 event_loop(pty_rx, &mut clients_rx, tty_size, theme).await;
                 let _ = shutdown_tx.send(());
-                let _ = server.await;
+                let _ = tokio::time::timeout(Duration::from_secs(5), server).await;
 
                 if let Some(task) = forwarder {
-                    let _ = task.await;
+                    let _ = tokio::time::timeout(Duration::from_secs(5), task).await;
                 }
 
                 let _ = clients_rx.recv().await;
