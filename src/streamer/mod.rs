@@ -11,7 +11,7 @@ use std::io;
 use std::net::{self, TcpListener};
 use std::thread;
 use std::time::Instant;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 
 pub struct Streamer {
@@ -87,30 +87,34 @@ impl pty::Recorder for Streamer {
     fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
-        let (server_shutdown_tx, server_shutdown_rx) = oneshot::channel::<()>();
+        let (shutdown_tx, _shutdown_rx) = broadcast::channel::<()>(1);
         let listener = TcpListener::bind(self.listen_addr)?;
         let runtime = build_tokio_runtime();
 
         let server = runtime.spawn(server::serve(
             listener,
             clients_tx.clone(),
-            server_shutdown_rx,
+            shutdown_tx.subscribe(),
         ));
 
         let forwarder = self
             .forward_url
             .take()
-            .map(|url| runtime.spawn(forwarder::forward(clients_tx, url)));
+            .map(|url| runtime.spawn(forwarder::forward(clients_tx, url, shutdown_tx.subscribe())));
 
         let theme = self.theme.take();
 
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
             runtime.block_on(async move {
                 event_loop(pty_rx, &mut clients_rx, tty_size, theme).await;
-                let _ = server_shutdown_tx.send(());
+                let _ = shutdown_tx.send(());
                 let _ = server.await;
+
+                if let Some(task) = forwarder {
+                    let _ = task.await;
+                }
+
                 let _ = clients_rx.recv().await;
-                let _ = forwarder.map(|task| task.abort());
             });
         }));
 

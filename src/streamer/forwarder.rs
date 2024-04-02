@@ -6,7 +6,7 @@ use futures_util::Sink;
 use futures_util::{sink, SinkExt, Stream, StreamExt};
 use std::borrow::Cow;
 use std::time::{Duration, Instant};
-use tokio::sync::mpsc;
+use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::IntervalStream;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -20,6 +20,7 @@ const MAX_RECONNECT_DELAY: u64 = 5000;
 pub async fn forward(
     clients_tx: mpsc::Sender<session::Client>,
     url: url::Url,
+    mut shutdown_rx: broadcast::Receiver<()>,
 ) -> anyhow::Result<()> {
     let mut reconnect_attempt = 0;
 
@@ -39,9 +40,19 @@ pub async fn forward(
 
         let delay = exponential_delay(reconnect_attempt);
         reconnect_attempt = (reconnect_attempt + 1).min(10);
-        info!("connection closed, reconnecting in {delay}");
-        tokio::time::sleep(Duration::from_millis(delay)).await;
+        info!("connection error, reconnecting in {delay}");
+
+        tokio::select! {
+            _ = tokio::time::sleep(Duration::from_millis(delay)) => (),
+
+            _ = shutdown_rx.recv() => {
+                info!("shutting down");
+                break;
+            }
+        }
     }
+
+    Ok(())
 }
 
 async fn forward_once(
