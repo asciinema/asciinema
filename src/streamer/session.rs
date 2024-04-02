@@ -1,7 +1,10 @@
 use crate::tty;
 use anyhow::Result;
 use futures_util::{stream, Stream, StreamExt};
-use std::{future, time::Instant};
+use std::{
+    future,
+    time::{Duration, Instant},
+};
 use tokio::sync::{broadcast, mpsc, oneshot};
 use tokio_stream::wrappers::{errors::BroadcastStreamRecvError, BroadcastStream};
 
@@ -108,7 +111,7 @@ pub async fn stream(
 ) -> Result<impl Stream<Item = Result<Event, BroadcastStreamRecvError>>> {
     let (sub_tx, sub_rx) = oneshot::channel();
     clients_tx.send(Client(sub_tx)).await?;
-    let sub = sub_rx.await?;
+    let sub = tokio::time::timeout(Duration::from_secs(5), sub_rx).await??;
     let init = stream::once(future::ready(Ok(sub.init)));
     let events = BroadcastStream::new(sub.broadcast_rx);
 
