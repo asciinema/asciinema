@@ -1,5 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 use reqwest::Url;
+use sha2::Digest;
 use std::path::{Path, PathBuf};
 use std::{io, thread};
 use tempfile::NamedTempFile;
@@ -113,6 +114,18 @@ impl Utf8Decoder {
 
         output
     }
+}
+
+pub fn sha2_digest(s: &str) -> String {
+    let mut hasher = sha2::Sha224::new();
+    hasher.update(s.as_bytes());
+
+    hasher
+        .finalize()
+        .as_slice()
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .collect()
 }
 
 #[cfg(test)]

@@ -38,6 +38,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 rgb = "0.8.37"
 url = "2.5.0"
 tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-webpki-roots"] }
+sha2 = "0.10.8"
 
 [profile.release]
 strip = true

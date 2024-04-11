@@ -26,10 +26,14 @@ fn build_exec_command(command: Option<String>) -> Vec<String> {
     vec!["/bin/sh".to_owned(), "-c".to_owned(), command]
 }
 
-fn build_exec_extra_env() -> HashMap<String, String> {
+fn build_exec_extra_env(vars: &[(String, String)]) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
     env.insert("ASCIINEMA_REC".to_owned(), "1".to_owned());
+
+    for (k, v) in vars {
+        env.insert(k.clone(), v.clone());
+    }
 
     env
 }

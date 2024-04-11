@@ -4,11 +4,16 @@ use crate::logger;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
 use crate::tty;
+use crate::util;
+use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
 use clap::Args;
 use reqwest::blocking::Client;
 use reqwest::header;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::env;
+use std::fmt::Debug;
 use std::fs;
 use std::net::SocketAddr;
 use std::net::TcpListener;
@@ -96,9 +101,20 @@ impl Cli {
         let notifier = super::get_notifier(config);
         let record_input = self.input || config.cmd_stream_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
-        let exec_extra_env = super::build_exec_extra_env();
         let listener = self.get_listener()?;
         let relay = self.get_relay(config)?;
+        let relay_id = relay.as_ref().map(|r| r.id());
+        let exec_extra_env = build_exec_extra_env(relay_id.as_ref());
+
+        if let (Some(id), Some(parent_id)) = (relay_id, parent_session_relay_id()) {
+            if id == parent_id {
+                if let Some(Relay { url: Some(url), .. }) = relay {
+                    bail!("This shell is already being streamed at {url}");
+                } else {
+                    bail!("This shell is already being streamed");
+                }
+            }
+        }
 
         logger::info!("Streaming session started");
 
@@ -212,6 +228,12 @@ impl Cli {
     }
 }
 
+impl Relay {
+    fn id(&self) -> String {
+        util::sha2_digest(self.ws_producer_url.as_ref())
+    }
+}
+
 fn get_server_stream(stream_id: String, config: &Config) -> Result<GetStreamResponse> {
     let response = Client::new()
         .get(stream_api_url(&config.get_server_url()?, stream_id))
@@ -250,4 +272,15 @@ fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
     }
 
     Ok(keys)
+}
+
+fn build_exec_extra_env(relay_id: Option<&String>) -> HashMap<String, String> {
+    match relay_id {
+        Some(id) => super::build_exec_extra_env(&[("ASCIINEMA_RELAY_ID".to_string(), id.clone())]),
+        None => super::build_exec_extra_env(&[]),
+    }
+}
+
+fn parent_session_relay_id() -> Option<String> {
+    env::var("ASCIINEMA_RELAY_ID").ok()
 }
