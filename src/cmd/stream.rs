@@ -34,13 +34,13 @@ pub struct Cli {
     #[arg(short, long)]
     command: Option<String>,
 
-    /// Serve the stream via local HTTP server
+    /// Serve the stream with the built-in HTTP server
     #[clap(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
-    listen: Option<SocketAddr>,
+    serve: Option<SocketAddr>,
 
-    /// Forward the stream to a relay, e.g. asciinema server
+    /// Relay the stream via an asciinema server
     #[clap(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
-    forward: Option<ForwardTarget>,
+    relay: Option<RelayTarget>,
 
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS")]
@@ -52,7 +52,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, Clone)]
-enum ForwardTarget {
+enum RelayTarget {
     StreamId(String),
     WsProducerUrl(url::Url),
 }
@@ -69,7 +69,7 @@ struct Relay {
     url: Option<Url>,
 }
 
-fn validate_forward_target(s: &str) -> Result<ForwardTarget, String> {
+fn validate_forward_target(s: &str) -> Result<RelayTarget, String> {
     let s = s.trim();
 
     match url::Url::parse(s) {
@@ -77,13 +77,13 @@ fn validate_forward_target(s: &str) -> Result<ForwardTarget, String> {
             let scheme = url.scheme();
 
             if scheme == "ws" || scheme == "wss" {
-                Ok(ForwardTarget::WsProducerUrl(url))
+                Ok(RelayTarget::WsProducerUrl(url))
             } else {
                 Err("must be a WebSocket URL (ws:// or wss://)".to_owned())
             }
         }
 
-        Err(url::ParseError::RelativeUrlWithoutBase) => Ok(ForwardTarget::StreamId(s.to_owned())),
+        Err(url::ParseError::RelativeUrlWithoutBase) => Ok(RelayTarget::StreamId(s.to_owned())),
         Err(e) => Err(e.to_string()),
     }
 }
@@ -92,8 +92,8 @@ impl Cli {
     pub fn run(mut self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
-        if self.listen.is_none() && self.forward.is_none() {
-            self.listen = Some(DEFAULT_LISTEN_ADDR.parse().unwrap());
+        if self.serve.is_none() && self.relay.is_none() {
+            self.serve = Some(DEFAULT_LISTEN_ADDR.parse().unwrap());
         }
 
         let command = self.get_command(config);
@@ -174,8 +174,8 @@ impl Cli {
     }
 
     fn get_relay(&mut self, config: &Config) -> Result<Option<Relay>> {
-        match self.forward.take() {
-            Some(ForwardTarget::StreamId(id)) => {
+        match self.relay.take() {
+            Some(RelayTarget::StreamId(id)) => {
                 let stream = get_server_stream(id, config)?;
 
                 Ok(Some(Relay {
@@ -184,7 +184,7 @@ impl Cli {
                 }))
             }
 
-            Some(ForwardTarget::WsProducerUrl(url)) => Ok(Some(Relay {
+            Some(RelayTarget::WsProducerUrl(url)) => Ok(Some(Relay {
                 ws_producer_url: url,
                 url: None,
             })),
@@ -194,7 +194,7 @@ impl Cli {
     }
 
     fn get_listener(&self) -> Result<Option<TcpListener>> {
-        if let Some(addr) = self.listen {
+        if let Some(addr) = self.serve {
             return Ok(Some(
                 TcpListener::bind(addr).context("couldn't start listener")?,
             ));
