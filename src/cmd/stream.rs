@@ -4,13 +4,20 @@ use crate::logger;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
 use crate::tty;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use clap::Args;
+use reqwest::blocking::Client;
+use reqwest::header;
+use serde::Deserialize;
 use std::fs;
 use std::net::SocketAddr;
+use std::net::TcpListener;
 use std::path::PathBuf;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
+use url::Url;
+
+const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:8080";
 
 #[derive(Debug, Args)]
 pub struct Cli {
@@ -22,13 +29,13 @@ pub struct Cli {
     #[arg(short, long)]
     command: Option<String>,
 
-    /// HTTP server listen address
-    #[clap(short, long, default_value = "127.0.0.1:8080")]
-    listen_addr: SocketAddr,
+    /// Serve the stream via local HTTP server
+    #[clap(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
+    listen: Option<SocketAddr>,
 
-    /// WebSocket forwarding address
-    #[clap(short, long, value_parser = validate_forward_url)]
-    forward_url: Option<url::Url>,
+    /// Forward the stream to a relay, e.g. asciinema server
+    #[clap(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
+    forward: Option<ForwardTarget>,
 
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS")]
@@ -39,14 +46,40 @@ pub struct Cli {
     log_file: Option<PathBuf>,
 }
 
-fn validate_forward_url(s: &str) -> Result<url::Url, String> {
-    let url = url::Url::parse(s).map_err(|e| e.to_string())?;
-    let scheme = url.scheme();
+#[derive(Debug, Clone)]
+enum ForwardTarget {
+    StreamId(String),
+    WsProducerUrl(url::Url),
+}
 
-    if scheme == "ws" || scheme == "wss" {
-        Ok(url)
-    } else {
-        Err("must be WebSocket URL (ws:// or wss://)".to_owned())
+#[derive(Debug, Deserialize)]
+struct GetStreamResponse {
+    ws_producer_url: String,
+    url: String,
+}
+
+#[derive(Debug)]
+struct Relay {
+    ws_producer_url: Url,
+    url: Option<Url>,
+}
+
+fn validate_forward_target(s: &str) -> Result<ForwardTarget, String> {
+    let s = s.trim();
+
+    match url::Url::parse(s) {
+        Ok(url) => {
+            let scheme = url.scheme();
+
+            if scheme == "ws" || scheme == "wss" {
+                Ok(ForwardTarget::WsProducerUrl(url))
+            } else {
+                Err("must be a WebSocket URL (ws:// or wss://)".to_owned())
+            }
+        }
+
+        Err(url::ParseError::RelativeUrlWithoutBase) => Ok(ForwardTarget::StreamId(s.to_owned())),
+        Err(e) => Err(e.to_string()),
     }
 }
 
@@ -54,17 +87,31 @@ impl Cli {
     pub fn run(mut self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
+        if self.listen.is_none() && self.forward.is_none() {
+            self.listen = Some(DEFAULT_LISTEN_ADDR.parse().unwrap());
+        }
+
         let command = self.get_command(config);
         let keys = get_key_bindings(config)?;
         let notifier = super::get_notifier(config);
         let record_input = self.input || config.cmd_stream_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let exec_extra_env = super::build_exec_extra_env();
+        let listener = self.get_listener()?;
+        let relay = self.get_relay(config)?;
 
-        logger::info!(
-            "Streaming session started, web server listening on http://{}",
-            &self.listen_addr
-        );
+        logger::info!("Streaming session started");
+
+        if let Some(listener) = &listener {
+            logger::info!(
+                "Live stream available at http://{}",
+                listener.local_addr().unwrap()
+            );
+        }
+
+        if let Some(Relay { url: Some(url), .. }) = &relay {
+            logger::info!("Live stream available at {}", url);
+        }
 
         if command.is_none() {
             logger::info!("Press <ctrl+d> or type 'exit' to end");
@@ -79,8 +126,8 @@ impl Cli {
             };
 
             let mut streamer = streamer::Streamer::new(
-                self.listen_addr,
-                self.forward_url.take(),
+                listener,
+                relay.map(|e| e.ws_producer_url),
                 record_input,
                 keys,
                 notifier,
@@ -110,6 +157,36 @@ impl Cli {
             .or(config.cmd_stream_command())
     }
 
+    fn get_relay(&mut self, config: &Config) -> Result<Option<Relay>> {
+        match self.forward.take() {
+            Some(ForwardTarget::StreamId(id)) => {
+                let stream = get_server_stream(id, config)?;
+
+                Ok(Some(Relay {
+                    ws_producer_url: stream.ws_producer_url.parse()?,
+                    url: Some(stream.url.parse()?),
+                }))
+            }
+
+            Some(ForwardTarget::WsProducerUrl(url)) => Ok(Some(Relay {
+                ws_producer_url: url,
+                url: None,
+            })),
+
+            None => Ok(None),
+        }
+    }
+
+    fn get_listener(&self) -> Result<Option<TcpListener>> {
+        if let Some(addr) = self.listen {
+            return Ok(Some(
+                TcpListener::bind(addr).context("couldn't start listener")?,
+            ));
+        }
+
+        Ok(None)
+    }
+
     fn init_logging(&self) -> Result<()> {
         let log_file = self.log_file.as_ref().cloned();
 
@@ -133,6 +210,32 @@ impl Cli {
 
         Ok(())
     }
+}
+
+fn get_server_stream(stream_id: String, config: &Config) -> Result<GetStreamResponse> {
+    let response = Client::new()
+        .get(stream_api_url(&config.get_server_url()?, stream_id))
+        .basic_auth("", Some(config.get_install_id()?))
+        .header(header::ACCEPT, "application/json")
+        .send()?;
+
+    response.error_for_status_ref()?;
+
+    let json = response.json::<GetStreamResponse>()?;
+
+    Ok(json)
+}
+
+fn stream_api_url(server_url: &Url, stream_id: String) -> Url {
+    let mut url = server_url.clone();
+
+    if stream_id.is_empty() {
+        url.set_path("api/user/stream");
+    } else {
+        url.set_path(&format!("api/user/streams/{stream_id}"));
+    }
+
+    url
 }
 
 fn get_key_bindings(config: &Config) -> Result<KeyBindings> {

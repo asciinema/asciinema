@@ -8,7 +8,7 @@ use crate::pty;
 use crate::tty;
 use crate::util;
 use std::io;
-use std::net::{self, TcpListener};
+use std::net;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
@@ -28,7 +28,7 @@ pub struct Streamer {
     start_time: Instant,
     paused: bool,
     prefix_mode: bool,
-    listen_addr: net::SocketAddr,
+    listener: Option<net::TcpListener>,
     forward_url: Option<url::Url>,
     theme: Option<tty::Theme>,
 }
@@ -41,7 +41,7 @@ enum Event {
 
 impl Streamer {
     pub fn new(
-        listen_addr: net::SocketAddr,
+        listener: Option<net::TcpListener>,
         forward_url: Option<url::Url>,
         record_input: bool,
         keys: KeyBindings,
@@ -64,7 +64,7 @@ impl Streamer {
             start_time: Instant::now(),
             paused: false,
             prefix_mode: false,
-            listen_addr,
+            listener,
             forward_url,
             theme,
         }
@@ -89,14 +89,17 @@ impl pty::Recorder for Streamer {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
         let (shutdown_tx, _shutdown_rx) = broadcast::channel::<()>(1);
-        let listener = TcpListener::bind(self.listen_addr)?;
         let runtime = build_tokio_runtime();
 
-        let server = runtime.spawn(server::serve(
-            listener,
-            clients_tx.clone(),
-            shutdown_tx.subscribe(),
-        ));
+        let server = match self.listener.take() {
+            Some(listener) => Some(runtime.spawn(server::serve(
+                listener,
+                clients_tx.clone(),
+                shutdown_tx.subscribe(),
+            ))),
+
+            None => None,
+        };
 
         let forwarder = self
             .forward_url
@@ -109,7 +112,10 @@ impl pty::Recorder for Streamer {
             runtime.block_on(async move {
                 event_loop(pty_rx, &mut clients_rx, tty_size, theme).await;
                 let _ = shutdown_tx.send(());
-                let _ = tokio::time::timeout(Duration::from_secs(5), server).await;
+
+                if let Some(task) = server {
+                    let _ = tokio::time::timeout(Duration::from_secs(5), task).await;
+                }
 
                 if let Some(task) = forwarder {
                     let _ = tokio::time::timeout(Duration::from_secs(5), task).await;
