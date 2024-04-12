@@ -100,7 +100,7 @@ impl Tty for DevTty {
         let fd = self.as_fd().as_raw_fd();
 
         loop {
-            let mut timeout = TimeVal::new(0, 50_000);
+            let mut timeout = TimeVal::new(0, 100_000);
             let mut rfds = FdSet::new();
             let mut wfds = FdSet::new();
             rfds.insert(self);
