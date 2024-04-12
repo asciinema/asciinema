@@ -63,6 +63,11 @@ struct GetStreamResponse {
     url: String,
 }
 
+#[derive(Debug, Deserialize)]
+struct NotFoundResponse {
+    reason: String,
+}
+
 #[derive(Debug)]
 struct Relay {
     ws_producer_url: Url,
@@ -196,7 +201,7 @@ impl Cli {
     fn get_listener(&self) -> Result<Option<TcpListener>> {
         if let Some(addr) = self.serve {
             return Ok(Some(
-                TcpListener::bind(addr).context("couldn't start listener")?,
+                TcpListener::bind(addr).context("cannot start listener")?,
             ));
         }
 
@@ -235,17 +240,32 @@ impl Relay {
 }
 
 fn get_server_stream(stream_id: String, config: &Config) -> Result<GetStreamResponse> {
+    let server_url = config.get_server_url()?;
+    let server_hostname = server_url.host().ok_or(anyhow!("invalid server URL"))?;
+
     let response = Client::new()
-        .get(stream_api_url(&config.get_server_url()?, stream_id))
+        .get(stream_api_url(&server_url, stream_id))
         .basic_auth("", Some(config.get_install_id()?))
         .header(header::ACCEPT, "application/json")
-        .send()?;
+        .send()
+        .context("cannot obtain stream producer endpoint")?;
 
-    response.error_for_status_ref()?;
+    match response.status().as_u16() {
+        401 => bail!(
+            "this CLI hasn't been authenticated with {server_hostname} - run `ascinema auth` first"
+        ),
 
-    let json = response.json::<GetStreamResponse>()?;
+        404 => match response.json::<NotFoundResponse>() {
+            Ok(json) => bail!("{}", json.reason),
+            Err(_) => bail!("{server_hostname} doesn't support streaming"),
+        },
 
-    Ok(json)
+        _ => {
+            response.error_for_status_ref()?;
+        }
+    }
+
+    response.json::<GetStreamResponse>().map_err(|e| e.into())
 }
 
 fn stream_api_url(server_url: &Url, stream_id: String) -> Url {
