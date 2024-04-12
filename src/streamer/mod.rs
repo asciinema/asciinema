@@ -91,15 +91,13 @@ impl pty::Recorder for Streamer {
         let (shutdown_tx, _shutdown_rx) = broadcast::channel::<()>(1);
         let runtime = build_tokio_runtime();
 
-        let server = match self.listener.take() {
-            Some(listener) => Some(runtime.spawn(server::serve(
+        let server = self.listener.take().map(|listener| {
+            runtime.spawn(server::serve(
                 listener,
                 clients_tx.clone(),
                 shutdown_tx.subscribe(),
-            ))),
-
-            None => None,
-        };
+            ))
+        });
 
         let forwarder = self
             .forward_url
