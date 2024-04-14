@@ -83,7 +83,7 @@ impl Cli {
         let notifier = super::get_notifier(config);
         let record_input = self.input || config.cmd_rec_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
-        let exec_extra_env = super::build_exec_extra_env();
+        let exec_extra_env = super::build_exec_extra_env(&[]);
 
         logger::info!("Recording session started, writing to {}", self.filename);
 

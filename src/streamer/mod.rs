@@ -1,4 +1,5 @@
 mod alis;
+mod forwarder;
 mod server;
 mod session;
 use crate::config::Key;
@@ -7,10 +8,11 @@ use crate::pty;
 use crate::tty;
 use crate::util;
 use std::io;
-use std::net::{self, TcpListener};
+use std::net;
 use std::thread;
+use std::time::Duration;
 use std::time::Instant;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc};
 use tracing::info;
 
 pub struct Streamer {
@@ -26,7 +28,8 @@ pub struct Streamer {
     start_time: Instant,
     paused: bool,
     prefix_mode: bool,
-    listen_addr: net::SocketAddr,
+    listener: Option<net::TcpListener>,
+    forward_url: Option<url::Url>,
     theme: Option<tty::Theme>,
 }
 
@@ -38,7 +41,8 @@ enum Event {
 
 impl Streamer {
     pub fn new(
-        listen_addr: net::SocketAddr,
+        listener: Option<net::TcpListener>,
+        forward_url: Option<url::Url>,
         record_input: bool,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
@@ -60,7 +64,8 @@ impl Streamer {
             start_time: Instant::now(),
             paused: false,
             prefix_mode: false,
-            listen_addr,
+            listener,
+            forward_url,
             theme,
         }
     }
@@ -83,17 +88,37 @@ impl pty::Recorder for Streamer {
     fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
-        let (server_shutdown_tx, server_shutdown_rx) = oneshot::channel::<()>();
-        let listener = TcpListener::bind(self.listen_addr)?;
+        let (shutdown_tx, _shutdown_rx) = broadcast::channel::<()>(1);
         let runtime = build_tokio_runtime();
-        let server = runtime.spawn(server::serve(listener, clients_tx, server_shutdown_rx));
+
+        let server = self.listener.take().map(|listener| {
+            runtime.spawn(server::serve(
+                listener,
+                clients_tx.clone(),
+                shutdown_tx.subscribe(),
+            ))
+        });
+
+        let forwarder = self
+            .forward_url
+            .take()
+            .map(|url| runtime.spawn(forwarder::forward(url, clients_tx, shutdown_tx.subscribe())));
+
         let theme = self.theme.take();
 
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
             runtime.block_on(async move {
                 event_loop(pty_rx, &mut clients_rx, tty_size, theme).await;
-                let _ = server_shutdown_tx.send(());
-                let _ = server.await;
+                let _ = shutdown_tx.send(());
+
+                if let Some(task) = server {
+                    let _ = tokio::time::timeout(Duration::from_secs(5), task).await;
+                }
+
+                if let Some(task) = forwarder {
+                    let _ = tokio::time::timeout(Duration::from_secs(5), task).await;
+                }
+
                 let _ = clients_rx.recv().await;
             });
         }));
@@ -118,7 +143,7 @@ impl pty::Recorder for Streamer {
         }
 
         let event = Event::Output(self.elapsed_time(), raw.into());
-        self.pty_tx.send(event).expect("output send should succeed");
+        let _ = self.pty_tx.send(event);
     }
 
     fn input(&mut self, raw: &[u8]) -> bool {
@@ -148,7 +173,7 @@ impl pty::Recorder for Streamer {
 
         if self.record_input && !self.paused {
             let event = Event::Input(self.elapsed_time(), raw.into());
-            self.pty_tx.send(event).expect("input send should succeed");
+            let _ = self.pty_tx.send(event);
         }
 
         true
@@ -156,7 +181,7 @@ impl pty::Recorder for Streamer {
 
     fn resize(&mut self, size: crate::tty::TtySize) {
         let event = Event::Resize(self.elapsed_time(), size);
-        self.pty_tx.send(event).expect("resize send should succeed");
+        let _ = self.pty_tx.send(event);
     }
 }
 
@@ -202,7 +227,7 @@ async fn event_loop(
                 match client {
                     Some(client) => {
                         client.accept(session.subscribe());
-                        info!("viewer count: {}", session.subscriber_count());
+                        info!("client count: {}", session.subscriber_count());
                     }
 
                     None => break,

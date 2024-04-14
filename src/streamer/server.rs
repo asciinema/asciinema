@@ -16,7 +16,7 @@ use std::borrow::Cow;
 use std::future;
 use std::io;
 use std::net::SocketAddr;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tower_http::trace;
 use tracing::info;
@@ -28,7 +28,7 @@ struct Assets;
 pub async fn serve(
     listener: std::net::TcpListener,
     clients_tx: mpsc::Sender<session::Client>,
-    shutdown_rx: oneshot::Receiver<()>,
+    mut shutdown_rx: broadcast::Receiver<()>,
 ) -> io::Result<()> {
     listener.set_nonblocking(true)?;
     let listener = tokio::net::TcpListener::from_std(listener)?;
@@ -42,8 +42,8 @@ pub async fn serve(
         .fallback(static_handler)
         .layer(trace);
 
-    let signal = async {
-        let _ = shutdown_rx.await;
+    let signal = async move {
+        let _ = shutdown_rx.recv().await;
     };
 
     info!(
