@@ -1,37 +1,37 @@
 use super::alis;
 use super::session;
-use futures_util::future;
-use futures_util::stream;
-use futures_util::Sink;
-use futures_util::{sink, SinkExt, Stream, StreamExt};
+use anyhow::bail;
+use futures_util::{future, stream, SinkExt, Stream, StreamExt};
 use std::borrow::Cow;
 use std::time::{Duration, Instant};
+use tokio::net::TcpStream;
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::IntervalStream;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::tungstenite::Message;
-use tracing::{debug, info};
+use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+use tracing::{debug, error, info};
 
 const WS_PING_INTERVAL: u64 = 15;
 const MAX_RECONNECT_DELAY: u64 = 5000;
 
 pub async fn forward(
-    clients_tx: mpsc::Sender<session::Client>,
     url: url::Url,
+    clients_tx: mpsc::Sender<session::Client>,
     mut shutdown_rx: broadcast::Receiver<()>,
-) -> anyhow::Result<()> {
+) {
     let mut reconnect_attempt = 0;
-
     info!("forwarding to {url}");
 
     loop {
         let time = Instant::now();
 
-        match forward_once(&clients_tx, &url).await {
-            Ok(_) => return Ok(()),
-            Err(e) => debug!("{e:?}"),
+        match connect_and_forward(&url, &clients_tx).await {
+            Ok(true) => break,
+            Ok(false) => (),
+            Err(e) => error!("connection error: {e}"),
         }
 
         if time.elapsed().as_secs_f32() > 1.0 {
@@ -40,34 +40,26 @@ pub async fn forward(
 
         let delay = exponential_delay(reconnect_attempt);
         reconnect_attempt = (reconnect_attempt + 1).min(10);
-        info!("connection error, reconnecting in {delay}");
+        info!("reconnecting in {delay}");
 
         tokio::select! {
             _ = tokio::time::sleep(Duration::from_millis(delay)) => (),
-
-            _ = shutdown_rx.recv() => {
-                info!("shutting down");
-                break;
-            }
+            _ = shutdown_rx.recv() => break
         }
     }
 
-    Ok(())
+    info!("shutting down");
 }
 
-async fn forward_once(
-    clients_tx: &mpsc::Sender<session::Client>,
+async fn connect_and_forward(
     url: &url::Url,
-) -> anyhow::Result<()> {
+    clients_tx: &mpsc::Sender<session::Client>,
+) -> anyhow::Result<bool> {
     let (ws, _) = tokio_tungstenite::connect_async(url).await?;
     info!("connected to the endpoint");
-    let (sink, stream) = ws.split();
-    let drainer = tokio::spawn(stream.map(Ok).forward(sink::drain()));
     let events = event_stream(clients_tx).await?;
-    let result = forward_with_pings(events, sink).await;
-    drainer.abort();
 
-    result
+    handle_socket(ws, events).await
 }
 
 async fn event_stream(
@@ -81,12 +73,15 @@ async fn event_stream(
     Ok(stream)
 }
 
-async fn forward_with_pings<T, U>(events: T, mut sink: U) -> anyhow::Result<()>
+async fn handle_socket<T>(
+    ws: WebSocketStream<MaybeTlsStream<TcpStream>>,
+    events: T,
+) -> anyhow::Result<bool>
 where
     T: Stream<Item = anyhow::Result<Message>> + Unpin,
-    U: Sink<Message> + Unpin,
-    <U>::Error: Into<anyhow::Error>,
 {
+    let (mut sink, stream) = ws.split();
+    let mut stream = stream.fuse();
     let mut events = events.fuse();
     let mut pings = ping_stream().fuse();
 
@@ -94,17 +89,48 @@ where
         futures_util::select! {
             event = events.next() => {
                 match event {
-                    Some(event) => {
-                        sink.send(event?).await.map_err(|e| e.into())?;
-                    }
+                    Some(event) => sink.send(event?).await?,
 
-                    None => return Ok(())
+                    None => {
+                        info!("event stream ended");
+                        return Ok(true);
+                    }
                 }
             },
 
-            ping = pings.next() => {
-                sink.send(ping.unwrap()).await.map_err(|e| e.into())?;
+            ping = pings.next() => sink.send(ping.unwrap()).await?,
+
+            message = stream.next() => {
+                match message {
+                    Some(Ok(Message::Close(close_frame))) => {
+                        info!("server closed the connection");
+                        return Ok(handle_close_frame(close_frame));
+                    },
+
+                    Some(Ok(msg)) => debug!("unexpected message from the server: {msg}"),
+                    Some(Err(e)) => bail!(e),
+                    None => bail!("SplitStream closed")
+                }
             }
+        }
+    }
+}
+
+fn handle_close_frame(frame: Option<CloseFrame>) -> bool {
+    match frame {
+        Some(CloseFrame { code, reason }) => {
+            info!("close reason: {code} ({reason})");
+
+            match code {
+                CloseCode::Normal => true,
+                CloseCode::Library(code) if code < 4100 => true,
+                _ => false,
+            }
+        }
+
+        None => {
+            info!("close reason: none");
+            true
         }
     }
 }

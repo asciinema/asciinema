@@ -102,7 +102,7 @@ impl pty::Recorder for Streamer {
         let forwarder = self
             .forward_url
             .take()
-            .map(|url| runtime.spawn(forwarder::forward(clients_tx, url, shutdown_tx.subscribe())));
+            .map(|url| runtime.spawn(forwarder::forward(url, clients_tx, shutdown_tx.subscribe())));
 
         let theme = self.theme.take();
 
@@ -143,7 +143,7 @@ impl pty::Recorder for Streamer {
         }
 
         let event = Event::Output(self.elapsed_time(), raw.into());
-        self.pty_tx.send(event).expect("output send should succeed");
+        let _ = self.pty_tx.send(event);
     }
 
     fn input(&mut self, raw: &[u8]) -> bool {
@@ -173,7 +173,7 @@ impl pty::Recorder for Streamer {
 
         if self.record_input && !self.paused {
             let event = Event::Input(self.elapsed_time(), raw.into());
-            self.pty_tx.send(event).expect("input send should succeed");
+            let _ = self.pty_tx.send(event);
         }
 
         true
@@ -181,7 +181,7 @@ impl pty::Recorder for Streamer {
 
     fn resize(&mut self, size: crate::tty::TtySize) {
         let event = Event::Resize(self.elapsed_time(), size);
-        self.pty_tx.send(event).expect("resize send should succeed");
+        let _ = self.pty_tx.send(event);
     }
 }
 
