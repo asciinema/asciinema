@@ -1,7 +1,7 @@
+use crate::api;
 use crate::config::Config;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::Args;
-use reqwest::Url;
 
 #[derive(Debug, Args)]
 pub struct Cli {}
@@ -9,8 +9,8 @@ pub struct Cli {}
 impl Cli {
     pub fn run(self, config: &Config) -> Result<()> {
         let server_url = config.get_server_url()?;
-        let server_hostname = server_url.host().ok_or(anyhow!("invalid server URL"))?;
-        let auth_url = auth_url(&server_url, &config.get_install_id()?);
+        let server_hostname = server_url.host().unwrap();
+        let auth_url = api::get_auth_url(config)?;
 
         println!("Open the following URL in a web browser to authenticate this asciinema CLI with your {server_hostname} user account:\n");
         println!("{}\n", auth_url);
@@ -18,11 +18,4 @@ impl Cli {
 
         Ok(())
     }
-}
-
-fn auth_url(server_url: &Url, install_id: &str) -> Url {
-    let mut url = server_url.clone();
-    url.set_path(&format!("connect/{install_id}"));
-
-    url
 }

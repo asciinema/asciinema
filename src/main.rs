@@ -1,3 +1,4 @@
+mod api;
 mod asciicast;
 mod cmd;
 mod config;

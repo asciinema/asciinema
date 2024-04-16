@@ -1,3 +1,4 @@
+use crate::api;
 use crate::config::Config;
 use crate::locale;
 use crate::logger;
@@ -8,9 +9,6 @@ use crate::util;
 use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
 use clap::Args;
-use reqwest::blocking::Client;
-use reqwest::header;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::env;
 use std::fmt::Debug;
@@ -55,17 +53,6 @@ pub struct Cli {
 enum RelayTarget {
     StreamId(String),
     WsProducerUrl(url::Url),
-}
-
-#[derive(Debug, Deserialize)]
-struct GetStreamResponse {
-    ws_producer_url: String,
-    url: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct NotFoundResponse {
-    reason: String,
 }
 
 #[derive(Debug)]
@@ -181,7 +168,7 @@ impl Cli {
     fn get_relay(&mut self, config: &Config) -> Result<Option<Relay>> {
         match self.relay.take() {
             Some(RelayTarget::StreamId(id)) => {
-                let stream = get_server_stream(id, config)?;
+                let stream = api::get_user_stream(id, config)?;
 
                 Ok(Some(Relay {
                     ws_producer_url: stream.ws_producer_url.parse()?,
@@ -237,47 +224,6 @@ impl Relay {
     fn id(&self) -> String {
         util::sha2_digest(self.ws_producer_url.as_ref())
     }
-}
-
-fn get_server_stream(stream_id: String, config: &Config) -> Result<GetStreamResponse> {
-    let server_url = config.get_server_url()?;
-    let server_hostname = server_url.host().ok_or(anyhow!("invalid server URL"))?;
-
-    let response = Client::new()
-        .get(stream_api_url(&server_url, stream_id))
-        .basic_auth("", Some(config.get_install_id()?))
-        .header(header::ACCEPT, "application/json")
-        .send()
-        .context("cannot obtain stream producer endpoint")?;
-
-    match response.status().as_u16() {
-        401 => bail!(
-            "this CLI hasn't been authenticated with {server_hostname} - run `ascinema auth` first"
-        ),
-
-        404 => match response.json::<NotFoundResponse>() {
-            Ok(json) => bail!("{}", json.reason),
-            Err(_) => bail!("{server_hostname} doesn't support streaming"),
-        },
-
-        _ => {
-            response.error_for_status_ref()?;
-        }
-    }
-
-    response.json::<GetStreamResponse>().map_err(|e| e.into())
-}
-
-fn stream_api_url(server_url: &Url, stream_id: String) -> Url {
-    let mut url = server_url.clone();
-
-    if stream_id.is_empty() {
-        url.set_path("api/user/stream");
-    } else {
-        url.set_path(&format!("api/user/streams/{stream_id}"));
-    }
-
-    url
 }
 
 fn get_key_bindings(config: &Config) -> Result<KeyBindings> {

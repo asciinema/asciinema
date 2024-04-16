@@ -106,10 +106,10 @@ impl Config {
 
     pub fn get_server_url(&self) -> Result<Url> {
         match self.server.url.as_ref() {
-            Some(url) => Ok(Url::parse(url)?),
+            Some(url) => Ok(parse_server_url(url)?),
 
             None => {
-                let url = Url::parse(&ask_for_server_url()?)?;
+                let url = parse_server_url(&ask_for_server_url()?)?;
                 save_default_server_url(url.as_ref())?;
 
                 Ok(url)
@@ -237,6 +237,16 @@ fn save_default_server_url(url: &str) -> Result<()> {
     fs::write(path, format!("[server]\nurl = \"{url}\"\n"))?;
 
     Ok(())
+}
+
+fn parse_server_url(s: &str) -> Result<Url> {
+    let url = Url::parse(s)?;
+
+    if url.host().is_none() {
+        bail!("server URL is missing a host");
+    }
+
+    Ok(url)
 }
 
 fn read_install_id(path: &PathBuf) -> Result<Option<String>> {
