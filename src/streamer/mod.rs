@@ -19,18 +19,19 @@ pub struct Streamer {
     record_input: bool,
     keys: KeyBindings,
     notifier: Option<Box<dyn Notifier>>,
-    notifier_tx: std::sync::mpsc::Sender<String>,
     notifier_rx: Option<std::sync::mpsc::Receiver<String>>,
-    notifier_handle: Option<util::JoinHandle>,
-    pty_tx: mpsc::UnboundedSender<Event>,
     pty_rx: Option<mpsc::UnboundedReceiver<Event>>,
-    event_loop_handle: Option<util::JoinHandle>,
     start_time: Instant,
     paused: bool,
     prefix_mode: bool,
     listener: Option<net::TcpListener>,
     forward_url: Option<url::Url>,
     theme: Option<tty::Theme>,
+    // XXX: field (drop) order below is crucial for correct shutdown
+    pty_tx: mpsc::UnboundedSender<Event>,
+    notifier_tx: std::sync::mpsc::Sender<String>,
+    event_loop_handle: Option<util::JoinHandle>,
+    notifier_handle: Option<util::JoinHandle>,
 }
 
 enum Event {
