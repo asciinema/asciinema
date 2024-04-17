@@ -3,7 +3,7 @@ use super::session;
 use anyhow::bail;
 use futures_util::{future, stream, SinkExt, Stream, StreamExt};
 use std::borrow::Cow;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
@@ -20,22 +20,57 @@ const MAX_RECONNECT_DELAY: u64 = 5000;
 pub async fn forward(
     url: url::Url,
     clients_tx: mpsc::Sender<session::Client>,
+    notifier_tx: std::sync::mpsc::Sender<String>,
     mut shutdown_rx: broadcast::Receiver<()>,
 ) {
-    let mut reconnect_attempt = 0;
     info!("forwarding to {url}");
+    let mut reconnect_attempt = 0;
+    let mut connection_count: u64 = 0;
 
     loop {
-        let time = Instant::now();
+        let conn = connect_and_forward(&url, &clients_tx);
+        tokio::pin!(conn);
 
-        match connect_and_forward(&url, &clients_tx).await {
+        let result = tokio::select! {
+            result = &mut conn => result,
+
+            _ = tokio::time::sleep(Duration::from_secs(3)) => {
+                if reconnect_attempt > 0 {
+                    if connection_count == 0 {
+                        let _ = notifier_tx.send("Connected to the server".to_string());
+                    } else {
+                        let _ = notifier_tx.send("Reconnected to the server".to_string());
+                    }
+                }
+
+                connection_count += 1;
+                reconnect_attempt = 0;
+
+                conn.await
+            }
+        };
+
+        match result {
             Ok(true) => break,
-            Ok(false) => (),
-            Err(e) => error!("connection error: {e}"),
-        }
 
-        if time.elapsed().as_secs_f32() > 1.0 {
-            reconnect_attempt = 0;
+            Ok(false) => {
+                let _ = notifier_tx.send("Stream halted by the server".to_string());
+                break;
+            }
+
+            Err(e) => {
+                error!("connection error: {e}");
+
+                if reconnect_attempt == 0 {
+                    if connection_count == 0 {
+                        let _ = notifier_tx
+                            .send("Cannot connect to the server, retrying...".to_string());
+                    } else {
+                        let _ = notifier_tx
+                            .send("Disconnected from the server, reconnecting...".to_string());
+                    }
+                }
+            }
         }
 
         let delay = exponential_delay(reconnect_attempt);
@@ -104,7 +139,8 @@ where
                 match message {
                     Some(Ok(Message::Close(close_frame))) => {
                         info!("server closed the connection");
-                        return Ok(handle_close_frame(close_frame));
+                        handle_close_frame(close_frame)?;
+                        return Ok(false);
                     },
 
                     Some(Ok(msg)) => debug!("unexpected message from the server: {msg}"),
@@ -116,21 +152,21 @@ where
     }
 }
 
-fn handle_close_frame(frame: Option<CloseFrame>) -> bool {
+fn handle_close_frame(frame: Option<CloseFrame>) -> anyhow::Result<()> {
     match frame {
         Some(CloseFrame { code, reason }) => {
             info!("close reason: {code} ({reason})");
 
             match code {
-                CloseCode::Normal => true,
-                CloseCode::Library(code) if code < 4100 => true,
-                _ => false,
+                CloseCode::Normal => Ok(()),
+                CloseCode::Library(code) if code < 4100 => Ok(()),
+                c => bail!("unclean close: {c}"),
             }
         }
 
         None => {
             info!("close reason: none");
-            true
+            Ok(())
         }
     }
 }

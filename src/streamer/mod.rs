@@ -100,10 +100,14 @@ impl pty::Recorder for Streamer {
             ))
         });
 
-        let forwarder = self
-            .forward_url
-            .take()
-            .map(|url| runtime.spawn(forwarder::forward(url, clients_tx, shutdown_tx.subscribe())));
+        let forwarder = self.forward_url.take().map(|url| {
+            runtime.spawn(forwarder::forward(
+                url,
+                clients_tx,
+                self.notifier_tx.clone(),
+                shutdown_tx.subscribe(),
+            ))
+        });
 
         let theme = self.theme.take();
 
