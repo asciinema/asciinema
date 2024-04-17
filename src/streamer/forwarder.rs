@@ -5,7 +5,7 @@ use futures_util::{future, stream, SinkExt, Stream, StreamExt};
 use std::borrow::Cow;
 use std::time::Duration;
 use tokio::net::TcpStream;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::IntervalStream;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -21,7 +21,7 @@ pub async fn forward(
     url: url::Url,
     clients_tx: mpsc::Sender<session::Client>,
     notifier_tx: std::sync::mpsc::Sender<String>,
-    mut shutdown_rx: broadcast::Receiver<()>,
+    shutdown_token: tokio_util::sync::CancellationToken,
 ) {
     info!("forwarding to {url}");
     let mut reconnect_attempt = 0;
@@ -79,11 +79,9 @@ pub async fn forward(
 
         tokio::select! {
             _ = tokio::time::sleep(Duration::from_millis(delay)) => (),
-            _ = shutdown_rx.recv() => break
+            _ = shutdown_token.cancelled() => break
         }
     }
-
-    info!("shutting down");
 }
 
 async fn connect_and_forward(
@@ -124,11 +122,7 @@ where
             event = events.next() => {
                 match event {
                     Some(event) => sink.send(event?).await?,
-
-                    None => {
-                        info!("session ended");
-                        return Ok(true);
-                    }
+                    None => return Ok(true)
                 }
             },
 

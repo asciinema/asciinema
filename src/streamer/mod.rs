@@ -12,7 +12,7 @@ use std::net;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::mpsc;
 use tracing::info;
 
 pub struct Streamer {
@@ -89,14 +89,14 @@ impl pty::Recorder for Streamer {
     fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
-        let (shutdown_tx, _shutdown_rx) = broadcast::channel::<()>(1);
+        let shutdown_token = tokio_util::sync::CancellationToken::new();
         let runtime = build_tokio_runtime();
 
         let server = self.listener.take().map(|listener| {
             runtime.spawn(server::serve(
                 listener,
                 clients_tx.clone(),
-                shutdown_tx.subscribe(),
+                shutdown_token.clone(),
             ))
         });
 
@@ -105,7 +105,7 @@ impl pty::Recorder for Streamer {
                 url,
                 clients_tx,
                 self.notifier_tx.clone(),
-                shutdown_tx.subscribe(),
+                shutdown_token.clone(),
             ))
         });
 
@@ -114,7 +114,8 @@ impl pty::Recorder for Streamer {
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
             runtime.block_on(async move {
                 event_loop(pty_rx, &mut clients_rx, tty_size, theme).await;
-                let _ = shutdown_tx.send(());
+                info!("shutting down");
+                shutdown_token.cancel();
 
                 if let Some(task) = server {
                     let _ = tokio::time::timeout(Duration::from_secs(5), task).await;
