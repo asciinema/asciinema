@@ -127,7 +127,7 @@ where
                     Some(event) => sink.send(event?).await?,
 
                     None => {
-                        info!("event stream ended");
+                        info!("session ended");
                         return Ok(true);
                     }
                 }
