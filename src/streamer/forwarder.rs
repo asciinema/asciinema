@@ -115,13 +115,12 @@ async fn handle_socket<T>(
 where
     T: Stream<Item = anyhow::Result<Message>> + Unpin,
 {
-    let (mut sink, stream) = ws.split();
-    let mut stream = stream.fuse();
+    let (mut sink, mut stream) = ws.split();
     let mut events = events.fuse();
-    let mut pings = ping_stream().fuse();
+    let mut pings = ping_stream();
 
     loop {
-        futures_util::select! {
+        tokio::select! {
             event = events.next() => {
                 match event {
                     Some(event) => sink.send(event?).await?,
