@@ -85,4 +85,4 @@ jobs:
       - name: Upload the binary to the release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.ref_name }} target/release/asciinema#asciinema-${{ matrix.target }}
+        run: gh release upload ${{ github.ref_name }} target/${{ matrix.target }}/release/asciinema#asciinema-${{ matrix.target }}
