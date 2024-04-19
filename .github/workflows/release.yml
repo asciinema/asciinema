@@ -66,6 +66,14 @@ jobs:
         with:
           tool: cross
 
+      - name: Install build deps
+        shell: bash
+        run: |
+          if [[ ${{ matrix.target }} == x86_64-unknown-linux-musl ]]; then
+              sudo apt-get update
+              sudo apt-get install -y musl-tools
+          fi
+
       - name: Overwrite build command env variable
         if: matrix.use-cross
         shell: bash
