@@ -66,6 +66,11 @@ jobs:
         with:
           tool: cross
 
+      - name: Overwrite build command env variable
+        if: matrix.use-cross
+        shell: bash
+        run: echo "CARGO=cross" >> $GITHUB_ENV
+
       - name: Install build deps
         shell: bash
         run: |
@@ -73,11 +78,6 @@ jobs:
               sudo apt-get update
               sudo apt-get install -y musl-tools
           fi
-
-      - name: Overwrite build command env variable
-        if: matrix.use-cross
-        shell: bash
-        run: echo "CARGO=cross" >> $GITHUB_ENV
 
       - name: Build release binary
         run: ${{ env.CARGO }} build --release --locked --target ${{ matrix.target }}
