@@ -24,7 +24,6 @@
 
         testDeps = with pkgs; [
           python3
-          procps  # provides `w` binary
         ];
 
         mkDevShell = rust: pkgs.mkShell {

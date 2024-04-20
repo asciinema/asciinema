@@ -520,7 +520,7 @@ sys.stdout.write('bar');
         let mut recorder = TestRecorder::default();
 
         super::exec(
-            &["w"],
+            &["printf", "hello world\n"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
             None,
