@@ -15,9 +15,9 @@
             nativeBuildInputs = with pkgs; [
               rustup
             ] ++ (lib.optionals stdenv.isDarwin [
-	      libiconv
-	      darwin.apple_sdk.frameworks.Foundation
-	    ]);
+              libiconv
+              darwin.apple_sdk.frameworks.Foundation
+            ]);
           };
         }
       );
