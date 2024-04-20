@@ -1,6 +1,7 @@
 use anyhow::{anyhow, bail, Result};
 use reqwest::Url;
 use sha2::Digest;
+use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::{io, thread};
 use tempfile::NamedTempFile;
@@ -124,8 +125,10 @@ pub fn sha2_digest(s: &str) -> String {
         .finalize()
         .as_slice()
         .iter()
-        .map(|byte| format!("{:02x}", byte))
-        .collect()
+        .fold(String::new(), |mut out, byte| {
+            let _ = write!(out, "{byte:02X}");
+            out
+        })
 }
 
 #[cfg(test)]
