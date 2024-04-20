@@ -8,6 +8,9 @@ repository = "https://github.com/asciinema/asciinema"
 description = "Terminal session recorder"
 license = "GPL-3.0"
 
+# MSRV
+rust-version = "1.70.0"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
