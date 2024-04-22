@@ -136,7 +136,9 @@ where
                         return Ok(false);
                     },
 
-                    Some(Ok(msg)) => debug!("unexpected message from the server: {msg}"),
+                    Some(Ok(Message::Ping(_))) => (),
+                    Some(Ok(Message::Pong(_))) => (),
+                    Some(Ok(msg)) => debug!("unexpected message from the server: {msg:?}"),
                     Some(Err(e)) => bail!(e),
                     None => bail!("SplitStream closed")
                 }
