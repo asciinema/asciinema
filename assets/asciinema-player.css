@@ -444,7 +444,7 @@ div.ap-player div.ap-control-bar {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, #000000 25%, #000000 100%);
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, #000000 10%, #000000 100%);
   color: #bbb;
   box-sizing: content-box;
   line-height: 1;
