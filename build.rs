@@ -3,24 +3,35 @@ use clap::ValueEnum;
 use clap_complete::{generate_to, Shell};
 use clap_mangen::Man;
 use std::env;
-use std::fs::File;
-use std::io;
+use std::fs::{create_dir_all, File};
+use std::path::Path;
 use std::path::PathBuf;
 
 mod cli {
     include!("src/cli.rs");
 }
 
+const ENV_KEY: &str = "ASCIINEMA_GEN_DIR";
+
 fn main() -> std::io::Result<()> {
-    let out_dir = PathBuf::from(env::var_os("OUT_DIR").ok_or(io::ErrorKind::NotFound)?);
-    let mut cmd = cli::Cli::command();
+    if let Some(dir) = env::var_os(ENV_KEY).or(env::var_os("OUT_DIR")) {
+        let mut cmd = cli::Cli::command();
+        let base_dir = PathBuf::from(dir);
 
-    let man = Man::new(cmd.clone());
-    man.render(&mut File::create(out_dir.join("asciinema.1"))?)?;
+        let man_dir = Path::join(&base_dir, "man");
+        create_dir_all(&man_dir)?;
+        let man_path = Path::join(&man_dir, "asciinema.1");
+        Man::new(cmd.clone()).render(&mut File::create(man_path)?)?;
 
-    for shell in Shell::value_variants() {
-        generate_to(*shell, &mut cmd, "asciinema", &out_dir).unwrap();
+        let completion_dir = Path::join(&base_dir, "completion");
+        create_dir_all(&completion_dir)?;
+
+        for shell in Shell::value_variants() {
+            generate_to(*shell, &mut cmd, "asciinema", &completion_dir)?;
+        }
     }
+
+    println!("cargo:rerun-if-env-changed={ENV_KEY}");
 
     Ok(())
 }
