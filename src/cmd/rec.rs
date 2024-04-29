@@ -1,4 +1,6 @@
+use super::Command;
 use crate::asciicast;
+use crate::cli;
 use crate::config::Config;
 use crate::encoder;
 use crate::locale;
@@ -7,71 +9,14 @@ use crate::pty;
 use crate::recorder::{self, KeyBindings};
 use crate::tty;
 use anyhow::{bail, Result};
-use clap::{Args, ValueEnum};
+use cli::Format;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Args)]
-pub struct Cli {
-    filename: String,
-
-    /// Enable input recording
-    #[arg(long, short = 'I', alias = "stdin")]
-    input: bool,
-
-    /// Append to an existing recording file
-    #[arg(short, long)]
-    append: bool,
-
-    /// Recording file format [default: asciicast]
-    #[arg(short, long, value_enum)]
-    format: Option<Format>,
-
-    #[arg(long, hide = true)]
-    raw: bool,
-
-    /// Overwrite target file if it already exists
-    #[arg(long, conflicts_with = "append")]
-    overwrite: bool,
-
-    /// Command to record [default: $SHELL]
-    #[arg(short, long)]
-    command: Option<String>,
-
-    /// List of env vars to save [default: TERM,SHELL]
-    #[arg(long)]
-    env: Option<String>,
-
-    /// Title of the recording
-    #[arg(short, long)]
-    title: Option<String>,
-
-    /// Limit idle time to a given number of seconds
-    #[arg(short, long, value_name = "SECS")]
-    idle_time_limit: Option<f64>,
-
-    /// Override terminal size for the recorded command
-    #[arg(long, value_name = "COLSxROWS")]
-    tty_size: Option<pty::WinsizeOverride>,
-
-    #[arg(long, hide = true)]
-    cols: Option<u16>,
-
-    #[arg(long, hide = true)]
-    rows: Option<u16>,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
-enum Format {
-    Asciicast,
-    Raw,
-    Txt,
-}
-
-impl Cli {
-    pub fn run(self, config: &Config) -> Result<()> {
+impl Command for cli::Record {
+    fn run(self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
         let format = self.get_format();
@@ -116,7 +61,9 @@ impl Cli {
 
         Ok(())
     }
+}
 
+impl cli::Record {
     fn get_mode(&self) -> Result<(bool, bool)> {
         let mut overwrite = self.overwrite;
         let mut append = self.append;

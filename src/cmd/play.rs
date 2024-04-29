@@ -1,36 +1,15 @@
+use super::Command;
 use crate::asciicast;
+use crate::cli;
 use crate::config::Config;
 use crate::logger;
 use crate::player::{self, KeyBindings};
 use crate::tty;
 use crate::util;
 use anyhow::Result;
-use clap::Args;
 
-#[derive(Debug, Args)]
-pub struct Cli {
-    #[arg(value_name = "FILENAME_OR_URL")]
-    filename: String,
-
-    /// Limit idle time to a given number of seconds
-    #[arg(short, long, value_name = "SECS")]
-    idle_time_limit: Option<f64>,
-
-    /// Set playback speed
-    #[arg(short, long)]
-    speed: Option<f64>,
-
-    /// Loop loop loop loop
-    #[arg(short, long, name = "loop")]
-    loop_: bool,
-
-    /// Automatically pause on markers
-    #[arg(short = 'm', long)]
-    pause_on_markers: bool,
-}
-
-impl Cli {
-    pub fn run(self, config: &Config) -> Result<()> {
+impl Command for cli::Play {
+    fn run(self, config: &Config) -> Result<()> {
         let speed = self.speed.or(config.cmd_play_speed()).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(config.cmd_play_idle_time_limit());
 

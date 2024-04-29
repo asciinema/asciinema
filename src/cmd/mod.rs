@@ -10,6 +10,10 @@ use crate::notifier;
 use std::collections::HashMap;
 use std::env;
 
+pub trait Command {
+    fn run(self, config: &Config) -> anyhow::Result<()>;
+}
+
 fn get_notifier(config: &Config) -> Box<dyn notifier::Notifier> {
     if config.notifications.enabled {
         notifier::get_notifier(config.notifications.command.clone())

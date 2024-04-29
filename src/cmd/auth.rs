@@ -1,13 +1,11 @@
+use super::Command;
 use crate::api;
+use crate::cli;
 use crate::config::Config;
 use anyhow::Result;
-use clap::Args;
 
-#[derive(Debug, Args)]
-pub struct Cli {}
-
-impl Cli {
-    pub fn run(self, config: &Config) -> Result<()> {
+impl Command for cli::Auth {
+    fn run(self, config: &Config) -> Result<()> {
         let server_url = config.get_server_url()?;
         let server_hostname = server_url.host().unwrap();
         let auth_url = api::get_auth_url(config)?;

@@ -15,9 +15,9 @@ use std::io::{self, ErrorKind, Read, Write};
 use std::os::fd::{AsFd, RawFd};
 use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
-use std::str::FromStr;
 use std::{env, fs};
 
+type TtySizeOverride = (Option<u16>, Option<u16>);
 type ExtraEnv = HashMap<String, String>;
 
 pub trait Recorder {
@@ -31,10 +31,10 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
     command: &[S],
     extra_env: &ExtraEnv,
     tty: &mut T,
-    winsize_override: Option<WinsizeOverride>,
+    tty_size_override: Option<TtySizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
-    let winsize = get_winsize(&*tty, winsize_override.as_ref());
+    let winsize = get_winsize(&*tty, &tty_size_override);
     recorder.start(winsize.into())?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
@@ -43,7 +43,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
             result.master.as_raw_fd(),
             child,
             tty,
-            winsize_override,
+            tty_size_override,
             recorder,
         ),
 
@@ -58,10 +58,10 @@ fn handle_parent<T: Tty + ?Sized, R: Recorder>(
     master_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    winsize_override: Option<WinsizeOverride>,
+    tty_size_override: Option<TtySizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
-    let wait_result = match copy(master_fd, child, tty, winsize_override, recorder) {
+    let wait_result = match copy(master_fd, child, tty, tty_size_override, recorder) {
         Ok(Some(status)) => Ok(status),
         Ok(None) => wait::waitpid(child, None),
 
@@ -85,7 +85,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
     master_raw_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    winsize_override: Option<WinsizeOverride>,
+    tty_size_override: Option<TtySizeOverride>,
     recorder: &mut R,
 ) -> Result<Option<WaitStatus>> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
@@ -223,7 +223,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
 
         if sigwinch_read {
             sigwinch_fd.flush();
-            let winsize = get_winsize(&*tty, winsize_override.as_ref());
+            let winsize = get_winsize(&*tty, &tty_size_override);
             set_pty_size(master_raw_fd, &winsize);
             recorder.resize(winsize.into());
         }
@@ -287,61 +287,25 @@ fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> Result<()
     unsafe { libc::_exit(1) }
 }
 
-#[derive(Clone, Debug)]
-pub enum WinsizeOverride {
-    Full(u16, u16),
-    Cols(u16),
-    Rows(u16),
-}
-
-impl FromStr for WinsizeOverride {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.split_once('x') {
-            Some((cols, "")) => {
-                let cols: u16 = cols.parse()?;
-
-                Ok(WinsizeOverride::Cols(cols))
-            }
-
-            Some(("", rows)) => {
-                let rows: u16 = rows.parse()?;
-
-                Ok(WinsizeOverride::Rows(rows))
-            }
-
-            Some((cols, rows)) => {
-                let cols: u16 = cols.parse()?;
-                let rows: u16 = rows.parse()?;
-
-                Ok(WinsizeOverride::Full(cols, rows))
-            }
-
-            None => {
-                bail!("{s}")
-            }
-        }
-    }
-}
-
 fn get_winsize<T: Tty + ?Sized>(
     tty: &T,
-    winsize_override: Option<&WinsizeOverride>,
+    tty_size_override: &Option<TtySizeOverride>,
 ) -> pty::Winsize {
     let mut winsize = tty.get_size();
 
-    match winsize_override {
-        Some(WinsizeOverride::Full(cols, rows)) => {
+    match tty_size_override {
+        Some((None, None)) => (),
+
+        Some((Some(cols), None)) => {
             winsize.ws_col = *cols;
+        }
+
+        Some((None, Some(rows))) => {
             winsize.ws_row = *rows;
         }
 
-        Some(WinsizeOverride::Cols(cols)) => {
+        Some((Some(cols), Some(rows))) => {
             winsize.ws_col = *cols;
-        }
-
-        Some(WinsizeOverride::Rows(rows)) => {
             winsize.ws_row = *rows;
         }
 
@@ -438,7 +402,7 @@ impl Drop for SignalFd {
 #[cfg(test)]
 mod tests {
     use super::Recorder;
-    use crate::pty::{ExtraEnv, WinsizeOverride};
+    use crate::pty::ExtraEnv;
     use crate::tty::{NullTty, TtySize};
 
     #[derive(Default)]
@@ -558,7 +522,7 @@ sys.stdout.write('bar');
             &["true"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            Some(WinsizeOverride::Full(100, 50)),
+            Some((Some(100), Some(50))),
             &mut recorder,
         )
         .unwrap();

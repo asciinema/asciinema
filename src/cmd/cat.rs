@@ -1,16 +1,12 @@
+use super::Command;
 use crate::asciicast;
+use crate::cli;
+use crate::config::Config;
 use anyhow::Result;
-use clap::Args;
 use std::io;
 
-#[derive(Debug, Args)]
-pub struct Cli {
-    #[arg(required = true)]
-    filename: Vec<String>,
-}
-
-impl Cli {
-    pub fn run(self) -> Result<()> {
+impl Command for cli::Cat {
+    fn run(self, _config: &Config) -> Result<()> {
         let mut writer = asciicast::Writer::new(io::stdout(), 0);
         let mut time_offset: u64 = 0;
         let mut first = true;

@@ -1,4 +1,6 @@
+use super::Command;
 use crate::api;
+use crate::cli;
 use crate::config::Config;
 use crate::locale;
 use crate::logger;
@@ -8,52 +10,15 @@ use crate::tty;
 use crate::util;
 use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
-use clap::Args;
+use cli::{RelayTarget, DEFAULT_LISTEN_ADDR};
 use std::collections::HashMap;
 use std::env;
 use std::fmt::Debug;
 use std::fs;
-use std::net::SocketAddr;
 use std::net::TcpListener;
-use std::path::PathBuf;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use url::Url;
-
-const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:8080";
-
-#[derive(Debug, Args)]
-pub struct Cli {
-    /// Enable input capture
-    #[arg(long, short = 'I', alias = "stdin")]
-    input: bool,
-
-    /// Command to stream [default: $SHELL]
-    #[arg(short, long)]
-    command: Option<String>,
-
-    /// Serve the stream with the built-in HTTP server
-    #[clap(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
-    serve: Option<SocketAddr>,
-
-    /// Relay the stream via an asciinema server
-    #[clap(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
-    relay: Option<RelayTarget>,
-
-    /// Override terminal size for the session
-    #[arg(long, value_name = "COLSxROWS")]
-    tty_size: Option<pty::WinsizeOverride>,
-
-    /// Log file path
-    #[arg(long)]
-    log_file: Option<PathBuf>,
-}
-
-#[derive(Debug, Clone)]
-enum RelayTarget {
-    StreamId(String),
-    WsProducerUrl(url::Url),
-}
 
 #[derive(Debug)]
 struct Relay {
@@ -61,27 +26,8 @@ struct Relay {
     url: Option<Url>,
 }
 
-fn validate_forward_target(s: &str) -> Result<RelayTarget, String> {
-    let s = s.trim();
-
-    match url::Url::parse(s) {
-        Ok(url) => {
-            let scheme = url.scheme();
-
-            if scheme == "ws" || scheme == "wss" {
-                Ok(RelayTarget::WsProducerUrl(url))
-            } else {
-                Err("must be a WebSocket URL (ws:// or wss://)".to_owned())
-            }
-        }
-
-        Err(url::ParseError::RelativeUrlWithoutBase) => Ok(RelayTarget::StreamId(s.to_owned())),
-        Err(e) => Err(e.to_string()),
-    }
-}
-
-impl Cli {
-    pub fn run(mut self, config: &Config) -> Result<()> {
+impl Command for cli::Stream {
+    fn run(mut self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
         if self.serve.is_none() && self.relay.is_none() {
@@ -157,7 +103,9 @@ impl Cli {
 
         Ok(())
     }
+}
 
+impl cli::Stream {
     fn get_command(&self, config: &Config) -> Option<String> {
         self.command
             .as_ref()
