@@ -1,11 +1,15 @@
 use super::alis;
 use super::session;
+use anyhow::anyhow;
 use anyhow::bail;
-use futures_util::{future, stream, SinkExt, Stream, StreamExt};
+use core::future::{self, Future};
+use futures_util::{stream, SinkExt, Stream, StreamExt};
 use std::borrow::Cow;
+use std::pin::Pin;
 use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
+use tokio::time::{interval, sleep, timeout};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::IntervalStream;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -14,7 +18,9 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tracing::{debug, error, info};
 
-const WS_PING_INTERVAL: u64 = 15;
+const PING_INTERVAL: u64 = 15;
+const PING_TIMEOUT: u64 = 10;
+const SEND_TIMEOUT: u64 = 10;
 const MAX_RECONNECT_DELAY: u64 = 5000;
 
 pub async fn forward(
@@ -34,7 +40,7 @@ pub async fn forward(
         let result = tokio::select! {
             result = &mut conn => result,
 
-            _ = tokio::time::sleep(Duration::from_secs(3)) => {
+            _ = sleep(Duration::from_secs(3)) => {
                 if reconnect_attempt > 0 {
                     if connection_count == 0 {
                         let _ = notifier_tx.send("Connected to the server".to_string());
@@ -78,7 +84,7 @@ pub async fn forward(
         info!("reconnecting in {delay}");
 
         tokio::select! {
-            _ = tokio::time::sleep(Duration::from_millis(delay)) => (),
+            _ = sleep(Duration::from_millis(delay)) => (),
             _ = shutdown_token.cancelled() => break
         }
     }
@@ -114,19 +120,28 @@ where
     T: Stream<Item = anyhow::Result<Message>> + Unpin,
 {
     let (mut sink, mut stream) = ws.split();
-    let mut events = events.fuse();
+    let mut events = events;
     let mut pings = ping_stream();
+    let mut ping_timeout: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(future::pending());
 
     loop {
         tokio::select! {
             event = events.next() => {
                 match event {
-                    Some(event) => sink.send(event?).await?,
+                    Some(event) => {
+                        timeout(Duration::from_secs(SEND_TIMEOUT), sink.send(event?)).await.map_err(|_| anyhow!("send timeout"))??;
+                    },
+
                     None => return Ok(true)
                 }
             },
 
-            ping = pings.next() => sink.send(ping.unwrap()).await?,
+            ping = pings.next() => {
+                timeout(Duration::from_secs(SEND_TIMEOUT), sink.send(ping.unwrap())).await.map_err(|_| anyhow!("send timeout"))??;
+                ping_timeout = Box::pin(sleep(Duration::from_secs(PING_TIMEOUT)));
+            }
+
+            _ = &mut ping_timeout => bail!("ping timeout"),
 
             message = stream.next() => {
                 match message {
@@ -137,7 +152,11 @@ where
                     },
 
                     Some(Ok(Message::Ping(_))) => (),
-                    Some(Ok(Message::Pong(_))) => (),
+
+                    Some(Ok(Message::Pong(_))) => {
+                        ping_timeout = Box::pin(future::pending());
+                    },
+
                     Some(Ok(msg)) => debug!("unexpected message from the server: {msg:?}"),
                     Some(Err(e)) => bail!(e),
                     None => bail!("SplitStream closed")
@@ -185,9 +204,7 @@ fn close_message() -> Message {
 }
 
 fn ping_stream() -> impl Stream<Item = Message> {
-    let interval = tokio::time::interval(Duration::from_secs(WS_PING_INTERVAL));
-
-    IntervalStream::new(interval)
+    IntervalStream::new(interval(Duration::from_secs(PING_INTERVAL)))
         .skip(1)
         .map(|_| Message::Ping(vec![]))
 }
