@@ -59,6 +59,7 @@ pub fn get_user_stream(stream_id: String, config: &Config) -> Result<GetUserStre
     let response = Client::new()
         .get(user_stream_url(&server_url, stream_id))
         .basic_auth("", Some(config.get_install_id()?))
+        .header(header::USER_AGENT, build_user_agent())
         .header(header::ACCEPT, "application/json")
         .send()
         .context("cannot obtain stream producer endpoint")?;
