@@ -95,7 +95,12 @@ fn get_username() -> String {
 }
 
 fn build_user_agent() -> String {
-    let ua = concat!("asciinema/", env!("CARGO_PKG_VERSION")); // TODO add more system info
+    let ua = concat!(
+        "asciinema/",
+        env!("CARGO_PKG_VERSION"),
+        " target/",
+        env!("TARGET")
+    );
 
     ua.to_owned()
 }

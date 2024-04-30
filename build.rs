@@ -31,6 +31,7 @@ fn main() -> std::io::Result<()> {
         }
     }
 
+    println!("cargo:rustc-env=TARGET={}", env::var("TARGET").unwrap());
     println!("cargo:rerun-if-env-changed={ENV_KEY}");
 
     Ok(())
