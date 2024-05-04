@@ -46,8 +46,8 @@ tokio-util = "0.7.10"
 
 [build-dependencies]
 clap = { version = "4.4.7", features = ["derive"] }
-clap_complete = "4.5.2"
-clap_mangen = "0.2.20"
+clap_complete = "4.4.10"
+clap_mangen = "0.2.19"
 url = "2.5.0"
 
 [profile.release]
