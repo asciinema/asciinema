@@ -88,7 +88,7 @@ pub struct Record {
     /// Override terminal size for the recorded command
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
-    // pub tty_size: Option<TtySizeOverride>,
+
     #[arg(long, hide = true)]
     cols: Option<u16>,
 
@@ -139,7 +139,7 @@ pub struct Stream {
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
-    // pub tty_size: Option<TtySizeOverride>,
+
     /// Log file path
     #[arg(long)]
     pub log_file: Option<PathBuf>,
