@@ -85,6 +85,10 @@ pub struct Record {
     #[arg(short, long, value_name = "SECS")]
     pub idle_time_limit: Option<f64>,
 
+    /// Use headless mode - don't allocate a PTY
+    #[arg(long)]
+    pub headless: bool,
+
     /// Override terminal size for the recorded command
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
@@ -135,6 +139,10 @@ pub struct Stream {
     /// Relay the stream via an asciinema server
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
     pub relay: Option<RelayTarget>,
+
+    /// Use headless mode - don't allocate a PTY
+    #[arg(long)]
+    pub headless: bool,
 
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]

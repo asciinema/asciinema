@@ -37,13 +37,7 @@ impl Command for cli::Record {
         }
 
         {
-            let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
-                Box::new(dev_tty)
-            } else {
-                logger::info!("TTY not available, recording in headless mode");
-                Box::new(tty::NullTty::open()?)
-            };
-
+            let mut tty = self.get_tty()?;
             let theme = tty.get_theme();
             let output = self.get_output(file, format, append, time_offset, theme, config);
             let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
@@ -116,6 +110,19 @@ impl cli::Record {
             asciicast::get_duration(&self.filename)
         } else {
             Ok(0)
+        }
+    }
+
+    fn get_tty(&self) -> Result<Box<dyn tty::Tty>> {
+        if self.headless {
+            Ok(Box::new(tty::NullTty::open()?))
+        } else {
+            if let Ok(dev_tty) = tty::DevTty::open() {
+                Ok(Box::new(dev_tty))
+            } else {
+                logger::info!("TTY not available, recording in headless mode");
+                Ok(Box::new(tty::NullTty::open()?))
+            }
         }
     }
 

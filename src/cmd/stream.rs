@@ -72,12 +72,7 @@ impl Command for cli::Stream {
         }
 
         {
-            let mut tty: Box<dyn tty::Tty> = if let Ok(dev_tty) = tty::DevTty::open() {
-                Box::new(dev_tty)
-            } else {
-                logger::info!("TTY not available, streaming in headless mode");
-                Box::new(tty::NullTty::open()?)
-            };
+            let mut tty = self.get_tty()?;
 
             let mut streamer = streamer::Streamer::new(
                 listener,
@@ -141,6 +136,19 @@ impl cli::Stream {
         }
 
         Ok(None)
+    }
+
+    fn get_tty(&self) -> Result<Box<dyn tty::Tty>> {
+        if self.headless {
+            Ok(Box::new(tty::NullTty::open()?))
+        } else {
+            if let Ok(dev_tty) = tty::DevTty::open() {
+                Ok(Box::new(dev_tty))
+            } else {
+                logger::info!("TTY not available, streaming in headless mode");
+                Ok(Box::new(tty::NullTty::open()?))
+            }
+        }
     }
 
     fn init_logging(&self) -> Result<()> {
