@@ -228,11 +228,12 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
             recorder.resize(winsize.into());
         }
 
+        let mut kill_the_child = false;
+
         if sigint_read {
             sigint_fd.flush();
+            kill_the_child = true;
         }
-
-        let mut kill_the_child = false;
 
         if sigterm_read {
             sigterm_fd.flush();
