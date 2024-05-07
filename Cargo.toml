@@ -1,6 +1,6 @@
 [package]
 name = "asciinema"
-version = "3.0.0-rc.1"
+version = "3.0.0-rc.2"
 edition = "2021"
 authors = ["Marcin Kulik <m@ku1ik.com>"]
 homepage = "https://asciinema.org"
