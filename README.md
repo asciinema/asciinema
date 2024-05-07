@@ -93,8 +93,8 @@ The above command will build the binary and place the man page in
 This branch contains the next generation of the asciinema CLI, written in Rust
 ([about the
 rewrite](https://discourse.asciinema.org/t/rust-rewrite-of-the-asciinema-cli/777)).
-It is still in a heavy work-in-progress stage, so if you wish to propose any
-code changes, please first reach out to the team via
+It is still in a work-in-progress stage, so if you wish to propose any code
+changes, please first reach out to the team via
 [forum](https://discourse.asciinema.org/),
 [Matrix](https://matrix.to/#/#asciinema:matrix.org) or
 [IRC](https://web.libera.chat/#asciinema).
