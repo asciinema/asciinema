@@ -35,10 +35,22 @@ Notable features:
   server](https://docs.asciinema.org/manual/server/), e.g.
   [asciinema.org](https://asciinema.org), for easy recording hosting.
 
-Recording is as easy as running this command in your shell:
+To record a session run this command in your shell:
 
 ```sh
 asciinema rec demo.cast
+```
+
+To stream a session via built-in HTTP server run:
+
+```sh
+asciinema stream --serve
+```
+
+To stream a session via a relay (asciinema server) run:
+
+```sh
+asciinema stream --relay
 ```
 
 Check out the [Getting started
