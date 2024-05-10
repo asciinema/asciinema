@@ -94,7 +94,7 @@ async fn connect_and_forward(
     url: &url::Url,
     clients_tx: &mpsc::Sender<session::Client>,
 ) -> anyhow::Result<bool> {
-    let (ws, _) = tokio_tungstenite::connect_async(url).await?;
+    let (ws, _) = tokio_tungstenite::connect_async_with_config(url, None, true).await?;
     info!("connected to the endpoint");
     let events = event_stream(clients_tx).await?;
 
