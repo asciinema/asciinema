@@ -1,9 +1,9 @@
 use clap::CommandFactory;
 use clap::ValueEnum;
-use clap_complete::{generate_to, Shell};
-use clap_mangen::Man;
+use clap_complete;
+use clap_mangen;
 use std::env;
-use std::fs::{create_dir_all, File};
+use std::fs::create_dir_all;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -20,14 +20,13 @@ fn main() -> std::io::Result<()> {
 
         let man_dir = Path::join(&base_dir, "man");
         create_dir_all(&man_dir)?;
-        let man_path = Path::join(&man_dir, "asciinema.1");
-        Man::new(cmd.clone()).render(&mut File::create(man_path)?)?;
+        clap_mangen::generate_to(cmd.clone(), &man_dir)?;
 
         let completion_dir = Path::join(&base_dir, "completion");
         create_dir_all(&completion_dir)?;
 
-        for shell in Shell::value_variants() {
-            generate_to(*shell, &mut cmd, "asciinema", &completion_dir)?;
+        for shell in clap_complete::Shell::value_variants() {
+            clap_complete::generate_to(*shell, &mut cmd, "asciinema", &completion_dir)?;
         }
     }
 
