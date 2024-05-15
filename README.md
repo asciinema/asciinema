@@ -86,16 +86,15 @@ This produces the binary in _release mode_ (`--release`) at
 `target/release/asciinema`. You can just copy the binary to a directory in your
 `$PATH`.
 
-To generate man page and shell completion files, set `ASCIINEMA_GEN_DIR` to the
+To generate man pages and shell completion files, set `ASCIINEMA_GEN_DIR` to the
 path where these artifacts should be stored. For example:
 
 ```sh
-ASCIINEMA_GEN_DIR=/foo/bar cargo build --release
+ASCIINEMA_GEN_DIR=/foo cargo build --release
 ```
 
-The above command will build the binary and place the man page in
-`/foo/bar/man/asciinema.1`, and the shell completion files in the
-`/foo/bar/completion/` directory.
+The above command will build the binary and place the man pages in `/foo/man/`,
+and the shell completion files in the `/foo/completion/` directory.
 
 > [!NOTE]
 > Windows is currently not supported. _(See [#467](https://github.com/asciinema/asciinema/issues/467))_
