@@ -173,7 +173,7 @@ where
 
     pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
         let header: V2Header = header.into();
-
+        writeln!(self.writer, "{}", "#!/usr/bin/env -S asciinema play")?;
         writeln!(self.writer, "{}", serde_json::to_string(&header)?)
     }
 

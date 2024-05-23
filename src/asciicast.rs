@@ -49,7 +49,11 @@ pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Asciicast<'static>> {
 
 pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Asciicast<'a>> {
     let mut lines = reader.lines();
-    let first_line = lines.next().ok_or(anyhow!("empty file"))??;
+    let mut first_line = lines.next().ok_or(anyhow!("empty file"))??;
+
+    if first_line.starts_with("#!") {
+        first_line = lines.next().ok_or(anyhow!("empty file"))??;
+    }
 
     if let Ok(parser) = v2::open(&first_line) {
         Ok(parser.parse(lines))
