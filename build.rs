@@ -1,7 +1,5 @@
 use clap::CommandFactory;
 use clap::ValueEnum;
-use clap_complete;
-use clap_mangen;
 use std::env;
 use std::fs::create_dir_all;
 use std::path::Path;
