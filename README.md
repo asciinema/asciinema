@@ -68,7 +68,7 @@ To download the source code, build the asciinema binary, and install it in
 `$HOME/.cargo/bin` run:
 
 ```sh
-cargo install --git https://github.com/asciinema/asciinema
+cargo install --locked --git https://github.com/asciinema/asciinema
 ```
 
 Then, ensure `$HOME/.cargo/bin` is in your shell's `$PATH`.
