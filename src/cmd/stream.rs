@@ -141,13 +141,11 @@ impl cli::Stream {
     fn get_tty(&self) -> Result<Box<dyn tty::Tty>> {
         if self.headless {
             Ok(Box::new(tty::NullTty::open()?))
+        } else if let Ok(dev_tty) = tty::DevTty::open() {
+            Ok(Box::new(dev_tty))
         } else {
-            if let Ok(dev_tty) = tty::DevTty::open() {
-                Ok(Box::new(dev_tty))
-            } else {
-                logger::info!("TTY not available, streaming in headless mode");
-                Ok(Box::new(tty::NullTty::open()?))
-            }
+            logger::info!("TTY not available, streaming in headless mode");
+            Ok(Box::new(tty::NullTty::open()?))
         }
     }
 
