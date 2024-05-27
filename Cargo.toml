@@ -43,6 +43,8 @@ url = "2.5.0"
 tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-webpki-roots"] }
 sha2 = "0.10.8"
 tokio-util = "0.7.10"
+chrono = "0.4.38"
+hostname = "0.4.0"
 
 [build-dependencies]
 clap = { version = "4.4.7", features = ["derive"] }

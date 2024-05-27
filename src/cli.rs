@@ -48,7 +48,8 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct Record {
-    pub filename: String,
+    /// Output path - either a file or a directory path
+    pub path: String,
 
     /// Enable input recording
     #[arg(long, short = 'I', alias = "stdin")]
@@ -72,6 +73,10 @@ pub struct Record {
     /// Command to record [default: $SHELL]
     #[arg(short, long)]
     pub command: Option<String>,
+
+    /// Filename template, used when recording to a directory
+    #[arg(long, value_name = "TEMPLATE")]
+    pub filename: Option<String>,
 
     /// List of env vars to save [default: TERM,SHELL]
     #[arg(long)]

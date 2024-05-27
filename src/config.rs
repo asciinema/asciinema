@@ -38,6 +38,7 @@ pub struct Cmd {
 #[allow(unused)]
 pub struct Rec {
     pub command: Option<String>,
+    pub filename: String,
     pub input: bool,
     pub env: Option<String>,
     pub idle_time_limit: Option<f64>,
@@ -78,6 +79,7 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
+            .set_default("cmd.rec.filename", "%Y-%m-%d-%H-%M-%S-{pid}.cast")?
             .set_default("cmd.play.speed", None::<Option<f64>>)?
             .set_default("cmd.stream.input", false)?
             .set_default("notifications.enabled", true)?
@@ -132,6 +134,10 @@ impl Config {
 
     pub fn cmd_rec_command(&self) -> Option<String> {
         self.cmd.rec.command.as_ref().cloned()
+    }
+
+    pub fn cmd_rec_filename(&self) -> String {
+        self.cmd.rec.filename.clone()
     }
 
     pub fn cmd_rec_input(&self) -> bool {

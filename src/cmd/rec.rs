@@ -13,12 +13,14 @@ use cli::Format;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process;
 
 impl Command for cli::Record {
-    fn run(self, config: &Config) -> Result<()> {
+    fn run(mut self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
+        self.ensure_filename(config)?;
         let format = self.get_format();
         let (append, overwrite) = self.get_mode()?;
         let file = self.open_file(append, overwrite)?;
@@ -30,7 +32,7 @@ impl Command for cli::Record {
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let exec_extra_env = super::build_exec_extra_env(&[]);
 
-        logger::info!("Recording session started, writing to {}", self.filename);
+        logger::info!("Recording session started, writing to {}", self.path);
 
         if command.is_none() {
             logger::info!("Press <ctrl+d> or type 'exit' to end");
@@ -58,10 +60,48 @@ impl Command for cli::Record {
 }
 
 impl cli::Record {
+    fn ensure_filename(&mut self, config: &Config) -> Result<()> {
+        let mut path = PathBuf::from(&self.path);
+
+        if path.exists() && fs::metadata(&path)?.is_dir() {
+            let mut tpl = self.filename.clone().unwrap_or(config.cmd_rec_filename());
+
+            if tpl.contains("{pid}") {
+                let pid = process::id().to_string();
+                tpl = tpl.replace("{pid}", &pid);
+            }
+
+            if tpl.contains("{user}") {
+                let user = env::var("USER").ok().unwrap_or("unknown".to_owned());
+                tpl = tpl.replace("{user}", &user);
+            }
+
+            if tpl.contains("{hostname}") {
+                let hostname = hostname::get()
+                    .ok()
+                    .and_then(|h| h.into_string().ok())
+                    .unwrap_or("unknown".to_owned());
+
+                tpl = tpl.replace("{hostname}", &hostname);
+            }
+
+            let filename = chrono::Local::now().format(&tpl).to_string();
+            path.push(Path::new(&filename));
+
+            if let Some(dir) = path.parent() {
+                fs::create_dir_all(dir)?;
+            }
+
+            self.path = path.to_string_lossy().to_string();
+        }
+
+        Ok(())
+    }
+
     fn get_mode(&self) -> Result<(bool, bool)> {
         let mut overwrite = self.overwrite;
         let mut append = self.append;
-        let path = Path::new(&self.filename);
+        let path = Path::new(&self.path);
 
         if path.exists() {
             let metadata = fs::metadata(path)?;
@@ -88,7 +128,7 @@ impl cli::Record {
             .create(overwrite)
             .create_new(!overwrite && !append)
             .truncate(overwrite)
-            .open(&self.filename)?;
+            .open(&self.path)?;
 
         Ok(file)
     }
@@ -97,7 +137,7 @@ impl cli::Record {
         self.format.unwrap_or_else(|| {
             if self.raw {
                 Format::Raw
-            } else if self.filename.to_lowercase().ends_with(".txt") {
+            } else if self.path.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
                 Format::Asciicast
@@ -107,7 +147,7 @@ impl cli::Record {
 
     fn get_time_offset(&self, append: bool, format: Format) -> Result<u64> {
         if append && format == Format::Asciicast {
-            asciicast::get_duration(&self.filename)
+            asciicast::get_duration(&self.path)
         } else {
             Ok(0)
         }
