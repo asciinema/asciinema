@@ -36,9 +36,6 @@ div.ap-wrapper:fullscreen {
   width: 100%;
   align-items: center;
 }
-div.ap-wrapper:fullscreen div.ap-player {
-  position: static;
-}
 div.ap-wrapper:fullscreen .title-bar {
   display: initial;
 }
@@ -444,8 +441,7 @@ div.ap-player div.ap-control-bar {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, #000000 10%, #000000 100%);
-  color: #bbb;
+  color: var(--term-color-foreground);
   box-sizing: content-box;
   line-height: 1;
   position: absolute;
@@ -454,6 +450,7 @@ div.ap-player div.ap-control-bar {
   opacity: 0;
   transition: opacity 0.15s linear;
   user-select: none;
+  border-top: 2px solid color-mix(in oklab, black 33%, var(--term-color-background));
   z-index: 30;
 }
 div.ap-player div.ap-control-bar * {
@@ -463,7 +460,7 @@ div.ap-player div.ap-control-bar * {
   font-weight: bold;
 }
 div.ap-control-bar svg.ap-icon path {
-  fill: #bbb;
+  fill: var(--term-color-foreground);
 }
 div.ap-control-bar span.ap-playback-button {
   display: block;
@@ -478,19 +475,20 @@ div.ap-control-bar span.ap-playback-button svg {
   width: 12px;
 }
 div.ap-control-bar span.ap-timer {
-  display: block;
+  display: flex;
   flex: 0 0 auto;
   min-width: 50px;
   margin: 0 10px;
   height: 100%;
   text-align: center;
-  font-size: 11px;
-  line-height: 34px;
+  font-size: 13px;
+  line-height: 100%;
   cursor: default;
 }
 div.ap-control-bar span.ap-timer span {
-  display: inline-block;
   font-size: inherit;
+  margin: auto;
+  font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace;
 }
 div.ap-control-bar span.ap-timer .ap-time-remaining {
   display: none;
@@ -499,7 +497,7 @@ div.ap-control-bar span.ap-timer:hover .ap-time-elapsed {
   display: none;
 }
 div.ap-control-bar span.ap-timer:hover .ap-time-remaining {
-  display: inline;
+  display: flex;
 }
 div.ap-control-bar .ap-progressbar {
   display: block;
@@ -521,14 +519,15 @@ div.ap-control-bar .ap-progressbar .ap-bar .ap-gutter {
   left: 0;
   right: 0;
   height: 3px;
-  background-color: #333;
 }
-div.ap-control-bar .ap-progressbar .ap-bar .ap-gutter .ap-gutter-fill {
-  display: inline-block;
-  height: 100%;
-  background-color: #bbb;
+div.ap-control-bar .ap-progressbar .ap-bar .ap-gutter-empty {
+  background-color: color-mix(in oklab, var(--term-color-foreground) 20%, var(--term-color-background));
+}
+div.ap-control-bar .ap-progressbar .ap-bar .ap-gutter-full {
+  width: 100%;
+  transform-origin: left center;
+  background-color: var(--term-color-foreground);
   border-radius: 3px;
-  z-index: 10;
 }
 div.ap-control-bar.ap-seekable .ap-progressbar .ap-bar {
   cursor: pointer;
@@ -567,7 +566,6 @@ span.ap-progressbar span.ap-marker-container {
   width: 21px;
   position: absolute;
   margin-left: -10px;
-  z-index: 9;
 }
 span.ap-marker-container span.ap-marker {
   display: block;
@@ -575,17 +573,17 @@ span.ap-marker-container span.ap-marker {
   bottom: 12px;
   left: 7px;
   right: 7px;
-  background-color: #555;
+  background-color: color-mix(in oklab, var(--term-color-foreground) 33%, var(--term-color-background));
   position: absolute;
   transition: top 0.1s, bottom 0.1s, left 0.1s, right 0.1s, background-color 0.1s;
   border-radius: 50%;
 }
 span.ap-marker-container span.ap-marker.ap-marker-past {
-  background-color: #bbb;
+  background-color: var(--term-color-foreground);
 }
 span.ap-marker-container span.ap-marker:hover,
 span.ap-marker-container:hover span.ap-marker {
-  background-color: #bbb;
+  background-color: var(--term-color-foreground);
   top: 11px;
   bottom: 10px;
   left: 5px;
@@ -593,16 +591,17 @@ span.ap-marker-container:hover span.ap-marker {
 }
 span.ap-marker-container span.ap-marker-tooltip {
   visibility: hidden;
-  background-color: #333;
-  color: #bbb;
+  background-color: var(--term-color-foreground);
+  color: var(--term-color-background);
+  font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace;
   text-align: center;
-  padding: 2px 8px 0px 8px;
+  padding: 0 0.5em;
   border-radius: 4px;
   position: absolute;
   z-index: 1;
   white-space: nowrap;
   /* Prevents the text from wrapping and makes sure the tooltip width adapts to the text length */
-  font-size: 11px;
+  font-size: 13px;
   line-height: 2em;
   bottom: 100%;
   left: 50%;
