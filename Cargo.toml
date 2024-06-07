@@ -27,7 +27,7 @@ rustyline = "13.0.0"
 config = { version = "0.14.0", default-features = false, features = ["toml", "ini"] }
 which = "6.0.0"
 tempfile = "3.9.0"
-scraper = { version = "0.15.0", default-features = false }
+scraper = { version = "0.19.0", default-features = false }
 avt = "0.10.3"
 axum = { version = "0.7.4", default-features = false, features = ["http1", "ws"] }
 tokio = { version = "1.35.1", features = ["full"] }
