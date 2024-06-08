@@ -57,7 +57,10 @@
           .buildRustPackage {
             pname = packageToml.name;
             inherit (packageToml) version;
-            src = ./.;
+            src = builtins.path {
+              path = ./.;
+              inherit (packageToml) name;
+            };
             cargoLock.lockFile = ./Cargo.lock;
             buildInputs = buildDeps rust;
             dontUseCargoParallelTests = true;
