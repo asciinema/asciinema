@@ -42,11 +42,11 @@
 
         mkDevShell = rust:
           pkgs.mkShell {
-            nativeBuildInputs = buildDeps (rust.override {
+            packages = buildDeps (rust.override {
               extensions = ["rust-src"];
             });
 
-            RUST_BACKTRACE = 1;
+            env.RUST_BACKTRACE = 1;
           };
 
         mkPackage = rust:
@@ -55,19 +55,20 @@
             rustc = rust;
           })
           .buildRustPackage {
-            inherit (cargoToml.package) name version;
+            pname = cargoToml.package.name;
+            inherit (cargoToml.package) version;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
-            nativeBuildInputs = buildDeps rust;
+            buildInputs = buildDeps rust;
             dontUseCargoParallelTests = true;
           };
       in {
-      	_module.args = {
-      		pkgs = import inputs.nixpkgs {
-      			inherit system;
-      			overlays = [ (import rust-overlay) ];
-      		};
-      	};
+        _module.args = {
+          pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [(import rust-overlay)];
+          };
+        };
 
         formatter = pkgs.alejandra;
 
