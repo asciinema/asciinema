@@ -22,8 +22,8 @@
         system,
         ...
       }: let
-        cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-        msrv = cargoToml.package.rust-version;
+        packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
+        msrv = packageToml.rust-version;
 
         buildDeps = rust:
           with pkgs;
@@ -55,8 +55,8 @@
             rustc = rust;
           })
           .buildRustPackage {
-            pname = cargoToml.package.name;
-            inherit (cargoToml.package) version;
+            pname = packageToml.name;
+            inherit (packageToml) version;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
             buildInputs = buildDeps rust;
