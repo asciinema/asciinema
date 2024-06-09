@@ -25,45 +25,17 @@
         packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
         msrv = packageToml.rust-version;
 
-        buildDeps = rust:
-          with pkgs;
-            [
-              rust
-            ]
-            ++ (lib.optionals stdenv.isDarwin [
-              libiconv
-              darwin.apple_sdk.frameworks.Foundation
-            ])
-            ++ testDeps;
-
-        testDeps = with pkgs; [
-          python3
-        ];
-
         mkDevShell = rust:
           pkgs.mkShell {
-            packages = buildDeps (rust.override {
-              extensions = ["rust-src"];
-            });
+            inputsFrom = [
+              (config.packages.default.override {
+                rust = rust.override {
+                  extensions = ["rust-src"];
+                };
+              })
+            ];
 
             env.RUST_BACKTRACE = 1;
-          };
-
-        mkPackage = rust:
-          (pkgs.makeRustPlatform {
-            cargo = rust;
-            rustc = rust;
-          })
-          .buildRustPackage {
-            pname = packageToml.name;
-            inherit (packageToml) version;
-            src = builtins.path {
-              path = ./.;
-              inherit (packageToml) name;
-            };
-            cargoLock.lockFile = ./Cargo.lock;
-            buildInputs = buildDeps rust;
-            dontUseCargoParallelTests = true;
           };
       in {
         _module.args = {
@@ -79,7 +51,8 @@
           default = mkDevShell pkgs.rust-bin.stable.latest.default;
           msrv = mkDevShell pkgs.rust-bin.stable.${msrv}.default;
         };
-        packages.default = mkPackage pkgs.rust-bin.stable.latest.minimal;
+
+        packages.default = pkgs.callPackage ./default.nix {inherit packageToml;};
       };
     };
 }
