@@ -22,14 +22,14 @@
       }: let
         packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
       in {
+				formatter = pkgs.alejandra;
+
         _module.args = {
           pkgs = import inputs.nixpkgs {
             inherit system;
             overlays = [(import rust-overlay)];
           };
         };
-
-        formatter = pkgs.alejandra;
 
         devShells = pkgs.callPackages ./shell.nix {inherit packageToml self';};
 
