@@ -23,20 +23,6 @@
         ...
       }: let
         packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
-        msrv = packageToml.rust-version;
-
-        mkDevShell = rust:
-          pkgs.mkShell {
-            inputsFrom = [
-              (config.packages.default.override {
-                rust = rust.override {
-                  extensions = ["rust-src"];
-                };
-              })
-            ];
-
-            env.RUST_BACKTRACE = 1;
-          };
       in {
         _module.args = {
           pkgs = import inputs.nixpkgs {
@@ -47,10 +33,7 @@
 
         formatter = pkgs.alejandra;
 
-        devShells = {
-          default = mkDevShell pkgs.rust-bin.stable.latest.default;
-          msrv = mkDevShell pkgs.rust-bin.stable.${msrv}.default;
-        };
+        devShells = pkgs.callPackages ./shell.nix {inherit packageToml self';};
 
         packages.default = pkgs.callPackage ./default.nix {inherit packageToml;};
       };
