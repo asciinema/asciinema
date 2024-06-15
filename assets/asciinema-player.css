@@ -455,15 +455,12 @@ div.ap-player div.ap-control-bar {
 }
 div.ap-player div.ap-control-bar * {
   box-sizing: inherit;
-  font-size: 0;
-  font-family: Helvetica, Arial, sans-serif;
-  font-weight: bold;
 }
 div.ap-control-bar svg.ap-icon path {
   fill: var(--term-color-foreground);
 }
 div.ap-control-bar span.ap-playback-button {
-  display: block;
+  display: flex;
   flex: 0 0 auto;
   cursor: pointer;
   height: 12px;
@@ -486,9 +483,10 @@ div.ap-control-bar span.ap-timer {
   cursor: default;
 }
 div.ap-control-bar span.ap-timer span {
-  font-size: inherit;
-  margin: auto;
   font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace;
+  font-size: inherit;
+  font-weight: 600;
+  margin: auto;
 }
 div.ap-control-bar span.ap-timer .ap-time-remaining {
   display: none;
@@ -539,24 +537,30 @@ div.ap-control-bar .ap-fullscreen-button {
   height: 14px;
   padding: 9px;
   cursor: pointer;
+  position: relative;
 }
 div.ap-control-bar .ap-fullscreen-button svg {
   width: 14px;
   height: 14px;
 }
-div.ap-control-bar .ap-fullscreen-button svg:first-child {
+div.ap-control-bar .ap-fullscreen-button svg.ap-icon-fullscreen-on {
   display: inline;
 }
-div.ap-control-bar .ap-fullscreen-button svg:last-child {
+div.ap-control-bar .ap-fullscreen-button svg.ap-icon-fullscreen-off {
   display: none;
+}
+div.ap-control-bar .ap-fullscreen-button .ap-tooltip {
+  right: 5px;
+  left: initial;
+  transform: none;
 }
 div.ap-wrapper.ap-hud .ap-control-bar {
   opacity: 1;
 }
-div.ap-wrapper:fullscreen .ap-fullscreen-button svg:first-child {
+div.ap-wrapper:fullscreen .ap-fullscreen-button svg.ap-icon-fullscreen-on {
   display: none;
 }
-div.ap-wrapper:fullscreen .ap-fullscreen-button svg:last-child {
+div.ap-wrapper:fullscreen .ap-fullscreen-button svg.ap-icon-fullscreen-off {
   display: inline;
 }
 span.ap-progressbar span.ap-marker-container {
@@ -589,11 +593,12 @@ span.ap-marker-container:hover span.ap-marker {
   left: 5px;
   right: 5px;
 }
-span.ap-marker-container span.ap-marker-tooltip {
+.ap-tooltip-container span.ap-tooltip {
   visibility: hidden;
   background-color: var(--term-color-foreground);
   color: var(--term-color-background);
   font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace;
+  font-weight: bold;
   text-align: center;
   padding: 0 0.5em;
   border-radius: 4px;
@@ -607,7 +612,7 @@ span.ap-marker-container span.ap-marker-tooltip {
   left: 50%;
   transform: translateX(-50%);
 }
-span.ap-marker-container:hover span.ap-marker-tooltip {
+.ap-tooltip-container:hover span.ap-tooltip {
   visibility: visible;
 }
 .ap-player .ap-overlay {
@@ -681,6 +686,56 @@ span.ap-marker-container:hover span.ap-marker-tooltip {
   padding: 0;
   display: inline-block;
   height: 100%;
+}
+.ap-player .ap-overlay-help {
+  background-color: rgba(0, 0, 0, 0.8);
+  container-type: inline-size;
+}
+.ap-player .ap-overlay-help > div {
+  font-family: Consolas, Menlo, 'Bitstream Vera Sans Mono', monospace, 'Powerline Symbols';
+  font-variant-ligatures: none;
+  max-width: 85%;
+  max-height: 85%;
+  font-size: 18px;
+  color: var(--term-color-foreground);
+  background-color: var(--term-color-background);
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin-bottom: 32px;
+}
+.ap-player .ap-overlay-help > div .ap-line {
+  letter-spacing: normal;
+  overflow: hidden;
+}
+.ap-player .ap-overlay-help > div .ap-line span {
+  padding: 0;
+  display: inline-block;
+  height: 100%;
+}
+.ap-player .ap-overlay-help > div div {
+  padding: calc(min(4cqw, 40px));
+  font-size: calc(min(1.9cqw, 18px));
+}
+.ap-player .ap-overlay-help > div div p {
+  font-weight: bold;
+  margin: 0 0 2em 0;
+}
+.ap-player .ap-overlay-help > div div ul {
+  list-style: none;
+  padding: 0;
+}
+.ap-player .ap-overlay-help > div div ul li {
+  margin: 0 0 0.75em 0;
+}
+.ap-player .ap-overlay-help > div div kbd {
+  color: var(--term-color-background);
+  background-color: var(--term-color-foreground);
+  padding: 0.2em 0.5em;
+  border-radius: 0.2em;
+  font-family: inherit;
+  font-size: 0.85em;
+  border: none;
+  margin: 0;
 }
 .ap-player .ap-overlay-error span {
   font-size: 8em;
