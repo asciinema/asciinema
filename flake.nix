@@ -22,7 +22,7 @@
       }: let
         packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
       in {
-				formatter = pkgs.alejandra;
+        formatter = pkgs.alejandra;
 
         _module.args = {
           pkgs = import inputs.nixpkgs {
@@ -33,7 +33,10 @@
 
         devShells = pkgs.callPackages ./shell.nix {inherit packageToml self';};
 
-        packages.default = pkgs.callPackage ./default.nix {inherit packageToml;};
+        packages.default = pkgs.callPackage ./default.nix {
+          inherit packageToml;
+          rust = pkgs.rust-bin.stable.latest.minimal;
+        };
       };
     };
 }
