@@ -32,7 +32,6 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             let cols_bytes = cols.to_le_bytes();
             let rows_bytes = rows.to_le_bytes();
             let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
-            let init = init.unwrap_or_else(|| "".to_owned());
             let init_len = init.len() as u32;
             let init_len_bytes = init_len.to_le_bytes();
 
