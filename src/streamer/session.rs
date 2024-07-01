@@ -13,7 +13,6 @@ pub struct Session {
     broadcast_tx: broadcast::Sender<Event>,
     stream_time: u64,
     last_event_time: Instant,
-    tty_size: tty::TtySize,
     theme: Option<tty::Theme>,
 }
 
@@ -40,7 +39,6 @@ impl Session {
             broadcast_tx,
             stream_time: 0,
             last_event_time: Instant::now(),
-            tty_size,
             theme,
         }
     }
@@ -58,19 +56,18 @@ impl Session {
     }
 
     pub fn resize(&mut self, time: u64, tty_size: tty::TtySize) {
-        if tty_size != self.tty_size {
+        if tty_size != self.vt.size().into() {
             resize_vt(&mut self.vt, &tty_size);
             let _ = self.broadcast_tx.send(Event::Resize(time, tty_size));
             self.stream_time = time;
             self.last_event_time = Instant::now();
-            self.tty_size = tty_size;
         }
     }
 
     pub fn subscribe(&self) -> Subscription {
         let init = Event::Init(
             self.elapsed_time(),
-            self.tty_size,
+            self.vt.size().into(),
             self.theme.clone(),
             self.vt.dump(),
         );
