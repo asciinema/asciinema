@@ -1,6 +1,6 @@
 use crate::config::Config;
 use anyhow::{bail, Context, Result};
-use reqwest::blocking::{multipart::Form, Client};
+use reqwest::blocking::{multipart::Form, Client, RequestBuilder};
 use reqwest::header;
 use serde::Deserialize;
 use std::env;
@@ -52,15 +52,11 @@ pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastRe
     Ok(response.json::<UploadAsciicastResponse>()?)
 }
 
-pub fn get_user_stream(stream_id: String, config: &Config) -> Result<GetUserStreamResponse> {
+pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserStreamResponse> {
     let server_url = config.get_server_url()?;
     let server_hostname = server_url.host().unwrap();
 
-    let response = Client::new()
-        .get(user_stream_url(&server_url, stream_id))
-        .basic_auth("", Some(config.get_install_id()?))
-        .header(header::USER_AGENT, build_user_agent())
-        .header(header::ACCEPT, "application/json")
+    let response = user_stream_request(&server_url, stream_id, config)?
         .send()
         .context("cannot obtain stream producer endpoint")?;
 
@@ -106,14 +102,24 @@ fn build_user_agent() -> String {
     ua.to_owned()
 }
 
-fn user_stream_url(server_url: &Url, stream_id: String) -> Url {
+fn user_stream_request(
+    server_url: &Url,
+    stream_id: String,
+    config: &Config,
+) -> Result<RequestBuilder> {
+    let client = Client::new();
     let mut url = server_url.clone();
 
-    if stream_id.is_empty() {
-        url.set_path("api/user/stream");
+    let builder = if stream_id.is_empty() {
+        url.set_path("api/user/streams");
+        client.post(url)
     } else {
         url.set_path(&format!("api/user/streams/{stream_id}"));
-    }
+        client.get(url)
+    };
 
-    url
+    Ok(builder
+        .basic_auth(get_username(), Some(config.get_install_id()?))
+        .header(header::USER_AGENT, build_user_agent())
+        .header(header::ACCEPT, "application/json"))
 }
