@@ -27,7 +27,7 @@ fn encode_event(event: session::Event) -> Vec<u8> {
     use session::Event::*;
 
     match event {
-        Init(size, time, theme, init) => {
+        Init(time, size, theme, init) => {
             let (cols, rows): (u16, u16) = (size.0, size.1);
             let cols_bytes = cols.to_le_bytes();
             let rows_bytes = rows.to_le_bytes();

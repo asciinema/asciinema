@@ -19,7 +19,7 @@ pub struct Session {
 
 #[derive(Clone)]
 pub enum Event {
-    Init(tty::TtySize, u64, Option<tty::Theme>, String),
+    Init(u64, tty::TtySize, Option<tty::Theme>, String),
     Stdout(u64, String),
     Resize(u64, tty::TtySize),
 }
@@ -69,8 +69,8 @@ impl Session {
 
     pub fn subscribe(&self) -> Subscription {
         let init = Event::Init(
-            self.tty_size,
             self.elapsed_time(),
+            self.tty_size,
             self.theme.clone(),
             self.vt.dump(),
         );
