@@ -88,11 +88,7 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
         .map_err(|e| e.into())
 }
 
-fn user_stream_request(
-    server_url: &Url,
-    stream_id: String,
-    install_id: String,
-) -> RequestBuilder {
+fn user_stream_request(server_url: &Url, stream_id: String, install_id: String) -> RequestBuilder {
     let client = Client::new();
     let mut url = server_url.clone();
 
