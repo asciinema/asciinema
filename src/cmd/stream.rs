@@ -111,7 +111,7 @@ impl cli::Stream {
     fn get_relay(&mut self, config: &Config) -> Result<Option<Relay>> {
         match self.relay.take() {
             Some(RelayTarget::StreamId(id)) => {
-                let stream = api::get_user_stream(id, config)?;
+                let stream = api::create_user_stream(id, config)?;
 
                 Ok(Some(Relay {
                     ws_producer_url: stream.ws_producer_url.parse()?,
