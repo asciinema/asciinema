@@ -111,7 +111,7 @@ fn user_stream_request(
     let mut url = server_url.clone();
 
     let builder = if stream_id.is_empty() {
-        url.set_path("api/user/streams");
+        url.set_path("api/streams");
         client.post(url)
     } else {
         url.set_path(&format!("api/user/streams/{stream_id}"));
