@@ -32,16 +32,9 @@ pub fn get_auth_url(config: &Config) -> Result<Url> {
 }
 
 pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastResponse> {
-    let client = Client::new();
-    let form = Form::new().file("asciicast", path)?;
-
-    let response = client
-        .post(upload_url(&config.get_server_url()?))
-        .multipart(form)
-        .basic_auth(get_username(), Some(config.get_install_id()?))
-        .header(header::USER_AGENT, build_user_agent())
-        .header(header::ACCEPT, "application/json")
-        .send()?;
+    let server_url = &config.get_server_url()?;
+    let install_id = config.get_install_id()?;
+    let response = upload_request(server_url, path, install_id)?.send()?;
 
     if response.status().as_u16() == 413 {
         bail!("The size of the recording exceeds the server's configured limit");
@@ -52,11 +45,26 @@ pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastRe
     Ok(response.json::<UploadAsciicastResponse>()?)
 }
 
+fn upload_request(server_url: &Url, path: &str, install_id: String) -> Result<RequestBuilder> {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path("api/asciicasts");
+    let form = Form::new().file("asciicast", path)?;
+
+    Ok(client
+        .post(url)
+        .multipart(form)
+        .basic_auth(get_username(), Some(install_id))
+        .header(header::USER_AGENT, build_user_agent())
+        .header(header::ACCEPT, "application/json"))
+}
+
 pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserStreamResponse> {
     let server_url = config.get_server_url()?;
     let server_hostname = server_url.host().unwrap();
+    let install_id = config.get_install_id()?;
 
-    let response = user_stream_request(&server_url, stream_id, config)?
+    let response = user_stream_request(&server_url, stream_id, install_id)
         .send()
         .context("cannot obtain stream producer endpoint")?;
 
@@ -80,11 +88,26 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
         .map_err(|e| e.into())
 }
 
-fn upload_url(server_url: &Url) -> Url {
+fn user_stream_request(
+    server_url: &Url,
+    stream_id: String,
+    install_id: String,
+) -> RequestBuilder {
+    let client = Client::new();
     let mut url = server_url.clone();
-    url.set_path("api/asciicasts");
 
-    url
+    let builder = if stream_id.is_empty() {
+        url.set_path("api/streams");
+        client.post(url)
+    } else {
+        url.set_path(&format!("api/user/streams/{stream_id}"));
+        client.get(url)
+    };
+
+    builder
+        .basic_auth(get_username(), Some(install_id))
+        .header(header::USER_AGENT, build_user_agent())
+        .header(header::ACCEPT, "application/json")
 }
 
 fn get_username() -> String {
@@ -100,26 +123,4 @@ fn build_user_agent() -> String {
     );
 
     ua.to_owned()
-}
-
-fn user_stream_request(
-    server_url: &Url,
-    stream_id: String,
-    config: &Config,
-) -> Result<RequestBuilder> {
-    let client = Client::new();
-    let mut url = server_url.clone();
-
-    let builder = if stream_id.is_empty() {
-        url.set_path("api/streams");
-        client.post(url)
-    } else {
-        url.set_path(&format!("api/user/streams/{stream_id}"));
-        client.get(url)
-    };
-
-    Ok(builder
-        .basic_auth(get_username(), Some(config.get_install_id()?))
-        .header(header::USER_AGENT, build_user_agent())
-        .header(header::ACCEPT, "application/json"))
 }
