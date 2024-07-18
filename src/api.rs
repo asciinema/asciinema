@@ -1,10 +1,12 @@
 use crate::config::Config;
 use anyhow::{bail, Context, Result};
+use reqwest::blocking::ClientBuilder;
 use reqwest::blocking::{multipart::Form, Client, RequestBuilder};
-use reqwest::header;
+use reqwest::{header, Certificate};
 use serde::Deserialize;
 use std::env;
 use std::fmt::Debug;
+use std::fs::read_to_string;
 use url::Url;
 
 #[derive(Debug, Deserialize)]
@@ -46,7 +48,13 @@ pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastRe
 }
 
 fn upload_request(server_url: &Url, path: &str, install_id: String) -> Result<RequestBuilder> {
-    let client = Client::new();
+    let client = if let Ok(ca) = env::var("REQUESTS_CA_BUNDLE") {
+        let ca = Certificate::from_pem(read_to_string(ca)?.as_bytes())?;
+        ClientBuilder::new().add_root_certificate(ca).build()?
+    } else {
+        Client::new()
+    };
+
     let mut url = server_url.clone();
     url.set_path("api/asciicasts");
     let form = Form::new().file("asciicast", path)?;
