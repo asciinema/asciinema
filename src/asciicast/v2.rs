@@ -3,6 +3,7 @@ use crate::tty;
 use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use std::fmt;
 use std::io::{self, Write};
 
 #[derive(Deserialize)]
@@ -319,9 +320,9 @@ impl serde::Serialize for RGB8 {
     }
 }
 
-impl ToString for RGB8 {
-    fn to_string(&self) -> String {
-        format!("#{:0>2x}{:0>2x}{:0>2x}", self.0.r, self.0.g, self.0.b)
+impl fmt::Display for RGB8 {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> fmt::Result {
+        write!(f, "#{:0>2x}{:0>2x}{:0>2x}", self.0.r, self.0.g, self.0.b)
     }
 }
 
