@@ -99,10 +99,10 @@ pub struct Record {
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
 
     #[arg(long, hide = true)]
-    cols: Option<u16>,
+    pub cols: Option<u16>,
 
     #[arg(long, hide = true)]
-    rows: Option<u16>,
+    pub rows: Option<u16>,
 }
 
 #[derive(Debug, Args)]

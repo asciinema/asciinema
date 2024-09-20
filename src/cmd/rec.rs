@@ -148,6 +148,8 @@ impl cli::Record {
 
     fn get_tty(&self) -> Result<FixedSizeTty> {
         let (cols, rows) = self.tty_size.unwrap_or((None, None));
+        let cols = cols.or(self.cols);
+        let rows = rows.or(self.rows);
 
         if self.headless {
             Ok(FixedSizeTty::new(tty::NullTty::open()?, cols, rows))
