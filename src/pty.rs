@@ -19,26 +19,26 @@ use std::{env, fs};
 
 type ExtraEnv = HashMap<String, String>;
 
-pub trait Recorder {
-    fn start(&mut self, size: TtySize) -> io::Result<()>;
-    fn output(&mut self, data: &[u8]);
+pub trait Handler {
+    fn start(&mut self, size: TtySize);
+    fn output(&mut self, data: &[u8]) -> bool;
     fn input(&mut self, data: &[u8]) -> bool;
-    fn resize(&mut self, size: TtySize);
+    fn resize(&mut self, size: TtySize) -> bool;
 }
 
-pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
+pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
     command: &[S],
     extra_env: &ExtraEnv,
     tty: &mut T,
-    recorder: &mut R,
+    handler: &mut H,
 ) -> Result<i32> {
     let winsize = tty.get_size();
-    recorder.start(winsize.into())?;
+    handler.start(winsize.into());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
         ForkResult::Parent { child } => {
-            handle_parent(result.master.as_raw_fd(), child, tty, recorder)
+            handle_parent(result.master.as_raw_fd(), child, tty, handler)
         }
 
         ForkResult::Child => {
@@ -48,13 +48,13 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
     }
 }
 
-fn handle_parent<T: Tty + ?Sized, R: Recorder>(
+fn handle_parent<T: Tty + ?Sized, H: Handler>(
     master_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    recorder: &mut R,
+    handler: &mut H,
 ) -> Result<i32> {
-    let wait_result = match copy(master_fd, child, tty, recorder) {
+    let wait_result = match copy(master_fd, child, tty, handler) {
         Ok(Some(status)) => Ok(status),
         Ok(None) => wait::waitpid(child, None),
 
@@ -74,11 +74,11 @@ fn handle_parent<T: Tty + ?Sized, R: Recorder>(
 
 const BUF_SIZE: usize = 128 * 1024;
 
-fn copy<T: Tty + ?Sized, R: Recorder>(
+fn copy<T: Tty + ?Sized, H: Handler>(
     master_raw_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    recorder: &mut R,
+    handler: &mut H,
 ) -> Result<Option<WaitStatus>> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
     let mut buf = [0u8; BUF_SIZE];
@@ -146,8 +146,9 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         if master_read {
             while let Some(n) = read_non_blocking(&mut master, &mut buf)? {
                 if n > 0 {
-                    recorder.output(&buf[0..n]);
-                    output.extend_from_slice(&buf[0..n]);
+                    if handler.output(&buf[0..n]) {
+                        output.extend_from_slice(&buf[0..n]);
+                    }
                 } else if output.is_empty() {
                     return Ok(None);
                 } else {
@@ -204,7 +205,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         if tty_read {
             while let Some(n) = read_non_blocking(tty, &mut buf)? {
                 if n > 0 {
-                    if recorder.input(&buf[0..n]) {
+                    if handler.input(&buf[0..n]) {
                         input.extend_from_slice(&buf[0..n]);
                     }
                 } else {
@@ -216,8 +217,10 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
         if sigwinch_read {
             sigwinch_fd.flush();
             let winsize = tty.get_size();
-            set_pty_size(master_raw_fd, &winsize);
-            recorder.resize(winsize.into());
+
+            if handler.resize(winsize.into()) {
+                set_pty_size(master_raw_fd, &winsize);
+            }
         }
 
         let mut kill_the_child = false;
@@ -366,34 +369,37 @@ impl Drop for SignalFd {
 
 #[cfg(test)]
 mod tests {
-    use super::Recorder;
+    use super::Handler;
     use crate::pty::ExtraEnv;
     use crate::tty::{FixedSizeTty, NullTty, TtySize};
 
     #[derive(Default)]
-    struct TestRecorder {
+    struct TestHandler {
         tty_size: Option<TtySize>,
         output: Vec<Vec<u8>>,
     }
 
-    impl Recorder for TestRecorder {
-        fn start(&mut self, tty_size: TtySize) -> std::io::Result<()> {
+    impl Handler for TestHandler {
+        fn start(&mut self, tty_size: TtySize) {
             self.tty_size = Some(tty_size);
-            Ok(())
         }
 
-        fn output(&mut self, data: &[u8]) {
+        fn output(&mut self, data: &[u8]) -> bool {
             self.output.push(data.into());
+
+            true
         }
 
         fn input(&mut self, _data: &[u8]) -> bool {
             true
         }
 
-        fn resize(&mut self, _size: TtySize) {}
+        fn resize(&mut self, _size: TtySize) -> bool {
+            true
+        }
     }
 
-    impl TestRecorder {
+    impl TestHandler {
         fn output(&self) -> Vec<String> {
             self.output
                 .iter()
@@ -404,7 +410,7 @@ mod tests {
 
     #[test]
     fn exec_basic() {
-        let mut recorder = TestRecorder::default();
+        let mut handler = TestHandler::default();
 
         let code = r#"
 import sys;
@@ -419,47 +425,47 @@ sys.stdout.write('bar');
             &["python3", "-c", code],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            &mut recorder,
+            &mut handler,
         )
         .unwrap();
 
-        assert_eq!(recorder.output(), vec!["foo", "bar"]);
-        assert_eq!(recorder.tty_size, Some(TtySize(80, 24)));
+        assert_eq!(handler.output(), vec!["foo", "bar"]);
+        assert_eq!(handler.tty_size, Some(TtySize(80, 24)));
     }
 
     #[test]
     fn exec_no_output() {
-        let mut recorder = TestRecorder::default();
+        let mut handler = TestHandler::default();
 
         super::exec(
             &["true"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            &mut recorder,
+            &mut handler,
         )
         .unwrap();
 
-        assert!(recorder.output().is_empty());
+        assert!(handler.output().is_empty());
     }
 
     #[test]
     fn exec_quick() {
-        let mut recorder = TestRecorder::default();
+        let mut handler = TestHandler::default();
 
         super::exec(
             &["printf", "hello world\n"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            &mut recorder,
+            &mut handler,
         )
         .unwrap();
 
-        assert!(!recorder.output().is_empty());
+        assert!(!handler.output().is_empty());
     }
 
     #[test]
     fn exec_extra_env() {
-        let mut recorder = TestRecorder::default();
+        let mut handler = TestHandler::default();
 
         let mut env = ExtraEnv::new();
         env.insert("ASCIINEMA_TEST_FOO".to_owned(), "bar".to_owned());
@@ -468,25 +474,25 @@ sys.stdout.write('bar');
             &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
             &env,
             &mut NullTty::open().unwrap(),
-            &mut recorder,
+            &mut handler,
         )
         .unwrap();
 
-        assert_eq!(recorder.output(), vec!["bar"]);
+        assert_eq!(handler.output(), vec!["bar"]);
     }
 
     #[test]
     fn exec_winsize_override() {
-        let mut recorder = TestRecorder::default();
+        let mut handler = TestHandler::default();
 
         super::exec(
             &["true"],
             &ExtraEnv::new(),
             &mut FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50)),
-            &mut recorder,
+            &mut handler,
         )
         .unwrap();
 
-        assert_eq!(recorder.tty_size, Some(TtySize(100, 50)));
+        assert_eq!(handler.tty_size, Some(TtySize(100, 50)));
     }
 }

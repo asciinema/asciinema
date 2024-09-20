@@ -7,7 +7,6 @@ use crate::notifier::Notifier;
 use crate::pty;
 use crate::tty;
 use crate::util;
-use std::io;
 use std::net;
 use std::thread;
 use std::time::Duration;
@@ -85,8 +84,8 @@ impl Streamer {
     }
 }
 
-impl pty::Recorder for Streamer {
-    fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
+impl pty::Handler for Streamer {
+    fn start(&mut self, tty_size: tty::TtySize) {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
         let shutdown_token = tokio_util::sync::CancellationToken::new();
@@ -139,17 +138,15 @@ impl pty::Recorder for Streamer {
         }));
 
         self.start_time = Instant::now();
-
-        Ok(())
     }
 
-    fn output(&mut self, raw: &[u8]) {
-        if self.paused {
-            return;
+    fn output(&mut self, raw: &[u8]) -> bool {
+        if !self.paused {
+            let event = Event::Output(self.elapsed_time(), raw.into());
+            let _ = self.pty_tx.send(event);
         }
 
-        let event = Event::Output(self.elapsed_time(), raw.into());
-        let _ = self.pty_tx.send(event);
+        true
     }
 
     fn input(&mut self, raw: &[u8]) -> bool {
@@ -185,9 +182,11 @@ impl pty::Recorder for Streamer {
         true
     }
 
-    fn resize(&mut self, size: crate::tty::TtySize) {
+    fn resize(&mut self, size: crate::tty::TtySize) -> bool {
         let event = Event::Resize(self.elapsed_time(), size);
         let _ = self.pty_tx.send(event);
+
+        true
     }
 }
 

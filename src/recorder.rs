@@ -81,10 +81,10 @@ impl Recorder {
     }
 }
 
-impl pty::Recorder for Recorder {
-    fn start(&mut self, tty_size: tty::TtySize) -> io::Result<()> {
+impl pty::Handler for Recorder {
+    fn start(&mut self, tty_size: tty::TtySize) {
         let mut output = self.output.take().unwrap();
-        output.start(&tty_size)?;
+        let _ = output.start(&tty_size);
         let receiver = self.receiver.take().unwrap();
         let mut notifier = self.notifier.take().unwrap();
 
@@ -134,17 +134,15 @@ impl pty::Recorder for Recorder {
 
         self.handle = Some(util::JoinHandle::new(handle));
         self.start_time = Instant::now();
-
-        Ok(())
     }
 
-    fn output(&mut self, data: &[u8]) {
-        if self.pause_time.is_some() {
-            return;
+    fn output(&mut self, data: &[u8]) -> bool {
+        if self.pause_time.is_none() {
+            let msg = Message::Output(self.elapsed_time(), data.into());
+            self.sender.send(msg).expect("output send should succeed");
         }
 
-        let msg = Message::Output(self.elapsed_time(), data.into());
-        self.sender.send(msg).expect("output send should succeed");
+        true
     }
 
     fn input(&mut self, data: &[u8]) -> bool {
@@ -187,9 +185,11 @@ impl pty::Recorder for Recorder {
         true
     }
 
-    fn resize(&mut self, size: tty::TtySize) {
+    fn resize(&mut self, size: tty::TtySize) -> bool {
         let msg = Message::Resize(self.elapsed_time(), size);
         self.sender.send(msg).expect("resize send should succeed");
+
+        true
     }
 }
 
