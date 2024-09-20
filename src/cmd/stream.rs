@@ -6,7 +6,7 @@ use crate::locale;
 use crate::logger;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
-use crate::tty;
+use crate::tty::{self, FixedSizeTty, Tty};
 use crate::util;
 use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
@@ -84,14 +84,7 @@ impl Command for cli::Stream {
             );
 
             self.init_logging()?;
-
-            pty::exec(
-                &exec_command,
-                &exec_extra_env,
-                &mut *tty,
-                self.tty_size,
-                &mut streamer,
-            )?;
+            pty::exec(&exec_command, &exec_extra_env, &mut tty, &mut streamer)?;
         }
 
         logger::info!("Streaming session ended");
@@ -138,14 +131,16 @@ impl cli::Stream {
         Ok(None)
     }
 
-    fn get_tty(&self) -> Result<Box<dyn tty::Tty>> {
+    fn get_tty(&self) -> Result<FixedSizeTty> {
+        let (cols, rows) = self.tty_size.unwrap_or((None, None));
+
         if self.headless {
-            Ok(Box::new(tty::NullTty::open()?))
+            Ok(FixedSizeTty::new(tty::NullTty::open()?, cols, rows))
         } else if let Ok(dev_tty) = tty::DevTty::open() {
-            Ok(Box::new(dev_tty))
+            Ok(FixedSizeTty::new(dev_tty, cols, rows))
         } else {
             logger::info!("TTY not available, streaming in headless mode");
-            Ok(Box::new(tty::NullTty::open()?))
+            Ok(FixedSizeTty::new(tty::NullTty::open()?, cols, rows))
         }
     }
 

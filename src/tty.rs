@@ -241,8 +241,68 @@ impl AsFd for NullTty {
     }
 }
 
+pub struct FixedSizeTty {
+    inner: Box<dyn Tty>,
+    cols: Option<u16>,
+    rows: Option<u16>,
+}
+
+impl FixedSizeTty {
+    pub fn new<T: Tty + 'static>(inner: T, cols: Option<u16>, rows: Option<u16>) -> Self {
+        Self {
+            inner: Box::new(inner),
+            cols,
+            rows,
+        }
+    }
+}
+
+impl Tty for FixedSizeTty {
+    fn get_size(&self) -> pty::Winsize {
+        let mut winsize = self.inner.get_size();
+
+        if let Some(cols) = self.cols {
+            winsize.ws_col = cols;
+        }
+
+        if let Some(rows) = self.rows {
+            winsize.ws_row = rows;
+        }
+
+        winsize
+    }
+
+    fn get_theme(&self) -> Option<Theme> {
+        self.inner.get_theme()
+    }
+}
+
+impl AsFd for FixedSizeTty {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        return self.inner.as_fd();
+    }
+}
+
+impl io::Read for FixedSizeTty {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf)
+    }
+}
+
+impl io::Write for FixedSizeTty {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.inner.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::{FixedSizeTty, Tty};
+    use crate::tty::NullTty;
     use rgb::RGB8;
 
     #[test]
@@ -268,5 +328,15 @@ mod tests {
         assert_eq!(parse("xx/yy/zz"), None);
         assert_eq!(parse("foo"), None);
         assert_eq!(parse(""), None);
+    }
+
+    #[test]
+    fn fixed_size_tty() {
+        let tty = FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50));
+
+        let winsize = tty.get_size();
+
+        assert!(winsize.ws_col == 100);
+        assert!(winsize.ws_row == 50);
     }
 }

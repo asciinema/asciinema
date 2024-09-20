@@ -7,7 +7,7 @@ use crate::locale;
 use crate::logger;
 use crate::pty;
 use crate::recorder::{self, KeyBindings};
-use crate::tty;
+use crate::tty::{self, FixedSizeTty, Tty};
 use anyhow::{bail, Result};
 use cli::Format;
 use std::collections::{HashMap, HashSet};
@@ -43,14 +43,7 @@ impl Command for cli::Record {
             let theme = tty.get_theme();
             let output = self.get_output(file, format, append, time_offset, theme, config);
             let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
-
-            pty::exec(
-                &exec_command,
-                &exec_extra_env,
-                &mut *tty,
-                self.tty_size,
-                &mut recorder,
-            )?;
+            pty::exec(&exec_command, &exec_extra_env, &mut tty, &mut recorder)?;
         }
 
         logger::info!("Recording session ended");
@@ -153,14 +146,16 @@ impl cli::Record {
         }
     }
 
-    fn get_tty(&self) -> Result<Box<dyn tty::Tty>> {
+    fn get_tty(&self) -> Result<FixedSizeTty> {
+        let (cols, rows) = self.tty_size.unwrap_or((None, None));
+
         if self.headless {
-            Ok(Box::new(tty::NullTty::open()?))
+            Ok(FixedSizeTty::new(tty::NullTty::open()?, cols, rows))
         } else if let Ok(dev_tty) = tty::DevTty::open() {
-            Ok(Box::new(dev_tty))
+            Ok(FixedSizeTty::new(dev_tty, cols, rows))
         } else {
             logger::info!("TTY not available, recording in headless mode");
-            Ok(Box::new(tty::NullTty::open()?))
+            Ok(FixedSizeTty::new(tty::NullTty::open()?, cols, rows))
         }
     }
 

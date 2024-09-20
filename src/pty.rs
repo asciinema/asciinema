@@ -17,7 +17,6 @@ use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::{env, fs};
 
-type TtySizeOverride = (Option<u16>, Option<u16>);
 type ExtraEnv = HashMap<String, String>;
 
 pub trait Recorder {
@@ -31,21 +30,16 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, R: Recorder>(
     command: &[S],
     extra_env: &ExtraEnv,
     tty: &mut T,
-    tty_size_override: Option<TtySizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
-    let winsize = get_winsize(&*tty, &tty_size_override);
+    let winsize = tty.get_size();
     recorder.start(winsize.into())?;
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
-        ForkResult::Parent { child } => handle_parent(
-            result.master.as_raw_fd(),
-            child,
-            tty,
-            tty_size_override,
-            recorder,
-        ),
+        ForkResult::Parent { child } => {
+            handle_parent(result.master.as_raw_fd(), child, tty, recorder)
+        }
 
         ForkResult::Child => {
             handle_child(command, extra_env)?;
@@ -58,10 +52,9 @@ fn handle_parent<T: Tty + ?Sized, R: Recorder>(
     master_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    tty_size_override: Option<TtySizeOverride>,
     recorder: &mut R,
 ) -> Result<i32> {
-    let wait_result = match copy(master_fd, child, tty, tty_size_override, recorder) {
+    let wait_result = match copy(master_fd, child, tty, recorder) {
         Ok(Some(status)) => Ok(status),
         Ok(None) => wait::waitpid(child, None),
 
@@ -85,7 +78,6 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
     master_raw_fd: RawFd,
     child: unistd::Pid,
     tty: &mut T,
-    tty_size_override: Option<TtySizeOverride>,
     recorder: &mut R,
 ) -> Result<Option<WaitStatus>> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
@@ -223,7 +215,7 @@ fn copy<T: Tty + ?Sized, R: Recorder>(
 
         if sigwinch_read {
             sigwinch_fd.flush();
-            let winsize = get_winsize(&*tty, &tty_size_override);
+            let winsize = tty.get_size();
             set_pty_size(master_raw_fd, &winsize);
             recorder.resize(winsize.into());
         }
@@ -286,34 +278,6 @@ fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> Result<()
     unsafe { signal::signal(Signal::SIGPIPE, SigHandler::SigDfl) }?;
     unistd::execvp(&command[0], &command)?;
     unsafe { libc::_exit(1) }
-}
-
-fn get_winsize<T: Tty + ?Sized>(
-    tty: &T,
-    tty_size_override: &Option<TtySizeOverride>,
-) -> pty::Winsize {
-    let mut winsize = tty.get_size();
-
-    match tty_size_override {
-        Some((None, None)) => (),
-
-        Some((Some(cols), None)) => {
-            winsize.ws_col = *cols;
-        }
-
-        Some((None, Some(rows))) => {
-            winsize.ws_row = *rows;
-        }
-
-        Some((Some(cols), Some(rows))) => {
-            winsize.ws_col = *cols;
-            winsize.ws_row = *rows;
-        }
-
-        None => (),
-    }
-
-    winsize
 }
 
 fn set_pty_size(pty_fd: i32, winsize: &pty::Winsize) {
@@ -404,7 +368,7 @@ impl Drop for SignalFd {
 mod tests {
     use super::Recorder;
     use crate::pty::ExtraEnv;
-    use crate::tty::{NullTty, TtySize};
+    use crate::tty::{FixedSizeTty, NullTty, TtySize};
 
     #[derive(Default)]
     struct TestRecorder {
@@ -455,7 +419,6 @@ sys.stdout.write('bar');
             &["python3", "-c", code],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            None,
             &mut recorder,
         )
         .unwrap();
@@ -472,7 +435,6 @@ sys.stdout.write('bar');
             &["true"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            None,
             &mut recorder,
         )
         .unwrap();
@@ -488,7 +450,6 @@ sys.stdout.write('bar');
             &["printf", "hello world\n"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            None,
             &mut recorder,
         )
         .unwrap();
@@ -507,7 +468,6 @@ sys.stdout.write('bar');
             &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
             &env,
             &mut NullTty::open().unwrap(),
-            None,
             &mut recorder,
         )
         .unwrap();
@@ -522,8 +482,7 @@ sys.stdout.write('bar');
         super::exec(
             &["true"],
             &ExtraEnv::new(),
-            &mut NullTty::open().unwrap(),
-            Some((Some(100), Some(50))),
+            &mut FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50)),
             &mut recorder,
         )
         .unwrap();
