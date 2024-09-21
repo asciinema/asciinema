@@ -1,4 +1,5 @@
 use crate::tty;
+use crate::util;
 use anyhow::Result;
 use futures_util::{stream, Stream, StreamExt};
 use std::{
@@ -14,6 +15,7 @@ pub struct Session {
     stream_time: u64,
     last_event_time: Instant,
     theme: Option<tty::Theme>,
+    output_decoder: util::Utf8Decoder,
 }
 
 #[derive(Clone)]
@@ -40,17 +42,23 @@ impl Session {
             stream_time: 0,
             last_event_time: Instant::now(),
             theme,
+            output_decoder: util::Utf8Decoder::new(),
         }
     }
 
-    pub fn output(&mut self, time: u64, data: String) {
-        self.vt.feed_str(&data);
-        let _ = self.broadcast_tx.send(Event::Stdout(time, data));
+    pub fn output(&mut self, time: u64, data: &[u8]) {
+        let text = self.output_decoder.feed(data);
+
+        if !text.is_empty() {
+            self.vt.feed_str(&text);
+            let _ = self.broadcast_tx.send(Event::Stdout(time, text));
+        }
+
         self.stream_time = time;
         self.last_event_time = Instant::now();
     }
 
-    pub fn input(&mut self, time: u64, _data: String) {
+    pub fn input(&mut self, time: u64, _data: &[u8]) {
         self.stream_time = time;
         self.last_event_time = Instant::now();
     }

@@ -193,27 +193,17 @@ async fn event_loop(
     theme: Option<tty::Theme>,
 ) {
     let mut session = session::Session::new(tty_size, theme);
-    let mut input_decoder = util::Utf8Decoder::new();
-    let mut output_decoder = util::Utf8Decoder::new();
 
     loop {
         tokio::select! {
             event = events.recv() => {
                 match event {
                     Some(Event::Output(time, data)) => {
-                        let text = output_decoder.feed(&data);
-
-                        if !text.is_empty() {
-                            session.output(time, text);
-                        }
+                        session.output(time, &data);
                     }
 
                     Some(Event::Input(time, data)) => {
-                        let text = input_decoder.feed(&data);
-
-                        if !text.is_empty() {
-                            session.input(time, text);
-                        }
+                        session.input(time, &data);
                     }
 
                     Some(Event::Resize(time, new_tty_size)) => {
