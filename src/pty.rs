@@ -15,15 +15,16 @@ use std::io::{self, ErrorKind, Read, Write};
 use std::os::fd::{AsFd, RawFd};
 use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::time::{Duration, Instant};
 use std::{env, fs};
 
 type ExtraEnv = HashMap<String, String>;
 
 pub trait Handler {
-    fn start(&mut self, size: TtySize);
-    fn output(&mut self, data: &[u8]) -> bool;
-    fn input(&mut self, data: &[u8]) -> bool;
-    fn resize(&mut self, size: TtySize) -> bool;
+    fn start(&mut self, epoch: Instant, tty_size: TtySize);
+    fn output(&mut self, time: Duration, data: &[u8]) -> bool;
+    fn input(&mut self, time: Duration, data: &[u8]) -> bool;
+    fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool;
 }
 
 pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
@@ -33,12 +34,13 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
     handler: &mut H,
 ) -> Result<i32> {
     let winsize = tty.get_size();
-    handler.start(winsize.into());
+    let epoch = Instant::now();
+    handler.start(epoch, winsize.into());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
         ForkResult::Parent { child } => {
-            handle_parent(result.master.as_raw_fd(), child, tty, handler)
+            handle_parent(result.master.as_raw_fd(), child, tty, handler, epoch)
         }
 
         ForkResult::Child => {
@@ -53,8 +55,9 @@ fn handle_parent<T: Tty + ?Sized, H: Handler>(
     child: unistd::Pid,
     tty: &mut T,
     handler: &mut H,
+    epoch: Instant,
 ) -> Result<i32> {
-    let wait_result = match copy(master_fd, child, tty, handler) {
+    let wait_result = match copy(master_fd, child, tty, handler, epoch) {
         Ok(Some(status)) => Ok(status),
         Ok(None) => wait::waitpid(child, None),
 
@@ -79,6 +82,7 @@ fn copy<T: Tty + ?Sized, H: Handler>(
     child: unistd::Pid,
     tty: &mut T,
     handler: &mut H,
+    epoch: Instant,
 ) -> Result<Option<WaitStatus>> {
     let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
     let mut buf = [0u8; BUF_SIZE];
@@ -146,7 +150,7 @@ fn copy<T: Tty + ?Sized, H: Handler>(
         if master_read {
             while let Some(n) = read_non_blocking(&mut master, &mut buf)? {
                 if n > 0 {
-                    if handler.output(&buf[0..n]) {
+                    if handler.output(epoch.elapsed(), &buf[0..n]) {
                         output.extend_from_slice(&buf[0..n]);
                     }
                 } else if output.is_empty() {
@@ -205,7 +209,7 @@ fn copy<T: Tty + ?Sized, H: Handler>(
         if tty_read {
             while let Some(n) = read_non_blocking(tty, &mut buf)? {
                 if n > 0 {
-                    if handler.input(&buf[0..n]) {
+                    if handler.input(epoch.elapsed(), &buf[0..n]) {
                         input.extend_from_slice(&buf[0..n]);
                     }
                 } else {
@@ -218,7 +222,7 @@ fn copy<T: Tty + ?Sized, H: Handler>(
             sigwinch_fd.flush();
             let winsize = tty.get_size();
 
-            if handler.resize(winsize.into()) {
+            if handler.resize(epoch.elapsed(), winsize.into()) {
                 set_pty_size(master_raw_fd, &winsize);
             }
         }
@@ -372,6 +376,7 @@ mod tests {
     use super::Handler;
     use crate::pty::ExtraEnv;
     use crate::tty::{FixedSizeTty, NullTty, TtySize};
+    use std::time::{Duration, Instant};
 
     #[derive(Default)]
     struct TestHandler {
@@ -380,21 +385,21 @@ mod tests {
     }
 
     impl Handler for TestHandler {
-        fn start(&mut self, tty_size: TtySize) {
+        fn start(&mut self, _epoch: Instant, tty_size: TtySize) {
             self.tty_size = Some(tty_size);
         }
 
-        fn output(&mut self, data: &[u8]) -> bool {
+        fn output(&mut self, _time: Duration, data: &[u8]) -> bool {
             self.output.push(data.into());
 
             true
         }
 
-        fn input(&mut self, _data: &[u8]) -> bool {
+        fn input(&mut self, _time: Duration, _data: &[u8]) -> bool {
             true
         }
 
-        fn resize(&mut self, _size: TtySize) -> bool {
+        fn resize(&mut self, _time: Duration, _size: TtySize) -> bool {
             true
         }
     }

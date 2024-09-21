@@ -16,7 +16,7 @@ pub struct Recorder {
     sender: mpsc::Sender<Message>,
     receiver: Option<mpsc::Receiver<Message>>,
     handle: Option<util::JoinHandle>,
-    start_time: Instant,
+    time_offset: u64,
     pause_time: Option<u64>,
     prefix_mode: bool,
 }
@@ -58,17 +58,17 @@ impl Recorder {
             sender,
             receiver: Some(receiver),
             handle: None,
-            start_time: Instant::now(),
+            time_offset: 0,
             pause_time: None,
             prefix_mode: false,
         }
     }
 
-    fn elapsed_time(&self) -> u64 {
+    fn elapsed_time(&self, time: Duration) -> u64 {
         if let Some(pause_time) = self.pause_time {
             pause_time
         } else {
-            self.start_time.elapsed().as_micros() as u64
+            time.as_micros() as u64 - self.time_offset
         }
     }
 
@@ -82,7 +82,7 @@ impl Recorder {
 }
 
 impl pty::Handler for Recorder {
-    fn start(&mut self, tty_size: tty::TtySize) {
+    fn start(&mut self, _epoch: Instant, tty_size: tty::TtySize) {
         let mut output = self.output.take().unwrap();
         let _ = output.start(&tty_size);
         let receiver = self.receiver.take().unwrap();
@@ -133,19 +133,18 @@ impl pty::Handler for Recorder {
         });
 
         self.handle = Some(util::JoinHandle::new(handle));
-        self.start_time = Instant::now();
     }
 
-    fn output(&mut self, data: &[u8]) -> bool {
+    fn output(&mut self, time: Duration, data: &[u8]) -> bool {
         if self.pause_time.is_none() {
-            let msg = Message::Output(self.elapsed_time(), data.into());
+            let msg = Message::Output(self.elapsed_time(time), data.into());
             self.sender.send(msg).expect("output send should succeed");
         }
 
         true
     }
 
-    fn input(&mut self, data: &[u8]) -> bool {
+    fn input(&mut self, time: Duration, data: &[u8]) -> bool {
         let prefix_key = self.keys.prefix.as_ref();
         let pause_key = self.keys.pause.as_ref();
         let add_marker_key = self.keys.add_marker.as_ref();
@@ -160,17 +159,17 @@ impl pty::Handler for Recorder {
 
             if pause_key.is_some_and(|key| data == key) {
                 if let Some(pt) = self.pause_time {
-                    self.start_time = Instant::now() - Duration::from_micros(pt);
                     self.pause_time = None;
+                    self.time_offset += self.elapsed_time(time) - pt;
                     self.notify("Resumed recording");
                 } else {
-                    self.pause_time = Some(self.elapsed_time());
+                    self.pause_time = Some(self.elapsed_time(time));
                     self.notify("Paused recording");
                 }
 
                 return false;
             } else if add_marker_key.is_some_and(|key| data == key) {
-                let msg = Message::Marker(self.elapsed_time());
+                let msg = Message::Marker(self.elapsed_time(time));
                 self.sender.send(msg).expect("marker send should succeed");
                 self.notify("Marker added");
                 return false;
@@ -178,15 +177,15 @@ impl pty::Handler for Recorder {
         }
 
         if self.record_input && self.pause_time.is_none() {
-            let msg = Message::Input(self.elapsed_time(), data.into());
+            let msg = Message::Input(self.elapsed_time(time), data.into());
             self.sender.send(msg).expect("input send should succeed");
         }
 
         true
     }
 
-    fn resize(&mut self, size: tty::TtySize) -> bool {
-        let msg = Message::Resize(self.elapsed_time(), size);
+    fn resize(&mut self, time: Duration, tty_size: tty::TtySize) -> bool {
+        let msg = Message::Resize(self.elapsed_time(time), tty_size);
         self.sender.send(msg).expect("resize send should succeed");
 
         true

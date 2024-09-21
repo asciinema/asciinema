@@ -20,7 +20,6 @@ pub struct Streamer {
     notifier: Option<Box<dyn Notifier>>,
     notifier_rx: Option<std::sync::mpsc::Receiver<String>>,
     pty_rx: Option<mpsc::UnboundedReceiver<Event>>,
-    start_time: Instant,
     paused: bool,
     prefix_mode: bool,
     listener: Option<net::TcpListener>,
@@ -61,7 +60,6 @@ impl Streamer {
             pty_tx,
             pty_rx: Some(pty_rx),
             event_loop_handle: None,
-            start_time: Instant::now(),
             paused: false,
             prefix_mode: false,
             listener,
@@ -70,8 +68,8 @@ impl Streamer {
         }
     }
 
-    fn elapsed_time(&self) -> u64 {
-        self.start_time.elapsed().as_micros() as u64
+    fn elapsed_time(&self, time: Duration) -> u64 {
+        time.as_micros() as u64
     }
 
     fn notify<S: ToString>(&self, message: S) {
@@ -85,7 +83,7 @@ impl Streamer {
 }
 
 impl pty::Handler for Streamer {
-    fn start(&mut self, tty_size: tty::TtySize) {
+    fn start(&mut self, _epoch: Instant, tty_size: tty::TtySize) {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
         let shutdown_token = tokio_util::sync::CancellationToken::new();
@@ -136,20 +134,18 @@ impl pty::Handler for Streamer {
                 let _ = notifier.notify(message);
             }
         }));
-
-        self.start_time = Instant::now();
     }
 
-    fn output(&mut self, raw: &[u8]) -> bool {
+    fn output(&mut self, time: Duration, raw: &[u8]) -> bool {
         if !self.paused {
-            let event = Event::Output(self.elapsed_time(), raw.into());
+            let event = Event::Output(self.elapsed_time(time), raw.into());
             let _ = self.pty_tx.send(event);
         }
 
         true
     }
 
-    fn input(&mut self, raw: &[u8]) -> bool {
+    fn input(&mut self, time: Duration, raw: &[u8]) -> bool {
         let prefix_key = self.keys.prefix.as_ref();
         let pause_key = self.keys.pause.as_ref();
 
@@ -175,15 +171,15 @@ impl pty::Handler for Streamer {
         }
 
         if self.record_input && !self.paused {
-            let event = Event::Input(self.elapsed_time(), raw.into());
+            let event = Event::Input(self.elapsed_time(time), raw.into());
             let _ = self.pty_tx.send(event);
         }
 
         true
     }
 
-    fn resize(&mut self, size: crate::tty::TtySize) -> bool {
-        let event = Event::Resize(self.elapsed_time(), size);
+    fn resize(&mut self, time: Duration, tty_size: tty::TtySize) -> bool {
+        let event = Event::Resize(self.elapsed_time(time), tty_size);
         let _ = self.pty_tx.send(event);
 
         true
