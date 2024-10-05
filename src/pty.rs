@@ -10,12 +10,13 @@ use nix::{libc, pty};
 use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
 use std::collections::HashMap;
+use std::env;
 use std::ffi::{CString, NulError};
+use std::fs::File;
 use std::io::{self, ErrorKind, Read, Write};
-use std::os::fd::{AsFd, RawFd};
+use std::os::fd::AsFd;
 use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
-use std::{env, fs};
 
 type ExtraEnv = HashMap<String, String>;
 
@@ -37,9 +38,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
-        ForkResult::Parent { child } => {
-            handle_parent(result.master.as_raw_fd(), child, tty, handler)
-        }
+        ForkResult::Parent { child } => handle_parent(result.master, child, tty, handler),
 
         ForkResult::Child => {
             handle_child(command, extra_env)?;
@@ -49,7 +48,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
 }
 
 fn handle_parent<T: Tty + ?Sized, H: Handler>(
-    master_fd: RawFd,
+    master_fd: OwnedFd,
     child: unistd::Pid,
     tty: &mut T,
     handler: &mut H,
@@ -75,12 +74,13 @@ fn handle_parent<T: Tty + ?Sized, H: Handler>(
 const BUF_SIZE: usize = 128 * 1024;
 
 fn copy<T: Tty + ?Sized, H: Handler>(
-    master_raw_fd: RawFd,
+    master_fd: OwnedFd,
     child: unistd::Pid,
     tty: &mut T,
     handler: &mut H,
 ) -> Result<Option<WaitStatus>> {
-    let mut master = unsafe { fs::File::from_raw_fd(master_raw_fd) };
+    let mut master = File::from(master_fd);
+    let master_raw_fd = master.as_raw_fd();
     let mut buf = [0u8; BUF_SIZE];
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
