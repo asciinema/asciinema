@@ -3,7 +3,7 @@ use crate::tty::{Tty, TtySize};
 use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::sys::select::{select, FdSet};
-use nix::sys::signal;
+use nix::sys::signal::{self, kill, Signal};
 use nix::sys::wait::{self, WaitPidFlag, WaitStatus};
 use nix::unistd::{self, ForkResult};
 use nix::{libc, pty};
@@ -264,7 +264,8 @@ fn copy<T: Tty + ?Sized, H: Handler>(
         }
 
         if kill_the_child {
-            unsafe { libc::kill(child.as_raw(), SIGTERM) };
+            // Any errors occurred when killing the child are ignored.
+            let _ = kill(child, Signal::SIGTERM);
             return Ok(None);
         }
     }
