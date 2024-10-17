@@ -1,3 +1,4 @@
+use crate::asciicast::Event;
 use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
@@ -6,7 +7,7 @@ use crate::util;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 
 pub struct Recorder {
     output: Option<Box<dyn Output + Send>>,
@@ -22,15 +23,9 @@ pub struct Recorder {
 }
 
 pub trait Output {
-    fn start(&mut self, tty_size: &tty::TtySize) -> io::Result<()>;
-    fn output(&mut self, time: u64, text: String) -> io::Result<()>;
-    fn input(&mut self, time: u64, text: String) -> io::Result<()>;
-    fn resize(&mut self, time: u64, size: (u16, u16)) -> io::Result<()>;
-    fn marker(&mut self, time: u64) -> io::Result<()>;
-
-    fn finish(&mut self) -> io::Result<()> {
-        Ok(())
-    }
+    fn header(&mut self, time: SystemTime, tty_size: tty::TtySize) -> io::Result<()>;
+    fn event(&mut self, event: Event) -> io::Result<()>;
+    fn flush(&mut self) -> io::Result<()>;
 }
 
 enum Message {
@@ -82,9 +77,9 @@ impl Recorder {
 }
 
 impl pty::Handler for Recorder {
-    fn start(&mut self, _epoch: Instant, tty_size: tty::TtySize) {
+    fn start(&mut self, tty_size: tty::TtySize) {
         let mut output = self.output.take().unwrap();
-        let _ = output.start(&tty_size);
+        let _ = output.header(SystemTime::now(), tty_size);
         let receiver = self.receiver.take().unwrap();
         let mut notifier = self.notifier.take().unwrap();
 
@@ -100,7 +95,7 @@ impl pty::Handler for Recorder {
                         let text = output_decoder.feed(&data);
 
                         if !text.is_empty() {
-                            let _ = output.output(time, text);
+                            let _ = output.event(Event::output(time, text));
                         }
                     }
 
@@ -108,19 +103,19 @@ impl pty::Handler for Recorder {
                         let text = input_decoder.feed(&data);
 
                         if !text.is_empty() {
-                            let _ = output.input(time, text);
+                            let _ = output.event(Event::input(time, text));
                         }
                     }
 
                     Resize(time, new_tty_size) => {
                         if new_tty_size != last_tty_size {
-                            let _ = output.resize(time, new_tty_size.into());
+                            let _ = output.event(Event::resize(time, new_tty_size.into()));
                             last_tty_size = new_tty_size;
                         }
                     }
 
                     Marker(time) => {
-                        let _ = output.marker(time);
+                        let _ = output.event(Event::marker(time, String::new()));
                     }
 
                     Notification(text) => {
@@ -129,7 +124,7 @@ impl pty::Handler for Recorder {
                 }
             }
 
-            let _ = output.finish();
+            let _ = output.flush();
         });
 
         self.handle = Some(util::JoinHandle::new(handle));

@@ -10,7 +10,6 @@ use crate::util;
 use std::net;
 use std::thread;
 use std::time::Duration;
-use std::time::Instant;
 use tokio::sync::mpsc;
 use tracing::info;
 
@@ -83,7 +82,7 @@ impl Streamer {
 }
 
 impl pty::Handler for Streamer {
-    fn start(&mut self, _epoch: Instant, tty_size: tty::TtySize) {
+    fn start(&mut self, tty_size: tty::TtySize) {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
         let shutdown_token = tokio_util::sync::CancellationToken::new();

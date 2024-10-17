@@ -4,7 +4,7 @@ use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use std::io::{self, Write};
+use std::io;
 
 #[derive(Deserialize)]
 struct V2Header {
@@ -156,30 +156,28 @@ where
     }
 }
 
-pub struct Writer<W: Write> {
-    writer: io::LineWriter<W>,
+pub struct Encoder {
     time_offset: u64,
 }
 
-impl<W> Writer<W>
-where
-    W: Write,
-{
-    pub fn new(writer: W, time_offset: u64) -> Self {
-        Self {
-            writer: io::LineWriter::new(writer),
-            time_offset,
-        }
+impl Encoder {
+    pub fn new(time_offset: u64) -> Self {
+        Self { time_offset }
     }
 
-    pub fn write_header(&mut self, header: &Header) -> io::Result<()> {
+    pub fn header(&mut self, header: &Header) -> Vec<u8> {
         let header: V2Header = header.into();
+        let mut data = serde_json::to_string(&header).unwrap().into_bytes();
+        data.push(b'\n');
 
-        writeln!(self.writer, "{}", serde_json::to_string(&header)?)
+        data
     }
 
-    pub fn write_event(&mut self, event: &Event) -> io::Result<()> {
-        writeln!(self.writer, "{}", self.serialize_event(event)?)
+    pub fn event(&mut self, event: &Event) -> Vec<u8> {
+        let mut data = self.serialize_event(event).unwrap().into_bytes();
+        data.push(b'\n');
+
+        data
     }
 
     fn serialize_event(&self, event: &Event) -> Result<String, serde_json::Error> {

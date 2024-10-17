@@ -2,10 +2,11 @@ use super::Command;
 use crate::asciicast;
 use crate::cli;
 use crate::config::Config;
-use crate::encoder;
+use crate::encoder::{AsciicastEncoder, Encoder, Metadata, RawEncoder, TextEncoder};
 use crate::locale;
 use crate::logger;
 use crate::pty;
+use crate::recorder::Output;
 use crate::recorder::{self, KeyBindings};
 use crate::tty::{self, FixedSizeTty, Tty};
 use anyhow::{bail, Result};
@@ -13,8 +14,10 @@ use cli::Format;
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 impl Command for cli::Record {
     fn run(mut self, config: &Config) -> Result<()> {
@@ -173,17 +176,14 @@ impl cli::Record {
         match format {
             Format::Asciicast => {
                 let metadata = self.build_asciicast_metadata(theme, config);
+                let file = io::LineWriter::new(file);
+                let encoder = AsciicastEncoder::new(append, time_offset, metadata);
 
-                Box::new(encoder::AsciicastEncoder::new(
-                    file,
-                    append,
-                    time_offset,
-                    metadata,
-                ))
+                Box::new(FileOutput(file, encoder))
             }
 
-            Format::Raw => Box::new(encoder::RawEncoder::new(file, append)),
-            Format::Txt => Box::new(encoder::TextEncoder::new(file)),
+            Format::Raw => Box::new(FileOutput(file, RawEncoder::new(append))),
+            Format::Txt => Box::new(FileOutput(file, TextEncoder::new())),
         }
     }
 
@@ -191,11 +191,7 @@ impl cli::Record {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
-    fn build_asciicast_metadata(
-        &self,
-        theme: Option<tty::Theme>,
-        config: &Config,
-    ) -> encoder::Metadata {
+    fn build_asciicast_metadata(&self, theme: Option<tty::Theme>, config: &Config) -> Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.cmd_rec_idle_time_limit());
         let command = self.get_command(config);
 
@@ -206,13 +202,30 @@ impl cli::Record {
             .or(config.cmd_rec_env())
             .unwrap_or(String::from("TERM,SHELL"));
 
-        encoder::Metadata {
+        Metadata {
             idle_time_limit,
             command,
             title: self.title.clone(),
             env: Some(capture_env(&env)),
             theme,
         }
+    }
+}
+
+struct FileOutput<W: Write, E: Encoder>(W, E);
+
+impl<W: Write, E: Encoder> Output for FileOutput<W, E> {
+    fn header(&mut self, time: SystemTime, tty_size: tty::TtySize) -> io::Result<()> {
+        let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
+        self.0.write_all(&self.1.start(Some(timestamp), tty_size))
+    }
+
+    fn event(&mut self, event: asciicast::Event) -> io::Result<()> {
+        self.0.write_all(&self.1.event(event))
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.0.write_all(&self.1.finish())
     }
 }
 

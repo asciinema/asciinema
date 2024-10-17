@@ -1,10 +1,9 @@
-use crate::asciicast::{Event, Header, Writer};
+use crate::asciicast::{Encoder, Event, Header};
 use crate::tty;
 use std::collections::HashMap;
-use std::io::{self, Write};
 
-pub struct AsciicastEncoder<W: Write> {
-    writer: Writer<W>,
+pub struct AsciicastEncoder {
+    inner: Encoder,
     append: bool,
     metadata: Metadata,
 }
@@ -17,13 +16,12 @@ pub struct Metadata {
     pub theme: Option<tty::Theme>,
 }
 
-impl<W> AsciicastEncoder<W>
-where
-    W: Write,
-{
-    pub fn new(writer: W, append: bool, time_offset: u64, metadata: Metadata) -> Self {
+impl AsciicastEncoder {
+    pub fn new(append: bool, time_offset: u64, metadata: Metadata) -> Self {
+        let inner = Encoder::new(time_offset);
+
         Self {
-            writer: Writer::new(writer, time_offset),
+            inner,
             append,
             metadata,
         }
@@ -44,22 +42,21 @@ where
     }
 }
 
-impl<W> super::Encoder for AsciicastEncoder<W>
-where
-    W: Write,
-{
-    fn start(&mut self, timestamp: Option<u64>, tty_size: &tty::TtySize) -> io::Result<()> {
+impl super::Encoder for AsciicastEncoder {
+    fn start(&mut self, timestamp: Option<u64>, tty_size: tty::TtySize) -> Vec<u8> {
         if self.append {
-            Ok(())
+            Vec::new()
         } else {
-            let header = self.build_header(timestamp, tty_size);
-
-            self.writer.write_header(&header)
+            self.inner.header(&self.build_header(timestamp, &tty_size))
         }
     }
 
-    fn event(&mut self, event: &Event) -> io::Result<()> {
-        self.writer.write_event(event)
+    fn event(&mut self, event: Event) -> Vec<u8> {
+        self.inner.event(&event)
+    }
+
+    fn finish(&mut self) -> Vec<u8> {
+        Vec::new()
     }
 }
 

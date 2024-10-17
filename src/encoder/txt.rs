@@ -1,62 +1,56 @@
 use crate::asciicast::{Event, EventData};
 use crate::tty;
-use avt::util::{TextCollector, TextCollectorOutput};
-use std::io::{self, Write};
+use avt::util::TextCollector;
 
-pub struct TextEncoder<W: Write> {
-    writer: Option<W>,
-    collector: Option<TextCollector<TextWriter<W>>>,
+pub struct TextEncoder {
+    collector: Option<TextCollector>,
 }
 
-impl<W: Write> TextEncoder<W> {
-    pub fn new(writer: W) -> Self {
-        TextEncoder {
-            writer: Some(writer),
-            collector: None,
-        }
+impl TextEncoder {
+    pub fn new() -> Self {
+        TextEncoder { collector: None }
     }
 }
 
-impl<W: Write> super::Encoder for TextEncoder<W> {
-    fn start(&mut self, _timestamp: Option<u64>, tty_size: &tty::TtySize) -> io::Result<()> {
+impl super::Encoder for TextEncoder {
+    fn start(&mut self, _timestamp: Option<u64>, tty_size: tty::TtySize) -> Vec<u8> {
         let vt = avt::Vt::builder()
             .size(tty_size.0 as usize, tty_size.1 as usize)
             .resizable(true)
             .scrollback_limit(100)
             .build();
 
-        self.collector = Some(TextCollector::new(
-            vt,
-            TextWriter(self.writer.take().unwrap()),
-        ));
+        self.collector = Some(TextCollector::new(vt));
 
-        Ok(())
+        Vec::new()
     }
 
-    fn event(&mut self, event: &Event) -> io::Result<()> {
+    fn event(&mut self, event: Event) -> Vec<u8> {
         use EventData::*;
 
         match &event.data {
-            Output(data) => self.collector.as_mut().unwrap().feed_str(data),
-            Resize(cols, rows) => self.collector.as_mut().unwrap().resize(*cols, *rows),
-            _ => Ok(()),
+            Output(data) => text_lines_to_bytes(self.collector.as_mut().unwrap().feed_str(data)),
+
+            Resize(cols, rows) => {
+                text_lines_to_bytes(self.collector.as_mut().unwrap().resize(*cols, *rows))
+            }
+
+            _ => Vec::new(),
         }
     }
 
-    fn finish(&mut self) -> io::Result<()> {
-        self.collector.as_mut().unwrap().flush()
+    fn finish(&mut self) -> Vec<u8> {
+        text_lines_to_bytes(self.collector.take().unwrap().flush().iter())
     }
 }
 
-struct TextWriter<W: Write>(W);
+fn text_lines_to_bytes<S: AsRef<str>>(lines: impl Iterator<Item = S>) -> Vec<u8> {
+    lines.fold(Vec::new(), |mut bytes, line| {
+        bytes.extend_from_slice(line.as_ref().as_bytes());
+        bytes.push(b'\n');
 
-impl<W: Write> TextCollectorOutput for TextWriter<W> {
-    type Error = io::Error;
-
-    fn push(&mut self, line: String) -> Result<(), Self::Error> {
-        self.0.write_all(line.as_bytes())?;
-        self.0.write_all(b"\n")
-    }
+        bytes
+    })
 }
 
 #[cfg(test)]
@@ -67,17 +61,19 @@ mod tests {
     use crate::tty::TtySize;
 
     #[test]
-    fn encoder_impl() -> anyhow::Result<()> {
-        let mut out: Vec<u8> = Vec::new();
-        let mut enc = TextEncoder::new(&mut out);
+    fn encoder() {
+        let mut enc = TextEncoder::new();
 
-        enc.start(None, &TtySize(3, 1))?;
-        enc.event(&Event::output(0, "he\x1b[1mllo\r\n".to_owned()))?;
-        enc.event(&Event::output(1, "world\r\n".to_owned()))?;
-        enc.finish()?;
+        assert!(enc.start(None, TtySize(3, 1)).is_empty());
 
-        assert_eq!(out, b"hello\nworld\n");
+        assert!(enc
+            .event(Event::output(0, "he\x1b[1mllo\r\n".to_owned()))
+            .is_empty());
 
-        Ok(())
+        assert!(enc
+            .event(Event::output(1, "world\r\n".to_owned()))
+            .is_empty());
+
+        assert_eq!(enc.finish(), "hello\nworld\n".as_bytes());
     }
 }

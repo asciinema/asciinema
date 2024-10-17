@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 type ExtraEnv = HashMap<String, String>;
 
 pub trait Handler {
-    fn start(&mut self, epoch: Instant, tty_size: TtySize);
+    fn start(&mut self, tty_size: TtySize);
     fn output(&mut self, time: Duration, data: &[u8]) -> bool;
     fn input(&mut self, time: Duration, data: &[u8]) -> bool;
     fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool;
@@ -37,7 +37,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
 ) -> Result<i32> {
     let winsize = tty.get_size();
     let epoch = Instant::now();
-    handler.start(epoch, winsize.into());
+    handler.start(winsize.into());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
@@ -378,7 +378,7 @@ mod tests {
     use super::Handler;
     use crate::pty::ExtraEnv;
     use crate::tty::{FixedSizeTty, NullTty, TtySize};
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     #[derive(Default)]
     struct TestHandler {
@@ -387,7 +387,7 @@ mod tests {
     }
 
     impl Handler for TestHandler {
-        fn start(&mut self, _epoch: Instant, tty_size: TtySize) {
+        fn start(&mut self, tty_size: TtySize) {
             self.tty_size = Some(tty_size);
         }
 

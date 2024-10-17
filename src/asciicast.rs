@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
-pub use v2::Writer;
+pub use v2::Encoder;
 
 pub struct Asciicast<'a> {
     pub header: Header,
@@ -138,12 +138,11 @@ pub fn accelerate(
 
 #[cfg(test)]
 mod tests {
-    use super::{Asciicast, Event, EventData, Header, Writer};
+    use super::{Asciicast, Encoder, Event, EventData, Header};
     use crate::tty;
     use anyhow::Result;
     use rgb::RGB8;
     use std::collections::HashMap;
-    use std::io;
 
     #[test]
     fn open_v1_minimal() {
@@ -221,44 +220,30 @@ mod tests {
     }
 
     #[test]
-    fn writer() {
+    fn encoder() {
         let mut data = Vec::new();
 
-        {
-            let mut fw = Writer::new(&mut data, 0);
+        let header = Header {
+            version: 2,
+            cols: 80,
+            rows: 24,
+            timestamp: None,
+            idle_time_limit: None,
+            command: None,
+            title: None,
+            env: Default::default(),
+            theme: None,
+        };
 
-            let header = Header {
-                version: 2,
-                cols: 80,
-                rows: 24,
-                timestamp: None,
-                idle_time_limit: None,
-                command: None,
-                title: None,
-                env: Default::default(),
-                theme: None,
-            };
+        let mut enc = Encoder::new(0);
+        data.extend(enc.header(&header));
+        data.extend(enc.event(&Event::output(1000001, "hello\r\n".to_owned())));
 
-            fw.write_header(&header).unwrap();
-
-            fw.write_event(&Event::output(1000001, "hello\r\n".to_owned()))
-                .unwrap();
-        }
-
-        {
-            let mut fw = Writer::new(&mut data, 1000001);
-
-            fw.write_event(&Event::output(1000001, "world".to_owned()))
-                .unwrap();
-
-            fw.write_event(&Event::input(2000002, " ".to_owned()))
-                .unwrap();
-
-            fw.write_event(&Event::resize(3000003, (100, 40))).unwrap();
-
-            fw.write_event(&Event::output(4000004, "żółć".to_owned()))
-                .unwrap();
-        }
+        let mut enc = Encoder::new(1000001);
+        data.extend(enc.event(&Event::output(1000001, "world".to_owned())));
+        data.extend(enc.event(&Event::input(2000002, " ".to_owned())));
+        data.extend(enc.event(&Event::resize(3000003, (100, 40))));
+        data.extend(enc.event(&Event::output(4000004, "żółć".to_owned())));
 
         let lines = parse(data);
 
@@ -284,53 +269,48 @@ mod tests {
     }
 
     #[test]
-    fn write_header() {
-        let mut data = Vec::new();
+    fn header_encoding() {
+        let mut enc = Encoder::new(0);
+        let mut env = HashMap::new();
+        env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
+        env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
-        {
-            let mut fw = Writer::new(io::Cursor::new(&mut data), 0);
-            let mut env = HashMap::new();
-            env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
-            env.insert("TERM".to_owned(), "xterm256-color".to_owned());
+        let theme = tty::Theme {
+            fg: RGB8::new(0, 1, 2),
+            bg: RGB8::new(0, 100, 200),
+            palette: vec![
+                RGB8::new(0, 0, 0),
+                RGB8::new(10, 11, 12),
+                RGB8::new(20, 21, 22),
+                RGB8::new(30, 31, 32),
+                RGB8::new(40, 41, 42),
+                RGB8::new(50, 51, 52),
+                RGB8::new(60, 61, 62),
+                RGB8::new(70, 71, 72),
+                RGB8::new(80, 81, 82),
+                RGB8::new(90, 91, 92),
+                RGB8::new(100, 101, 102),
+                RGB8::new(110, 111, 112),
+                RGB8::new(120, 121, 122),
+                RGB8::new(130, 131, 132),
+                RGB8::new(140, 141, 142),
+                RGB8::new(150, 151, 152),
+            ],
+        };
 
-            let theme = tty::Theme {
-                fg: RGB8::new(0, 1, 2),
-                bg: RGB8::new(0, 100, 200),
-                palette: vec![
-                    RGB8::new(0, 0, 0),
-                    RGB8::new(10, 11, 12),
-                    RGB8::new(20, 21, 22),
-                    RGB8::new(30, 31, 32),
-                    RGB8::new(40, 41, 42),
-                    RGB8::new(50, 51, 52),
-                    RGB8::new(60, 61, 62),
-                    RGB8::new(70, 71, 72),
-                    RGB8::new(80, 81, 82),
-                    RGB8::new(90, 91, 92),
-                    RGB8::new(100, 101, 102),
-                    RGB8::new(110, 111, 112),
-                    RGB8::new(120, 121, 122),
-                    RGB8::new(130, 131, 132),
-                    RGB8::new(140, 141, 142),
-                    RGB8::new(150, 151, 152),
-                ],
-            };
+        let header = Header {
+            version: 2,
+            cols: 80,
+            rows: 24,
+            timestamp: Some(1704719152),
+            idle_time_limit: Some(1.5),
+            command: Some("/bin/bash".to_owned()),
+            title: Some("Demo".to_owned()),
+            env: Some(env),
+            theme: Some(theme),
+        };
 
-            let header = Header {
-                version: 2,
-                cols: 80,
-                rows: 24,
-                timestamp: Some(1704719152),
-                idle_time_limit: Some(1.5),
-                command: Some("/bin/bash".to_owned()),
-                title: Some("Demo".to_owned()),
-                env: Some(env),
-                theme: Some(theme),
-            };
-
-            fw.write_header(&header).unwrap();
-        }
-
+        let data = enc.header(&header);
         let lines = parse(data);
 
         assert_eq!(lines[0]["version"], 2);
