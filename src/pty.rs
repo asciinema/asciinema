@@ -2,6 +2,7 @@ use crate::io::set_non_blocking;
 use crate::tty::{Tty, TtySize};
 use anyhow::{bail, Result};
 use nix::errno::Errno;
+use nix::libc::EIO;
 use nix::sys::select::{select, FdSet};
 use nix::sys::signal;
 use nix::sys::wait::{self, WaitPidFlag, WaitStatus};
@@ -301,7 +302,7 @@ fn read_non_blocking<R: Read + ?Sized>(
         Err(e) => {
             if e.kind() == ErrorKind::WouldBlock {
                 Ok(None)
-            } else if e.raw_os_error().is_some_and(|code| code == 5) {
+            } else if e.raw_os_error().is_some_and(|code| code == EIO) {
                 Ok(Some(0))
             } else {
                 return Err(e);
@@ -317,7 +318,7 @@ fn write_non_blocking<W: Write + ?Sized>(sink: &mut W, buf: &[u8]) -> io::Result
         Err(e) => {
             if e.kind() == ErrorKind::WouldBlock {
                 Ok(None)
-            } else if e.raw_os_error().is_some_and(|code| code == 5) {
+            } else if e.raw_os_error().is_some_and(|code| code == EIO) {
                 Ok(Some(0))
             } else {
                 return Err(e);
