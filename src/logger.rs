@@ -12,7 +12,7 @@ macro_rules! info {
 
 pub fn println(message: String) {
     if ENABLED.load(SeqCst) {
-        println!("::: {}", message);
+        println!("::: {message}");
     }
 }
 

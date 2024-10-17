@@ -35,7 +35,7 @@ impl TmuxNotifier {
 
 impl Notifier for TmuxNotifier {
     fn notify(&mut self, message: String) -> Result<()> {
-        let args = ["display-message", &format!("asciinema: {}", message)];
+        let args = ["display-message", &format!("asciinema: {message}")];
 
         exec(&mut Command::new(&self.0), &args)
     }
