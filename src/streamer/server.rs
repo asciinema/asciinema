@@ -56,7 +56,7 @@ pub async fn serve(
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
     .with_graceful_shutdown(signal)
-    // TODO .tcp_nodelay(true) - requires axum 0.8
+    .tcp_nodelay(true)
     .await
 }
 
