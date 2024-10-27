@@ -27,6 +27,8 @@ fn main() -> anyhow::Result<()> {
         logger::disable();
     }
 
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+
     match cli.command {
         Commands::Rec(record) => record.run(&config),
         Commands::Play(play) => play.run(&config),
