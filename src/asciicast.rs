@@ -38,6 +38,21 @@ pub enum EventData {
     Other(char, String),
 }
 
+impl Default for Header {
+    fn default() -> Self {
+        Self {
+            cols: 80,
+            rows: 24,
+            timestamp: None,
+            idle_time_limit: None,
+            command: None,
+            title: None,
+            env: None,
+            theme: None,
+        }
+    }
+}
+
 pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Asciicast<'static>> {
     fs::File::open(path)
         .map(io::BufReader::new)

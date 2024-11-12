@@ -2,21 +2,19 @@ mod asciicast;
 mod raw;
 mod txt;
 
-pub use asciicast::AsciicastEncoder;
-pub use asciicast::Metadata;
-pub use raw::RawEncoder;
-pub use txt::TextEncoder;
-
 use crate::asciicast::Event;
-use crate::tty;
+use crate::asciicast::Header;
 use anyhow::Result;
+pub use asciicast::AsciicastEncoder;
+pub use raw::RawEncoder;
 use std::fs::File;
 use std::io::Write;
+pub use txt::TextEncoder;
 
 pub trait Encoder {
-    fn start(&mut self, timestamp: Option<u64>, tty_size: tty::TtySize) -> Vec<u8>;
+    fn header(&mut self, header: &Header) -> Vec<u8>;
     fn event(&mut self, event: Event) -> Vec<u8>;
-    fn finish(&mut self) -> Vec<u8>;
+    fn flush(&mut self) -> Vec<u8>;
 }
 
 pub trait EncoderExt {
@@ -25,14 +23,13 @@ pub trait EncoderExt {
 
 impl<E: Encoder + ?Sized> EncoderExt for E {
     fn encode_to_file(&mut self, cast: crate::asciicast::Asciicast, file: &mut File) -> Result<()> {
-        let tty_size = tty::TtySize(cast.header.cols, cast.header.rows);
-        file.write_all(&self.start(cast.header.timestamp, tty_size))?;
+        file.write_all(&self.header(&cast.header))?;
 
         for event in cast.events {
             file.write_all(&self.event(event?))?;
         }
 
-        file.write_all(&self.finish())?;
+        file.write_all(&self.flush())?;
 
         Ok(())
     }

@@ -1,5 +1,4 @@
-use crate::asciicast::{Event, EventData};
-use crate::tty;
+use crate::asciicast::{Event, EventData, Header};
 use avt::util::TextCollector;
 
 pub struct TextEncoder {
@@ -13,9 +12,9 @@ impl TextEncoder {
 }
 
 impl super::Encoder for TextEncoder {
-    fn start(&mut self, _timestamp: Option<u64>, tty_size: tty::TtySize) -> Vec<u8> {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
         let vt = avt::Vt::builder()
-            .size(tty_size.0 as usize, tty_size.1 as usize)
+            .size(header.cols as usize, header.rows as usize)
             .resizable(true)
             .scrollback_limit(100)
             .build();
@@ -39,7 +38,7 @@ impl super::Encoder for TextEncoder {
         }
     }
 
-    fn finish(&mut self) -> Vec<u8> {
+    fn flush(&mut self) -> Vec<u8> {
         text_lines_to_bytes(self.collector.take().unwrap().flush().iter())
     }
 }
@@ -56,15 +55,20 @@ fn text_lines_to_bytes<S: AsRef<str>>(lines: impl Iterator<Item = S>) -> Vec<u8>
 #[cfg(test)]
 mod tests {
     use super::TextEncoder;
-    use crate::asciicast::Event;
+    use crate::asciicast::{Event, Header};
     use crate::encoder::Encoder;
-    use crate::tty::TtySize;
 
     #[test]
     fn encoder() {
         let mut enc = TextEncoder::new();
 
-        assert!(enc.start(None, TtySize(3, 1)).is_empty());
+        let header = Header {
+            cols: 3,
+            rows: 1,
+            ..Default::default()
+        };
+
+        assert!(enc.header(&header).is_empty());
 
         assert!(enc
             .event(Event::output(0, "he\x1b[1mllo\r\n".to_owned()))
@@ -74,6 +78,6 @@ mod tests {
             .event(Event::output(1, "world\r\n".to_owned()))
             .is_empty());
 
-        assert_eq!(enc.finish(), "hello\nworld\n".as_bytes());
+        assert_eq!(enc.flush(), "hello\nworld\n".as_bytes());
     }
 }

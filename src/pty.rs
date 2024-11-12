@@ -1,5 +1,5 @@
 use crate::io::set_non_blocking;
-use crate::tty::{Tty, TtySize};
+use crate::tty::{Theme, Tty, TtySize};
 use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::libc::EIO;
@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 type ExtraEnv = HashMap<String, String>;
 
 pub trait Handler {
-    fn start(&mut self, tty_size: TtySize);
+    fn start(&mut self, tty_size: TtySize, theme: Option<Theme>);
     fn output(&mut self, time: Duration, data: &[u8]) -> bool;
     fn input(&mut self, time: Duration, data: &[u8]) -> bool;
     fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool;
@@ -37,7 +37,7 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
 ) -> Result<i32> {
     let winsize = tty.get_size();
     let epoch = Instant::now();
-    handler.start(winsize.into());
+    handler.start(winsize.into(), tty.get_theme());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
@@ -377,7 +377,7 @@ impl Drop for SignalFd {
 mod tests {
     use super::Handler;
     use crate::pty::ExtraEnv;
-    use crate::tty::{FixedSizeTty, NullTty, TtySize};
+    use crate::tty::{FixedSizeTty, NullTty, Theme, TtySize};
     use std::time::Duration;
 
     #[derive(Default)]
@@ -387,7 +387,7 @@ mod tests {
     }
 
     impl Handler for TestHandler {
-        fn start(&mut self, tty_size: TtySize) {
+        fn start(&mut self, tty_size: TtySize, _theme: Option<Theme>) {
             self.tty_size = Some(tty_size);
         }
 

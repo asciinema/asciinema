@@ -6,7 +6,7 @@ use crate::locale;
 use crate::logger;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
-use crate::tty::{self, FixedSizeTty, Tty};
+use crate::tty::{self, FixedSizeTty};
 use crate::util;
 use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
@@ -80,7 +80,6 @@ impl Command for cli::Stream {
                 record_input,
                 keys,
                 notifier,
-                tty.get_theme(),
             );
 
             self.init_logging()?;

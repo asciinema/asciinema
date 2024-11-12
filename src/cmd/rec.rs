@@ -1,14 +1,15 @@
 use super::Command;
 use crate::asciicast;
+use crate::asciicast::Header;
 use crate::cli;
 use crate::config::Config;
-use crate::encoder::{AsciicastEncoder, Encoder, Metadata, RawEncoder, TextEncoder};
+use crate::encoder::{AsciicastEncoder, Encoder, RawEncoder, TextEncoder};
 use crate::locale;
 use crate::logger;
 use crate::pty;
 use crate::recorder::Output;
 use crate::recorder::{self, KeyBindings};
-use crate::tty::{self, FixedSizeTty, Tty};
+use crate::tty::{self, FixedSizeTty};
 use anyhow::{bail, Result};
 use cli::Format;
 use std::collections::{HashMap, HashSet};
@@ -34,6 +35,7 @@ impl Command for cli::Record {
         let record_input = self.input || config.cmd_rec_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let exec_extra_env = super::build_exec_extra_env(&[]);
+        let output = self.get_output(file, format, append, time_offset, config);
 
         logger::info!("Recording session started, writing to {}", self.path);
 
@@ -43,8 +45,6 @@ impl Command for cli::Record {
 
         {
             let mut tty = self.get_tty()?;
-            let theme = tty.get_theme();
-            let output = self.get_output(file, format, append, time_offset, theme, config);
             let mut recorder = recorder::Recorder::new(output, record_input, keys, notifier);
             pty::exec(&exec_command, &exec_extra_env, &mut tty, &mut recorder)?;
         }
@@ -170,20 +170,33 @@ impl cli::Record {
         format: Format,
         append: bool,
         time_offset: u64,
-        theme: Option<tty::Theme>,
         config: &Config,
     ) -> Box<dyn recorder::Output + Send> {
+        let metadata = self.build_asciicast_metadata(config);
+
         match format {
             Format::Asciicast => {
-                let metadata = self.build_asciicast_metadata(theme, config);
-                let file = io::LineWriter::new(file);
-                let encoder = AsciicastEncoder::new(append, time_offset, metadata);
+                let writer = io::LineWriter::new(file);
+                let encoder = AsciicastEncoder::new(append, time_offset);
 
-                Box::new(FileOutput(file, encoder))
+                Box::new(FileOutput {
+                    writer,
+                    encoder,
+                    metadata,
+                })
             }
 
-            Format::Raw => Box::new(FileOutput(file, RawEncoder::new(append))),
-            Format::Txt => Box::new(FileOutput(file, TextEncoder::new())),
+            Format::Raw => Box::new(FileOutput {
+                writer: file,
+                encoder: RawEncoder::new(append),
+                metadata,
+            }),
+
+            Format::Txt => Box::new(FileOutput {
+                writer: file,
+                encoder: TextEncoder::new(),
+                metadata,
+            }),
         }
     }
 
@@ -191,7 +204,7 @@ impl cli::Record {
         self.command.as_ref().cloned().or(config.cmd_rec_command())
     }
 
-    fn build_asciicast_metadata(&self, theme: Option<tty::Theme>, config: &Config) -> Metadata {
+    fn build_asciicast_metadata(&self, config: &Config) -> Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.cmd_rec_idle_time_limit());
         let command = self.get_command(config);
 
@@ -207,25 +220,52 @@ impl cli::Record {
             command,
             title: self.title.clone(),
             env: Some(capture_env(&env)),
-            theme,
         }
     }
 }
 
-struct FileOutput<W: Write, E: Encoder>(W, E);
+struct FileOutput<W: Write, E: Encoder> {
+    writer: W,
+    encoder: E,
+    metadata: Metadata,
+}
+
+pub struct Metadata {
+    pub idle_time_limit: Option<f64>,
+    pub command: Option<String>,
+    pub title: Option<String>,
+    pub env: Option<HashMap<String, String>>,
+}
 
 impl<W: Write, E: Encoder> Output for FileOutput<W, E> {
-    fn header(&mut self, time: SystemTime, tty_size: tty::TtySize) -> io::Result<()> {
+    fn header(
+        &mut self,
+        time: SystemTime,
+        tty_size: tty::TtySize,
+        theme: Option<tty::Theme>,
+    ) -> io::Result<()> {
         let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
-        self.0.write_all(&self.1.start(Some(timestamp), tty_size))
+
+        let header = Header {
+            cols: tty_size.0,
+            rows: tty_size.1,
+            timestamp: Some(timestamp),
+            theme,
+            idle_time_limit: self.metadata.idle_time_limit,
+            command: self.metadata.command.as_ref().cloned(),
+            title: self.metadata.title.as_ref().cloned(),
+            env: self.metadata.env.as_ref().cloned(),
+        };
+
+        self.writer.write_all(&self.encoder.header(&header))
     }
 
     fn event(&mut self, event: asciicast::Event) -> io::Result<()> {
-        self.0.write_all(&self.1.event(event))
+        self.writer.write_all(&self.encoder.event(event))
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        self.0.write_all(&self.1.finish())
+        self.writer.write_all(&self.encoder.flush())
     }
 }
 

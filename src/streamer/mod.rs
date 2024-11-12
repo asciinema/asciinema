@@ -23,7 +23,6 @@ pub struct Streamer {
     prefix_mode: bool,
     listener: Option<net::TcpListener>,
     forward_url: Option<url::Url>,
-    theme: Option<tty::Theme>,
     // XXX: field (drop) order below is crucial for correct shutdown
     pty_tx: mpsc::UnboundedSender<Event>,
     notifier_tx: std::sync::mpsc::Sender<String>,
@@ -44,7 +43,6 @@ impl Streamer {
         record_input: bool,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
-        theme: Option<tty::Theme>,
     ) -> Self {
         let (notifier_tx, notifier_rx) = std::sync::mpsc::channel();
         let (pty_tx, pty_rx) = mpsc::unbounded_channel();
@@ -63,7 +61,6 @@ impl Streamer {
             prefix_mode: false,
             listener,
             forward_url,
-            theme,
         }
     }
 
@@ -82,7 +79,7 @@ impl Streamer {
 }
 
 impl pty::Handler for Streamer {
-    fn start(&mut self, tty_size: tty::TtySize) {
+    fn start(&mut self, tty_size: tty::TtySize, theme: Option<tty::Theme>) {
         let pty_rx = self.pty_rx.take().unwrap();
         let (clients_tx, mut clients_rx) = mpsc::channel(1);
         let shutdown_token = tokio_util::sync::CancellationToken::new();
@@ -104,8 +101,6 @@ impl pty::Handler for Streamer {
                 shutdown_token.clone(),
             ))
         });
-
-        let theme = self.theme.take();
 
         self.event_loop_handle = wrap_thread_handle(thread::spawn(move || {
             runtime.block_on(async move {

@@ -1,5 +1,5 @@
 use super::Command;
-use crate::asciicast::{self, Header};
+use crate::asciicast;
 use crate::cli::{self, Format};
 use crate::config::Config;
 use crate::encoder::{self, AsciicastEncoder, EncoderExt, RawEncoder, TextEncoder};
@@ -12,7 +12,7 @@ impl Command for cli::Convert {
     fn run(self, _config: &Config) -> Result<()> {
         let path = util::get_local_path(&self.input_filename)?;
         let cast = asciicast::open_from_path(&*path)?;
-        let mut encoder = self.get_encoder(&cast.header);
+        let mut encoder = self.get_encoder();
         let mut file = self.open_file()?;
 
         encoder.encode_to_file(cast, &mut file)
@@ -20,7 +20,7 @@ impl Command for cli::Convert {
 }
 
 impl cli::Convert {
-    fn get_encoder(&self, header: &Header) -> Box<dyn encoder::Encoder> {
+    fn get_encoder(&self) -> Box<dyn encoder::Encoder> {
         let format = self.format.unwrap_or_else(|| {
             if self.output_filename.to_lowercase().ends_with(".txt") {
                 Format::Txt
@@ -30,7 +30,7 @@ impl cli::Convert {
         });
 
         match format {
-            Format::Asciicast => Box::new(AsciicastEncoder::new(false, 0, header.into())),
+            Format::Asciicast => Box::new(AsciicastEncoder::new(false, 0)),
             Format::Raw => Box::new(RawEncoder::new(false)),
             Format::Txt => Box::new(TextEncoder::new()),
         }

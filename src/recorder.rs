@@ -23,7 +23,12 @@ pub struct Recorder {
 }
 
 pub trait Output {
-    fn header(&mut self, time: SystemTime, tty_size: tty::TtySize) -> io::Result<()>;
+    fn header(
+        &mut self,
+        time: SystemTime,
+        tty_size: tty::TtySize,
+        theme: Option<tty::Theme>,
+    ) -> io::Result<()>;
     fn event(&mut self, event: Event) -> io::Result<()>;
     fn flush(&mut self) -> io::Result<()>;
 }
@@ -77,9 +82,9 @@ impl Recorder {
 }
 
 impl pty::Handler for Recorder {
-    fn start(&mut self, tty_size: tty::TtySize) {
+    fn start(&mut self, tty_size: tty::TtySize, theme: Option<tty::Theme>) {
         let mut output = self.output.take().unwrap();
-        let _ = output.header(SystemTime::now(), tty_size);
+        let _ = output.header(SystemTime::now(), tty_size, theme);
         let receiver = self.receiver.take().unwrap();
         let mut notifier = self.notifier.take().unwrap();
 

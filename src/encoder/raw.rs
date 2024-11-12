@@ -1,5 +1,4 @@
-use crate::asciicast::{Event, EventData};
-use crate::tty;
+use crate::asciicast::{Event, EventData, Header};
 
 pub struct RawEncoder {
     append: bool,
@@ -12,11 +11,11 @@ impl RawEncoder {
 }
 
 impl super::Encoder for RawEncoder {
-    fn start(&mut self, _timestamp: Option<u64>, tty_size: tty::TtySize) -> Vec<u8> {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
         if self.append {
             Vec::new()
         } else {
-            format!("\x1b[8;{};{}t", tty_size.1, tty_size.0).into_bytes()
+            format!("\x1b[8;{};{}t", header.rows, header.cols).into_bytes()
         }
     }
 
@@ -28,7 +27,7 @@ impl super::Encoder for RawEncoder {
         }
     }
 
-    fn finish(&mut self) -> Vec<u8> {
+    fn flush(&mut self) -> Vec<u8> {
         Vec::new()
     }
 }
@@ -36,18 +35,20 @@ impl super::Encoder for RawEncoder {
 #[cfg(test)]
 mod tests {
     use super::RawEncoder;
-    use crate::asciicast::Event;
+    use crate::asciicast::{Event, Header};
     use crate::encoder::Encoder;
-    use crate::tty::TtySize;
 
     #[test]
     fn encoder() {
         let mut enc = RawEncoder::new(false);
 
-        assert_eq!(
-            enc.start(None, TtySize(100, 50)),
-            "\x1b[8;50;100t".as_bytes()
-        );
+        let header = Header {
+            cols: 100,
+            rows: 50,
+            ..Default::default()
+        };
+
+        assert_eq!(enc.header(&header), "\x1b[8;50;100t".as_bytes());
 
         assert_eq!(
             enc.event(Event::output(0, "he\x1b[1mllo\r\n".to_owned())),
@@ -62,6 +63,6 @@ mod tests {
         assert!(enc.event(Event::input(2, ".".to_owned())).is_empty());
         assert!(enc.event(Event::resize(3, (80, 24))).is_empty());
         assert!(enc.event(Event::marker(4, ".".to_owned())).is_empty());
-        assert!(enc.finish().is_empty());
+        assert!(enc.flush().is_empty());
     }
 }
