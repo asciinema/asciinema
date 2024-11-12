@@ -15,7 +15,6 @@ pub struct Asciicast<'a> {
 }
 
 pub struct Header {
-    pub version: u8,
     pub cols: u16,
     pub rows: u16,
     pub timestamp: Option<u64>,
@@ -151,7 +150,6 @@ mod tests {
 
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!(header.version, 1);
         assert_eq!((header.cols, header.rows), (100, 50));
         assert!(header.theme.is_none());
 
@@ -164,7 +162,6 @@ mod tests {
         let Asciicast { header, events } = super::open_from_path("tests/casts/full.json").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!(header.version, 1);
         assert_eq!((header.cols, header.rows), (100, 50));
 
         assert_eq!(events[0].time, 1);
@@ -224,7 +221,6 @@ mod tests {
         let mut data = Vec::new();
 
         let header = Header {
-            version: 2,
             cols: 80,
             rows: 24,
             timestamp: None,
@@ -299,7 +295,6 @@ mod tests {
         };
 
         let header = Header {
-            version: 2,
             cols: 80,
             rows: 24,
             timestamp: Some(1704719152),

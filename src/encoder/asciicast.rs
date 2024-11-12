@@ -29,7 +29,6 @@ impl AsciicastEncoder {
 
     fn build_header(&self, timestamp: Option<u64>, tty_size: &tty::TtySize) -> Header {
         Header {
-            version: 2,
             cols: tty_size.0,
             rows: tty_size.1,
             timestamp,

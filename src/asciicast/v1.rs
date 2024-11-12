@@ -30,7 +30,6 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
     }
 
     let header = Header {
-        version: 1,
         cols: asciicast.width,
         rows: asciicast.height,
         timestamp: None,

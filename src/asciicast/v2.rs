@@ -71,7 +71,6 @@ impl Parser {
         lines: I,
     ) -> Asciicast<'a> {
         let header = Header {
-            version: 2,
             cols: self.0.width,
             rows: self.0.height,
             timestamp: self.0.timestamp,
