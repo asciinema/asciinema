@@ -9,11 +9,11 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-pub struct Recorder {
+pub struct Recorder<N> {
     output: Option<Box<dyn Output + Send>>,
     record_input: bool,
     keys: KeyBindings,
-    notifier: Option<Box<dyn Notifier>>,
+    notifier: N,
     sender: mpsc::Sender<Message>,
     receiver: Option<mpsc::Receiver<Message>>,
     handle: Option<util::JoinHandle>,
@@ -38,15 +38,14 @@ enum Message {
     Input(u64, Vec<u8>),
     Resize(u64, tty::TtySize),
     Marker(u64),
-    Notification(String),
 }
 
-impl Recorder {
+impl<N: Notifier> Recorder<N> {
     pub fn new(
         output: Box<dyn Output + Send>,
         record_input: bool,
         keys: KeyBindings,
-        notifier: Box<dyn Notifier>,
+        notifier: N,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
 
@@ -54,7 +53,7 @@ impl Recorder {
             output: Some(output),
             record_input,
             keys,
-            notifier: Some(notifier),
+            notifier,
             sender,
             receiver: Some(receiver),
             handle: None,
@@ -72,21 +71,18 @@ impl Recorder {
         }
     }
 
-    fn notify<S: ToString>(&self, text: S) {
-        let msg = Message::Notification(text.to_string());
-
-        self.sender
-            .send(msg)
+    fn notify<S: ToString>(&mut self, text: S) {
+        self.notifier
+            .notify(text.to_string())
             .expect("notification send should succeed");
     }
 }
 
-impl pty::Handler for Recorder {
+impl<N: Notifier> pty::Handler for Recorder<N> {
     fn start(&mut self, tty_size: tty::TtySize, theme: Option<tty::Theme>) {
         let mut output = self.output.take().unwrap();
         let _ = output.header(SystemTime::now(), tty_size, theme);
         let receiver = self.receiver.take().unwrap();
-        let mut notifier = self.notifier.take().unwrap();
 
         let handle = thread::spawn(move || {
             use Message::*;
@@ -121,10 +117,6 @@ impl pty::Handler for Recorder {
 
                     Marker(time) => {
                         let _ = output.event(Event::marker(time, String::new()));
-                    }
-
-                    Notification(text) => {
-                        let _ = notifier.notify(text);
                     }
                 }
             }

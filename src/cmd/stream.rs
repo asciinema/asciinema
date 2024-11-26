@@ -4,6 +4,7 @@ use crate::cli;
 use crate::config::Config;
 use crate::locale;
 use crate::logger;
+use crate::notifier;
 use crate::pty;
 use crate::streamer::{self, KeyBindings};
 use crate::tty::{self, FixedSizeTty};
@@ -70,6 +71,8 @@ impl Command for cli::Stream {
         if command.is_none() {
             logger::info!("Press <ctrl+d> or type 'exit' to end");
         }
+
+        let notifier = notifier::threaded(notifier);
 
         {
             let mut tty = self.get_tty()?;

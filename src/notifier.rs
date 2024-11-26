@@ -1,4 +1,6 @@
 use anyhow::Result;
+use std::sync::mpsc;
+use std::thread;
 use std::{
     env,
     ffi::OsStr,
@@ -94,12 +96,46 @@ impl Notifier for NullNotifier {
 }
 
 fn exec<S: AsRef<OsStr>>(command: &mut Command, args: &[S]) -> Result<()> {
-    command
+    let status = command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .args(args)
         .status()?;
 
-    Ok(())
+    if status.success() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "exit status: {}",
+            status.code().unwrap_or(0)
+        ))
+    }
+}
+
+#[derive(Clone)]
+pub struct ThreadedNotifier(mpsc::Sender<String>);
+
+pub fn threaded(mut notifier: Box<dyn Notifier>) -> ThreadedNotifier {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        for message in &rx {
+            if notifier.notify(message).is_err() {
+                break;
+            }
+        }
+
+        for _ in rx {}
+    });
+
+    ThreadedNotifier(tx)
+}
+
+impl Notifier for ThreadedNotifier {
+    fn notify(&mut self, message: String) -> Result<()> {
+        self.0.send(message)?;
+
+        Ok(())
+    }
 }

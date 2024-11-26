@@ -6,6 +6,7 @@ use crate::config::Config;
 use crate::encoder::{AsciicastEncoder, Encoder, RawEncoder, TextEncoder};
 use crate::locale;
 use crate::logger;
+use crate::notifier;
 use crate::pty;
 use crate::recorder::Output;
 use crate::recorder::{self, KeyBindings};
@@ -42,6 +43,8 @@ impl Command for cli::Record {
         if command.is_none() {
             logger::info!("Press <ctrl+d> or type 'exit' to end");
         }
+
+        let notifier = notifier::threaded(notifier);
 
         {
             let mut tty = self.get_tty()?;

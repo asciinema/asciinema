@@ -10,24 +10,20 @@ use crate::util;
 use std::net;
 use std::thread;
 use std::time::Duration;
-use tokio::sync::mpsc;
 use tracing::info;
 
-pub struct Streamer {
+pub struct Streamer<N> {
     record_input: bool,
     keys: KeyBindings,
-    notifier: Option<Box<dyn Notifier>>,
-    notifier_rx: Option<std::sync::mpsc::Receiver<String>>,
-    pty_rx: Option<mpsc::UnboundedReceiver<Event>>,
+    notifier: N,
+    pty_rx: Option<tokio::sync::mpsc::UnboundedReceiver<Event>>,
     paused: bool,
     prefix_mode: bool,
     listener: Option<net::TcpListener>,
     forward_url: Option<url::Url>,
     // XXX: field (drop) order below is crucial for correct shutdown
-    pty_tx: mpsc::UnboundedSender<Event>,
-    notifier_tx: std::sync::mpsc::Sender<String>,
+    pty_tx: tokio::sync::mpsc::UnboundedSender<Event>,
     event_loop_handle: Option<util::JoinHandle>,
-    notifier_handle: Option<util::JoinHandle>,
 }
 
 enum Event {
@@ -37,24 +33,20 @@ enum Event {
     Marker(u64),
 }
 
-impl Streamer {
+impl<N: Notifier> Streamer<N> {
     pub fn new(
         listener: Option<net::TcpListener>,
         forward_url: Option<url::Url>,
         record_input: bool,
         keys: KeyBindings,
-        notifier: Box<dyn Notifier>,
+        notifier: N,
     ) -> Self {
-        let (notifier_tx, notifier_rx) = std::sync::mpsc::channel();
-        let (pty_tx, pty_rx) = mpsc::unbounded_channel();
+        let (pty_tx, pty_rx) = tokio::sync::mpsc::unbounded_channel();
 
         Self {
             record_input,
             keys,
-            notifier: Some(notifier),
-            notifier_tx,
-            notifier_rx: Some(notifier_rx),
-            notifier_handle: None,
+            notifier,
             pty_tx,
             pty_rx: Some(pty_rx),
             event_loop_handle: None,
@@ -69,20 +61,20 @@ impl Streamer {
         time.as_micros() as u64
     }
 
-    fn notify<S: ToString>(&self, message: S) {
+    fn notify<S: ToString>(&mut self, message: S) {
         let message = message.to_string();
         info!(message);
 
-        self.notifier_tx
-            .send(message)
+        self.notifier
+            .notify(message)
             .expect("notification send should succeed");
     }
 }
 
-impl pty::Handler for Streamer {
+impl<N: Notifier + Clone + 'static> pty::Handler for Streamer<N> {
     fn start(&mut self, tty_size: tty::TtySize, theme: Option<tty::Theme>) {
         let pty_rx = self.pty_rx.take().unwrap();
-        let (clients_tx, mut clients_rx) = mpsc::channel(1);
+        let (clients_tx, mut clients_rx) = tokio::sync::mpsc::channel(1);
         let shutdown_token = tokio_util::sync::CancellationToken::new();
         let runtime = build_tokio_runtime();
 
@@ -98,7 +90,7 @@ impl pty::Handler for Streamer {
             runtime.spawn(forwarder::forward(
                 url,
                 clients_tx,
-                self.notifier_tx.clone(),
+                self.notifier.clone(),
                 shutdown_token.clone(),
             ))
         });
@@ -119,15 +111,6 @@ impl pty::Handler for Streamer {
 
                 let _ = clients_rx.recv().await;
             });
-        }));
-
-        let mut notifier = self.notifier.take().unwrap();
-        let notifier_rx = self.notifier_rx.take().unwrap();
-
-        self.notifier_handle = wrap_thread_handle(thread::spawn(move || {
-            for message in notifier_rx {
-                let _ = notifier.notify(message);
-            }
         }));
     }
 
@@ -188,8 +171,8 @@ impl pty::Handler for Streamer {
 }
 
 async fn event_loop(
-    mut events: mpsc::UnboundedReceiver<Event>,
-    clients: &mut mpsc::Receiver<session::Client>,
+    mut events: tokio::sync::mpsc::UnboundedReceiver<Event>,
+    clients: &mut tokio::sync::mpsc::Receiver<session::Client>,
     tty_size: tty::TtySize,
     theme: Option<tty::Theme>,
 ) {
