@@ -65,7 +65,7 @@ impl Session {
 
     pub fn resize(&mut self, time: u64, tty_size: tty::TtySize) {
         if tty_size != self.vt.size().into() {
-            resize_vt(&mut self.vt, &tty_size);
+            self.vt.resize(tty_size.0.into(), tty_size.1.into());
             let _ = self.broadcast_tx.send(Event::Resize(time, tty_size));
             self.stream_time = time;
             self.last_event_time = Instant::now();
@@ -97,12 +97,7 @@ impl Session {
 fn build_vt(tty_size: tty::TtySize) -> avt::Vt {
     avt::Vt::builder()
         .size(tty_size.0 as usize, tty_size.1 as usize)
-        .resizable(true)
         .build()
-}
-
-fn resize_vt(vt: &mut avt::Vt, tty_size: &tty::TtySize) {
-    vt.feed_str(&format!("\x1b[8;{};{}t", tty_size.1, tty_size.0));
 }
 
 impl Client {

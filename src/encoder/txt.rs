@@ -15,7 +15,6 @@ impl super::Encoder for TextEncoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
         let vt = avt::Vt::builder()
             .size(header.cols as usize, header.rows as usize)
-            .resizable(true)
             .scrollback_limit(100)
             .build();
 
