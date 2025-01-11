@@ -42,7 +42,7 @@ fn encode_event(event: session::Event) -> Vec<u8> {
 
             match theme {
                 Some(theme) => {
-                    msg.push(1);
+                    msg.push(16);
                     msg.push(theme.fg.r);
                     msg.push(theme.fg.g);
                     msg.push(theme.fg.b);
