@@ -34,6 +34,7 @@ enum Event {
     Output(u64, Vec<u8>),
     Input(u64, Vec<u8>),
     Resize(u64, tty::TtySize),
+    Marker(u64),
 }
 
 impl Streamer {
@@ -202,6 +203,10 @@ async fn event_loop(
 
                     Some(Event::Resize(time, new_tty_size)) => {
                         session.resize(time, new_tty_size);
+                    }
+
+                    Some(Event::Marker(time)) => {
+                        session.marker(time);
                     }
 
                     None => break,

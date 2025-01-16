@@ -16,13 +16,16 @@ pub struct Session {
     last_event_time: Instant,
     theme: Option<tty::Theme>,
     output_decoder: util::Utf8Decoder,
+    input_decoder: util::Utf8Decoder,
 }
 
 #[derive(Clone)]
 pub enum Event {
     Init(u64, tty::TtySize, Option<tty::Theme>, String),
     Output(u64, String),
+    Input(u64, String),
     Resize(u64, tty::TtySize),
+    Marker(u64, String),
 }
 
 pub struct Client(oneshot::Sender<Subscription>);
@@ -43,6 +46,7 @@ impl Session {
             last_event_time: Instant::now(),
             theme,
             output_decoder: util::Utf8Decoder::new(),
+            input_decoder: util::Utf8Decoder::new(),
         }
     }
 
@@ -58,7 +62,13 @@ impl Session {
         self.last_event_time = Instant::now();
     }
 
-    pub fn input(&mut self, time: u64, _data: &[u8]) {
+    pub fn input(&mut self, time: u64, data: &[u8]) {
+        let text = self.input_decoder.feed(data);
+
+        if !text.is_empty() {
+            let _ = self.broadcast_tx.send(Event::Input(time, text));
+        }
+
         self.stream_time = time;
         self.last_event_time = Instant::now();
     }
@@ -70,6 +80,12 @@ impl Session {
             self.stream_time = time;
             self.last_event_time = Instant::now();
         }
+    }
+
+    pub fn marker(&mut self, time: u64) {
+        let _ = self.broadcast_tx.send(Event::Marker(time, String::new()));
+        self.stream_time = time;
+        self.last_event_time = Instant::now();
     }
 
     pub fn subscribe(&self) -> Subscription {

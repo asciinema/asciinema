@@ -81,6 +81,19 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             msg
         }
 
+        Input(time, text) => {
+            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
+            let text_len = text.len() as u32;
+            let text_len_bytes = text_len.to_le_bytes();
+
+            let mut msg = vec![b'i']; // 1 byte
+            msg.extend_from_slice(&time_bytes); // 4 bytes
+            msg.extend_from_slice(&text_len_bytes); // 4 bytes
+            msg.extend_from_slice(text.as_bytes()); // text_len bytes
+
+            msg
+        }
+
         Resize(time, size) => {
             let (cols, rows): (u16, u16) = (size.0, size.1);
             let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
@@ -91,6 +104,19 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             msg.extend_from_slice(&time_bytes); // 4 bytes
             msg.extend_from_slice(&cols_bytes); // 2 bytes
             msg.extend_from_slice(&rows_bytes); // 2 bytes
+
+            msg
+        }
+
+        Marker(time, text) => {
+            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
+            let text_len = text.len() as u32;
+            let text_len_bytes = text_len.to_le_bytes();
+
+            let mut msg = vec![b'm']; // 1 byte
+            msg.extend_from_slice(&time_bytes); // 4 bytes
+            msg.extend_from_slice(&text_len_bytes); // 4 bytes
+            msg.extend_from_slice(text.as_bytes()); // text_len bytes
 
             msg
         }
