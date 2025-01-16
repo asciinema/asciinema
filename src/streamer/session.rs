@@ -77,9 +77,10 @@ impl Session {
         if tty_size != self.vt.size().into() {
             self.vt.resize(tty_size.0.into(), tty_size.1.into());
             let _ = self.broadcast_tx.send(Event::Resize(time, tty_size));
-            self.stream_time = time;
-            self.last_event_time = Instant::now();
         }
+
+        self.stream_time = time;
+        self.last_event_time = Instant::now();
     }
 
     pub fn marker(&mut self, time: u64) {
