@@ -68,7 +68,7 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             msg
         }
 
-        Stdout(time, text) => {
+        Output(time, text) => {
             let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
             let text_len = text.len() as u32;
             let text_len_bytes = text_len.to_le_bytes();

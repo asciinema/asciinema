@@ -21,7 +21,7 @@ pub struct Session {
 #[derive(Clone)]
 pub enum Event {
     Init(u64, tty::TtySize, Option<tty::Theme>, String),
-    Stdout(u64, String),
+    Output(u64, String),
     Resize(u64, tty::TtySize),
 }
 
@@ -51,7 +51,7 @@ impl Session {
 
         if !text.is_empty() {
             self.vt.feed_str(&text);
-            let _ = self.broadcast_tx.send(Event::Stdout(time, text));
+            let _ = self.broadcast_tx.send(Event::Output(time, text));
         }
 
         self.stream_time = time;
