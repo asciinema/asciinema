@@ -2,25 +2,22 @@
 // which is an application level protocol built on top of WebSocket binary messages,
 // used by asciinema CLI, asciinema player and asciinema server.
 
-// TODO document the protocol
+// TODO document the protocol when it's final
 
 use super::session;
 use anyhow::Result;
-use futures_util::{stream, Stream, StreamExt, TryStreamExt};
-use std::future;
+use futures_util::{Stream, TryStreamExt};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 
-static HEADER: &str = "ALiS\x01";
 static SECOND: f64 = 1_000_000.0;
 
 pub async fn stream(
     clients_tx: &mpsc::Sender<session::Client>,
 ) -> Result<impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>>> {
-    let header = stream::once(future::ready(Ok(HEADER.into())));
     let events = session::stream(clients_tx).await?.map_ok(encode_event);
 
-    Ok(header.chain(events))
+    Ok(events)
 }
 
 fn encode_event(event: session::Event) -> Vec<u8> {
