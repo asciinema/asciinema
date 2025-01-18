@@ -32,7 +32,9 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             let init_len = init.len() as u32;
             let init_len_bytes = init_len.to_le_bytes();
 
-            let mut msg = vec![0x01]; // 1 byte
+            let mut msg = vec![];
+            msg.extend_from_slice("ALiS".as_bytes());
+            msg.push(0x01); // version 1
             msg.extend_from_slice(&cols_bytes); // 2 bytes
             msg.extend_from_slice(&rows_bytes); // 2 bytes
             msg.extend_from_slice(&time_bytes); // 4 bytes
