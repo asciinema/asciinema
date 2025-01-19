@@ -6,18 +6,21 @@
 
 use super::session;
 use anyhow::Result;
-use futures_util::{Stream, TryStreamExt};
+use futures_util::{stream, Stream, StreamExt, TryStreamExt};
+use std::future;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 
+static MAGIC_STRING: &str = "ALiS\x01";
 static SECOND: f64 = 1_000_000.0;
 
 pub async fn stream(
     clients_tx: &mpsc::Sender<session::Client>,
 ) -> Result<impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>>> {
+    let header = stream::once(future::ready(Ok(MAGIC_STRING.into())));
     let events = session::stream(clients_tx).await?.map_ok(encode_event);
 
-    Ok(events)
+    Ok(header.chain(events))
 }
 
 fn encode_event(event: session::Event) -> Vec<u8> {
@@ -32,9 +35,7 @@ fn encode_event(event: session::Event) -> Vec<u8> {
             let init_len = init.len() as u32;
             let init_len_bytes = init_len.to_le_bytes();
 
-            let mut msg = vec![];
-            msg.extend_from_slice("ALiS".as_bytes());
-            msg.push(0x01); // version 1
+            let mut msg = vec![0x01]; // 1 byte
             msg.extend_from_slice(&cols_bytes); // 2 bytes
             msg.extend_from_slice(&rows_bytes); // 2 bytes
             msg.extend_from_slice(&time_bytes); // 4 bytes
