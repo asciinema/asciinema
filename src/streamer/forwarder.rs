@@ -70,10 +70,29 @@ pub async fn forward(
                     tungstenite::error::ProtocolError::SecWebSocketSubProtocolError(_),
                 )) = e.downcast_ref::<tungstenite::error::Error>()
                 {
+                    // This happens when the server accepts the websocket connection
+                    // but doesn't properly perform the protocol negotiation.
+                    // This applies to asciinema-server v20241103 and earlier.
+
                     let _ = notifier_tx
-                        .send("CLI not compatible with the server, forwarding failed".to_string());
+                        .send("The server version is too old, forwarding failed".to_string());
 
                     break;
+                }
+
+                if let Some(tungstenite::error::Error::Http(response)) =
+                    e.downcast_ref::<tungstenite::error::Error>()
+                {
+                    if response.status().as_u16() == 400 {
+                        // This happens when the server doesn't support our protocol (version).
+                        // This applies to asciinema-server versions newer than v20241103.
+
+                        let _ = notifier_tx.send(
+                            "CLI not compatible with the server, forwarding failed".to_string(),
+                        );
+
+                        break;
+                    }
                 }
 
                 error!("connection error: {e}");
