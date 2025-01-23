@@ -12,7 +12,6 @@ use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 
 static MAGIC_STRING: &str = "ALiS\x01";
-static SECOND: f64 = 1_000_000.0;
 
 pub async fn stream(
     clients_tx: &mpsc::Sender<session::Client>,
@@ -28,17 +27,17 @@ fn encode_event(event: session::Event) -> Vec<u8> {
 
     match event {
         Init(time, size, theme, init) => {
+            let time_bytes = time.to_le_bytes();
             let (cols, rows): (u16, u16) = (size.0, size.1);
             let cols_bytes = cols.to_le_bytes();
             let rows_bytes = rows.to_le_bytes();
-            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
             let init_len = init.len() as u32;
             let init_len_bytes = init_len.to_le_bytes();
 
             let mut msg = vec![0x01]; // 1 byte
+            msg.extend_from_slice(&time_bytes); // 8 bytes
             msg.extend_from_slice(&cols_bytes); // 2 bytes
             msg.extend_from_slice(&rows_bytes); // 2 bytes
-            msg.extend_from_slice(&time_bytes); // 4 bytes
 
             match theme {
                 Some(theme) => {
@@ -69,12 +68,12 @@ fn encode_event(event: session::Event) -> Vec<u8> {
         }
 
         Output(time, text) => {
-            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
+            let time_bytes = time.to_le_bytes();
             let text_len = text.len() as u32;
             let text_len_bytes = text_len.to_le_bytes();
 
             let mut msg = vec![b'o']; // 1 byte
-            msg.extend_from_slice(&time_bytes); // 4 bytes
+            msg.extend_from_slice(&time_bytes); // 8 bytes
             msg.extend_from_slice(&text_len_bytes); // 4 bytes
             msg.extend_from_slice(text.as_bytes()); // text_len bytes
 
@@ -82,12 +81,12 @@ fn encode_event(event: session::Event) -> Vec<u8> {
         }
 
         Input(time, text) => {
-            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
+            let time_bytes = time.to_le_bytes();
             let text_len = text.len() as u32;
             let text_len_bytes = text_len.to_le_bytes();
 
             let mut msg = vec![b'i']; // 1 byte
-            msg.extend_from_slice(&time_bytes); // 4 bytes
+            msg.extend_from_slice(&time_bytes); // 8 bytes
             msg.extend_from_slice(&text_len_bytes); // 4 bytes
             msg.extend_from_slice(text.as_bytes()); // text_len bytes
 
@@ -95,13 +94,13 @@ fn encode_event(event: session::Event) -> Vec<u8> {
         }
 
         Resize(time, size) => {
+            let time_bytes = time.to_le_bytes();
             let (cols, rows): (u16, u16) = (size.0, size.1);
-            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
             let cols_bytes = cols.to_le_bytes();
             let rows_bytes = rows.to_le_bytes();
 
             let mut msg = vec![b'r']; // 1 byte
-            msg.extend_from_slice(&time_bytes); // 4 bytes
+            msg.extend_from_slice(&time_bytes); // 8 bytes
             msg.extend_from_slice(&cols_bytes); // 2 bytes
             msg.extend_from_slice(&rows_bytes); // 2 bytes
 
@@ -109,12 +108,12 @@ fn encode_event(event: session::Event) -> Vec<u8> {
         }
 
         Marker(time, text) => {
-            let time_bytes = ((time as f64 / SECOND) as f32).to_le_bytes();
+            let time_bytes = time.to_le_bytes();
             let text_len = text.len() as u32;
             let text_len_bytes = text_len.to_le_bytes();
 
             let mut msg = vec![b'm']; // 1 byte
-            msg.extend_from_slice(&time_bytes); // 4 bytes
+            msg.extend_from_slice(&time_bytes); // 8 bytes
             msg.extend_from_slice(&text_len_bytes); // 4 bytes
             msg.extend_from_slice(text.as_bytes()); // text_len bytes
 
