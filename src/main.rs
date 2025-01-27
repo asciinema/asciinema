@@ -5,6 +5,7 @@ mod cmd;
 mod config;
 mod encoder;
 mod io;
+mod leb128;
 mod locale;
 mod logger;
 mod notifier;
