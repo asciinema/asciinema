@@ -80,6 +80,7 @@ impl Command for cli::Stream {
                 record_input,
                 keys,
                 notifier,
+                self.html_head.clone(),
             );
 
             self.init_logging()?;

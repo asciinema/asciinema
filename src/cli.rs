@@ -141,6 +141,11 @@ pub struct Stream {
     #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
     pub serve: Option<SocketAddr>,
 
+    /// Additional content to include in the HTML head in case of streaming with built-in HTTP
+    /// server
+    #[arg(short = 'H', long, value_name = " <style> * { font-family: monospace; } </style> ", num_args = 0..=1)]
+    pub html_head: Option<String>,
+
     /// Relay the stream via an asciinema server
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
     pub relay: Option<RelayTarget>,

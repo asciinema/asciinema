@@ -23,6 +23,7 @@ pub struct Streamer {
     prefix_mode: bool,
     listener: Option<net::TcpListener>,
     forward_url: Option<url::Url>,
+    html_head: Option<String>,
     // XXX: field (drop) order below is crucial for correct shutdown
     pty_tx: mpsc::UnboundedSender<Event>,
     notifier_tx: std::sync::mpsc::Sender<String>,
@@ -44,6 +45,7 @@ impl Streamer {
         record_input: bool,
         keys: KeyBindings,
         notifier: Box<dyn Notifier>,
+        html_head: Option<String>,
     ) -> Self {
         let (notifier_tx, notifier_rx) = std::sync::mpsc::channel();
         let (pty_tx, pty_rx) = mpsc::unbounded_channel();
@@ -62,6 +64,7 @@ impl Streamer {
             prefix_mode: false,
             listener,
             forward_url,
+            html_head,
         }
     }
 
@@ -91,6 +94,7 @@ impl pty::Handler for Streamer {
                 listener,
                 clients_tx.clone(),
                 shutdown_token.clone(),
+                self.html_head.clone(),
             ))
         });
 
