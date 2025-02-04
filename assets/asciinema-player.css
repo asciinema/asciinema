@@ -415,6 +415,7 @@ pre.ap-terminal.ap-cursor-on .ap-line .ap-cursor.ap-inverse {
 }
 pre.ap-terminal:not(.ap-blink) .ap-line .ap-blink {
   color: transparent;
+  border-color: transparent;
 }
 pre.ap-terminal .ap-bright {
   font-weight: bold;
@@ -459,12 +460,14 @@ div.ap-player div.ap-control-bar * {
 div.ap-control-bar svg.ap-icon path {
   fill: var(--term-color-foreground);
 }
-div.ap-control-bar span.ap-playback-button {
+div.ap-control-bar span.ap-button {
   display: flex;
   flex: 0 0 auto;
   cursor: pointer;
-  height: 12px;
+}
+div.ap-control-bar span.ap-playback-button {
   width: 12px;
+  height: 12px;
   padding: 10px;
 }
 div.ap-control-bar span.ap-playback-button svg {
@@ -531,13 +534,9 @@ div.ap-control-bar.ap-seekable .ap-progressbar .ap-bar {
   cursor: pointer;
 }
 div.ap-control-bar .ap-fullscreen-button {
-  display: block;
-  flex: 0 0 auto;
   width: 14px;
   height: 14px;
   padding: 9px;
-  cursor: pointer;
-  position: relative;
 }
 div.ap-control-bar .ap-fullscreen-button svg {
   width: 14px;
@@ -550,6 +549,20 @@ div.ap-control-bar .ap-fullscreen-button svg.ap-icon-fullscreen-off {
   display: none;
 }
 div.ap-control-bar .ap-fullscreen-button .ap-tooltip {
+  right: 5px;
+  left: initial;
+  transform: none;
+}
+div.ap-control-bar .ap-kbd-button {
+  height: 14px;
+  padding: 9px;
+  margin: 0 4px;
+}
+div.ap-control-bar .ap-kbd-button svg {
+  width: 26px;
+  height: 14px;
+}
+div.ap-control-bar .ap-kbd-button .ap-tooltip {
   right: 5px;
   left: initial;
   transform: none;
