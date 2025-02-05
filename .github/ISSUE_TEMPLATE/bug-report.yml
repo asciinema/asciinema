@@ -1,0 +1,60 @@
+name: Bug report
+description: Create a report to help improve asciinema CLI
+body:
+  - type: markdown
+    attributes:
+      value: |
+        To make life of the project maintainers easier please submit bug reports only.
+
+        This is a bug tracker for asciinema cli (aka recorder).
+        If your issue seems to be with another component (js player, server) then open an issue in the related repository.
+        If you're experiencing issue with asciinema server at asciinema.org, contact admin@asciinema.org.
+
+        Ideas, feature requests, help requests, questions and general discussions should be discussed on the forum: https://discourse.asciinema.org
+
+        If you think you've found a bug or regression, go ahead, delete this message, then fill in the details below.
+
+        -----
+  - type: textarea
+    id: describe-bug
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce-bug
+    attributes:
+      label: To Reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Versions
+      description: Versions of OS and asciinema CLI
+      placeholder: |
+        - OS: [e.g. macOS 12.6, Ubuntu 23.04]
+        - asciinema cli: [e.g. 2.4.0]
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.
+    validations:
+      required: false
