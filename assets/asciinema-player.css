@@ -451,7 +451,7 @@ div.ap-player div.ap-control-bar {
   opacity: 0;
   transition: opacity 0.15s linear;
   user-select: none;
-  border-top: 2px solid color-mix(in oklab, black 33%, var(--term-color-background));
+  border-top: 2px solid color-mix(in oklab, var(--term-color-background) 80%, var(--term-color-foreground));
   z-index: 30;
 }
 div.ap-player div.ap-control-bar * {
@@ -712,7 +712,6 @@ span.ap-marker-container:hover span.ap-marker {
   font-size: 18px;
   color: var(--term-color-foreground);
   background-color: var(--term-color-background);
-  border-radius: 6px;
   box-sizing: border-box;
   margin-bottom: 32px;
 }
@@ -728,6 +727,8 @@ span.ap-marker-container:hover span.ap-marker {
 .ap-player .ap-overlay-help > div div {
   padding: calc(min(4cqw, 40px));
   font-size: calc(min(1.9cqw, 18px));
+  border: 1px solid color-mix(in oklab, var(--term-color-background) 90%, var(--term-color-foreground));
+  border-radius: 6px;
 }
 .ap-player .ap-overlay-help > div div p {
   font-weight: bold;

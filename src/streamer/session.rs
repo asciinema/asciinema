@@ -13,6 +13,7 @@ pub struct Session {
     vt: avt::Vt,
     broadcast_tx: broadcast::Sender<Event>,
     stream_time: u64,
+    last_event_id: u64,
     last_event_time: Instant,
     theme: Option<tty::Theme>,
     output_decoder: util::Utf8Decoder,
@@ -21,11 +22,11 @@ pub struct Session {
 
 #[derive(Clone)]
 pub enum Event {
-    Init(u64, tty::TtySize, Option<tty::Theme>, String),
-    Output(u64, String),
-    Input(u64, String),
-    Resize(u64, tty::TtySize),
-    Marker(u64, String),
+    Init(u64, u64, tty::TtySize, Option<tty::Theme>, String),
+    Output(u64, u64, String),
+    Input(u64, u64, String),
+    Resize(u64, u64, tty::TtySize),
+    Marker(u64, u64, String),
 }
 
 pub struct Client(oneshot::Sender<Subscription>);
@@ -43,6 +44,7 @@ impl Session {
             vt: build_vt(tty_size),
             broadcast_tx,
             stream_time: 0,
+            last_event_id: 0,
             last_event_time: Instant::now(),
             theme,
             output_decoder: util::Utf8Decoder::new(),
@@ -55,7 +57,8 @@ impl Session {
 
         if !text.is_empty() {
             self.vt.feed_str(&text);
-            let _ = self.broadcast_tx.send(Event::Output(time, text));
+            let id = self.get_next_event_id();
+            let _ = self.broadcast_tx.send(Event::Output(id, time, text));
         }
 
         self.stream_time = time;
@@ -66,7 +69,8 @@ impl Session {
         let text = self.input_decoder.feed(data);
 
         if !text.is_empty() {
-            let _ = self.broadcast_tx.send(Event::Input(time, text));
+            let id = self.get_next_event_id();
+            let _ = self.broadcast_tx.send(Event::Input(id, time, text));
         }
 
         self.stream_time = time;
@@ -76,7 +80,8 @@ impl Session {
     pub fn resize(&mut self, time: u64, tty_size: tty::TtySize) {
         if tty_size != self.vt.size().into() {
             self.vt.resize(tty_size.0.into(), tty_size.1.into());
-            let _ = self.broadcast_tx.send(Event::Resize(time, tty_size));
+            let id = self.get_next_event_id();
+            let _ = self.broadcast_tx.send(Event::Resize(id, time, tty_size));
         }
 
         self.stream_time = time;
@@ -84,13 +89,15 @@ impl Session {
     }
 
     pub fn marker(&mut self, time: u64) {
-        let _ = self.broadcast_tx.send(Event::Marker(time, String::new()));
+        let id = self.get_next_event_id();
+        let _ = self.broadcast_tx.send(Event::Marker(id, time, String::new()));
         self.stream_time = time;
         self.last_event_time = Instant::now();
     }
 
     pub fn subscribe(&self) -> Subscription {
         let init = Event::Init(
+            self.last_event_id,
             self.elapsed_time(),
             self.vt.size().into(),
             self.theme.clone(),
@@ -104,6 +111,12 @@ impl Session {
 
     pub fn subscriber_count(&self) -> usize {
         self.broadcast_tx.receiver_count()
+    }
+
+    fn get_next_event_id(&mut self) -> u64 {
+        self.last_event_id += 1;
+
+        self.last_event_id
     }
 
     fn elapsed_time(&self) -> u64 {

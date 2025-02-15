@@ -37,7 +37,8 @@ fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64
     use session::Event::*;
 
     match event {
-        Init(time, size, theme, init) => {
+        Init(last_id, time, size, theme, init) => {
+            let last_id_bytes = leb128::encode(last_id);
             let time_bytes = leb128::encode(time);
             let cols_bytes = leb128::encode(size.0);
             let rows_bytes = leb128::encode(size.1);
@@ -45,6 +46,7 @@ fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64
             let init_len_bytes = leb128::encode(init_len);
 
             let mut msg = vec![0x01];
+            msg.extend_from_slice(&last_id_bytes);
             msg.extend_from_slice(&time_bytes);
             msg.extend_from_slice(&cols_bytes);
             msg.extend_from_slice(&rows_bytes);
@@ -77,12 +79,14 @@ fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64
             (msg, time)
         }
 
-        Output(time, text) => {
+        Output(id, time, text) => {
+            let id_bytes = leb128::encode(id);
             let time_bytes = leb128::encode(time - prev_event_time);
             let text_len = text.len() as u32;
             let text_len_bytes = leb128::encode(text_len);
 
             let mut msg = vec![b'o'];
+            msg.extend_from_slice(&id_bytes);
             msg.extend_from_slice(&time_bytes);
             msg.extend_from_slice(&text_len_bytes);
             msg.extend_from_slice(text.as_bytes());
@@ -90,12 +94,14 @@ fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64
             (msg, time)
         }
 
-        Input(time, text) => {
+        Input(id, time, text) => {
+            let id_bytes = leb128::encode(id);
             let time_bytes = leb128::encode(time - prev_event_time);
             let text_len = text.len() as u32;
             let text_len_bytes = leb128::encode(text_len);
 
             let mut msg = vec![b'i'];
+            msg.extend_from_slice(&id_bytes);
             msg.extend_from_slice(&time_bytes);
             msg.extend_from_slice(&text_len_bytes);
             msg.extend_from_slice(text.as_bytes());
@@ -103,12 +109,14 @@ fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64
             (msg, time)
         }
 
-        Resize(time, size) => {
+        Resize(id, time, size) => {
+            let id_bytes = leb128::encode(id);
             let time_bytes = leb128::encode(time - prev_event_time);
             let cols_bytes = leb128::encode(size.0);
             let rows_bytes = leb128::encode(size.1);
 
             let mut msg = vec![b'r'];
+            msg.extend_from_slice(&id_bytes);
             msg.extend_from_slice(&time_bytes);
             msg.extend_from_slice(&cols_bytes);
             msg.extend_from_slice(&rows_bytes);
@@ -116,12 +124,14 @@ fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64
             (msg, time)
         }
 
-        Marker(time, text) => {
+        Marker(id, time, text) => {
+            let id_bytes = leb128::encode(id);
             let time_bytes = leb128::encode(time - prev_event_time);
             let text_len = text.len() as u32;
             let text_len_bytes = leb128::encode(text_len);
 
             let mut msg = vec![b'm'];
+            msg.extend_from_slice(&id_bytes);
             msg.extend_from_slice(&time_bytes);
             msg.extend_from_slice(&text_len_bytes);
             msg.extend_from_slice(text.as_bytes());
