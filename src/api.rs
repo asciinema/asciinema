@@ -20,7 +20,7 @@ pub struct GetUserStreamResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct NotFoundResponse {
+struct ErrorResponse {
     reason: String,
 }
 
@@ -73,7 +73,12 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
             "this CLI hasn't been authenticated with {server_hostname} - run `ascinema auth` first"
         ),
 
-        404 => match response.json::<NotFoundResponse>() {
+        404 => match response.json::<ErrorResponse>() {
+            Ok(json) => bail!("{}", json.reason),
+            Err(_) => bail!("{server_hostname} doesn't support streaming"),
+        },
+
+        422 => match response.json::<ErrorResponse>() {
             Ok(json) => bail!("{}", json.reason),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
