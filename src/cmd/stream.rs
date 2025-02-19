@@ -104,9 +104,10 @@ impl cli::Stream {
         match self.relay.take() {
             Some(RelayTarget::StreamId(id)) => {
                 let stream = api::create_user_stream(id, config)?;
+                let ws_producer_url = self.build_producer_url(&stream.ws_producer_url)?;
 
                 Ok(Some(Relay {
-                    ws_producer_url: stream.ws_producer_url.parse()?,
+                    ws_producer_url,
                     url: Some(stream.url.parse()?),
                 }))
             }
@@ -118,6 +119,15 @@ impl cli::Stream {
 
             None => Ok(None),
         }
+    }
+
+    fn build_producer_url(&self, url: &str) -> Result<Url> {
+        let mut url: Url = url.parse()?;
+        let term = env::var("TERM").ok().unwrap_or_default();
+        let shell = env::var("SHELL").ok().unwrap_or_default();
+        url.set_query(Some(&format!("term={term}&shell={shell}")));
+
+        Ok(url)
     }
 
     fn get_listener(&self) -> Result<Option<TcpListener>> {
