@@ -90,7 +90,11 @@ impl Session {
 
     pub fn marker(&mut self, time: u64) {
         let id = self.get_next_event_id();
-        let _ = self.broadcast_tx.send(Event::Marker(id, time, String::new()));
+
+        let _ = self
+            .broadcast_tx
+            .send(Event::Marker(id, time, String::new()));
+
         self.stream_time = time;
         self.last_event_time = Instant::now();
     }
