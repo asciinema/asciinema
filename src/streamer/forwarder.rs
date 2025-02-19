@@ -125,7 +125,11 @@ async fn connect_and_forward(
     clients_tx: &mpsc::Sender<session::Client>,
 ) -> anyhow::Result<bool> {
     let uri: Uri = url.to_string().parse()?;
-    let builder = ClientRequestBuilder::new(uri).with_sub_protocol("v1.alis");
+
+    let builder = ClientRequestBuilder::new(uri)
+        .with_sub_protocol("v1.alis")
+        .with_header("user-agent", api::build_user_agent());
+
     let (ws, _) = tokio_tungstenite::connect_async_with_config(builder, None, true).await?;
     info!("connected to the endpoint");
     let events = event_stream(clients_tx).await?;

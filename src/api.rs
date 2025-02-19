@@ -115,7 +115,7 @@ fn get_username() -> String {
     env::var("USER").unwrap_or("".to_owned())
 }
 
-fn build_user_agent() -> String {
+pub fn build_user_agent() -> String {
     let ua = concat!(
         "asciinema/",
         env!("CARGO_PKG_VERSION"),
