@@ -711,7 +711,6 @@ span.ap-marker-container:hover span.ap-marker {
   max-height: 85%;
   font-size: 18px;
   color: var(--term-color-foreground);
-  background-color: var(--term-color-background);
   box-sizing: border-box;
   margin-bottom: 32px;
 }
@@ -727,6 +726,7 @@ span.ap-marker-container:hover span.ap-marker {
 .ap-player .ap-overlay-help > div div {
   padding: calc(min(4cqw, 40px));
   font-size: calc(min(1.9cqw, 18px));
+  background-color: var(--term-color-background);
   border: 1px solid color-mix(in oklab, var(--term-color-background) 90%, var(--term-color-foreground));
   border-radius: 6px;
 }
