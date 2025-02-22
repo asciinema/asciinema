@@ -195,6 +195,10 @@ fn get_key_bindings(config: &Config) -> Result<KeyBindings> {
         keys.pause = key;
     }
 
+    if let Some(key) = config.cmd_stream_add_marker_key()? {
+        keys.add_marker = key;
+    }
+
     Ok(keys)
 }
 

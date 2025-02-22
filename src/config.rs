@@ -65,6 +65,7 @@ pub struct Stream {
     pub env: Option<String>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
+    pub add_marker_key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -215,6 +216,15 @@ impl Config {
         self.cmd
             .stream
             .pause_key
+            .as_ref()
+            .map(parse_key)
+            .transpose()
+    }
+
+    pub fn cmd_stream_add_marker_key(&self) -> Result<Option<Key>> {
+        self.cmd
+            .stream
+            .add_marker_key
             .as_ref()
             .map(parse_key)
             .transpose()

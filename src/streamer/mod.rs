@@ -131,20 +131,21 @@ impl pty::Handler for Streamer {
         }));
     }
 
-    fn output(&mut self, time: Duration, raw: &[u8]) -> bool {
+    fn output(&mut self, time: Duration, data: &[u8]) -> bool {
         if !self.paused {
-            let event = Event::Output(self.elapsed_time(time), raw.into());
+            let event = Event::Output(self.elapsed_time(time), data.into());
             let _ = self.pty_tx.send(event);
         }
 
         true
     }
 
-    fn input(&mut self, time: Duration, raw: &[u8]) -> bool {
+    fn input(&mut self, time: Duration, data: &[u8]) -> bool {
         let prefix_key = self.keys.prefix.as_ref();
         let pause_key = self.keys.pause.as_ref();
+        let add_marker_key = self.keys.add_marker.as_ref();
 
-        if !self.prefix_mode && prefix_key.is_some_and(|key| raw == key) {
+        if !self.prefix_mode && prefix_key.is_some_and(|key| data == key) {
             self.prefix_mode = true;
             return false;
         }
@@ -152,7 +153,7 @@ impl pty::Handler for Streamer {
         if self.prefix_mode || prefix_key.is_none() {
             self.prefix_mode = false;
 
-            if pause_key.is_some_and(|key| raw == key) {
+            if pause_key.is_some_and(|key| data == key) {
                 if self.paused {
                     self.paused = false;
                     self.notify("Resumed streaming");
@@ -162,11 +163,16 @@ impl pty::Handler for Streamer {
                 }
 
                 return false;
+            } else if add_marker_key.is_some_and(|key| data == key) {
+                let event = Event::Marker(self.elapsed_time(time));
+                let _ = self.pty_tx.send(event);
+                self.notify("Marker added");
+                return false;
             }
         }
 
         if self.record_input && !self.paused {
-            let event = Event::Input(self.elapsed_time(time), raw.into());
+            let event = Event::Input(self.elapsed_time(time), data.into());
             let _ = self.pty_tx.send(event);
         }
 
@@ -241,6 +247,7 @@ fn wrap_thread_handle(handle: thread::JoinHandle<()>) -> Option<util::JoinHandle
 pub struct KeyBindings {
     pub prefix: Key,
     pub pause: Key,
+    pub add_marker: Key,
 }
 
 impl Default for KeyBindings {
@@ -248,6 +255,7 @@ impl Default for KeyBindings {
         Self {
             prefix: None,
             pause: Some(vec![0x1c]), // ^\
+            add_marker: None,
         }
     }
 }
