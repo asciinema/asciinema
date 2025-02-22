@@ -66,7 +66,7 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
 
     let response = user_stream_request(&server_url, stream_id, install_id)
         .send()
-        .context("cannot obtain stream producer endpoint")?;
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
 
     match response.status().as_u16() {
         401 => bail!(
