@@ -16,11 +16,11 @@ impl Command for cli::Play {
         logger::info!("Replaying session from {}", self.filename);
 
         let path = util::get_local_path(&self.filename)?;
+        let keys = get_key_bindings(config)?;
 
         let ended = loop {
             let recording = asciicast::open_from_path(&*path)?;
             let tty = tty::DevTty::open()?;
-            let keys = get_key_bindings(config)?;
 
             let ended = player::play(
                 recording,
@@ -31,7 +31,7 @@ impl Command for cli::Play {
                 &keys,
             )?;
 
-            if !self.loop_ {
+            if !self.loop_ || !ended {
                 break ended;
             }
         };
