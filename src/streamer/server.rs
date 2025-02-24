@@ -25,10 +25,17 @@ use tracing::info;
 #[folder = "assets/"]
 struct Assets;
 
+#[derive(Clone)]
+struct AppState {
+    clients_tx: mpsc::Sender<session::Client>,
+    html_head: Option<String>,
+}
+
 pub async fn serve(
     listener: std::net::TcpListener,
     clients_tx: mpsc::Sender<session::Client>,
     shutdown_token: tokio_util::sync::CancellationToken,
+    html_head: Option<String>,
 ) -> io::Result<()> {
     listener.set_nonblocking(true)?;
     let listener = tokio::net::TcpListener::from_std(listener)?;
@@ -36,10 +43,15 @@ pub async fn serve(
     let trace = trace::TraceLayer::new_for_http()
         .make_span_with(trace::DefaultMakeSpan::default().include_headers(true));
 
+    let state = AppState {
+        clients_tx,
+        html_head,
+    };
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
-        .with_state(clients_tx)
         .fallback(static_handler)
+        .with_state(state)
         .layer(trace);
 
     let signal = async move {
@@ -60,7 +72,7 @@ pub async fn serve(
     .await
 }
 
-async fn static_handler(uri: Uri) -> impl IntoResponse {
+async fn static_handler(uri: Uri, State(state): State<AppState>) -> impl IntoResponse {
     let mut path = uri.path().trim_start_matches('/');
 
     if path.is_empty() {
@@ -70,6 +82,16 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
     match Assets::get(path) {
         Some(content) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
+
+            if path == "index.html" {
+                let content = String::from_utf8(content.data.clone().into())
+                    .expect("index.html asset contains invalid UTF-8 string");
+
+                let html_head = state.html_head.as_deref().unwrap_or("");
+                let content = content.replace("{{{html_head}}}", html_head);
+
+                return ([(header::CONTENT_TYPE, mime.as_ref())], content).into_response();
+            }
 
             ([(header::CONTENT_TYPE, mime.as_ref())], content.data).into_response()
         }
@@ -81,14 +103,14 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 async fn ws_handler(
     ws: ws::WebSocketUpgrade,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    State(clients_tx): State<mpsc::Sender<session::Client>>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
     ws.protocols(["v1.alis"])
         .on_upgrade(move |socket| async move {
             info!("websocket client {addr} connected");
 
             if socket.protocol().is_some() {
-                let _ = handle_socket(socket, clients_tx).await;
+                let _ = handle_socket(socket, state.clients_tx).await;
                 info!("websocket client {addr} disconnected");
             } else {
                 info!("subprotocol negotiation failed, closing connection");
