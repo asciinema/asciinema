@@ -18,7 +18,7 @@ use std::fs;
 use std::net::TcpListener;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
-use url::Url;
+use url::{form_urlencoded, Url};
 
 #[derive(Debug)]
 struct Relay {
@@ -125,7 +125,21 @@ impl cli::Stream {
         let mut url: Url = url.parse()?;
         let term = env::var("TERM").ok().unwrap_or_default();
         let shell = env::var("SHELL").ok().unwrap_or_default();
-        url.set_query(Some(&format!("term={term}&shell={shell}")));
+
+        let params = vec![
+            ("term[type]", term.clone()),
+            ("shell", shell.clone()),
+            ("env[TERM]", term),
+            ("env[SHELL]", shell),
+        ]
+        .into_iter()
+        .filter(|(_k, v)| v != "");
+
+        let query = form_urlencoded::Serializer::new(String::new())
+            .extend_pairs(params)
+            .finish();
+
+        url.set_query(Some(&query));
 
         Ok(url)
     }
