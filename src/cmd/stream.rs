@@ -12,7 +12,7 @@ use crate::util;
 use anyhow::bail;
 use anyhow::{anyhow, Context, Result};
 use cli::{RelayTarget, DEFAULT_LISTEN_ADDR};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fmt::Debug;
 use std::fs;
@@ -41,7 +41,7 @@ impl Command for cli::Stream {
         let record_input = self.input || config.cmd_stream_input();
         let exec_command = super::build_exec_command(command.as_ref().cloned());
         let listener = self.get_listener()?;
-        let relay = self.get_relay(config)?;
+        let relay = self.get_relay(config, self.env.clone())?;
         let relay_id = relay.as_ref().map(|r| r.id());
         let exec_extra_env = build_exec_extra_env(relay_id.as_ref());
 
@@ -103,11 +103,11 @@ impl cli::Stream {
             .or(config.cmd_stream_command())
     }
 
-    fn get_relay(&mut self, config: &Config) -> Result<Option<Relay>> {
+    fn get_relay(&mut self, config: &Config, env_vars: Option<String>) -> Result<Option<Relay>> {
         match self.relay.take() {
             Some(RelayTarget::StreamId(id)) => {
                 let stream = api::create_user_stream(id, config)?;
-                let ws_producer_url = self.build_producer_url(&stream.ws_producer_url)?;
+                let ws_producer_url = self.build_producer_url(&stream.ws_producer_url, env_vars)?;
 
                 Ok(Some(Relay {
                     ws_producer_url,
@@ -124,19 +124,23 @@ impl cli::Stream {
         }
     }
 
-    fn build_producer_url(&self, url: &str) -> Result<Url> {
+    fn build_producer_url(&self, url: &str, env_vars: Option<String>) -> Result<Url> {
         let mut url: Url = url.parse()?;
         let term = env::var("TERM").ok().unwrap_or_default();
         let shell = env::var("SHELL").ok().unwrap_or_default();
 
-        let params = vec![
-            ("term[type]", term.clone()),
-            ("shell", shell.clone()),
-            ("env[TERM]", term),
-            ("env[SHELL]", shell),
-        ]
-        .into_iter()
-        .filter(|(_k, v)| v != "");
+        let mut params = vec![
+            ("term[type]".to_string(), term.clone()),
+            ("shell".to_string(), shell.clone()),
+        ];
+
+        if let Some(env_vars) = env_vars {
+            for (k, v) in capture_env(&env_vars) {
+                params.push((format!("env[{k}]"), v));
+            }
+        }
+
+        let params = params.into_iter().filter(|(_k, v)| v != "");
 
         let query = form_urlencoded::Serializer::new(String::new())
             .extend_pairs(params)
@@ -228,4 +232,12 @@ fn build_exec_extra_env(relay_id: Option<&String>) -> HashMap<String, String> {
 
 fn parent_session_relay_id() -> Option<String> {
     env::var("ASCIINEMA_RELAY_ID").ok()
+}
+
+fn capture_env(vars: &str) -> HashMap<String, String> {
+    let vars = vars.split(',').collect::<HashSet<_>>();
+
+    env::vars()
+        .filter(|(k, _v)| vars.contains(&k.as_str()))
+        .collect::<HashMap<_, _>>()
 }

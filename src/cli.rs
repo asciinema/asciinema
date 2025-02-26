@@ -145,6 +145,10 @@ pub struct Stream {
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
     pub relay: Option<RelayTarget>,
 
+    /// List of env vars to save [default: TERM,SHELL]
+    #[arg(long)]
+    pub env: Option<String>,
+
     /// Use headless mode - don't use TTY for input/output
     #[arg(long)]
     pub headless: bool,
