@@ -1,4 +1,3 @@
-use super::Command;
 use crate::asciicast;
 use crate::cli::{self, Format};
 use crate::config::Config;
@@ -8,8 +7,8 @@ use anyhow::{bail, Result};
 use std::fs;
 use std::path::Path;
 
-impl Command for cli::Convert {
-    fn run(self, _config: &Config) -> Result<()> {
+impl cli::Convert {
+    pub fn run(self, _config: &Config) -> Result<()> {
         let path = util::get_local_path(&self.input_filename)?;
         let cast = asciicast::open_from_path(&*path)?;
         let mut encoder = self.get_encoder();
@@ -17,9 +16,7 @@ impl Command for cli::Convert {
 
         encoder.encode_to_file(cast, &mut file)
     }
-}
 
-impl cli::Convert {
     fn get_encoder(&self) -> Box<dyn encoder::Encoder> {
         let format = self.format.unwrap_or_else(|| {
             if self.output_filename.to_lowercase().ends_with(".txt") {

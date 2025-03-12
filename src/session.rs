@@ -1,29 +1,32 @@
-use crate::asciicast::Event;
+use std::io;
+use std::sync::mpsc::{self, Receiver};
+use std::thread;
+use std::time::{Duration, SystemTime};
+
 use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
 use crate::tty;
-use crate::util;
-use std::io;
-use std::sync::mpsc;
-use std::thread;
-use std::time::{Duration, SystemTime};
+use crate::util::{JoinHandle, Utf8Decoder};
 
-pub struct Recorder<N> {
-    output: Option<Box<dyn Output + Send>>,
+pub struct Session<N> {
+    outputs: Vec<Box<dyn Output + Send>>,
+    input_decoder: Utf8Decoder,
+    output_decoder: Utf8Decoder,
+    tty_size: tty::TtySize,
     record_input: bool,
     keys: KeyBindings,
     notifier: N,
-    sender: mpsc::Sender<Message>,
-    receiver: Option<mpsc::Receiver<Message>>,
-    handle: Option<util::JoinHandle>,
+    sender: mpsc::Sender<Event>,
+    receiver: Option<Receiver<Event>>,
+    handle: Option<JoinHandle>,
     time_offset: u64,
     pause_time: Option<u64>,
     prefix_mode: bool,
 }
 
 pub trait Output {
-    fn header(
+    fn start(
         &mut self,
         time: SystemTime,
         tty_size: tty::TtySize,
@@ -33,24 +36,28 @@ pub trait Output {
     fn flush(&mut self) -> io::Result<()>;
 }
 
-enum Message {
-    Output(u64, Vec<u8>),
-    Input(u64, Vec<u8>),
+#[derive(Clone)]
+pub enum Event {
+    Output(u64, String),
+    Input(u64, String),
     Resize(u64, tty::TtySize),
-    Marker(u64),
+    Marker(u64, String),
 }
 
-impl<N: Notifier> Recorder<N> {
+impl<N: Notifier> Session<N> {
     pub fn new(
-        output: Box<dyn Output + Send>,
+        outputs: Vec<Box<dyn Output + Send>>,
         record_input: bool,
         keys: KeyBindings,
         notifier: N,
     ) -> Self {
         let (sender, receiver) = mpsc::channel();
 
-        Recorder {
-            output: Some(output),
+        Session {
+            outputs,
+            input_decoder: Utf8Decoder::new(),
+            output_decoder: Utf8Decoder::new(),
+            tty_size: tty::TtySize::default(),
             record_input,
             keys,
             notifier,
@@ -74,63 +81,39 @@ impl<N: Notifier> Recorder<N> {
     fn notify<S: ToString>(&mut self, text: S) {
         self.notifier
             .notify(text.to_string())
-            .expect("notification send should succeed");
+            .expect("notification should succeed");
     }
 }
 
-impl<N: Notifier> pty::Handler for Recorder<N> {
-    fn start(&mut self, tty_size: tty::TtySize, theme: Option<tty::Theme>) {
-        let mut output = self.output.take().unwrap();
-        let _ = output.header(SystemTime::now(), tty_size, theme);
+impl<N: Notifier> pty::Handler for Session<N> {
+    fn start(&mut self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) {
+        let mut outputs = std::mem::take(&mut self.outputs);
+        let time = SystemTime::now();
         let receiver = self.receiver.take().unwrap();
 
         let handle = thread::spawn(move || {
-            use Message::*;
-            let mut last_tty_size = tty_size;
-            let mut input_decoder = util::Utf8Decoder::new();
-            let mut output_decoder = util::Utf8Decoder::new();
+            outputs.retain_mut(|output| output.start(time, tty_size, tty_theme.clone()).is_ok());
 
-            for msg in receiver {
-                match msg {
-                    Output(time, data) => {
-                        let text = output_decoder.feed(&data);
-
-                        if !text.is_empty() {
-                            let _ = output.event(Event::output(time, text));
-                        }
-                    }
-
-                    Input(time, data) => {
-                        let text = input_decoder.feed(&data);
-
-                        if !text.is_empty() {
-                            let _ = output.event(Event::input(time, text));
-                        }
-                    }
-
-                    Resize(time, new_tty_size) => {
-                        if new_tty_size != last_tty_size {
-                            let _ = output.event(Event::resize(time, new_tty_size.into()));
-                            last_tty_size = new_tty_size;
-                        }
-                    }
-
-                    Marker(time) => {
-                        let _ = output.event(Event::marker(time, String::new()));
-                    }
-                }
+            for event in receiver {
+                outputs.retain_mut(|output| output.event(event.clone()).is_ok())
             }
 
-            let _ = output.flush();
+            for mut output in outputs {
+                let _ = output.flush();
+            }
         });
 
-        self.handle = Some(util::JoinHandle::new(handle));
+        self.handle = Some(JoinHandle::new(handle));
     }
 
     fn output(&mut self, time: Duration, data: &[u8]) -> bool {
         if self.pause_time.is_none() {
-            let msg = Message::Output(self.elapsed_time(time), data.into());
-            self.sender.send(msg).expect("output send should succeed");
+            let text = self.output_decoder.feed(data);
+
+            if !text.is_empty() {
+                let msg = Event::Output(self.elapsed_time(time), text);
+                self.sender.send(msg).expect("output send should succeed");
+            }
         }
 
         true
@@ -161,7 +144,7 @@ impl<N: Notifier> pty::Handler for Recorder<N> {
 
                 return false;
             } else if add_marker_key.is_some_and(|key| data == key) {
-                let msg = Message::Marker(self.elapsed_time(time));
+                let msg = Event::Marker(self.elapsed_time(time), "".to_owned());
                 self.sender.send(msg).expect("marker send should succeed");
                 self.notify("Marker added");
                 return false;
@@ -169,16 +152,24 @@ impl<N: Notifier> pty::Handler for Recorder<N> {
         }
 
         if self.record_input && self.pause_time.is_none() {
-            let msg = Message::Input(self.elapsed_time(time), data.into());
-            self.sender.send(msg).expect("input send should succeed");
+            let text = self.input_decoder.feed(data);
+
+            if !text.is_empty() {
+                let msg = Event::Input(self.elapsed_time(time), text);
+                self.sender.send(msg).expect("input send should succeed");
+            }
         }
 
         true
     }
 
     fn resize(&mut self, time: Duration, tty_size: tty::TtySize) -> bool {
-        let msg = Message::Resize(self.elapsed_time(time), tty_size);
-        self.sender.send(msg).expect("resize send should succeed");
+        if tty_size != self.tty_size {
+            let msg = Event::Resize(self.elapsed_time(time), tty_size);
+            self.sender.send(msg).expect("resize send should succeed");
+
+            self.tty_size = tty_size;
+        }
 
         true
     }

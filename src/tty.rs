@@ -17,6 +17,12 @@ use termion::raw::{IntoRawMode, RawTerminal};
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TtySize(pub u16, pub u16);
 
+impl Default for TtySize {
+    fn default() -> Self {
+        TtySize(80, 24)
+    }
+}
+
 impl From<pty::Winsize> for TtySize {
     fn from(winsize: pty::Winsize) -> Self {
         TtySize(winsize.ws_col, winsize.ws_row)

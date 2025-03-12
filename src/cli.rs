@@ -1,8 +1,8 @@
-use clap::{Args, ValueEnum};
-use clap::{Parser, Subcommand};
 use std::net::SocketAddr;
 use std::num::ParseIntError;
 use std::path::PathBuf;
+
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 pub const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:8080";
 
@@ -32,6 +32,9 @@ pub enum Commands {
 
     /// Stream a terminal session
     Stream(Stream),
+
+    /// Record and/or stream a terminal session
+    Session(Session),
 
     /// Concatenate multiple recordings
     Cat(Cat),
@@ -70,7 +73,7 @@ pub struct Record {
     #[arg(long, conflicts_with = "append")]
     pub overwrite: bool,
 
-    /// Command to record [default: $SHELL]
+    /// Command to start in the session [default: $SHELL]
     #[arg(short, long)]
     pub command: Option<String>,
 
@@ -94,7 +97,7 @@ pub struct Record {
     #[arg(long)]
     pub headless: bool,
 
-    /// Override terminal size for the recorded command
+    /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
 
@@ -156,6 +159,69 @@ pub struct Stream {
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
+
+    /// Log file path
+    #[arg(long)]
+    pub log_file: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+pub struct Session {
+    /// Output path - either a file or a directory path
+    #[arg(short, long)]
+    pub output: Option<String>,
+
+    /// Enable input recording
+    #[arg(long, short = 'I', alias = "stdin")]
+    pub input: bool,
+
+    /// Append to an existing recording file
+    #[arg(short, long)]
+    pub append: bool,
+
+    /// Recording file format [default: asciicast]
+    #[arg(short, long, value_enum)]
+    pub format: Option<Format>,
+
+    /// Overwrite target file if it already exists
+    #[arg(long, conflicts_with = "append")]
+    pub overwrite: bool,
+
+    /// Command to start in the session [default: $SHELL]
+    #[arg(short, long)]
+    pub command: Option<String>,
+
+    /// Filename template, used when recording to a directory
+    #[arg(long, value_name = "TEMPLATE")]
+    pub filename: Option<String>,
+
+    /// List of env vars to save [default: TERM,SHELL]
+    #[arg(long)]
+    pub env: Option<String>,
+
+    /// Title of the recording
+    #[arg(short, long)]
+    pub title: Option<String>,
+
+    /// Limit idle time to a given number of seconds
+    #[arg(short, long, value_name = "SECS")]
+    pub idle_time_limit: Option<f64>,
+
+    /// Use headless mode - don't use TTY for input/output
+    #[arg(long)]
+    pub headless: bool,
+
+    /// Override terminal size for the session
+    #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
+    pub tty_size: Option<(Option<u16>, Option<u16>)>,
+
+    /// Stream the session with the built-in HTTP server
+    #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
+    pub serve: Option<SocketAddr>,
+
+    /// Stream the session via an asciinema server
+    #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
+    pub relay: Option<RelayTarget>,
 
     /// Log file path
     #[arg(long)]

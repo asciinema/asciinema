@@ -4,37 +4,36 @@
 
 // TODO document the protocol when it's final
 
-use super::session;
-use crate::leb128;
+use std::future;
+
 use anyhow::Result;
 use futures_util::{stream, Stream, StreamExt};
-use std::future;
-use tokio::sync::mpsc;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
+
+use crate::leb128;
+use crate::stream::Event;
 
 static MAGIC_STRING: &str = "ALiS\x01";
 
-pub async fn stream(
-    clients_tx: &mpsc::Sender<session::Client>,
+pub async fn stream<S: Stream<Item = Result<Event, BroadcastStreamRecvError>>>(
+    stream: S,
 ) -> Result<impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>>> {
     let header = stream::once(future::ready(Ok(MAGIC_STRING.into())));
 
-    let events = session::stream(clients_tx)
-        .await?
-        .scan(0u64, |prev_event_time, event| {
-            future::ready(Some(event.map(|event| {
-                let (bytes, time) = serialize_event(event, *prev_event_time);
-                *prev_event_time = time;
+    let events = stream.scan(0u64, |prev_event_time, event| {
+        future::ready(Some(event.map(|event| {
+            let (bytes, time) = serialize_event(event, *prev_event_time);
+            *prev_event_time = time;
 
-                bytes
-            })))
-        });
+            bytes
+        })))
+    });
 
     Ok(header.chain(events))
 }
 
-fn serialize_event(event: session::Event, prev_event_time: u64) -> (Vec<u8>, u64) {
-    use session::Event::*;
+fn serialize_event(event: Event, prev_event_time: u64) -> (Vec<u8>, u64) {
+    use Event::*;
 
     match event {
         Init(last_id, time, size, theme, init) => {

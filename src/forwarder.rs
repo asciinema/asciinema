@@ -1,16 +1,11 @@
-use crate::notifier::Notifier;
-
-use super::alis;
-use super::session;
-use crate::api;
-use anyhow::anyhow;
-use anyhow::bail;
-use axum::http::Uri;
 use core::future::{self, Future};
-use futures_util::{stream, SinkExt, Stream, StreamExt};
 use std::borrow::Cow;
 use std::pin::Pin;
 use std::time::Duration;
+
+use anyhow::{anyhow, bail};
+use axum::http::Uri;
+use futures_util::{SinkExt, Stream, StreamExt};
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, timeout};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
@@ -21,6 +16,11 @@ use tokio_tungstenite::tungstenite::{self, ClientRequestBuilder, Message};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 use tracing::{debug, error, info};
 
+use crate::alis;
+use crate::api;
+use crate::notifier::Notifier;
+use crate::stream::Subscriber;
+
 const PING_INTERVAL: u64 = 15;
 const PING_TIMEOUT: u64 = 10;
 const SEND_TIMEOUT: u64 = 10;
@@ -28,7 +28,7 @@ const MAX_RECONNECT_DELAY: u64 = 5000;
 
 pub async fn forward<N: Notifier>(
     url: url::Url,
-    clients_tx: tokio::sync::mpsc::Sender<session::Client>,
+    subscriber: Subscriber,
     mut notifier: N,
     shutdown_token: tokio_util::sync::CancellationToken,
 ) {
@@ -37,7 +37,7 @@ pub async fn forward<N: Notifier>(
     let mut connection_count: u64 = 0;
 
     loop {
-        let conn = connect_and_forward(&url, &clients_tx);
+        let conn = connect_and_forward(&url, &subscriber);
         tokio::pin!(conn);
 
         let result = tokio::select! {
@@ -122,10 +122,7 @@ pub async fn forward<N: Notifier>(
     }
 }
 
-async fn connect_and_forward(
-    url: &url::Url,
-    clients_tx: &tokio::sync::mpsc::Sender<session::Client>,
-) -> anyhow::Result<bool> {
+async fn connect_and_forward(url: &url::Url, subscriber: &Subscriber) -> anyhow::Result<bool> {
     let uri: Uri = url.to_string().parse()?;
 
     let builder = ClientRequestBuilder::new(uri)
@@ -134,18 +131,22 @@ async fn connect_and_forward(
 
     let (ws, _) = tokio_tungstenite::connect_async_with_config(builder, None, true).await?;
     info!("connected to the endpoint");
-    let events = event_stream(clients_tx).await?;
+    let events = event_stream(subscriber).await?;
 
     handle_socket(ws, events).await
 }
 
 async fn event_stream(
-    clients_tx: &tokio::sync::mpsc::Sender<session::Client>,
+    subscriber: &Subscriber,
 ) -> anyhow::Result<impl Stream<Item = anyhow::Result<Message>>> {
-    let stream = alis::stream(clients_tx)
+    let stream = subscriber.subscribe().await?;
+
+    let stream = alis::stream(stream)
         .await?
         .map(ws_result)
-        .chain(stream::once(future::ready(Ok(close_message()))));
+        .chain(futures_util::stream::once(future::ready(Ok(
+            close_message(),
+        ))));
 
     Ok(stream)
 }
