@@ -1,12 +1,15 @@
 mod util;
 mod v1;
 mod v2;
-use crate::tty;
-use anyhow::{anyhow, Result};
+
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
+
+use anyhow::{anyhow, Result};
+
+use crate::tty;
 pub use v2::Encoder;
 
 pub struct Asciicast<'a> {

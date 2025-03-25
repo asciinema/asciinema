@@ -1,3 +1,7 @@
+use std::fs;
+use std::io;
+use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd};
+
 use anyhow::Result;
 use nix::{
     errno::Errno,
@@ -9,9 +13,6 @@ use nix::{
     unistd,
 };
 use rgb::RGB8;
-use std::fs;
-use std::io;
-use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd};
 use termion::raw::{IntoRawMode, RawTerminal};
 
 #[derive(Clone, Copy, Debug, PartialEq)]

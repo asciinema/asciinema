@@ -1,11 +1,13 @@
-use crate::config::Config;
+use std::env;
+use std::fmt::Debug;
+
 use anyhow::{bail, Context, Result};
 use reqwest::blocking::{multipart::Form, Client, RequestBuilder};
 use reqwest::header;
 use serde::Deserialize;
-use std::env;
-use std::fmt::Debug;
 use url::Url;
+
+use crate::config::Config;
 
 #[derive(Debug, Deserialize)]
 pub struct UploadAsciicastResponse {

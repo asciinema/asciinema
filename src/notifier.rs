@@ -1,12 +1,11 @@
-use anyhow::Result;
+use std::env;
+use std::ffi::OsStr;
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
 use std::sync::mpsc;
 use std::thread;
-use std::{
-    env,
-    ffi::OsStr,
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+
+use anyhow::Result;
 use which::which;
 
 pub trait Notifier: Send {

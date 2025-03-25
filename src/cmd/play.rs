@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use crate::asciicast;
 use crate::cli;
 use crate::config::{self, Config};
@@ -5,7 +7,6 @@ use crate::logger;
 use crate::player::{self, KeyBindings};
 use crate::tty;
 use crate::util;
-use anyhow::Result;
 
 impl cli::Play {
     pub fn run(self, config: &Config) -> Result<()> {

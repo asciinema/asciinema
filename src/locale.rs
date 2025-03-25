@@ -1,6 +1,7 @@
-use nix::libc::{self, CODESET, LC_ALL};
 use std::env;
 use std::ffi::CStr;
+
+use nix::libc::{self, CODESET, LC_ALL};
 
 pub fn check_utf8_locale() -> anyhow::Result<()> {
     initialize_from_env();

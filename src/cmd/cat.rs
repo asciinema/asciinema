@@ -1,9 +1,11 @@
+use std::io;
+use std::io::Write;
+
+use anyhow::Result;
+
 use crate::asciicast;
 use crate::cli;
 use crate::config::Config;
-use anyhow::Result;
-use std::io;
-use std::io::Write;
 
 impl cli::Cat {
     pub fn run(self, _config: &Config) -> Result<()> {

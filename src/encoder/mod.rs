@@ -2,13 +2,15 @@ mod asciicast;
 mod raw;
 mod txt;
 
-use crate::asciicast::Event;
-use crate::asciicast::Header;
-use anyhow::Result;
-pub use asciicast::AsciicastEncoder;
-pub use raw::RawEncoder;
 use std::fs::File;
 use std::io::Write;
+
+use anyhow::Result;
+
+use crate::asciicast::Event;
+use crate::asciicast::Header;
+pub use asciicast::AsciicastEncoder;
+pub use raw::RawEncoder;
 pub use txt::TextEncoder;
 
 pub trait Encoder {

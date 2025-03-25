@@ -1,5 +1,13 @@
-use crate::io::set_non_blocking;
-use crate::tty::{Theme, Tty, TtySize};
+use std::collections::HashMap;
+use std::env;
+use std::ffi::{CString, NulError};
+use std::fs::File;
+use std::io::{self, ErrorKind, Read, Write};
+use std::os::fd::AsFd;
+use std::os::fd::{BorrowedFd, OwnedFd};
+use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::time::{Duration, Instant};
+
 use anyhow::{bail, Result};
 use nix::errno::Errno;
 use nix::libc::EIO;
@@ -10,15 +18,9 @@ use nix::unistd::{self, ForkResult};
 use nix::{libc, pty};
 use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
-use std::collections::HashMap;
-use std::env;
-use std::ffi::{CString, NulError};
-use std::fs::File;
-use std::io::{self, ErrorKind, Read, Write};
-use std::os::fd::AsFd;
-use std::os::fd::{BorrowedFd, OwnedFd};
-use std::os::unix::io::{AsRawFd, FromRawFd};
-use std::time::{Duration, Instant};
+
+use crate::io::set_non_blocking;
+use crate::tty::{Theme, Tty, TtySize};
 
 type ExtraEnv = HashMap<String, String>;
 

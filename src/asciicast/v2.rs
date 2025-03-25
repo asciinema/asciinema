@@ -1,10 +1,12 @@
-use super::{util, Asciicast, Event, EventData, Header};
-use crate::tty;
-use anyhow::{anyhow, bail, Result};
-use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 use std::io;
+
+use anyhow::{anyhow, bail, Result};
+use serde::{Deserialize, Deserializer, Serialize};
+
+use super::{util, Asciicast, Event, EventData, Header};
+use crate::tty;
 
 #[derive(Deserialize)]
 struct V2Header {

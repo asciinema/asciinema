@@ -1,11 +1,13 @@
+use std::fs;
+use std::path::Path;
+
+use anyhow::{bail, Result};
+
 use crate::asciicast;
 use crate::cli::{self, Format};
 use crate::config::Config;
 use crate::encoder::{self, AsciicastEncoder, EncoderExt, RawEncoder, TextEncoder};
 use crate::util;
-use anyhow::{bail, Result};
-use std::fs;
-use std::path::Path;
 
 impl cli::Convert {
     pub fn run(self, _config: &Config) -> Result<()> {

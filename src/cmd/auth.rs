@@ -1,7 +1,8 @@
+use anyhow::Result;
+
 use crate::api;
 use crate::cli;
 use crate::config::Config;
-use anyhow::Result;
 
 impl cli::Auth {
     pub fn run(self, config: &Config) -> Result<()> {

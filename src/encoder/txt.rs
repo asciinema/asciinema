@@ -1,5 +1,6 @@
-use crate::asciicast::{Event, EventData, Header};
 use avt::util::TextCollector;
+
+use crate::asciicast::{Event, EventData, Header};
 
 pub struct TextEncoder {
     collector: Option<TextCollector>,

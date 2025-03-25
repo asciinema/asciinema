@@ -1,8 +1,10 @@
-use super::{Asciicast, Event, Header};
-use crate::asciicast::util::deserialize_time;
+use std::collections::HashMap;
+
 use anyhow::{bail, Result};
 use serde::Deserialize;
-use std::collections::HashMap;
+
+use super::{Asciicast, Event, Header};
+use crate::asciicast::util::deserialize_time;
 
 #[derive(Debug, Deserialize)]
 struct V1 {

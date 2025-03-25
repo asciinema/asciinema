@@ -1,8 +1,9 @@
+use anyhow::Result;
+
 use crate::api;
 use crate::asciicast;
 use crate::cli;
 use crate::config::Config;
-use anyhow::Result;
 
 impl cli::Upload {
     pub fn run(self, config: &Config) -> Result<()> {
