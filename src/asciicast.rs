@@ -251,7 +251,7 @@ mod tests {
 
         let mut enc = Encoder::new(0);
         data.extend(enc.header(&header));
-        data.extend(enc.event(&Event::output(1000001, "hello\r\n".to_owned())));
+        data.extend(enc.event(&Event::output(1000000, "hello\r\n".to_owned())));
 
         let mut enc = Encoder::new(1000001);
         data.extend(enc.event(&Event::output(1000001, "world".to_owned())));
@@ -265,7 +265,7 @@ mod tests {
         assert_eq!(lines[0]["width"], 80);
         assert_eq!(lines[0]["height"], 24);
         assert!(lines[0]["timestamp"].is_null());
-        assert_eq!(lines[1][0], 1.000001);
+        assert_eq!(lines[1][0], 1.000000);
         assert_eq!(lines[1][1], "o");
         assert_eq!(lines[1][2], "hello\r\n");
         assert_eq!(lines[2][0], 2.000002);

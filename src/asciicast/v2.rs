@@ -194,7 +194,7 @@ impl Encoder {
 
         Ok(format!(
             "[{}, {}, {}]",
-            format_time(event.time + self.time_offset).trim_end_matches('0'),
+            format_time(event.time + self.time_offset),
             serde_json::to_string(&code)?,
             data,
         ))
@@ -202,7 +202,18 @@ impl Encoder {
 }
 
 fn format_time(time: u64) -> String {
-    format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000)
+    let mut formatted_time = format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000);
+    let dot_idx = formatted_time.find('.').unwrap();
+
+    for idx in (dot_idx + 2..=formatted_time.len() - 1).rev() {
+        if formatted_time.as_bytes()[idx] != b'0' {
+            break;
+        }
+
+        formatted_time.truncate(idx);
+    }
+
+    formatted_time
 }
 
 impl serde::Serialize for V2Header {
@@ -378,5 +389,16 @@ impl From<&V2Theme> for tty::Theme {
             bg: theme.bg.0,
             palette,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn format_time() {
+        assert_eq!(super::format_time(0), "0.0");
+        assert_eq!(super::format_time(1000001), "1.000001");
+        assert_eq!(super::format_time(12300000), "12.3");
+        assert_eq!(super::format_time(12000003), "12.000003");
     }
 }
