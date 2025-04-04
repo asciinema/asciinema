@@ -172,17 +172,13 @@ impl session::Output for Output {
     ) -> io::Result<()> {
         self.0
             .send(Message::Start(tty_size, theme))
-            .expect("send should succeed");
-
-        Ok(())
+            .map_err(io::Error::other)
     }
 
     fn event(&mut self, event: session::Event) -> io::Result<()> {
         self.0
             .send(Message::SessionEvent(event))
-            .expect("send should succeed");
-
-        Ok(())
+            .map_err(io::Error::other)
     }
 
     fn flush(&mut self) -> io::Result<()> {
