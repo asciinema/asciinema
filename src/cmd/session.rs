@@ -43,6 +43,7 @@ impl cli::Session {
         let keys = get_key_bindings(&cmd_config)?;
         let notifier = notifier::threaded(get_notifier(config));
         let record_input = self.input || cmd_config.input;
+        let env = capture_env(self.env.clone(), &cmd_config);
 
         let path = self
             .output
@@ -52,7 +53,7 @@ impl cli::Session {
 
         let file_writer = path
             .as_ref()
-            .map(|path| self.get_file_writer(path, &cmd_config))
+            .map(|path| self.get_file_writer(path, &cmd_config, &env))
             .transpose()?;
 
         let mut listener = self
@@ -65,7 +66,7 @@ impl cli::Session {
         let mut relay = self
             .relay
             .take()
-            .map(|target| get_relay(target, config, self.env.as_deref()))
+            .map(|target| get_relay(target, config, &env))
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -207,7 +208,12 @@ impl cli::Session {
         }
     }
 
-    fn get_file_writer(&self, path: &str, config: &config::Session) -> Result<FileWriter> {
+    fn get_file_writer(
+        &self,
+        path: &str,
+        config: &config::Session,
+        env: &HashMap<String, String>,
+    ) -> Result<FileWriter> {
         let format = self.format.unwrap_or_else(|| {
             if path.to_lowercase().ends_with(".txt") {
                 Format::Txt
@@ -249,7 +255,7 @@ impl cli::Session {
             0
         };
 
-        let metadata = self.build_asciicast_metadata(config);
+        let metadata = self.build_asciicast_metadata(env, config);
 
         let writer = match format {
             Format::Asciicast => {
@@ -293,22 +299,19 @@ impl cli::Session {
         self.command.as_ref().cloned().or(config.command.clone())
     }
 
-    fn build_asciicast_metadata(&self, config: &config::Session) -> Metadata {
+    fn build_asciicast_metadata(
+        &self,
+        env: &HashMap<String, String>,
+        config: &config::Session,
+    ) -> Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.idle_time_limit);
         let command = self.get_command(config);
-
-        let env = self
-            .env
-            .as_ref()
-            .cloned()
-            .or(config.env.clone())
-            .unwrap_or(String::from("TERM,SHELL"));
 
         Metadata {
             idle_time_limit,
             command,
             title: self.title.clone(),
-            env: Some(capture_env(&env)),
+            env: Some(env.clone()),
         }
     }
 
@@ -362,11 +365,11 @@ impl Relay {
     }
 }
 
-fn get_relay(target: RelayTarget, config: &Config, env_vars: Option<&str>) -> Result<Relay> {
+fn get_relay(target: RelayTarget, config: &Config, env: &HashMap<String, String>) -> Result<Relay> {
     match target {
         RelayTarget::StreamId(id) => {
             let stream = api::create_user_stream(id, config)?;
-            let ws_producer_url = build_producer_url(&stream.ws_producer_url, env_vars)?;
+            let ws_producer_url = build_producer_url(&stream.ws_producer_url, env)?;
 
             Ok(Relay {
                 ws_producer_url,
@@ -381,7 +384,7 @@ fn get_relay(target: RelayTarget, config: &Config, env_vars: Option<&str>) -> Re
     }
 }
 
-fn build_producer_url(url: &str, env_vars: Option<&str>) -> Result<Url> {
+fn build_producer_url(url: &str, env: &HashMap<String, String>) -> Result<Url> {
     let mut url: Url = url.parse()?;
     let term = env::var("TERM").ok().unwrap_or_default();
     let shell = env::var("SHELL").ok().unwrap_or_default();
@@ -391,10 +394,8 @@ fn build_producer_url(url: &str, env_vars: Option<&str>) -> Result<Url> {
         ("shell".to_string(), shell.clone()),
     ];
 
-    if let Some(env_vars) = env_vars {
-        for (k, v) in capture_env(env_vars) {
-            params.push((format!("env[{k}]"), v));
-        }
+    for (k, v) in env {
+        params.push((format!("env[{k}]"), v.to_string()));
     }
 
     let params = params.into_iter().filter(|(_k, v)| !v.is_empty());
@@ -426,8 +427,12 @@ fn get_key_bindings(config: &config::Session) -> Result<KeyBindings> {
     Ok(keys)
 }
 
-fn capture_env(vars: &str) -> HashMap<String, String> {
-    let vars = vars.split(',').collect::<HashSet<_>>();
+fn capture_env(var_names: Option<String>, config: &config::Session) -> HashMap<String, String> {
+    let var_names = var_names
+        .or(config.env.clone())
+        .unwrap_or(String::from("TERM,SHELL"));
+
+    let vars = var_names.split(',').collect::<HashSet<_>>();
 
     env::vars()
         .filter(|(k, _v)| vars.contains(&k.as_str()))
