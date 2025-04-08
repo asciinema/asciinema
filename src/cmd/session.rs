@@ -29,7 +29,7 @@ use crate::logger;
 use crate::notifier::{self, Notifier, NullNotifier};
 use crate::pty;
 use crate::server;
-use crate::session::{self, KeyBindings, Session};
+use crate::session::{self, KeyBindings, SessionStarter};
 use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty};
 use crate::util;
@@ -143,9 +143,9 @@ impl cli::Session {
         let exec_extra_env = build_exec_extra_env(relay_id.as_ref());
 
         {
-            let mut session = Session::new(outputs, record_input, keys, notifier);
+            let starter = SessionStarter::new(outputs, record_input, keys, notifier);
             let mut tty = self.get_tty()?;
-            pty::exec(&exec_command, &exec_extra_env, &mut tty, &mut session)?;
+            pty::exec(&exec_command, &exec_extra_env, &mut tty, starter)?;
         }
 
         runtime.block_on(async {

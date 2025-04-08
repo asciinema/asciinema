@@ -1,5 +1,5 @@
 use std::io;
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
@@ -9,20 +9,11 @@ use crate::pty;
 use crate::tty;
 use crate::util::{JoinHandle, Utf8Decoder};
 
-pub struct Session<N> {
+pub struct SessionStarter<N> {
     outputs: Vec<Box<dyn Output + Send>>,
-    input_decoder: Utf8Decoder,
-    output_decoder: Utf8Decoder,
-    tty_size: tty::TtySize,
     record_input: bool,
     keys: KeyBindings,
     notifier: N,
-    sender: mpsc::Sender<Event>,
-    receiver: Option<Receiver<Event>>,
-    handle: Option<JoinHandle>,
-    time_offset: u64,
-    pause_time: Option<u64>,
-    prefix_mode: bool,
 }
 
 pub trait Output {
@@ -44,32 +35,71 @@ pub enum Event {
     Marker(u64, String),
 }
 
-impl<N: Notifier> Session<N> {
+impl<N: Notifier> SessionStarter<N> {
     pub fn new(
         outputs: Vec<Box<dyn Output + Send>>,
         record_input: bool,
         keys: KeyBindings,
         notifier: N,
     ) -> Self {
-        let (sender, receiver) = mpsc::channel();
-
-        Session {
+        SessionStarter {
             outputs,
-            input_decoder: Utf8Decoder::new(),
-            output_decoder: Utf8Decoder::new(),
-            tty_size: tty::TtySize::default(),
             record_input,
             keys,
             notifier,
+        }
+    }
+}
+
+impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
+    fn start(mut self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) -> Session<N> {
+        let mut outputs = std::mem::take(&mut self.outputs);
+        let time = SystemTime::now();
+        let (sender, receiver) = mpsc::channel::<Event>();
+
+        outputs.retain_mut(|output| output.start(time, tty_size, tty_theme.clone()).is_ok());
+
+        let handle = thread::spawn(move || {
+            for event in receiver {
+                outputs.retain_mut(|output| output.event(event.clone()).is_ok())
+            }
+
+            for mut output in outputs {
+                let _ = output.flush();
+            }
+        });
+
+        Session {
+            notifier: self.notifier,
+            input_decoder: Utf8Decoder::new(),
+            output_decoder: Utf8Decoder::new(),
+            record_input: self.record_input,
+            keys: self.keys,
+            tty_size,
             sender,
-            receiver: Some(receiver),
-            handle: None,
             time_offset: 0,
             pause_time: None,
             prefix_mode: false,
+            _handle: JoinHandle::new(handle),
         }
     }
+}
 
+pub struct Session<N> {
+    notifier: N,
+    input_decoder: Utf8Decoder,
+    output_decoder: Utf8Decoder,
+    tty_size: tty::TtySize,
+    record_input: bool,
+    keys: KeyBindings,
+    sender: mpsc::Sender<Event>,
+    time_offset: u64,
+    pause_time: Option<u64>,
+    prefix_mode: bool,
+    _handle: JoinHandle,
+}
+
+impl<N: Notifier> Session<N> {
     fn elapsed_time(&self, time: Duration) -> u64 {
         if let Some(pause_time) = self.pause_time {
             pause_time
@@ -86,26 +116,6 @@ impl<N: Notifier> Session<N> {
 }
 
 impl<N: Notifier> pty::Handler for Session<N> {
-    fn start(&mut self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) {
-        let mut outputs = std::mem::take(&mut self.outputs);
-        let time = SystemTime::now();
-        let receiver = self.receiver.take().unwrap();
-
-        let handle = thread::spawn(move || {
-            outputs.retain_mut(|output| output.start(time, tty_size, tty_theme.clone()).is_ok());
-
-            for event in receiver {
-                outputs.retain_mut(|output| output.event(event.clone()).is_ok())
-            }
-
-            for mut output in outputs {
-                let _ = output.flush();
-            }
-        });
-
-        self.handle = Some(JoinHandle::new(handle));
-    }
-
     fn output(&mut self, time: Duration, data: &[u8]) -> bool {
         if self.pause_time.is_none() {
             let text = self.output_decoder.feed(data);
@@ -172,6 +182,10 @@ impl<N: Notifier> pty::Handler for Session<N> {
         }
 
         true
+    }
+
+    fn stop(self) -> Self {
+        self
     }
 }
 
