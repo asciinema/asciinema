@@ -6,7 +6,7 @@ use anyhow::{anyhow, bail, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::{util, Asciicast, Event, EventData, Header};
-use crate::tty;
+use crate::tty::TtyTheme;
 
 #[derive(Deserialize)]
 struct V2Header {
@@ -368,8 +368,8 @@ impl From<&Header> for V2Header {
     }
 }
 
-impl From<&tty::Theme> for V2Theme {
-    fn from(theme: &tty::Theme) -> Self {
+impl From<&TtyTheme> for V2Theme {
+    fn from(theme: &TtyTheme) -> Self {
         let palette = theme.palette.iter().copied().map(RGB8).collect();
 
         V2Theme {
@@ -380,11 +380,11 @@ impl From<&tty::Theme> for V2Theme {
     }
 }
 
-impl From<&V2Theme> for tty::Theme {
+impl From<&V2Theme> for TtyTheme {
     fn from(theme: &V2Theme) -> Self {
         let palette = theme.palette.0.iter().map(|c| c.0).collect();
 
-        tty::Theme {
+        TtyTheme {
             fg: theme.fg.0,
             bg: theme.bg.0,
             palette,

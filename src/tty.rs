@@ -44,11 +44,11 @@ impl From<TtySize> for (u16, u16) {
 
 pub trait Tty: io::Write + io::Read + AsFd {
     fn get_size(&self) -> pty::Winsize;
-    fn get_theme(&self) -> Option<Theme>;
+    fn get_theme(&self) -> Option<TtyTheme>;
 }
 
 #[derive(Clone)]
-pub struct Theme {
+pub struct TtyTheme {
     pub fg: RGB8,
     pub bg: RGB8,
     pub palette: Vec<RGB8>,
@@ -105,7 +105,7 @@ impl Tty for DevTty {
         winsize
     }
 
-    fn get_theme(&self) -> Option<Theme> {
+    fn get_theme(&self) -> Option<TtyTheme> {
         let mut query = &COLORS_QUERY[..];
         let mut response = Vec::new();
         let mut buf = [0u8; 1024];
@@ -170,7 +170,7 @@ impl Tty for DevTty {
             palette.push(color);
         }
 
-        Some(Theme { fg, bg, palette })
+        Some(TtyTheme { fg, bg, palette })
     }
 }
 
@@ -221,7 +221,7 @@ impl Tty for NullTty {
         }
     }
 
-    fn get_theme(&self) -> Option<Theme> {
+    fn get_theme(&self) -> Option<TtyTheme> {
         None
     }
 }
@@ -279,7 +279,7 @@ impl Tty for FixedSizeTty {
         winsize
     }
 
-    fn get_theme(&self) -> Option<Theme> {
+    fn get_theme(&self) -> Option<TtyTheme> {
         self.inner.get_theme()
     }
 }

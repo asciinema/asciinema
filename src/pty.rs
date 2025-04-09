@@ -20,12 +20,12 @@ use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SI
 use signal_hook::SigId;
 
 use crate::io::set_non_blocking;
-use crate::tty::{Theme, Tty, TtySize};
+use crate::tty::{Tty, TtySize, TtyTheme};
 
 type ExtraEnv = HashMap<String, String>;
 
 pub trait HandlerStarter<H: Handler> {
-    fn start(self, tty_size: TtySize, theme: Option<Theme>) -> H;
+    fn start(self, tty_size: TtySize, theme: Option<TtyTheme>) -> H;
 }
 
 pub trait Handler {
@@ -386,7 +386,7 @@ impl Drop for SignalFd {
 mod tests {
     use super::{Handler, HandlerStarter};
     use crate::pty::ExtraEnv;
-    use crate::tty::{FixedSizeTty, NullTty, Theme, TtySize};
+    use crate::tty::{FixedSizeTty, NullTty, TtySize, TtyTheme};
     use std::time::Duration;
 
     struct TestHandlerStarter;
@@ -398,7 +398,7 @@ mod tests {
     }
 
     impl HandlerStarter<TestHandler> for TestHandlerStarter {
-        fn start(self, tty_size: TtySize, _theme: Option<Theme>) -> TestHandler {
+        fn start(self, tty_size: TtySize, _theme: Option<TtyTheme>) -> TestHandler {
             TestHandler {
                 tty_size,
                 output: Vec::new(),

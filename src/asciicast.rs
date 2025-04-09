@@ -9,7 +9,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::tty;
+use crate::tty::TtyTheme;
 pub use v2::Encoder;
 
 pub struct Asciicast<'a> {
@@ -25,7 +25,7 @@ pub struct Header {
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
-    pub theme: Option<tty::Theme>,
+    pub theme: Option<TtyTheme>,
 }
 
 pub struct Event {
@@ -156,7 +156,7 @@ pub fn accelerate(
 #[cfg(test)]
 mod tests {
     use super::{Asciicast, Encoder, Event, EventData, Header};
-    use crate::tty;
+    use crate::tty::TtyTheme;
     use anyhow::Result;
     use rgb::RGB8;
     use std::collections::HashMap;
@@ -289,7 +289,7 @@ mod tests {
         env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
         env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
-        let theme = tty::Theme {
+        let theme = TtyTheme {
             fg: RGB8::new(0, 1, 2),
             bg: RGB8::new(0, 100, 200),
             palette: vec![

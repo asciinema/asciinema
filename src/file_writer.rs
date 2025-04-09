@@ -6,7 +6,7 @@ use crate::asciicast;
 use crate::encoder;
 use crate::notifier::Notifier;
 use crate::session;
-use crate::tty;
+use crate::tty::{TtySize, TtyTheme};
 
 pub struct FileWriterStarter {
     pub writer: Box<dyn Write + Send>,
@@ -32,8 +32,8 @@ impl session::OutputStarter for FileWriterStarter {
     fn start(
         mut self: Box<Self>,
         time: SystemTime,
-        tty_size: tty::TtySize,
-        theme: Option<tty::Theme>,
+        tty_size: TtySize,
+        theme: Option<TtyTheme>,
     ) -> io::Result<Box<dyn session::Output>> {
         let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
 

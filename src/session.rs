@@ -8,7 +8,7 @@ use tracing::error;
 use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
-use crate::tty;
+use crate::tty::{TtySize, TtyTheme};
 use crate::util::{JoinHandle, Utf8Decoder};
 
 pub struct SessionStarter<N> {
@@ -22,8 +22,8 @@ pub trait OutputStarter {
     fn start(
         self: Box<Self>,
         time: SystemTime,
-        tty_size: tty::TtySize,
-        theme: Option<tty::Theme>,
+        tty_size: TtySize,
+        theme: Option<TtyTheme>,
     ) -> io::Result<Box<dyn Output>>;
 }
 
@@ -36,7 +36,7 @@ pub trait Output: Send {
 pub enum Event {
     Output(u64, String),
     Input(u64, String),
-    Resize(u64, tty::TtySize),
+    Resize(u64, TtySize),
     Marker(u64, String),
 }
 
@@ -57,7 +57,7 @@ impl<N: Notifier> SessionStarter<N> {
 }
 
 impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
-    fn start(self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) -> Session<N> {
+    fn start(self, tty_size: TtySize, tty_theme: Option<TtyTheme>) -> Session<N> {
         let time = SystemTime::now();
         let mut outputs = Vec::new();
 
@@ -119,7 +119,7 @@ pub struct Session<N> {
     notifier: N,
     input_decoder: Utf8Decoder,
     output_decoder: Utf8Decoder,
-    tty_size: tty::TtySize,
+    tty_size: TtySize,
     record_input: bool,
     keys: KeyBindings,
     sender: mpsc::Sender<Event>,
@@ -203,7 +203,7 @@ impl<N: Notifier> pty::Handler for Session<N> {
         true
     }
 
-    fn resize(&mut self, time: Duration, tty_size: tty::TtySize) -> bool {
+    fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool {
         if tty_size != self.tty_size {
             let msg = Event::Resize(self.elapsed_time(time), tty_size);
             self.sender.send(msg).expect("resize send should succeed");

@@ -13,7 +13,8 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::info;
 
 use crate::session;
-use crate::tty;
+use crate::tty::TtySize;
+use crate::tty::TtyTheme;
 
 pub struct Stream {
     request_tx: mpsc::Sender<Request>,
@@ -39,10 +40,10 @@ pub struct Output(mpsc::UnboundedSender<session::Event>);
 
 #[derive(Clone)]
 pub enum Event {
-    Init(u64, u64, tty::TtySize, Option<tty::Theme>, String),
+    Init(u64, u64, TtySize, Option<TtyTheme>, String),
     Output(u64, u64, String),
     Input(u64, u64, String),
-    Resize(u64, u64, tty::TtySize),
+    Resize(u64, u64, TtySize),
     Marker(u64, u64, String),
 }
 
@@ -69,8 +70,8 @@ impl Stream {
 }
 
 async fn run(
-    tty_size: tty::TtySize,
-    tty_theme: Option<tty::Theme>,
+    tty_size: TtySize,
+    tty_theme: Option<TtyTheme>,
     mut stream_rx: mpsc::UnboundedReceiver<session::Event>,
     mut request_rx: mpsc::Receiver<Request>,
 ) {
@@ -162,7 +163,7 @@ impl Subscriber {
     }
 }
 
-fn build_vt(tty_size: tty::TtySize) -> Vt {
+fn build_vt(tty_size: TtySize) -> Vt {
     Vt::builder()
         .size(tty_size.0 as usize, tty_size.1 as usize)
         .build()
@@ -172,8 +173,8 @@ impl session::OutputStarter for OutputStarter {
     fn start(
         self: Box<Self>,
         _time: SystemTime,
-        tty_size: tty::TtySize,
-        theme: Option<tty::Theme>,
+        tty_size: TtySize,
+        theme: Option<TtyTheme>,
     ) -> io::Result<Box<dyn session::Output>> {
         let (stream_tx, stream_rx) = mpsc::unbounded_channel();
         let request_rx = self.request_rx;
