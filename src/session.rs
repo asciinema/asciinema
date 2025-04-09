@@ -3,6 +3,8 @@ use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, SystemTime};
 
+use tracing::error;
+
 use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty;
@@ -57,22 +59,43 @@ impl<N: Notifier> SessionStarter<N> {
 impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
     fn start(self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) -> Session<N> {
         let time = SystemTime::now();
+        let mut outputs = Vec::new();
 
-        let mut outputs = self
-            .starters
-            .into_iter()
-            .filter_map(|s| s.start(time, tty_size, tty_theme.clone()).ok())
-            .collect::<Vec<_>>();
+        for starter in self.starters {
+            match starter.start(time, tty_size, tty_theme.clone()) {
+                Ok(output) => {
+                    outputs.push(output);
+                }
+
+                Err(e) => {
+                    error!("output startup failed: {e:?}");
+                }
+            }
+        }
 
         let (sender, receiver) = mpsc::channel::<Event>();
 
         let handle = thread::spawn(move || {
             for event in receiver {
-                outputs.retain_mut(|output| output.event(event.clone()).is_ok())
+                outputs.retain_mut(|output| match output.event(event.clone()) {
+                    Ok(_) => true,
+
+                    Err(e) => {
+                        error!("output event handler failed: {e:?}");
+
+                        false
+                    }
+                });
             }
 
             for mut output in outputs {
-                let _ = output.flush();
+                match output.flush() {
+                    Ok(_) => {}
+
+                    Err(e) => {
+                        error!("output flush failed: {e:?}");
+                    }
+                }
             }
         });
 

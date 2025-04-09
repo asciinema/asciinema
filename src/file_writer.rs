@@ -4,6 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::asciicast;
 use crate::encoder;
+use crate::notifier::Notifier;
 use crate::session;
 use crate::tty;
 
@@ -11,11 +12,13 @@ pub struct FileWriterStarter {
     pub writer: Box<dyn Write + Send>,
     pub encoder: Box<dyn encoder::Encoder + Send>,
     pub metadata: Metadata,
+    pub notifier: Box<dyn Notifier>,
 }
 
 pub struct FileWriter {
     pub writer: Box<dyn Write + Send>,
     pub encoder: Box<dyn encoder::Encoder + Send>,
+    pub notifier: Box<dyn Notifier>,
 }
 
 pub struct Metadata {
@@ -45,18 +48,35 @@ impl session::OutputStarter for FileWriterStarter {
             env: self.metadata.env.as_ref().cloned(),
         };
 
-        self.writer.write_all(&self.encoder.header(&header))?;
+        if let Err(e) = self.writer.write_all(&self.encoder.header(&header)) {
+            let _ = self
+                .notifier
+                .notify("Write error, session won't be recorded".to_owned());
+
+            return Err(e);
+        }
 
         Ok(Box::new(FileWriter {
             writer: self.writer,
             encoder: self.encoder,
+            notifier: self.notifier,
         }))
     }
 }
 
 impl session::Output for FileWriter {
     fn event(&mut self, event: session::Event) -> io::Result<()> {
-        self.writer.write_all(&self.encoder.event(event.into()))
+        match self.writer.write_all(&self.encoder.event(event.into())) {
+            Ok(_) => Ok(()),
+
+            Err(e) => {
+                let _ = self
+                    .notifier
+                    .notify("Write error, recording suspended".to_owned());
+
+                Err(e)
+            }
+        }
     }
 
     fn flush(&mut self) -> io::Result<()> {

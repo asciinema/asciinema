@@ -53,7 +53,7 @@ impl cli::Session {
 
         let file_writer = path
             .as_ref()
-            .map(|path| self.get_file_writer(path, &cmd_config, &env))
+            .map(|path| self.get_file_writer(path, &cmd_config, &env, notifier.clone()))
             .transpose()?;
 
         let mut listener = self
@@ -208,11 +208,12 @@ impl cli::Session {
         }
     }
 
-    fn get_file_writer(
+    fn get_file_writer<N: Notifier + 'static>(
         &self,
         path: &str,
         config: &config::Session,
         env: &HashMap<String, String>,
+        notifier: N,
     ) -> Result<FileWriterStarter> {
         let format = self.format.unwrap_or_else(|| {
             if path.to_lowercase().ends_with(".txt") {
@@ -256,6 +257,7 @@ impl cli::Session {
         };
 
         let metadata = self.build_asciicast_metadata(env, config);
+        let notifier = Box::new(notifier);
 
         let writer = match format {
             Format::Asciicast => {
@@ -266,6 +268,7 @@ impl cli::Session {
                     writer,
                     encoder,
                     metadata,
+                    notifier,
                 }
             }
 
@@ -277,6 +280,7 @@ impl cli::Session {
                     writer,
                     encoder,
                     metadata,
+                    notifier,
                 }
             }
 
@@ -288,6 +292,7 @@ impl cli::Session {
                     writer,
                     encoder,
                     metadata,
+                    notifier,
                 }
             }
         };
