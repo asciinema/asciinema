@@ -5,7 +5,7 @@ use std::time::{Duration, Instant, SystemTime};
 use anyhow::Result;
 use avt::Vt;
 use futures_util::{stream, StreamExt};
-use tokio::runtime::Runtime;
+use tokio::runtime::Handle;
 use tokio::sync::{broadcast, mpsc, oneshot};
 use tokio::time;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
@@ -16,8 +16,8 @@ use crate::session;
 use crate::tty;
 
 pub struct Stream {
-    tx: mpsc::Sender<Request>,
-    rx: mpsc::Receiver<Request>,
+    request_tx: mpsc::Sender<Request>,
+    request_rx: mpsc::Receiver<Request>,
 }
 
 type Request = oneshot::Sender<Subscription>;
@@ -30,12 +30,12 @@ struct Subscription {
 #[derive(Clone)]
 pub struct Subscriber(mpsc::Sender<Request>);
 
-pub struct Output(mpsc::UnboundedSender<Message>);
-
-enum Message {
-    Start(tty::TtySize, Option<tty::Theme>),
-    SessionEvent(session::Event),
+pub struct OutputStarter {
+    handle: Handle,
+    request_rx: mpsc::Receiver<Request>,
 }
+
+pub struct Output(mpsc::UnboundedSender<session::Event>);
 
 #[derive(Clone)]
 pub enum Event {
@@ -48,44 +48,43 @@ pub enum Event {
 
 impl Stream {
     pub fn new() -> Self {
-        let (tx, rx) = mpsc::channel(1);
+        let (request_tx, request_rx) = mpsc::channel(1);
 
-        Stream { tx, rx }
+        Stream {
+            request_tx,
+            request_rx,
+        }
     }
 
     pub fn subscriber(&self) -> Subscriber {
-        Subscriber(self.tx.clone())
+        Subscriber(self.request_tx.clone())
     }
 
-    pub fn start(self, runtime: &Runtime) -> Output {
-        let (stream_tx, stream_rx) = mpsc::unbounded_channel();
-        runtime.spawn(async move { run(stream_rx, self.rx).await });
-
-        Output(stream_tx)
+    pub fn start(self, handle: Handle) -> OutputStarter {
+        OutputStarter {
+            handle,
+            request_rx: self.request_rx,
+        }
     }
 }
 
 async fn run(
-    mut stream_rx: mpsc::UnboundedReceiver<Message>,
+    tty_size: tty::TtySize,
+    tty_theme: Option<tty::Theme>,
+    mut stream_rx: mpsc::UnboundedReceiver<session::Event>,
     mut request_rx: mpsc::Receiver<Request>,
 ) {
     let (broadcast_tx, _) = broadcast::channel(1024);
-    let mut vt = build_vt(tty::TtySize::default());
+    let mut vt = build_vt(tty_size);
     let mut stream_time = 0;
     let mut last_event_id = 0;
     let mut last_event_time = Instant::now();
-    let mut tty_theme = None;
 
     loop {
         tokio::select! {
             event = stream_rx.recv() => {
                 match event {
-                    Some(Message::Start(tty_size_, tty_theme_)) => {
-                        tty_theme = tty_theme_;
-                        vt = build_vt(tty_size_);
-                    }
-
-                    Some(Message::SessionEvent(event)) => {
+                    Some(event) => {
                         last_event_time = Instant::now();
                         last_event_id += 1;
 
@@ -169,22 +168,26 @@ fn build_vt(tty_size: tty::TtySize) -> Vt {
         .build()
 }
 
-impl session::Output for Output {
+impl session::OutputStarter for OutputStarter {
     fn start(
-        &mut self,
+        self: Box<Self>,
         _time: SystemTime,
         tty_size: tty::TtySize,
         theme: Option<tty::Theme>,
-    ) -> io::Result<()> {
-        self.0
-            .send(Message::Start(tty_size, theme))
-            .map_err(io::Error::other)
-    }
+    ) -> io::Result<Box<dyn session::Output>> {
+        let (stream_tx, stream_rx) = mpsc::unbounded_channel();
+        let request_rx = self.request_rx;
 
+        self.handle
+            .spawn(async move { run(tty_size, theme, stream_rx, request_rx).await });
+
+        Ok(Box::new(Output(stream_tx)))
+    }
+}
+
+impl session::Output for Output {
     fn event(&mut self, event: session::Event) -> io::Result<()> {
-        self.0
-            .send(Message::SessionEvent(event))
-            .map_err(io::Error::other)
+        self.0.send(event).map_err(io::Error::other)
     }
 
     fn flush(&mut self) -> io::Result<()> {

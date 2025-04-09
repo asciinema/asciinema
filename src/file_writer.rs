@@ -7,10 +7,15 @@ use crate::encoder;
 use crate::session;
 use crate::tty;
 
-pub struct FileWriter {
+pub struct FileWriterStarter {
     pub writer: Box<dyn Write + Send>,
     pub encoder: Box<dyn encoder::Encoder + Send>,
     pub metadata: Metadata,
+}
+
+pub struct FileWriter {
+    pub writer: Box<dyn Write + Send>,
+    pub encoder: Box<dyn encoder::Encoder + Send>,
 }
 
 pub struct Metadata {
@@ -20,13 +25,13 @@ pub struct Metadata {
     pub env: Option<HashMap<String, String>>,
 }
 
-impl session::Output for FileWriter {
+impl session::OutputStarter for FileWriterStarter {
     fn start(
-        &mut self,
+        mut self: Box<Self>,
         time: SystemTime,
         tty_size: tty::TtySize,
         theme: Option<tty::Theme>,
-    ) -> io::Result<()> {
+    ) -> io::Result<Box<dyn session::Output>> {
         let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
 
         let header = asciicast::Header {
@@ -40,9 +45,16 @@ impl session::Output for FileWriter {
             env: self.metadata.env.as_ref().cloned(),
         };
 
-        self.writer.write_all(&self.encoder.header(&header))
-    }
+        self.writer.write_all(&self.encoder.header(&header))?;
 
+        Ok(Box::new(FileWriter {
+            writer: self.writer,
+            encoder: self.encoder,
+        }))
+    }
+}
+
+impl session::Output for FileWriter {
     fn event(&mut self, event: session::Event) -> io::Result<()> {
         self.writer.write_all(&self.encoder.event(event.into()))
     }

@@ -22,7 +22,7 @@ use crate::asciicast;
 use crate::cli::{self, Format, RelayTarget};
 use crate::config::{self, Config};
 use crate::encoder::{AsciicastEncoder, RawEncoder, TextEncoder};
-use crate::file_writer::{FileWriter, Metadata};
+use crate::file_writer::{FileWriterStarter, Metadata};
 use crate::forwarder;
 use crate::locale;
 use crate::logger;
@@ -128,10 +128,10 @@ impl cli::Session {
             ))
         });
 
-        let mut outputs: Vec<Box<dyn session::Output + Send>> = Vec::new();
+        let mut outputs: Vec<Box<dyn session::OutputStarter + Send>> = Vec::new();
 
         if server.is_some() || forwarder.is_some() {
-            let output = stream.start(&runtime);
+            let output = stream.start(runtime.handle().clone());
             outputs.push(Box::new(output));
         }
 
@@ -213,7 +213,7 @@ impl cli::Session {
         path: &str,
         config: &config::Session,
         env: &HashMap<String, String>,
-    ) -> Result<FileWriter> {
+    ) -> Result<FileWriterStarter> {
         let format = self.format.unwrap_or_else(|| {
             if path.to_lowercase().ends_with(".txt") {
                 Format::Txt
@@ -262,7 +262,7 @@ impl cli::Session {
                 let writer = Box::new(LineWriter::new(file));
                 let encoder = Box::new(AsciicastEncoder::new(append, time_offset));
 
-                FileWriter {
+                FileWriterStarter {
                     writer,
                     encoder,
                     metadata,
@@ -273,7 +273,7 @@ impl cli::Session {
                 let writer = Box::new(file);
                 let encoder = Box::new(RawEncoder::new(append));
 
-                FileWriter {
+                FileWriterStarter {
                     writer,
                     encoder,
                     metadata,
@@ -284,7 +284,7 @@ impl cli::Session {
                 let writer = Box::new(file);
                 let encoder = Box::new(TextEncoder::new());
 
-                FileWriter {
+                FileWriterStarter {
                     writer,
                     encoder,
                     metadata,

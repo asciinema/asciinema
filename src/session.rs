@@ -10,19 +10,22 @@ use crate::tty;
 use crate::util::{JoinHandle, Utf8Decoder};
 
 pub struct SessionStarter<N> {
-    outputs: Vec<Box<dyn Output + Send>>,
+    starters: Vec<Box<dyn OutputStarter + Send>>,
     record_input: bool,
     keys: KeyBindings,
     notifier: N,
 }
 
-pub trait Output {
+pub trait OutputStarter {
     fn start(
-        &mut self,
+        self: Box<Self>,
         time: SystemTime,
         tty_size: tty::TtySize,
         theme: Option<tty::Theme>,
-    ) -> io::Result<()>;
+    ) -> io::Result<Box<dyn Output>>;
+}
+
+pub trait Output: Send {
     fn event(&mut self, event: Event) -> io::Result<()>;
     fn flush(&mut self) -> io::Result<()>;
 }
@@ -37,13 +40,13 @@ pub enum Event {
 
 impl<N: Notifier> SessionStarter<N> {
     pub fn new(
-        outputs: Vec<Box<dyn Output + Send>>,
+        starters: Vec<Box<dyn OutputStarter + Send>>,
         record_input: bool,
         keys: KeyBindings,
         notifier: N,
     ) -> Self {
         SessionStarter {
-            outputs,
+            starters,
             record_input,
             keys,
             notifier,
@@ -52,12 +55,16 @@ impl<N: Notifier> SessionStarter<N> {
 }
 
 impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
-    fn start(mut self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) -> Session<N> {
-        let mut outputs = std::mem::take(&mut self.outputs);
+    fn start(self, tty_size: tty::TtySize, tty_theme: Option<tty::Theme>) -> Session<N> {
         let time = SystemTime::now();
-        let (sender, receiver) = mpsc::channel::<Event>();
 
-        outputs.retain_mut(|output| output.start(time, tty_size, tty_theme.clone()).is_ok());
+        let mut outputs = self
+            .starters
+            .into_iter()
+            .filter_map(|s| s.start(time, tty_size, tty_theme.clone()).ok())
+            .collect::<Vec<_>>();
+
+        let (sender, receiver) = mpsc::channel::<Event>();
 
         let handle = thread::spawn(move || {
             for event in receiver {
