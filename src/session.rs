@@ -10,7 +10,7 @@ use crate::tty;
 use crate::util::{JoinHandle, Utf8Decoder};
 
 pub struct SessionStarter<N> {
-    starters: Vec<Box<dyn OutputStarter + Send>>,
+    starters: Vec<Box<dyn OutputStarter>>,
     record_input: bool,
     keys: KeyBindings,
     notifier: N,
@@ -40,7 +40,7 @@ pub enum Event {
 
 impl<N: Notifier> SessionStarter<N> {
     pub fn new(
-        starters: Vec<Box<dyn OutputStarter + Send>>,
+        starters: Vec<Box<dyn OutputStarter>>,
         record_input: bool,
         keys: KeyBindings,
         notifier: N,

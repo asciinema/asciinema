@@ -128,7 +128,7 @@ impl cli::Session {
             ))
         });
 
-        let mut outputs: Vec<Box<dyn session::OutputStarter + Send>> = Vec::new();
+        let mut outputs: Vec<Box<dyn session::OutputStarter>> = Vec::new();
 
         if server.is_some() || forwarder.is_some() {
             let output = stream.start(runtime.handle().clone());
