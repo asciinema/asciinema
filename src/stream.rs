@@ -36,7 +36,7 @@ pub struct OutputStarter {
     request_rx: mpsc::Receiver<Request>,
 }
 
-pub struct Output(mpsc::UnboundedSender<session::Event>);
+struct Output(mpsc::UnboundedSender<session::Event>);
 
 #[derive(Clone)]
 pub enum Event {
