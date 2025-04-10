@@ -267,6 +267,7 @@ pub enum Format {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum RelayTarget {
     StreamId(String),
     WsProducerUrl(url::Url),

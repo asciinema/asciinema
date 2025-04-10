@@ -39,21 +39,21 @@ impl cli::Session {
         locale::check_utf8_locale()?;
 
         let runtime = Runtime::new()?;
-        let command = self.get_command(&cmd_config);
-        let keys = get_key_bindings(&cmd_config)?;
+        let command = self.get_command(cmd_config);
+        let keys = get_key_bindings(cmd_config)?;
         let notifier = notifier::threaded(get_notifier(config));
         let record_input = self.input || cmd_config.input;
-        let env = capture_env(self.env.clone(), &cmd_config);
+        let env = capture_env(self.env.clone(), cmd_config);
 
         let path = self
             .output
             .take()
-            .map(|path| self.ensure_filename(path, &cmd_config))
+            .map(|path| self.ensure_filename(path, cmd_config))
             .transpose()?;
 
         let file_writer = path
             .as_ref()
-            .map(|path| self.get_file_writer(path, &cmd_config, &env, notifier.clone()))
+            .map(|path| self.get_file_writer(path, cmd_config, &env, notifier.clone()))
             .transpose()?;
 
         let mut listener = self

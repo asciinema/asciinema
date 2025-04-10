@@ -132,13 +132,13 @@ impl Tty for DevTty {
                         let mut got_da_response = false;
 
                         if let Some(b'c') = reversed.next() {
-                            while let Some(b) = reversed.next() {
+                            for b in reversed {
                                 if *b == b'[' {
                                     got_da_response = true;
                                     break;
                                 }
 
-                                if *b != b';' && *b != b'?' && !(b'0'..=b'9').contains(b) {
+                                if *b != b';' && *b != b'?' && !b.is_ascii_digit() {
                                     break;
                                 }
                             }
