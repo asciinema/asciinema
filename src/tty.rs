@@ -89,7 +89,7 @@ fn parse_color(rgb: &str) -> Option<RGB8> {
     Some(RGB8::new(r, g, b))
 }
 
-static COLORS_QUERY: &[u8; 148] = b"\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
+static COLORS_QUERY: &[u8; 151] = b"\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07\x1b[c";
 
 impl Tty for DevTty {
     fn get_size(&self) -> pty::Winsize {
@@ -109,7 +109,6 @@ impl Tty for DevTty {
         let mut query = &COLORS_QUERY[..];
         let mut response = Vec::new();
         let mut buf = [0u8; 1024];
-        let mut color_count = 0;
         let fd = self.as_fd().as_raw_fd();
 
         loop {
@@ -129,13 +128,23 @@ impl Tty for DevTty {
                     if rfds.contains(self) {
                         let n = unistd::read(fd, &mut buf).ok()?;
                         response.extend_from_slice(&buf[..n]);
+                        let mut reversed = response.iter().rev();
+                        let mut got_da_response = false;
 
-                        color_count += &buf[..n]
-                            .iter()
-                            .filter(|b| *b == &0x07 || *b == &b'\\')
-                            .count();
+                        if let Some(b'c') = reversed.next() {
+                            while let Some(b) = reversed.next() {
+                                if *b == b'[' {
+                                    got_da_response = true;
+                                    break;
+                                }
 
-                        if color_count == 18 {
+                                if *b != b';' && *b != b'?' && !(b'0'..=b'9').contains(b) {
+                                    break;
+                                }
+                            }
+                        }
+
+                        if got_da_response {
                             break;
                         }
                     }
