@@ -22,6 +22,7 @@ pub struct FileWriter {
 }
 
 pub struct Metadata {
+    pub term_version: Option<String>,
     pub idle_time_limit: Option<f64>,
     pub command: Option<String>,
     pub title: Option<String>,

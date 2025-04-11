@@ -45,6 +45,7 @@ impl From<TtySize> for (u16, u16) {
 pub trait Tty: io::Write + io::Read + AsFd {
     fn get_size(&self) -> pty::Winsize;
     fn get_theme(&self) -> Option<TtyTheme>;
+    fn get_version(&self) -> Option<String>;
 }
 
 #[derive(Clone)]
@@ -70,6 +71,77 @@ impl DevTty {
 
         Ok(Self { file })
     }
+
+    fn query(&self, query: &str) -> Result<Vec<u8>> {
+        let mut query = query.to_string().into_bytes();
+        query.extend_from_slice(b"\x1b[c");
+        let mut query = &query[..];
+        let mut response = Vec::new();
+        let mut buf = [0u8; 1024];
+        let fd = self.as_fd().as_raw_fd();
+
+        loop {
+            let mut timeout = TimeVal::new(0, 100_000);
+            let mut rfds = FdSet::new();
+            let mut wfds = FdSet::new();
+            rfds.insert(self);
+
+            if !query.is_empty() {
+                wfds.insert(self);
+            }
+
+            match select(None, &mut rfds, &mut wfds, None, &mut timeout) {
+                Ok(0) => break,
+
+                Ok(_) => {
+                    if rfds.contains(self) {
+                        let n = unistd::read(fd, &mut buf)?;
+                        response.extend_from_slice(&buf[..n]);
+                        let mut reversed = response.iter().rev();
+                        let mut got_da_response = false;
+                        let mut da_len = 0;
+
+                        if let Some(b'c') = reversed.next() {
+                            da_len += 1;
+
+                            for b in reversed {
+                                if *b == b'[' {
+                                    got_da_response = true;
+                                    break;
+                                }
+
+                                if *b != b';' && *b != b'?' && !b.is_ascii_digit() {
+                                    break;
+                                }
+
+                                da_len += 1;
+                            }
+                        }
+
+                        if got_da_response {
+                            response.truncate(response.len() - da_len - 2);
+                            break;
+                        }
+                    }
+
+                    if wfds.contains(self) {
+                        let n = unistd::write(fd, query)?;
+                        query = &query[n..];
+                    }
+                }
+
+                Err(e) => {
+                    if e == Errno::EINTR {
+                        continue;
+                    } else {
+                        return Err(e.into());
+                    }
+                }
+            }
+        }
+
+        Ok(response)
+    }
 }
 
 fn parse_color(rgb: &str) -> Option<RGB8> {
@@ -89,7 +161,9 @@ fn parse_color(rgb: &str) -> Option<RGB8> {
     Some(RGB8::new(r, g, b))
 }
 
-static COLORS_QUERY: &[u8; 151] = b"\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07\x1b[c";
+static COLORS_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
+
+static XTVERSION_QUERY: &str = "\x1b[>0q";
 
 impl Tty for DevTty {
     fn get_size(&self) -> pty::Winsize {
@@ -106,65 +180,7 @@ impl Tty for DevTty {
     }
 
     fn get_theme(&self) -> Option<TtyTheme> {
-        let mut query = &COLORS_QUERY[..];
-        let mut response = Vec::new();
-        let mut buf = [0u8; 1024];
-        let fd = self.as_fd().as_raw_fd();
-
-        loop {
-            let mut timeout = TimeVal::new(0, 100_000);
-            let mut rfds = FdSet::new();
-            let mut wfds = FdSet::new();
-            rfds.insert(self);
-
-            if !query.is_empty() {
-                wfds.insert(self);
-            }
-
-            match select(None, &mut rfds, &mut wfds, None, &mut timeout) {
-                Ok(0) => return None,
-
-                Ok(_) => {
-                    if rfds.contains(self) {
-                        let n = unistd::read(fd, &mut buf).ok()?;
-                        response.extend_from_slice(&buf[..n]);
-                        let mut reversed = response.iter().rev();
-                        let mut got_da_response = false;
-
-                        if let Some(b'c') = reversed.next() {
-                            for b in reversed {
-                                if *b == b'[' {
-                                    got_da_response = true;
-                                    break;
-                                }
-
-                                if *b != b';' && *b != b'?' && !b.is_ascii_digit() {
-                                    break;
-                                }
-                            }
-                        }
-
-                        if got_da_response {
-                            break;
-                        }
-                    }
-
-                    if wfds.contains(self) {
-                        let n = unistd::write(fd, query).ok()?;
-                        query = &query[n..];
-                    }
-                }
-
-                Err(e) => {
-                    if e == Errno::EINTR {
-                        continue;
-                    } else {
-                        return None;
-                    }
-                }
-            }
-        }
-
+        let response = self.query(COLORS_QUERY).ok()?;
         let response = String::from_utf8_lossy(response.as_slice());
         let mut colors = response.match_indices("rgb:");
         let (idx, _) = colors.next()?;
@@ -180,6 +196,16 @@ impl Tty for DevTty {
         }
 
         Some(TtyTheme { fg, bg, palette })
+    }
+
+    fn get_version(&self) -> Option<String> {
+        let response = self.query(XTVERSION_QUERY).ok()?;
+
+        if let [b'\x1b', b'P', b'>', b'|', version @ .., b'\x1b', b'\\'] = &response[..] {
+            Some(String::from_utf8_lossy(version).to_string())
+        } else {
+            None
+        }
     }
 }
 
@@ -231,6 +257,10 @@ impl Tty for NullTty {
     }
 
     fn get_theme(&self) -> Option<TtyTheme> {
+        None
+    }
+
+    fn get_version(&self) -> Option<String> {
         None
     }
 }
@@ -290,6 +320,10 @@ impl Tty for FixedSizeTty {
 
     fn get_theme(&self) -> Option<TtyTheme> {
         self.inner.get_theme()
+    }
+
+    fn get_version(&self) -> Option<String> {
+        self.inner.get_version()
     }
 }
 

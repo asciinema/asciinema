@@ -31,7 +31,7 @@ use crate::pty;
 use crate::server;
 use crate::session::{self, KeyBindings, SessionStarter};
 use crate::stream::Stream;
-use crate::tty::{DevTty, FixedSizeTty, NullTty};
+use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 use crate::util;
 
 impl cli::Session {
@@ -43,6 +43,7 @@ impl cli::Session {
         let keys = get_key_bindings(cmd_config)?;
         let notifier = notifier::threaded(get_notifier(config));
         let record_input = self.input || cmd_config.input;
+        let term_version = self.get_term_version()?;
         let env = capture_env(self.env.clone(), cmd_config);
 
         let path = self
@@ -53,7 +54,15 @@ impl cli::Session {
 
         let file_writer = path
             .as_ref()
-            .map(|path| self.get_file_writer(path, cmd_config, &env, notifier.clone()))
+            .map(|path| {
+                self.get_file_writer(
+                    path,
+                    cmd_config,
+                    term_version.clone(),
+                    &env,
+                    notifier.clone(),
+                )
+            })
             .transpose()?;
 
         let mut listener = self
@@ -66,7 +75,7 @@ impl cli::Session {
         let mut relay = self
             .relay
             .take()
-            .map(|target| get_relay(target, config, &env))
+            .map(|target| get_relay(target, config, term_version, &env))
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -212,6 +221,7 @@ impl cli::Session {
         &self,
         path: &str,
         config: &config::Session,
+        term_version: Option<String>,
         env: &HashMap<String, String>,
         notifier: N,
     ) -> Result<FileWriterStarter> {
@@ -256,7 +266,7 @@ impl cli::Session {
             0
         };
 
-        let metadata = self.build_asciicast_metadata(env, config);
+        let metadata = self.build_asciicast_metadata(term_version, env, config);
         let notifier = Box::new(notifier);
 
         let writer = match format {
@@ -300,12 +310,17 @@ impl cli::Session {
         Ok(writer)
     }
 
+    fn get_term_version(&self) -> Result<Option<String>> {
+        self.get_tty().map(|tty| tty.get_version())
+    }
+
     fn get_command(&self, config: &config::Session) -> Option<String> {
         self.command.as_ref().cloned().or(config.command.clone())
     }
 
     fn build_asciicast_metadata(
         &self,
+        term_version: Option<String>,
         env: &HashMap<String, String>,
         config: &config::Session,
     ) -> Metadata {
@@ -313,6 +328,7 @@ impl cli::Session {
         let command = self.get_command(config);
 
         Metadata {
+            term_version,
             idle_time_limit,
             command,
             title: self.title.clone(),
@@ -320,7 +336,7 @@ impl cli::Session {
         }
     }
 
-    fn get_tty(&self) -> Result<FixedSizeTty> {
+    fn get_tty(&self) -> Result<impl Tty> {
         let (cols, rows) = self.tty_size.unwrap_or((None, None));
 
         if self.headless {
@@ -370,11 +386,16 @@ impl Relay {
     }
 }
 
-fn get_relay(target: RelayTarget, config: &Config, env: &HashMap<String, String>) -> Result<Relay> {
+fn get_relay(
+    target: RelayTarget,
+    config: &Config,
+    term_version: Option<String>,
+    env: &HashMap<String, String>,
+) -> Result<Relay> {
     match target {
         RelayTarget::StreamId(id) => {
             let stream = api::create_user_stream(id, config)?;
-            let ws_producer_url = build_producer_url(&stream.ws_producer_url, env)?;
+            let ws_producer_url = build_producer_url(&stream.ws_producer_url, term_version, env)?;
 
             Ok(Relay {
                 ws_producer_url,
@@ -389,15 +410,23 @@ fn get_relay(target: RelayTarget, config: &Config, env: &HashMap<String, String>
     }
 }
 
-fn build_producer_url(url: &str, env: &HashMap<String, String>) -> Result<Url> {
+fn build_producer_url(
+    url: &str,
+    term_version: Option<String>,
+    env: &HashMap<String, String>,
+) -> Result<Url> {
     let mut url: Url = url.parse()?;
-    let term = env::var("TERM").ok().unwrap_or_default();
+    let term_type = env::var("TERM").ok().unwrap_or_default();
     let shell = env::var("SHELL").ok().unwrap_or_default();
 
     let mut params = vec![
-        ("term[type]".to_string(), term.clone()),
+        ("term[type]".to_string(), term_type.clone()),
         ("shell".to_string(), shell.clone()),
     ];
+
+    if let Some(version) = term_version {
+        params.push(("term[version]".to_string(), version));
+    }
 
     for (k, v) in env {
         params.push((format!("env[{k}]"), v.to_string()));
