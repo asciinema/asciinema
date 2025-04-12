@@ -153,7 +153,7 @@ impl cli::Session {
 
         {
             let starter = SessionStarter::new(outputs, record_input, keys, notifier);
-            let mut tty = self.get_tty()?;
+            let mut tty = self.get_tty(true)?;
             pty::exec(&exec_command, &exec_extra_env, &mut tty, starter)?;
         }
 
@@ -311,7 +311,7 @@ impl cli::Session {
     }
 
     fn get_term_version(&self) -> Result<Option<String>> {
-        self.get_tty().map(|tty| tty.get_version())
+        self.get_tty(false).map(|tty| tty.get_version())
     }
 
     fn get_command(&self, config: &config::Session) -> Option<String> {
@@ -336,7 +336,7 @@ impl cli::Session {
         }
     }
 
-    fn get_tty(&self) -> Result<impl Tty> {
+    fn get_tty(&self, quiet: bool) -> Result<impl Tty> {
         let (cols, rows) = self.tty_size.unwrap_or((None, None));
 
         if self.headless {
@@ -344,7 +344,10 @@ impl cli::Session {
         } else if let Ok(dev_tty) = DevTty::open() {
             Ok(FixedSizeTty::new(dev_tty, cols, rows))
         } else {
-            logger::info!("TTY not available, recording in headless mode");
+            if !quiet {
+                logger::info!("TTY not available, recording in headless mode");
+            }
+
             Ok(FixedSizeTty::new(NullTty::open()?, cols, rows))
         }
     }
