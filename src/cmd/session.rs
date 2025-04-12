@@ -25,11 +25,11 @@ use crate::encoder::{AsciicastEncoder, RawEncoder, TextEncoder};
 use crate::file_writer::{FileWriterStarter, Metadata};
 use crate::forwarder;
 use crate::locale;
-use crate::logger;
 use crate::notifier::{self, Notifier, NullNotifier};
 use crate::pty;
 use crate::server;
 use crate::session::{self, KeyBindings, SessionStarter};
+use crate::status;
 use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 use crate::util;
@@ -96,25 +96,25 @@ impl cli::Session {
             self.init_logging()?;
         }
 
-        logger::info!("asciinema session started");
+        status::info!("asciinema session started");
 
         if let Some(path) = path {
-            logger::info!("Recording to {}", path);
+            status::info!("Recording to {}", path);
         }
 
         if let Some(listener) = &listener {
-            logger::info!(
+            status::info!(
                 "Live streaming at http://{}",
                 listener.local_addr().unwrap()
             );
         }
 
         if let Some(Relay { url: Some(url), .. }) = &relay {
-            logger::info!("Live streaming at {}", url);
+            status::info!("Live streaming at {}", url);
         }
 
         if command.is_none() {
-            logger::info!("Press <ctrl+d> or type 'exit' to end");
+            status::info!("Press <ctrl+d> or type 'exit' to end");
         }
 
         let stream = Stream::new();
@@ -174,7 +174,7 @@ impl cli::Session {
             debug!("shutdown complete");
         });
 
-        logger::info!("asciinema session ended");
+        status::info!("asciinema session ended");
 
         Ok(())
     }
@@ -345,7 +345,7 @@ impl cli::Session {
             Ok(FixedSizeTty::new(dev_tty, cols, rows))
         } else {
             if !quiet {
-                logger::info!("TTY not available, recording in headless mode");
+                status::info!("TTY not available, recording in headless mode");
             }
 
             Ok(FixedSizeTty::new(NullTty::open()?, cols, rows))

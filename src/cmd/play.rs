@@ -3,8 +3,8 @@ use anyhow::Result;
 use crate::asciicast;
 use crate::cli;
 use crate::config::{self, Config};
-use crate::logger;
 use crate::player::{self, KeyBindings};
+use crate::status;
 use crate::tty;
 use crate::util;
 
@@ -14,7 +14,7 @@ impl cli::Play {
         let speed = self.speed.or(cmd_config.speed).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(cmd_config.idle_time_limit);
 
-        logger::info!("Replaying session from {}", self.filename);
+        status::info!("Replaying session from {}", self.filename);
 
         let path = util::get_local_path(&self.filename)?;
         let keys = get_key_bindings(&cmd_config)?;
@@ -38,9 +38,9 @@ impl cli::Play {
         };
 
         if ended {
-            logger::info!("Playback ended");
+            status::info!("Playback ended");
         } else {
-            logger::info!("Playback interrupted");
+            status::info!("Playback interrupted");
         }
 
         Ok(())

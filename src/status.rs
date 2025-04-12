@@ -6,8 +6,8 @@ pub fn disable() {
 }
 
 macro_rules! info {
-    ($fmt:expr) => (crate::logger::println(format!($fmt)));
-    ($fmt:expr, $($arg:tt)*) => (crate::logger::println(format!($fmt, $($arg)*)));
+    ($fmt:expr) => (crate::status::println(format!($fmt)));
+    ($fmt:expr, $($arg:tt)*) => (crate::status::println(format!($fmt, $($arg)*)));
 }
 
 pub fn println(message: String) {

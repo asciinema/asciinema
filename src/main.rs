@@ -10,12 +10,12 @@ mod forwarder;
 mod io;
 mod leb128;
 mod locale;
-mod logger;
 mod notifier;
 mod player;
 mod pty;
 mod server;
 mod session;
+mod status;
 mod stream;
 mod tty;
 mod util;
@@ -30,7 +30,7 @@ fn main() -> anyhow::Result<()> {
     let config = Config::new(cli.server_url.clone())?;
 
     if cli.quiet {
-        logger::disable();
+        status::disable();
     }
 
     let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
