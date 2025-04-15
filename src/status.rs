@@ -6,14 +6,26 @@ pub fn disable() {
 }
 
 macro_rules! info {
-    ($fmt:expr) => (crate::status::println(format!($fmt)));
-    ($fmt:expr, $($arg:tt)*) => (crate::status::println(format!($fmt, $($arg)*)));
+    ($fmt:expr) => (crate::status::do_info(format!($fmt)));
+    ($fmt:expr, $($arg:tt)*) => (crate::status::do_info(format!($fmt, $($arg)*)));
 }
 
-pub fn println(message: String) {
+macro_rules! warning {
+    ($fmt:expr) => (crate::status::do_warn(format!($fmt)));
+    ($fmt:expr, $($arg:tt)*) => (crate::status::do_warn(format!($fmt, $($arg)*)));
+}
+
+pub fn do_info(message: String) {
     if ENABLED.load(SeqCst) {
         println!("::: {message}");
     }
 }
 
+pub fn do_warn(message: String) {
+    if ENABLED.load(SeqCst) {
+        println!("!!! {message}");
+    }
+}
+
 pub(crate) use info;
+pub(crate) use warning;

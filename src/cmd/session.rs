@@ -113,10 +113,6 @@ impl cli::Session {
             status::info!("Live streaming at {}", url);
         }
 
-        if command.is_none() {
-            status::info!("Press <ctrl+d> or type 'exit' to end");
-        }
-
         let stream = Stream::new();
         let shutdown_token = CancellationToken::new();
 
@@ -146,6 +142,14 @@ impl cli::Session {
 
         if let Some(output) = file_writer {
             outputs.push(Box::new(output));
+        }
+
+        if outputs.is_empty() {
+            status::warning!("No outputs enabled, consider using -o, -s, or -r");
+        }
+
+        if command.is_none() {
+            status::info!("Press <ctrl+d> or type 'exit' to end");
         }
 
         let exec_command = build_exec_command(command.as_ref().cloned());
