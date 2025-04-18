@@ -423,16 +423,18 @@ fn build_producer_url(
     env: &HashMap<String, String>,
 ) -> Result<Url> {
     let mut url: Url = url.parse()?;
-    let term_type = env::var("TERM").ok().unwrap_or_default();
-    let shell = env::var("SHELL").ok().unwrap_or_default();
+    let mut params = Vec::new();
 
-    let mut params = vec![
-        ("term[type]".to_string(), term_type.clone()),
-        ("shell".to_string(), shell.clone()),
-    ];
+    if let Ok(term_type) = env::var("TERM") {
+        params.push(("term[type]".to_string(), term_type));
+    }
 
     if let Some(version) = term_version {
         params.push(("term[version]".to_string(), version));
+    }
+
+    if let Ok(shell) = env::var("SHELL") {
+        params.push(("shell".to_string(), shell));
     }
 
     for (k, v) in env {
