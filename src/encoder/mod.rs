@@ -9,7 +9,7 @@ use anyhow::Result;
 
 use crate::asciicast::Event;
 use crate::asciicast::Header;
-pub use asciicast::AsciicastEncoder;
+pub use asciicast::{AsciicastV2Encoder, AsciicastV3Encoder};
 pub use raw::RawEncoder;
 pub use txt::TextEncoder;
 

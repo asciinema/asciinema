@@ -15,7 +15,7 @@ impl TextEncoder {
 impl super::Encoder for TextEncoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
         let vt = avt::Vt::builder()
-            .size(header.cols as usize, header.rows as usize)
+            .size(header.term_cols as usize, header.term_rows as usize)
             .scrollback_limit(100)
             .build();
 
@@ -63,8 +63,8 @@ mod tests {
         let mut enc = TextEncoder::new();
 
         let header = Header {
-            cols: 3,
-            rows: 1,
+            term_cols: 3,
+            term_rows: 1,
             ..Default::default()
         };
 

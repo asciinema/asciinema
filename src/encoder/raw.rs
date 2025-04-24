@@ -15,7 +15,7 @@ impl super::Encoder for RawEncoder {
         if self.append {
             Vec::new()
         } else {
-            format!("\x1b[8;{};{}t", header.rows, header.cols).into_bytes()
+            format!("\x1b[8;{};{}t", header.term_rows, header.term_cols).into_bytes()
         }
     }
 
@@ -43,8 +43,8 @@ mod tests {
         let mut enc = RawEncoder::new(false);
 
         let header = Header {
-            cols: 100,
-            rows: 50,
+            term_cols: 100,
+            term_rows: 50,
             ..Default::default()
         };
 

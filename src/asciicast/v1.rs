@@ -31,15 +31,23 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         bail!("unsupported asciicast version")
     }
 
+    let term_type = asciicast
+        .env
+        .as_ref()
+        .and_then(|env| env.get("TERM"))
+        .cloned();
+
     let header = Header {
-        cols: asciicast.width,
-        rows: asciicast.height,
+        term_cols: asciicast.width,
+        term_rows: asciicast.height,
+        term_type,
+        term_version: None,
+        term_theme: None,
         timestamp: None,
         idle_time_limit: None,
         command: asciicast.command.clone(),
         title: asciicast.title.clone(),
         env: asciicast.env.clone(),
-        theme: None,
     };
 
     let events = Box::new(

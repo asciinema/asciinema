@@ -62,7 +62,7 @@ pub struct Record {
     #[arg(short, long)]
     pub append: bool,
 
-    /// Recording file format [default: asciicast]
+    /// Recording file format [default: asciicast-v3]
     #[arg(short, long, value_enum)]
     pub format: Option<Format>,
 
@@ -179,7 +179,7 @@ pub struct Session {
     #[arg(short, long)]
     pub append: bool,
 
-    /// Recording file format [default: asciicast]
+    /// Recording file format [default: asciicast-v3]
     #[arg(short, long, value_enum)]
     pub format: Option<Format>,
 
@@ -241,7 +241,7 @@ pub struct Convert {
 
     pub output_filename: String,
 
-    /// Output file format [default: asciicast]
+    /// Output file format [default: asciicast-v3]
     #[arg(short, long, value_enum)]
     pub format: Option<Format>,
 
@@ -261,7 +261,8 @@ pub struct Auth {}
 
 #[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
 pub enum Format {
-    Asciicast,
+    AsciicastV3,
+    AsciicastV2,
     Raw,
     Txt,
 }

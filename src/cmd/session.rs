@@ -21,7 +21,7 @@ use crate::api;
 use crate::asciicast;
 use crate::cli::{self, Format, RelayTarget};
 use crate::config::{self, Config};
-use crate::encoder::{AsciicastEncoder, RawEncoder, TextEncoder};
+use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, RawEncoder, TextEncoder};
 use crate::file_writer::{FileWriterStarter, Metadata};
 use crate::forwarder;
 use crate::locale;
@@ -43,6 +43,7 @@ impl cli::Session {
         let keys = get_key_bindings(cmd_config)?;
         let notifier = notifier::threaded(get_notifier(config));
         let record_input = self.input || cmd_config.input;
+        let term_type = self.get_term_type();
         let term_version = self.get_term_version()?;
         let env = capture_env(self.env.clone(), cmd_config);
 
@@ -58,6 +59,7 @@ impl cli::Session {
                 self.get_file_writer(
                     path,
                     cmd_config,
+                    term_type.clone(),
                     term_version.clone(),
                     &env,
                     notifier.clone(),
@@ -75,7 +77,7 @@ impl cli::Session {
         let mut relay = self
             .relay
             .take()
-            .map(|target| get_relay(target, config, term_version, &env))
+            .map(|target| get_relay(target, config, term_type, term_version, &env))
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -225,6 +227,7 @@ impl cli::Session {
         &self,
         path: &str,
         config: &config::Session,
+        term_type: Option<String>,
         term_version: Option<String>,
         env: &HashMap<String, String>,
         notifier: N,
@@ -233,7 +236,7 @@ impl cli::Session {
             if path.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
-                Format::Asciicast
+                Format::AsciicastV3
             }
         });
 
@@ -264,19 +267,31 @@ impl cli::Session {
             .truncate(overwrite)
             .open(path)?;
 
-        let time_offset = if append && format == Format::Asciicast {
+        let time_offset = if append && format == Format::AsciicastV2 {
             asciicast::get_duration(path)?
         } else {
             0
         };
 
-        let metadata = self.build_asciicast_metadata(term_version, env, config);
+        let metadata = self.build_asciicast_metadata(term_type, term_version, env, config);
         let notifier = Box::new(notifier);
 
         let writer = match format {
-            Format::Asciicast => {
+            Format::AsciicastV3 => {
                 let writer = Box::new(LineWriter::new(file));
-                let encoder = Box::new(AsciicastEncoder::new(append, time_offset));
+                let encoder = Box::new(AsciicastV3Encoder::new(append));
+
+                FileWriterStarter {
+                    writer,
+                    encoder,
+                    metadata,
+                    notifier,
+                }
+            }
+
+            Format::AsciicastV2 => {
+                let writer = Box::new(LineWriter::new(file));
+                let encoder = Box::new(AsciicastV2Encoder::new(append, time_offset));
 
                 FileWriterStarter {
                     writer,
@@ -314,6 +329,10 @@ impl cli::Session {
         Ok(writer)
     }
 
+    fn get_term_type(&self) -> Option<String> {
+        env::var("TERM").ok()
+    }
+
     fn get_term_version(&self) -> Result<Option<String>> {
         self.get_tty(false).map(|tty| tty.get_version())
     }
@@ -324,6 +343,7 @@ impl cli::Session {
 
     fn build_asciicast_metadata(
         &self,
+        term_type: Option<String>,
         term_version: Option<String>,
         env: &HashMap<String, String>,
         config: &config::Session,
@@ -332,6 +352,7 @@ impl cli::Session {
         let command = self.get_command(config);
 
         Metadata {
+            term_type,
             term_version,
             idle_time_limit,
             command,
@@ -396,13 +417,15 @@ impl Relay {
 fn get_relay(
     target: RelayTarget,
     config: &Config,
+    term_type: Option<String>,
     term_version: Option<String>,
     env: &HashMap<String, String>,
 ) -> Result<Relay> {
     match target {
         RelayTarget::StreamId(id) => {
             let stream = api::create_user_stream(id, config)?;
-            let ws_producer_url = build_producer_url(&stream.ws_producer_url, term_version, env)?;
+            let ws_producer_url =
+                build_producer_url(&stream.ws_producer_url, term_type, term_version, env)?;
 
             Ok(Relay {
                 ws_producer_url,
@@ -419,14 +442,15 @@ fn get_relay(
 
 fn build_producer_url(
     url: &str,
+    term_type: Option<String>,
     term_version: Option<String>,
     env: &HashMap<String, String>,
 ) -> Result<Url> {
     let mut url: Url = url.parse()?;
     let mut params = Vec::new();
 
-    if let Ok(term_type) = env::var("TERM") {
-        params.push(("term[type]".to_string(), term_type));
+    if let Some(type_) = term_type {
+        params.push(("term[type]".to_string(), type_));
     }
 
     if let Some(version) = term_version {

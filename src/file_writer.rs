@@ -22,6 +22,7 @@ pub struct FileWriter {
 }
 
 pub struct Metadata {
+    pub term_type: Option<String>,
     pub term_version: Option<String>,
     pub idle_time_limit: Option<f64>,
     pub command: Option<String>,
@@ -39,10 +40,12 @@ impl session::OutputStarter for FileWriterStarter {
         let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
 
         let header = asciicast::Header {
-            cols: tty_size.0,
-            rows: tty_size.1,
+            term_cols: tty_size.0,
+            term_rows: tty_size.1,
+            term_type: self.metadata.term_type,
+            term_version: self.metadata.term_version,
+            term_theme: theme,
             timestamp: Some(timestamp),
-            theme,
             idle_time_limit: self.metadata.idle_time_limit,
             command: self.metadata.command.as_ref().cloned(),
             title: self.metadata.title.as_ref().cloned(),

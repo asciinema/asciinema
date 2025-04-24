@@ -9,7 +9,7 @@ use crate::config::Config;
 
 impl cli::Cat {
     pub fn run(self, _config: &Config) -> Result<()> {
-        let mut encoder = asciicast::Encoder::new(0);
+        let mut encoder = asciicast::V2Encoder::new(0);
         let mut stdout = io::stdout();
         let mut time_offset: u64 = 0;
         let mut first = true;

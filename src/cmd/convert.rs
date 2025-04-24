@@ -6,7 +6,9 @@ use anyhow::{bail, Result};
 use crate::asciicast;
 use crate::cli::{self, Format};
 use crate::config::Config;
-use crate::encoder::{self, AsciicastEncoder, EncoderExt, RawEncoder, TextEncoder};
+use crate::encoder::{
+    self, AsciicastV2Encoder, AsciicastV3Encoder, EncoderExt, RawEncoder, TextEncoder,
+};
 use crate::util;
 
 impl cli::Convert {
@@ -24,12 +26,13 @@ impl cli::Convert {
             if self.output_filename.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
-                Format::Asciicast
+                Format::AsciicastV3
             }
         });
 
         match format {
-            Format::Asciicast => Box::new(AsciicastEncoder::new(false, 0)),
+            Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
+            Format::AsciicastV2 => Box::new(AsciicastV2Encoder::new(false, 0)),
             Format::Raw => Box::new(RawEncoder::new(false)),
             Format::Txt => Box::new(TextEncoder::new()),
         }
