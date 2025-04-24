@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::io;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::{util, Asciicast, Event, EventData, Header};
@@ -121,8 +121,7 @@ impl Parser {
     }
 
     fn parse_event(&mut self, line: String) -> Result<Event> {
-        let event = serde_json::from_str::<V3Event>(&line)
-            .map_err(|e| anyhow!("asciicast v3 parse error: {e}"))?;
+        let event = serde_json::from_str::<V3Event>(&line).context("asciicast v3 parse error")?;
 
         let data = match event.code {
             V3EventCode::Output => EventData::Output(event.data),

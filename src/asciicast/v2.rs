@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::io;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use super::{util, Asciicast, Event, EventData, Header};
@@ -106,8 +106,7 @@ fn parse_line(line: io::Result<String>) -> Option<Result<Event>> {
 }
 
 fn parse_event(line: String) -> Result<Event> {
-    let event = serde_json::from_str::<V2Event>(&line)
-        .map_err(|e| anyhow!("asciicast v2 parse error: {e}"))?;
+    let event = serde_json::from_str::<V2Event>(&line).context("asciicast v2 parse error")?;
 
     let data = match event.code {
         V2EventCode::Output => EventData::Output(event.data),
