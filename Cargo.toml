@@ -9,7 +9,7 @@ description = "Terminal session recorder"
 license = "GPL-3.0"
 
 # MSRV
-rust-version = "1.70.0"
+rust-version = "1.75.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,7 +28,7 @@ config = { version = "0.14.0", default-features = false, features = ["toml", "in
 which = "6.0.0"
 tempfile = "3.9.0"
 scraper = { version = "0.19.0", default-features = false }
-avt = "0.14.0"
+avt = "0.15.1"
 axum = { version = "0.7.7", default-features = false, features = ["http1", "ws"] }
 tokio = { version = "1.35.1", features = ["full"] }
 futures-util = "0.3.30"

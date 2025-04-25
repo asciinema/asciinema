@@ -180,9 +180,9 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "avt"
-version = "0.14.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b485f400d02970694eed10e7080f994ad82eaf56a867d6671af5d5e184ed8ee6"
+checksum = "8c455a7c5217b369f7caf83403116ea9bba9c1d224a960f6ac37fc4a121b825c"
 dependencies = [
  "rgb",
  "unicode-width",

@@ -1,15 +1,18 @@
-use super::Command;
-use crate::asciicast;
-use crate::cli::{self, Format};
-use crate::config::Config;
-use crate::encoder::{self, AsciicastEncoder, EncoderExt, RawEncoder, TextEncoder};
-use crate::util;
-use anyhow::{bail, Result};
 use std::fs;
 use std::path::Path;
 
-impl Command for cli::Convert {
-    fn run(self, _config: &Config) -> Result<()> {
+use anyhow::{bail, Result};
+
+use crate::asciicast;
+use crate::cli::{self, Format};
+use crate::config::Config;
+use crate::encoder::{
+    self, AsciicastV2Encoder, AsciicastV3Encoder, EncoderExt, RawEncoder, TextEncoder,
+};
+use crate::util;
+
+impl cli::Convert {
+    pub fn run(self, _config: &Config) -> Result<()> {
         let path = util::get_local_path(&self.input_filename)?;
         let cast = asciicast::open_from_path(&*path)?;
         let mut encoder = self.get_encoder();
@@ -17,20 +20,19 @@ impl Command for cli::Convert {
 
         encoder.encode_to_file(cast, &mut file)
     }
-}
 
-impl cli::Convert {
     fn get_encoder(&self) -> Box<dyn encoder::Encoder> {
         let format = self.format.unwrap_or_else(|| {
             if self.output_filename.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
-                Format::Asciicast
+                Format::AsciicastV3
             }
         });
 
         match format {
-            Format::Asciicast => Box::new(AsciicastEncoder::new(false, 0)),
+            Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
+            Format::AsciicastV2 => Box::new(AsciicastV2Encoder::new(false, 0)),
             Format::Raw => Box::new(RawEncoder::new(false)),
             Format::Txt => Box::new(TextEncoder::new()),
         }

@@ -1,15 +1,3 @@
-use crate::io::set_non_blocking;
-use crate::tty::{Theme, Tty, TtySize};
-use anyhow::{bail, Result};
-use nix::errno::Errno;
-use nix::libc::EIO;
-use nix::sys::select::{select, FdSet};
-use nix::sys::signal::{self, kill, Signal};
-use nix::sys::wait::{self, WaitPidFlag, WaitStatus};
-use nix::unistd::{self, ForkResult};
-use nix::{libc, pty};
-use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
-use signal_hook::SigId;
 use std::collections::HashMap;
 use std::env;
 use std::ffi::{CString, NulError};
@@ -20,28 +8,49 @@ use std::os::fd::{BorrowedFd, OwnedFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::time::{Duration, Instant};
 
+use anyhow::bail;
+use nix::errno::Errno;
+use nix::libc::EIO;
+use nix::sys::select::{select, FdSet};
+use nix::sys::signal::{self, kill, Signal};
+use nix::sys::wait::{self, WaitPidFlag, WaitStatus};
+use nix::unistd::{self, ForkResult};
+use nix::{libc, pty};
+use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
+use signal_hook::SigId;
+
+use crate::io::set_non_blocking;
+use crate::tty::{Tty, TtySize, TtyTheme};
+
 type ExtraEnv = HashMap<String, String>;
 
+pub trait HandlerStarter<H: Handler> {
+    fn start(self, tty_size: TtySize, theme: Option<TtyTheme>) -> H;
+}
+
 pub trait Handler {
-    fn start(&mut self, tty_size: TtySize, theme: Option<Theme>);
     fn output(&mut self, time: Duration, data: &[u8]) -> bool;
     fn input(&mut self, time: Duration, data: &[u8]) -> bool;
     fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool;
+    fn stop(self) -> Self;
 }
 
-pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
+pub fn exec<S: AsRef<str>, T: Tty, H: Handler, R: HandlerStarter<H>>(
     command: &[S],
     extra_env: &ExtraEnv,
     tty: &mut T,
-    handler: &mut H,
-) -> Result<i32> {
+    handler_starter: R,
+) -> anyhow::Result<(i32, H)> {
     let winsize = tty.get_size();
     let epoch = Instant::now();
-    handler.start(winsize.into(), tty.get_theme());
+    let mut handler = handler_starter.start(winsize.into(), tty.get_theme());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
-        ForkResult::Parent { child } => handle_parent(result.master, child, tty, handler, epoch),
+        ForkResult::Parent { child } => {
+            handle_parent(result.master, child, tty, &mut handler, epoch)
+                .map(|code| (code, handler.stop()))
+        }
 
         ForkResult::Child => {
             handle_child(command, extra_env)?;
@@ -50,13 +59,13 @@ pub fn exec<S: AsRef<str>, T: Tty + ?Sized, H: Handler>(
     }
 }
 
-fn handle_parent<T: Tty + ?Sized, H: Handler>(
+fn handle_parent<T: Tty, H: Handler>(
     master_fd: OwnedFd,
     child: unistd::Pid,
     tty: &mut T,
     handler: &mut H,
     epoch: Instant,
-) -> Result<i32> {
+) -> anyhow::Result<i32> {
     let wait_result = match copy(master_fd, child, tty, handler, epoch) {
         Ok(Some(status)) => Ok(status),
         Ok(None) => wait::waitpid(child, None),
@@ -77,13 +86,13 @@ fn handle_parent<T: Tty + ?Sized, H: Handler>(
 
 const BUF_SIZE: usize = 128 * 1024;
 
-fn copy<T: Tty + ?Sized, H: Handler>(
+fn copy<T: Tty, H: Handler>(
     master_fd: OwnedFd,
     child: unistd::Pid,
     tty: &mut T,
     handler: &mut H,
     epoch: Instant,
-) -> Result<Option<WaitStatus>> {
+) -> anyhow::Result<Option<WaitStatus>> {
     let mut master = File::from(master_fd);
     let master_raw_fd = master.as_raw_fd();
     let mut buf = [0u8; BUF_SIZE];
@@ -272,7 +281,7 @@ fn copy<T: Tty + ?Sized, H: Handler>(
     }
 }
 
-fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> Result<()> {
+fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> anyhow::Result<()> {
     use signal::{SigHandler, Signal};
 
     let command = command
@@ -334,7 +343,7 @@ struct SignalFd {
 }
 
 impl SignalFd {
-    fn open(signal: libc::c_int) -> Result<Self> {
+    fn open(signal: libc::c_int) -> anyhow::Result<Self> {
         let (rx, tx) = unistd::pipe()?;
         set_non_blocking(&rx)?;
         set_non_blocking(&tx)?;
@@ -375,22 +384,29 @@ impl Drop for SignalFd {
 
 #[cfg(test)]
 mod tests {
-    use super::Handler;
+    use super::{Handler, HandlerStarter};
     use crate::pty::ExtraEnv;
-    use crate::tty::{FixedSizeTty, NullTty, Theme, TtySize};
+    use crate::tty::{FixedSizeTty, NullTty, TtySize, TtyTheme};
     use std::time::Duration;
+
+    struct TestHandlerStarter;
 
     #[derive(Default)]
     struct TestHandler {
-        tty_size: Option<TtySize>,
+        tty_size: TtySize,
         output: Vec<Vec<u8>>,
     }
 
-    impl Handler for TestHandler {
-        fn start(&mut self, tty_size: TtySize, _theme: Option<Theme>) {
-            self.tty_size = Some(tty_size);
+    impl HandlerStarter<TestHandler> for TestHandlerStarter {
+        fn start(self, tty_size: TtySize, _theme: Option<TtyTheme>) -> TestHandler {
+            TestHandler {
+                tty_size,
+                output: Vec::new(),
+            }
         }
+    }
 
+    impl Handler for TestHandler {
         fn output(&mut self, _time: Duration, data: &[u8]) -> bool {
             self.output.push(data.into());
 
@@ -403,6 +419,10 @@ mod tests {
 
         fn resize(&mut self, _time: Duration, _size: TtySize) -> bool {
             true
+        }
+
+        fn stop(self) -> Self {
+            self
         }
     }
 
@@ -417,7 +437,7 @@ mod tests {
 
     #[test]
     fn exec_basic() {
-        let mut handler = TestHandler::default();
+        let starter = TestHandlerStarter;
 
         let code = r#"
 import sys;
@@ -428,27 +448,27 @@ time.sleep(0.1);
 sys.stdout.write('bar');
 "#;
 
-        super::exec(
+        let (_code, handler) = super::exec(
             &["python3", "-c", code],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            &mut handler,
+            starter,
         )
         .unwrap();
 
         assert_eq!(handler.output(), vec!["foo", "bar"]);
-        assert_eq!(handler.tty_size, Some(TtySize(80, 24)));
+        assert_eq!(handler.tty_size, TtySize(80, 24));
     }
 
     #[test]
     fn exec_no_output() {
-        let mut handler = TestHandler::default();
+        let starter = TestHandlerStarter;
 
-        super::exec(
+        let (_code, handler) = super::exec(
             &["true"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            &mut handler,
+            starter,
         )
         .unwrap();
 
@@ -457,13 +477,13 @@ sys.stdout.write('bar');
 
     #[test]
     fn exec_quick() {
-        let mut handler = TestHandler::default();
+        let starter = TestHandlerStarter;
 
-        super::exec(
+        let (_code, handler) = super::exec(
             &["printf", "hello world\n"],
             &ExtraEnv::new(),
             &mut NullTty::open().unwrap(),
-            &mut handler,
+            starter,
         )
         .unwrap();
 
@@ -472,16 +492,16 @@ sys.stdout.write('bar');
 
     #[test]
     fn exec_extra_env() {
-        let mut handler = TestHandler::default();
+        let starter = TestHandlerStarter;
 
         let mut env = ExtraEnv::new();
         env.insert("ASCIINEMA_TEST_FOO".to_owned(), "bar".to_owned());
 
-        super::exec(
+        let (_code, handler) = super::exec(
             &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
             &env,
             &mut NullTty::open().unwrap(),
-            &mut handler,
+            starter,
         )
         .unwrap();
 
@@ -490,16 +510,16 @@ sys.stdout.write('bar');
 
     #[test]
     fn exec_winsize_override() {
-        let mut handler = TestHandler::default();
+        let starter = TestHandlerStarter;
 
-        super::exec(
+        let (_code, handler) = super::exec(
             &["true"],
             &ExtraEnv::new(),
             &mut FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50)),
-            &mut handler,
+            starter,
         )
         .unwrap();
 
-        assert_eq!(handler.tty_size, Some(TtySize(100, 50)));
+        assert_eq!(handler.tty_size, TtySize(100, 50));
     }
 }

@@ -1,6 +1,7 @@
-use anyhow::Result;
 use std::io;
 use std::os::fd::RawFd;
+
+use anyhow::Result;
 
 pub fn set_non_blocking(fd: &RawFd) -> Result<(), io::Error> {
     use nix::fcntl::{fcntl, FcntlArg::*, OFlag};

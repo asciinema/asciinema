@@ -1,11 +1,13 @@
-use crate::config::Config;
+use std::env;
+use std::fmt::Debug;
+
 use anyhow::{bail, Context, Result};
 use reqwest::blocking::{multipart::Form, Client, RequestBuilder};
 use reqwest::header;
 use serde::Deserialize;
-use std::env;
-use std::fmt::Debug;
 use url::Url;
+
+use crate::config::Config;
 
 #[derive(Debug, Deserialize)]
 pub struct UploadAsciicastResponse {
@@ -20,7 +22,7 @@ pub struct GetUserStreamResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct NotFoundResponse {
+struct ErrorResponse {
     reason: String,
 }
 
@@ -66,14 +68,19 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
 
     let response = user_stream_request(&server_url, stream_id, install_id)
         .send()
-        .context("cannot obtain stream producer endpoint")?;
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
 
     match response.status().as_u16() {
         401 => bail!(
             "this CLI hasn't been authenticated with {server_hostname} - run `ascinema auth` first"
         ),
 
-        404 => match response.json::<NotFoundResponse>() {
+        404 => match response.json::<ErrorResponse>() {
+            Ok(json) => bail!("{}", json.reason),
+            Err(_) => bail!("{server_hostname} doesn't support streaming"),
+        },
+
+        422 => match response.json::<ErrorResponse>() {
             Ok(json) => bail!("{}", json.reason),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
@@ -110,7 +117,7 @@ fn get_username() -> String {
     env::var("USER").unwrap_or("".to_owned())
 }
 
-fn build_user_agent() -> String {
+pub fn build_user_agent() -> String {
     let ua = concat!(
         "asciinema/",
         env!("CARGO_PKG_VERSION"),

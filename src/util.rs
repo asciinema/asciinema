@@ -1,9 +1,10 @@
-use anyhow::{anyhow, bail, Result};
-use reqwest::Url;
-use sha2::Digest;
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::{io, thread};
+
+use anyhow::{anyhow, bail, Result};
+use reqwest::Url;
+use sha2::Digest;
 use tempfile::NamedTempFile;
 
 pub fn get_local_path(filename: &str) -> Result<Box<dyn AsRef<Path>>> {

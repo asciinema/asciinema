@@ -1,13 +1,15 @@
-use anyhow::{anyhow, bail, Result};
-use reqwest::Url;
-use serde::Deserialize;
 use std::env;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+
+use anyhow::{anyhow, bail, Result};
+use reqwest::Url;
+use serde::Deserialize;
 use uuid::Uuid;
 
 const DEFAULT_SERVER_URL: &str = "https://asciinema.org";
+const DEFAULT_REC_FILENAME: &str = "%Y-%m-%d-%H-%M-%S-{pid}.cast";
 const INSTALL_ID_FILENAME: &str = "install-id";
 
 pub type Key = Option<Vec<u8>>;
@@ -32,9 +34,23 @@ pub struct Cmd {
     rec: Rec,
     play: Play,
     stream: Stream,
+    session: Session,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Default)]
+#[allow(unused)]
+pub struct Session {
+    pub command: Option<String>,
+    pub filename: String,
+    pub input: bool,
+    pub env: Option<String>,
+    pub idle_time_limit: Option<f64>,
+    pub prefix_key: Option<String>,
+    pub pause_key: Option<String>,
+    pub add_marker_key: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
 #[allow(unused)]
 pub struct Rec {
     pub command: Option<String>,
@@ -47,7 +63,7 @@ pub struct Rec {
     pub add_marker_key: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[allow(unused)]
 pub struct Play {
     pub speed: Option<f64>,
@@ -57,7 +73,7 @@ pub struct Play {
     pub next_marker_key: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[allow(unused)]
 pub struct Stream {
     pub command: Option<String>,
@@ -65,6 +81,7 @@ pub struct Stream {
     pub env: Option<String>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
+    pub add_marker_key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -79,9 +96,11 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.input", false)?
-            .set_default("cmd.rec.filename", "%Y-%m-%d-%H-%M-%S-{pid}.cast")?
+            .set_default("cmd.rec.filename", DEFAULT_REC_FILENAME)?
             .set_default("cmd.play.speed", None::<Option<f64>>)?
             .set_default("cmd.stream.input", false)?
+            .set_default("cmd.session.input", false)?
+            .set_default("cmd.session.filename", DEFAULT_REC_FILENAME)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(
@@ -132,92 +151,66 @@ impl Config {
         }
     }
 
-    pub fn cmd_rec_command(&self) -> Option<String> {
-        self.cmd.rec.command.as_ref().cloned()
+    pub fn cmd_rec(&self) -> Session {
+        Session {
+            command: self.cmd.rec.command.clone(),
+            filename: self.cmd.rec.filename.clone(),
+            input: self.cmd.rec.input,
+            env: self.cmd.rec.env.clone(),
+            idle_time_limit: self.cmd.rec.idle_time_limit,
+            prefix_key: self.cmd.rec.prefix_key.clone(),
+            pause_key: self.cmd.rec.pause_key.clone(),
+            add_marker_key: self.cmd.rec.add_marker_key.clone(),
+        }
     }
 
-    pub fn cmd_rec_filename(&self) -> String {
-        self.cmd.rec.filename.clone()
+    pub fn cmd_stream(&self) -> Session {
+        Session {
+            command: self.cmd.stream.command.clone(),
+            filename: "".to_string(),
+            input: self.cmd.stream.input,
+            env: self.cmd.stream.env.clone(),
+            idle_time_limit: None,
+            prefix_key: self.cmd.stream.prefix_key.clone(),
+            pause_key: self.cmd.stream.pause_key.clone(),
+            add_marker_key: self.cmd.stream.add_marker_key.clone(),
+        }
     }
 
-    pub fn cmd_rec_input(&self) -> bool {
-        self.cmd.rec.input
+    pub fn cmd_session(&self) -> Session {
+        self.cmd.session.clone()
     }
 
-    pub fn cmd_rec_idle_time_limit(&self) -> Option<f64> {
-        self.cmd.rec.idle_time_limit
+    pub fn cmd_play(&self) -> Play {
+        self.cmd.play.clone()
+    }
+}
+
+impl Session {
+    pub fn prefix_key(&self) -> Result<Option<Key>> {
+        self.prefix_key.as_ref().map(parse_key).transpose()
     }
 
-    pub fn cmd_rec_env(&self) -> Option<String> {
-        self.cmd.rec.env.as_ref().cloned()
+    pub fn pause_key(&self) -> Result<Option<Key>> {
+        self.pause_key.as_ref().map(parse_key).transpose()
     }
 
-    pub fn cmd_rec_prefix_key(&self) -> Result<Option<Key>> {
-        self.cmd.rec.prefix_key.as_ref().map(parse_key).transpose()
+    pub fn add_marker_key(&self) -> Result<Option<Key>> {
+        self.add_marker_key.as_ref().map(parse_key).transpose()
+    }
+}
+
+impl Play {
+    pub fn pause_key(&self) -> Result<Option<Key>> {
+        self.pause_key.as_ref().map(parse_key).transpose()
     }
 
-    pub fn cmd_rec_pause_key(&self) -> Result<Option<Key>> {
-        self.cmd.rec.pause_key.as_ref().map(parse_key).transpose()
+    pub fn step_key(&self) -> Result<Option<Key>> {
+        self.step_key.as_ref().map(parse_key).transpose()
     }
 
-    pub fn cmd_rec_add_marker_key(&self) -> Result<Option<Key>> {
-        self.cmd
-            .rec
-            .add_marker_key
-            .as_ref()
-            .map(parse_key)
-            .transpose()
-    }
-
-    pub fn cmd_play_speed(&self) -> Option<f64> {
-        self.cmd.play.speed
-    }
-
-    pub fn cmd_play_idle_time_limit(&self) -> Option<f64> {
-        self.cmd.play.idle_time_limit
-    }
-
-    pub fn cmd_play_pause_key(&self) -> Result<Option<Key>> {
-        self.cmd.play.pause_key.as_ref().map(parse_key).transpose()
-    }
-
-    pub fn cmd_play_step_key(&self) -> Result<Option<Key>> {
-        self.cmd.play.step_key.as_ref().map(parse_key).transpose()
-    }
-
-    pub fn cmd_play_next_marker_key(&self) -> Result<Option<Key>> {
-        self.cmd
-            .play
-            .next_marker_key
-            .as_ref()
-            .map(parse_key)
-            .transpose()
-    }
-
-    pub fn cmd_stream_command(&self) -> Option<String> {
-        self.cmd.stream.command.as_ref().cloned()
-    }
-
-    pub fn cmd_stream_input(&self) -> bool {
-        self.cmd.stream.input
-    }
-
-    pub fn cmd_stream_prefix_key(&self) -> Result<Option<Key>> {
-        self.cmd
-            .stream
-            .prefix_key
-            .as_ref()
-            .map(parse_key)
-            .transpose()
-    }
-
-    pub fn cmd_stream_pause_key(&self) -> Result<Option<Key>> {
-        self.cmd
-            .stream
-            .pause_key
-            .as_ref()
-            .map(parse_key)
-            .transpose()
+    pub fn next_marker_key(&self) -> Result<Option<Key>> {
+        self.next_marker_key.as_ref().map(parse_key).transpose()
     }
 }
 

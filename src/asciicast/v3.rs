@@ -9,45 +9,53 @@ use super::{util, Asciicast, Event, EventData, Header};
 use crate::tty::TtyTheme;
 
 #[derive(Deserialize)]
-struct V2Header {
+struct V3Header {
     version: u8,
-    width: u16,
-    height: u16,
+    term: V3Term,
     timestamp: Option<u64>,
     idle_time_limit: Option<f64>,
     command: Option<String>,
     title: Option<String>,
     env: Option<HashMap<String, String>>,
-    theme: Option<V2Theme>,
+}
+
+#[derive(Deserialize)]
+struct V3Term {
+    cols: u16,
+    rows: u16,
+    #[serde(rename = "type")]
+    type_: Option<String>,
+    version: Option<String>,
+    theme: Option<V3Theme>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-struct V2Theme {
+struct V3Theme {
     #[serde(deserialize_with = "deserialize_color")]
     fg: RGB8,
     #[serde(deserialize_with = "deserialize_color")]
     bg: RGB8,
     #[serde(deserialize_with = "deserialize_palette")]
-    palette: V2Palette,
+    palette: V3Palette,
 }
 
 #[derive(Clone)]
 struct RGB8(rgb::RGB8);
 
 #[derive(Clone)]
-struct V2Palette(Vec<RGB8>);
+struct V3Palette(Vec<RGB8>);
 
 #[derive(Debug, Deserialize)]
-struct V2Event {
+struct V3Event {
     #[serde(deserialize_with = "util::deserialize_time")]
     time: u64,
     #[serde(deserialize_with = "deserialize_code")]
-    code: V2EventCode,
+    code: V3EventCode,
     data: String,
 }
 
 #[derive(PartialEq, Debug)]
-enum V2EventCode {
+enum V3EventCode {
     Output,
     Input,
     Resize,
@@ -55,97 +63,105 @@ enum V2EventCode {
     Other(char),
 }
 
-pub struct Parser(V2Header);
+pub struct Parser {
+    header: V3Header,
+    prev_time: u64,
+}
 
 pub fn open(header_line: &str) -> Result<Parser> {
-    let header = serde_json::from_str::<V2Header>(header_line)?;
+    let header = serde_json::from_str::<V3Header>(header_line)?;
 
-    if header.version != 2 {
-        bail!("not an asciicast v2 file")
+    if header.version != 3 {
+        bail!("not an asciicast v3 file")
     }
 
-    Ok(Parser(header))
-}
-
-impl Parser {
-    pub fn parse<'a, I: Iterator<Item = io::Result<String>> + 'a>(self, lines: I) -> Asciicast<'a> {
-        let term_type = self.0.env.as_ref().and_then(|env| env.get("TERM").cloned());
-        let term_theme = self.0.theme.as_ref().map(|t| t.into());
-
-        let header = Header {
-            term_cols: self.0.width,
-            term_rows: self.0.height,
-            term_type,
-            term_version: None,
-            term_theme,
-            timestamp: self.0.timestamp,
-            idle_time_limit: self.0.idle_time_limit,
-            command: self.0.command.clone(),
-            title: self.0.title.clone(),
-            env: self.0.env.clone(),
-        };
-
-        let events = Box::new(lines.filter_map(parse_line));
-
-        Asciicast { header, events }
-    }
-}
-
-fn parse_line(line: io::Result<String>) -> Option<Result<Event>> {
-    match line {
-        Ok(line) => {
-            if line.is_empty() {
-                None
-            } else {
-                Some(parse_event(line))
-            }
-        }
-
-        Err(e) => Some(Err(e.into())),
-    }
-}
-
-fn parse_event(line: String) -> Result<Event> {
-    let event = serde_json::from_str::<V2Event>(&line).context("asciicast v2 parse error")?;
-
-    let data = match event.code {
-        V2EventCode::Output => EventData::Output(event.data),
-        V2EventCode::Input => EventData::Input(event.data),
-
-        V2EventCode::Resize => match event.data.split_once('x') {
-            Some((cols, rows)) => {
-                let cols: u16 = cols
-                    .parse()
-                    .map_err(|e| anyhow!("invalid cols value in resize event: {e}"))?;
-
-                let rows: u16 = rows
-                    .parse()
-                    .map_err(|e| anyhow!("invalid rows value in resize event: {e}"))?;
-
-                EventData::Resize(cols, rows)
-            }
-
-            None => {
-                bail!("invalid size value in resize event");
-            }
-        },
-
-        V2EventCode::Marker => EventData::Marker(event.data),
-        V2EventCode::Other(c) => EventData::Other(c, event.data),
-    };
-
-    Ok(Event {
-        time: event.time,
-        data,
+    Ok(Parser {
+        header,
+        prev_time: 0,
     })
 }
 
-fn deserialize_code<'de, D>(deserializer: D) -> Result<V2EventCode, D::Error>
+impl Parser {
+    pub fn parse<'a, I: Iterator<Item = io::Result<String>> + 'a>(
+        mut self,
+        lines: I,
+    ) -> Asciicast<'a> {
+        let term_theme = self.header.term.theme.as_ref().map(|t| t.into());
+
+        let header = Header {
+            term_cols: self.header.term.cols,
+            term_rows: self.header.term.rows,
+            term_type: self.header.term.type_.clone(),
+            term_version: self.header.term.version.clone(),
+            term_theme,
+            timestamp: self.header.timestamp,
+            idle_time_limit: self.header.idle_time_limit,
+            command: self.header.command.clone(),
+            title: self.header.title.clone(),
+            env: self.header.env.clone(),
+        };
+
+        let events = Box::new(lines.filter_map(move |line| self.parse_line(line)));
+
+        Asciicast { header, events }
+    }
+
+    fn parse_line(&mut self, line: io::Result<String>) -> Option<Result<Event>> {
+        match line {
+            Ok(line) => {
+                if line.is_empty() || line.starts_with("#") {
+                    None
+                } else {
+                    Some(self.parse_event(line))
+                }
+            }
+
+            Err(e) => Some(Err(e.into())),
+        }
+    }
+
+    fn parse_event(&mut self, line: String) -> Result<Event> {
+        let event = serde_json::from_str::<V3Event>(&line).context("asciicast v3 parse error")?;
+
+        let data = match event.code {
+            V3EventCode::Output => EventData::Output(event.data),
+            V3EventCode::Input => EventData::Input(event.data),
+
+            V3EventCode::Resize => match event.data.split_once('x') {
+                Some((cols, rows)) => {
+                    let cols: u16 = cols
+                        .parse()
+                        .map_err(|e| anyhow!("invalid cols value in resize event: {e}"))?;
+
+                    let rows: u16 = rows
+                        .parse()
+                        .map_err(|e| anyhow!("invalid rows value in resize event: {e}"))?;
+
+                    EventData::Resize(cols, rows)
+                }
+
+                None => {
+                    bail!("invalid size value in resize event");
+                }
+            },
+
+            V3EventCode::Marker => EventData::Marker(event.data),
+            V3EventCode::Other(c) => EventData::Other(c, event.data),
+        };
+
+        let time = self.prev_time + event.time;
+        self.prev_time = time;
+
+        Ok(Event { time, data })
+    }
+}
+
+fn deserialize_code<'de, D>(deserializer: D) -> Result<V3EventCode, D::Error>
 where
     D: Deserializer<'de>,
 {
     use serde::de::Error;
-    use V2EventCode::*;
+    use V3EventCode::*;
 
     let value: &str = Deserialize::deserialize(deserializer)?;
 
@@ -159,17 +175,17 @@ where
     }
 }
 
-pub struct V2Encoder {
-    time_offset: u64,
+pub struct V3Encoder {
+    prev_time: u64,
 }
 
-impl V2Encoder {
-    pub fn new(time_offset: u64) -> Self {
-        Self { time_offset }
+impl V3Encoder {
+    pub fn new() -> Self {
+        Self { prev_time: 0 }
     }
 
     pub fn header(&mut self, header: &Header) -> Vec<u8> {
-        let header: V2Header = header.into();
+        let header: V3Header = header.into();
         let mut data = serde_json::to_string(&header).unwrap().into_bytes();
         data.push(b'\n');
 
@@ -183,7 +199,7 @@ impl V2Encoder {
         data
     }
 
-    fn serialize_event(&self, event: &Event) -> Result<String, serde_json::Error> {
+    fn serialize_event(&mut self, event: &Event) -> Result<String, serde_json::Error> {
         use EventData::*;
 
         let (code, data) = match &event.data {
@@ -194,9 +210,12 @@ impl V2Encoder {
             Other(code, data) => (*code, serde_json::to_string(data)?),
         };
 
+        let time = event.time - self.prev_time;
+        self.prev_time = event.time;
+
         Ok(format!(
             "[{}, {}, {}]",
-            format_time(event.time + self.time_offset),
+            format_time(time),
             serde_json::to_string(&code)?,
             data,
         ))
@@ -218,14 +237,14 @@ fn format_time(time: u64) -> String {
     formatted_time
 }
 
-impl serde::Serialize for V2Header {
+impl serde::Serialize for V3Header {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         use serde::ser::SerializeMap;
 
-        let mut len = 4;
+        let mut len = 2;
 
         if self.timestamp.is_some() {
             len += 1;
@@ -247,14 +266,9 @@ impl serde::Serialize for V2Header {
             len += 1;
         }
 
-        if self.theme.is_some() {
-            len += 1;
-        }
-
         let mut map = serializer.serialize_map(Some(len))?;
-        map.serialize_entry("version", &2)?;
-        map.serialize_entry("width", &self.width)?;
-        map.serialize_entry("height", &self.height)?;
+        map.serialize_entry("version", &3)?;
+        map.serialize_entry("term", &self.term)?;
 
         if let Some(timestamp) = self.timestamp {
             map.serialize_entry("timestamp", &timestamp)?;
@@ -276,6 +290,42 @@ impl serde::Serialize for V2Header {
             if !env.is_empty() {
                 map.serialize_entry("env", &env)?;
             }
+        }
+        map.end()
+    }
+}
+
+impl serde::Serialize for V3Term {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeMap;
+
+        let mut len = 2;
+
+        if self.type_.is_some() {
+            len += 1;
+        }
+
+        if self.version.is_some() {
+            len += 1;
+        }
+
+        if self.theme.is_some() {
+            len += 1;
+        }
+
+        let mut map = serializer.serialize_map(Some(len))?;
+        map.serialize_entry("cols", &self.cols)?;
+        map.serialize_entry("rows", &self.rows)?;
+
+        if let Some(type_) = &self.type_ {
+            map.serialize_entry("type", &type_)?;
+        }
+
+        if let Some(version) = &self.version {
+            map.serialize_entry("version", &version)?;
         }
 
         if let Some(theme) = &self.theme {
@@ -306,7 +356,7 @@ fn parse_hex_color(rgb: &str) -> Option<RGB8> {
     Some(RGB8(rgb::RGB8::new(r, g, b)))
 }
 
-fn deserialize_palette<'de, D>(deserializer: D) -> Result<V2Palette, D::Error>
+fn deserialize_palette<'de, D>(deserializer: D) -> Result<V3Palette, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -320,7 +370,7 @@ where
         return Err(serde::de::Error::custom("expected 8 or 16 hex triplets"));
     }
 
-    Ok(V2Palette(colors))
+    Ok(V3Palette(colors))
 }
 
 impl serde::Serialize for RGB8 {
@@ -338,7 +388,7 @@ impl fmt::Display for RGB8 {
     }
 }
 
-impl serde::Serialize for V2Palette {
+impl serde::Serialize for V3Palette {
     fn serialize<S>(&self, serializer: S) -> std::prelude::v1::Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -354,36 +404,40 @@ impl serde::Serialize for V2Palette {
     }
 }
 
-impl From<&Header> for V2Header {
+impl From<&Header> for V3Header {
     fn from(header: &Header) -> Self {
-        V2Header {
-            version: 2,
-            width: header.term_cols,
-            height: header.term_rows,
+        V3Header {
+            version: 3,
+            term: V3Term {
+                cols: header.term_cols,
+                rows: header.term_rows,
+                type_: header.term_type.clone(),
+                version: header.term_version.clone(),
+                theme: header.term_theme.as_ref().map(|t| t.into()),
+            },
             timestamp: header.timestamp,
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
             title: header.title.clone(),
             env: header.env.clone(),
-            theme: header.term_theme.as_ref().map(|t| t.into()),
         }
     }
 }
 
-impl From<&TtyTheme> for V2Theme {
+impl From<&TtyTheme> for V3Theme {
     fn from(theme: &TtyTheme) -> Self {
         let palette = theme.palette.iter().copied().map(RGB8).collect();
 
-        V2Theme {
+        V3Theme {
             fg: RGB8(theme.fg),
             bg: RGB8(theme.bg),
-            palette: V2Palette(palette),
+            palette: V3Palette(palette),
         }
     }
 }
 
-impl From<&V2Theme> for TtyTheme {
-    fn from(theme: &V2Theme) -> Self {
+impl From<&V3Theme> for TtyTheme {
+    fn from(theme: &V3Theme) -> Self {
         let palette = theme.palette.0.iter().map(|c| c.0).collect();
 
         TtyTheme {

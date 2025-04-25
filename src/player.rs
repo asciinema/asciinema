@@ -1,12 +1,14 @@
-use crate::asciicast::{self, Event, EventData};
-use crate::config::Key;
-use crate::tty::Tty;
-use anyhow::Result;
-use nix::sys::select::{pselect, FdSet};
-use nix::sys::time::{TimeSpec, TimeValLike};
 use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
 use std::time::{Duration, Instant};
+
+use anyhow::Result;
+use nix::sys::select::{pselect, FdSet};
+use nix::sys::time::{TimeSpec, TimeValLike};
+
+use crate::asciicast::{self, Event, EventData};
+use crate::config::Key;
+use crate::tty::Tty;
 
 pub struct KeyBindings {
     pub quit: Key,

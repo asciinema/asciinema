@@ -1,13 +1,18 @@
 mod util;
 mod v1;
 mod v2;
-use crate::tty;
-use anyhow::{anyhow, Result};
+mod v3;
+
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
-pub use v2::Encoder;
+
+use anyhow::{anyhow, Result};
+
+use crate::tty::TtyTheme;
+pub use v2::V2Encoder;
+pub use v3::V3Encoder;
 
 pub struct Asciicast<'a> {
     pub header: Header,
@@ -15,14 +20,16 @@ pub struct Asciicast<'a> {
 }
 
 pub struct Header {
-    pub cols: u16,
-    pub rows: u16,
+    pub term_cols: u16,
+    pub term_rows: u16,
+    pub term_type: Option<String>,
+    pub term_version: Option<String>,
+    pub term_theme: Option<TtyTheme>,
     pub timestamp: Option<u64>,
     pub idle_time_limit: Option<f64>,
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
-    pub theme: Option<tty::Theme>,
 }
 
 pub struct Event {
@@ -41,14 +48,16 @@ pub enum EventData {
 impl Default for Header {
     fn default() -> Self {
         Self {
-            cols: 80,
-            rows: 24,
+            term_cols: 80,
+            term_rows: 24,
+            term_type: None,
+            term_version: None,
+            term_theme: None,
             timestamp: None,
             idle_time_limit: None,
             command: None,
             title: None,
             env: None,
-            theme: None,
         }
     }
 }
@@ -65,14 +74,16 @@ pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Asciicast<'a>> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow!("empty file"))??;
 
-    if let Ok(parser) = v2::open(&first_line) {
+    if let Ok(parser) = v3::open(&first_line) {
+        Ok(parser.parse(lines))
+    } else if let Ok(parser) = v2::open(&first_line) {
         Ok(parser.parse(lines))
     } else {
         let json = std::iter::once(Ok(first_line))
             .chain(lines)
             .collect::<io::Result<String>>()?;
 
-        v1::load(json)
+        v1::load(json).map_err(|_| anyhow!("not a v1, v2, v3 asciicast file"))
     }
 }
 
@@ -152,8 +163,8 @@ pub fn accelerate(
 
 #[cfg(test)]
 mod tests {
-    use super::{Asciicast, Encoder, Event, EventData, Header};
-    use crate::tty;
+    use super::{Asciicast, Event, EventData, Header, V2Encoder};
+    use crate::tty::TtyTheme;
     use anyhow::Result;
     use rgb::RGB8;
     use std::collections::HashMap;
@@ -165,8 +176,8 @@ mod tests {
 
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!((header.cols, header.rows), (100, 50));
-        assert!(header.theme.is_none());
+        assert_eq!((header.term_cols, header.term_rows), (100, 50));
+        assert!(header.term_theme.is_none());
 
         assert_eq!(events[0].time, 1230000);
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
@@ -177,7 +188,7 @@ mod tests {
         let Asciicast { header, events } = super::open_from_path("tests/casts/full.json").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!((header.cols, header.rows), (100, 50));
+        assert_eq!((header.term_cols, header.term_rows), (100, 50));
 
         assert_eq!(events[0].time, 1);
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
@@ -195,8 +206,8 @@ mod tests {
             super::open_from_path("tests/casts/minimal.cast").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
-        assert_eq!((header.cols, header.rows), (100, 50));
-        assert!(header.theme.is_none());
+        assert_eq!((header.term_cols, header.term_rows), (100, 50));
+        assert!(header.term_theme.is_none());
 
         assert_eq!(events[0].time, 1230000);
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
@@ -206,9 +217,9 @@ mod tests {
     fn open_v2_full() {
         let Asciicast { header, events } = super::open_from_path("tests/casts/full.cast").unwrap();
         let events = events.take(5).collect::<Result<Vec<Event>>>().unwrap();
-        let theme = header.theme.unwrap();
+        let theme = header.term_theme.unwrap();
 
-        assert_eq!((header.cols, header.rows), (100, 50));
+        assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert_eq!(theme.fg, RGB8::new(0, 0, 0));
         assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
         assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
@@ -234,23 +245,12 @@ mod tests {
     #[test]
     fn encoder() {
         let mut data = Vec::new();
-
-        let header = Header {
-            cols: 80,
-            rows: 24,
-            timestamp: None,
-            idle_time_limit: None,
-            command: None,
-            title: None,
-            env: Default::default(),
-            theme: None,
-        };
-
-        let mut enc = Encoder::new(0);
+        let header = Header::default();
+        let mut enc = V2Encoder::new(0);
         data.extend(enc.header(&header));
-        data.extend(enc.event(&Event::output(1000001, "hello\r\n".to_owned())));
+        data.extend(enc.event(&Event::output(1000000, "hello\r\n".to_owned())));
 
-        let mut enc = Encoder::new(1000001);
+        let mut enc = V2Encoder::new(1000001);
         data.extend(enc.event(&Event::output(1000001, "world".to_owned())));
         data.extend(enc.event(&Event::input(2000002, " ".to_owned())));
         data.extend(enc.event(&Event::resize(3000003, (100, 40))));
@@ -262,7 +262,7 @@ mod tests {
         assert_eq!(lines[0]["width"], 80);
         assert_eq!(lines[0]["height"], 24);
         assert!(lines[0]["timestamp"].is_null());
-        assert_eq!(lines[1][0], 1.000001);
+        assert_eq!(lines[1][0], 1.000000);
         assert_eq!(lines[1][1], "o");
         assert_eq!(lines[1][2], "hello\r\n");
         assert_eq!(lines[2][0], 2.000002);
@@ -281,12 +281,12 @@ mod tests {
 
     #[test]
     fn header_encoding() {
-        let mut enc = Encoder::new(0);
+        let mut enc = V2Encoder::new(0);
         let mut env = HashMap::new();
         env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
         env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
-        let theme = tty::Theme {
+        let theme = TtyTheme {
             fg: RGB8::new(0, 1, 2),
             bg: RGB8::new(0, 100, 200),
             palette: vec![
@@ -310,14 +310,13 @@ mod tests {
         };
 
         let header = Header {
-            cols: 80,
-            rows: 24,
             timestamp: Some(1704719152),
             idle_time_limit: Some(1.5),
             command: Some("/bin/bash".to_owned()),
             title: Some("Demo".to_owned()),
             env: Some(env),
-            theme: Some(theme),
+            term_theme: Some(theme),
+            ..Default::default()
         };
 
         let data = enc.header(&header);
