@@ -226,6 +226,10 @@ pub struct Session {
     /// Log file path
     #[arg(long)]
     pub log_file: Option<PathBuf>,
+
+    /// Unix domain socket path for  proxy (hidden, internal use only)
+    #[arg(long, hide = true)]
+    pub socket_path: Option<String>,
 }
 
 #[derive(Debug, Args)]

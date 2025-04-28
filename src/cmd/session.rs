@@ -33,6 +33,7 @@ use crate::status;
 use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 use crate::util;
+use crate::socket_writer::{SocketWriterStarter, Metadata as SocketMetadata};
 
 impl cli::Session {
     pub fn run(mut self, config: &Config, cmd_config: &config::Session) -> Result<()> {
@@ -43,8 +44,6 @@ impl cli::Session {
         let keys = get_key_bindings(cmd_config)?;
         let notifier = notifier::threaded(get_notifier(config));
         let record_input = self.input || cmd_config.input;
-        let term_type = self.get_term_type();
-        let term_version = self.get_term_version()?;
         let env = capture_env(self.env.clone(), cmd_config);
 
         let path = self
@@ -59,8 +58,8 @@ impl cli::Session {
                 self.get_file_writer(
                     path,
                     cmd_config,
-                    term_type.clone(),
-                    term_version.clone(),
+                    self.get_term_type(),
+                    self.get_term_version()?,
                     &env,
                     notifier.clone(),
                 )
@@ -77,7 +76,7 @@ impl cli::Session {
         let mut relay = self
             .relay
             .take()
-            .map(|target| get_relay(target, config, term_type, term_version, &env))
+            .map(|target| get_relay(target, config, self.get_term_type(), self.get_term_version()?, &env))
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -137,21 +136,49 @@ impl cli::Session {
 
         let mut outputs: Vec<Box<dyn session::OutputStarter>> = Vec::new();
 
-        if server.is_some() || forwarder.is_some() {
-            let output = stream.start(runtime.handle().clone());
-            outputs.push(Box::new(output));
-        }
-
-        if let Some(output) = file_writer {
-            outputs.push(Box::new(output));
-        }
-
-        if outputs.is_empty() {
-            status::warning!("No outputs enabled, consider using -o, -s, or -r");
-        }
-
-        if command.is_none() {
-            status::info!("Press <ctrl+d> or type 'exit' to end");
+        // If socket_path is set, use SocketWriterStarter and suppress all logs and file outputs
+        if let Some(socket_path) = &self.socket_path {
+            let format = self.format.unwrap_or(Format::AsciicastV3);
+            let socket_term_type = self.get_term_type();
+            let socket_term_version = self.get_term_version()?;
+            let encoder: Box<dyn crate::encoder::Encoder + Send> = match format {
+                Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
+                Format::AsciicastV2 => Box::new(AsciicastV2Encoder::new(false, 0)),
+                Format::Raw => Box::new(RawEncoder::new(false)),
+                Format::Txt => Box::new(TextEncoder::new()),
+            };
+            let metadata = SocketMetadata {
+                term_type: socket_term_type,
+                term_version: socket_term_version,
+                idle_time_limit: self.idle_time_limit.or(cmd_config.idle_time_limit),
+                command: self.get_command(cmd_config),
+                title: self.title.clone(),
+                env: Some(env.clone()),
+            };
+            let socket_writer = SocketWriterStarter {
+                socket_path: socket_path.clone(),
+                encoder,
+                metadata,
+                notifier: Box::new(crate::notifier::NullNotifier),
+                handle: runtime.handle().clone(),
+            };
+            outputs.push(Box::new(socket_writer));
+        } else {
+            let term_type = self.get_term_type();
+            let term_version = self.get_term_version()?;
+            if server.is_some() || forwarder.is_some() {
+                let output = stream.start(runtime.handle().clone());
+                outputs.push(Box::new(output));
+            }
+            if let Some(output) = file_writer {
+                outputs.push(Box::new(output));
+            }
+            if outputs.is_empty() {
+                status::warning!("No outputs enabled, consider using -o, -s, or -r");
+            }
+            if command.is_none() {
+                status::info!("Press <ctrl+d> or type 'exit' to end");
+            }
         }
 
         let exec_command = build_exec_command(command.as_ref().cloned());
