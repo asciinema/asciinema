@@ -25,6 +25,7 @@ pub struct SocketWriterStarter {
 pub struct SocketWriter {
     stream: Arc<Mutex<UnixStream>>,
     encoder: Box<dyn encoder::Encoder + Send>,
+    #[allow(dead_code)]
     notifier: Box<dyn Notifier>,
     handle: Handle,
 }
@@ -40,7 +41,7 @@ pub struct Metadata {
 
 impl session::OutputStarter for SocketWriterStarter {
     fn start(
-        mut self: Box<Self>,
+        self: Box<Self>,
         time: SystemTime,
         tty_size: TtySize,
         theme: Option<TtyTheme>,

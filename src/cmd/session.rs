@@ -139,8 +139,8 @@ impl cli::Session {
         // If socket_path is set, use SocketWriterStarter and suppress all logs and file outputs
         if let Some(socket_path) = &self.socket_path {
             let format = self.format.unwrap_or(Format::AsciicastV3);
-            let socket_term_type = self.get_term_type();
-            let socket_term_version = self.get_term_version()?;
+            let _socket_term_type = self.get_term_type();
+            let _socket_term_version = self.get_term_version()?;
             let encoder: Box<dyn crate::encoder::Encoder + Send> = match format {
                 Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
                 Format::AsciicastV2 => Box::new(AsciicastV2Encoder::new(false, 0)),
@@ -148,8 +148,8 @@ impl cli::Session {
                 Format::Txt => Box::new(TextEncoder::new()),
             };
             let metadata = SocketMetadata {
-                term_type: socket_term_type,
-                term_version: socket_term_version,
+                term_type: _socket_term_type,
+                term_version: _socket_term_version,
                 idle_time_limit: self.idle_time_limit.or(cmd_config.idle_time_limit),
                 command: self.get_command(cmd_config),
                 title: self.title.clone(),
@@ -164,8 +164,8 @@ impl cli::Session {
             };
             outputs.push(Box::new(socket_writer));
         } else {
-            let term_type = self.get_term_type();
-            let term_version = self.get_term_version()?;
+            let _term_type = self.get_term_type();
+            let _term_version = self.get_term_version()?;
             if server.is_some() || forwarder.is_some() {
                 let output = stream.start(runtime.handle().clone());
                 outputs.push(Box::new(output));

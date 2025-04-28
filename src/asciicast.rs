@@ -30,6 +30,7 @@ pub struct Header {
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
+    #[allow(dead_code)]
     pub child_pid: Option<u32>,
 }
 
