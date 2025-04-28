@@ -26,6 +26,7 @@ pub struct SocketWriter {
     stream: Arc<Mutex<UnixStream>>,
     encoder: Box<dyn encoder::Encoder + Send>,
     notifier: Box<dyn Notifier>,
+    handle: Handle,
 }
 
 pub struct Metadata {
@@ -74,6 +75,7 @@ impl session::OutputStarter for SocketWriterStarter {
                         stream: Arc::new(Mutex::new(stream)),
                         encoder,
                         notifier,
+                        handle,
                     }) as Box<dyn session::Output>)
                 }
                 Err(e) => {
@@ -82,7 +84,7 @@ impl session::OutputStarter for SocketWriterStarter {
                 }
             }
         };
-        handle.block_on(fut)
+        self.handle.block_on(fut)
     }
 }
 
@@ -94,7 +96,7 @@ impl session::Output for SocketWriter {
             let mut stream = stream.lock().await;
             stream.write_all(&bytes).await
         };
-        tokio::runtime::Handle::current().block_on(fut)
+        self.handle.block_on(fut)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -104,6 +106,6 @@ impl session::Output for SocketWriter {
             let mut stream = stream.lock().await;
             stream.write_all(&bytes).await
         };
-        tokio::runtime::Handle::current().block_on(fut)
+        self.handle.block_on(fut)
     }
 } 
