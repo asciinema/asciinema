@@ -45,24 +45,25 @@ mod tests {
         let header = Header {
             term_cols: 100,
             term_rows: 50,
+            child_pid: None,
             ..Default::default()
         };
 
         assert_eq!(enc.header(&header), "\x1b[8;50;100t".as_bytes());
 
         assert_eq!(
-            enc.event(Event::output(0, "he\x1b[1mllo\r\n".to_owned())),
+            enc.event(Event::output(0, "he\x1b[1mllo\r\n".to_owned(), None)),
             "he\x1b[1mllo\r\n".as_bytes()
         );
 
         assert_eq!(
-            enc.event(Event::output(1, "world\r\n".to_owned())),
+            enc.event(Event::output(1, "world\r\n".to_owned(), None)),
             "world\r\n".as_bytes()
         );
 
-        assert!(enc.event(Event::input(2, ".".to_owned())).is_empty());
-        assert!(enc.event(Event::resize(3, (80, 24))).is_empty());
-        assert!(enc.event(Event::marker(4, ".".to_owned())).is_empty());
+        assert!(enc.event(Event::input(2, ".".to_owned(), None)).is_empty());
+        assert!(enc.event(Event::resize(3, (80, 24), None)).is_empty());
+        assert!(enc.event(Event::marker(4, ".".to_owned(), None)).is_empty());
         assert!(enc.flush().is_empty());
     }
 }

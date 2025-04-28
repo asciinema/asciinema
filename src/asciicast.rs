@@ -30,11 +30,13 @@ pub struct Header {
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
+    pub child_pid: Option<u32>,
 }
 
 pub struct Event {
     pub time: u64,
     pub data: EventData,
+    pub child_pid: Option<u32>,
 }
 
 pub enum EventData {
@@ -58,6 +60,7 @@ impl Default for Header {
             command: None,
             title: None,
             env: None,
+            child_pid: None,
         }
     }
 }
@@ -95,31 +98,35 @@ pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
 }
 
 impl Event {
-    pub fn output(time: u64, text: String) -> Self {
+    pub fn output(time: u64, text: String, child_pid: Option<u32>) -> Self {
         Event {
             time,
             data: EventData::Output(text),
+            child_pid,
         }
     }
 
-    pub fn input(time: u64, text: String) -> Self {
+    pub fn input(time: u64, text: String, child_pid: Option<u32>) -> Self {
         Event {
             time,
             data: EventData::Input(text),
+            child_pid,
         }
     }
 
-    pub fn resize(time: u64, size: (u16, u16)) -> Self {
+    pub fn resize(time: u64, size: (u16, u16), child_pid: Option<u32>) -> Self {
         Event {
             time,
             data: EventData::Resize(size.0, size.1),
+            child_pid,
         }
     }
 
-    pub fn marker(time: u64, label: String) -> Self {
+    pub fn marker(time: u64, label: String, child_pid: Option<u32>) -> Self {
         Event {
             time,
             data: EventData::Marker(label),
+            child_pid,
         }
     }
 }
@@ -248,13 +255,13 @@ mod tests {
         let header = Header::default();
         let mut enc = V2Encoder::new(0);
         data.extend(enc.header(&header));
-        data.extend(enc.event(&Event::output(1000000, "hello\r\n".to_owned())));
+        data.extend(enc.event(&Event::output(1000000, "hello\r\n".to_owned(), None)));
 
         let mut enc = V2Encoder::new(1000001);
-        data.extend(enc.event(&Event::output(1000001, "world".to_owned())));
-        data.extend(enc.event(&Event::input(2000002, " ".to_owned())));
-        data.extend(enc.event(&Event::resize(3000003, (100, 40))));
-        data.extend(enc.event(&Event::output(4000004, "żółć".to_owned())));
+        data.extend(enc.event(&Event::output(1000001, "world".to_owned(), None)));
+        data.extend(enc.event(&Event::input(2000002, " ".to_owned(), None)));
+        data.extend(enc.event(&Event::resize(3000003, (100, 40), None)));
+        data.extend(enc.event(&Event::output(4000004, "żółć".to_owned(), None)));
 
         let lines = parse(data);
 
@@ -316,6 +323,7 @@ mod tests {
             title: Some("Demo".to_owned()),
             env: Some(env),
             term_theme: Some(theme),
+            child_pid: None,
             ..Default::default()
         };
 
@@ -350,13 +358,13 @@ mod tests {
     #[test]
     fn accelerate() {
         let events = [(0u64, "foo"), (20, "bar"), (50, "baz")]
-            .map(|(time, output)| Ok(Event::output(time, output.to_owned())));
+            .map(|(time, output)| Ok(Event::output(time, output.to_owned(), None)));
 
         let output = output(super::accelerate(events.into_iter(), 2.0));
 
-        assert_eq!(output[0], (0, "foo".to_owned()));
-        assert_eq!(output[1], (10, "bar".to_owned()));
-        assert_eq!(output[2], (25, "baz".to_owned()));
+        assert_eq!(output[0], (0, "foo".to_owned(), None));
+        assert_eq!(output[1], (10, "bar".to_owned(), None));
+        assert_eq!(output[2], (25, "baz".to_owned(), None));
     }
 
     #[test]
@@ -368,26 +376,27 @@ mod tests {
             (4_000_000, "qux"),
             (7_500_000, "quux"),
         ]
-        .map(|(time, output)| Ok(Event::output(time, output.to_owned())));
+        .map(|(time, output)| Ok(Event::output(time, output.to_owned(), None)));
 
         let events = output(super::limit_idle_time(events.into_iter(), 2.0));
 
-        assert_eq!(events[0], (0, "foo".to_owned()));
-        assert_eq!(events[1], (1_000_000, "bar".to_owned()));
-        assert_eq!(events[2], (3_000_000, "baz".to_owned()));
-        assert_eq!(events[3], (3_500_000, "qux".to_owned()));
-        assert_eq!(events[4], (5_500_000, "quux".to_owned()));
+        assert_eq!(events[0], (0, "foo".to_owned(), None));
+        assert_eq!(events[1], (1_000_000, "bar".to_owned(), None));
+        assert_eq!(events[2], (3_000_000, "baz".to_owned(), None));
+        assert_eq!(events[3], (3_500_000, "qux".to_owned(), None));
+        assert_eq!(events[4], (5_500_000, "quux".to_owned(), None));
     }
 
-    fn output(events: impl Iterator<Item = Result<Event>>) -> Vec<(u64, String)> {
+    fn output(events: impl Iterator<Item = Result<Event>>) -> Vec<(u64, String, Option<u32>)> {
         events
             .filter_map(|r| {
                 if let Ok(Event {
                     time,
                     data: EventData::Output(data),
+                    child_pid,
                 }) = r
                 {
-                    Some((time, data))
+                    Some((time, data, child_pid))
                 } else {
                     None
                 }

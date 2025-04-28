@@ -25,7 +25,7 @@ use crate::tty::{Tty, TtySize, TtyTheme};
 type ExtraEnv = HashMap<String, String>;
 
 pub trait HandlerStarter<H: Handler> {
-    fn start(self, tty_size: TtySize, theme: Option<TtyTheme>) -> H;
+    fn start(self, tty_size: TtySize, theme: Option<TtyTheme>, child_pid: u32) -> H;
 }
 
 pub trait Handler {
@@ -43,11 +43,11 @@ pub fn exec<S: AsRef<str>, T: Tty, H: Handler, R: HandlerStarter<H>>(
 ) -> anyhow::Result<(i32, H)> {
     let winsize = tty.get_size();
     let epoch = Instant::now();
-    let mut handler = handler_starter.start(winsize.into(), tty.get_theme());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result.fork_result {
         ForkResult::Parent { child } => {
+            let mut handler = handler_starter.start(winsize.into(), tty.get_theme(), child.as_raw() as u32);
             handle_parent(result.master, child, tty, &mut handler, epoch)
                 .map(|code| (code, handler.stop()))
         }
@@ -391,17 +391,18 @@ mod tests {
 
     struct TestHandlerStarter;
 
-    #[derive(Default)]
     struct TestHandler {
         tty_size: TtySize,
         output: Vec<Vec<u8>>,
+        child_pid: u32,
     }
 
     impl HandlerStarter<TestHandler> for TestHandlerStarter {
-        fn start(self, tty_size: TtySize, _theme: Option<TtyTheme>) -> TestHandler {
+        fn start(self, tty_size: TtySize, _theme: Option<TtyTheme>, child_pid: u32) -> TestHandler {
             TestHandler {
                 tty_size,
                 output: Vec::new(),
+                child_pid,
             }
         }
     }
@@ -409,7 +410,6 @@ mod tests {
     impl Handler for TestHandler {
         fn output(&mut self, _time: Duration, data: &[u8]) -> bool {
             self.output.push(data.into());
-
             true
         }
 

@@ -48,13 +48,14 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         command: asciicast.command.clone(),
         title: asciicast.title.clone(),
         env: asciicast.env.clone(),
+        child_pid: None,
     };
 
     let events = Box::new(
         asciicast
             .stdout
             .into_iter()
-            .map(|e| Ok(Event::output(e.time, e.data))),
+            .map(|e| Ok(Event::output(e.time, e.data, None))),
     );
 
     Ok(Asciicast { header, events })

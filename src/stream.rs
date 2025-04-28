@@ -90,24 +90,24 @@ async fn run(
                         last_event_id += 1;
 
                         match event {
-                            session::Event::Output(time, text) => {
+                            session::Event::Output(time, text, _) => {
                                 vt.feed_str(&text);
                                 let _ = broadcast_tx.send(Event::Output(last_event_id, time, text));
                                 stream_time = time;
                             }
 
-                            session::Event::Input(time, text) => {
+                            session::Event::Input(time, text, _) => {
                                 let _ = broadcast_tx.send(Event::Input(last_event_id, time, text));
                                 stream_time = time;
                             }
 
-                            session::Event::Resize(time, tty_size) => {
+                            session::Event::Resize(time, tty_size, _) => {
                                 vt.resize(tty_size.0.into(), tty_size.1.into());
                                 let _ = broadcast_tx.send(Event::Resize(last_event_id, time, tty_size));
                                 stream_time = time;
                             }
 
-                            session::Event::Marker(time, label) => {
+                            session::Event::Marker(time, label, _) => {
                                 let _ = broadcast_tx.send(Event::Marker(last_event_id, time, label));
                                 stream_time = time;
                             }

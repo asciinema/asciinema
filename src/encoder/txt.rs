@@ -65,17 +65,18 @@ mod tests {
         let header = Header {
             term_cols: 3,
             term_rows: 1,
+            child_pid: None,
             ..Default::default()
         };
 
         assert!(enc.header(&header).is_empty());
 
         assert!(enc
-            .event(Event::output(0, "he\x1b[1mllo\r\n".to_owned()))
+            .event(Event::output(0, "he\x1b[1mllo\r\n".to_owned(), None))
             .is_empty());
 
         assert!(enc
-            .event(Event::output(1, "world\r\n".to_owned()))
+            .event(Event::output(1, "world\r\n".to_owned(), None))
             .is_empty());
 
         assert_eq!(enc.flush(), "hello\nworld\n".as_bytes());

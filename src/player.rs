@@ -42,7 +42,7 @@ pub fn play(
     let mut pause_elapsed_time: Option<u64> = None;
     let mut next_event = events.next().transpose()?;
 
-    while let Some(Event { time, data }) = &next_event {
+    while let Some(Event { time, data, .. }) = &next_event {
         if let Some(pet) = pause_elapsed_time {
             if let Some(input) = read_input(&mut tty, 1_000_000)? {
                 if keys.quit.as_ref().is_some_and(|k| k == &input) {
@@ -63,7 +63,7 @@ pub fn play(
 
                     next_event = events.next().transpose()?;
                 } else if keys.next_marker.as_ref().is_some_and(|k| k == &input) {
-                    while let Some(Event { time, data }) = next_event {
+                    while let Some(Event { time, data, .. }) = next_event {
                         next_event = events.next().transpose()?;
 
                         match data {
@@ -84,7 +84,7 @@ pub fn play(
                 }
             }
         } else {
-            while let Some(Event { time, data }) = &next_event {
+            while let Some(Event { time, data, .. }) = &next_event {
                 let delay = *time as i64 - epoch.elapsed().as_micros() as i64;
 
                 if delay > 0 {

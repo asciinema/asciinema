@@ -57,6 +57,7 @@ impl session::OutputStarter for SocketWriterStarter {
             command: self.metadata.command.as_ref().cloned(),
             title: self.metadata.title.as_ref().cloned(),
             env: self.metadata.env.as_ref().cloned(),
+            child_pid: None,
         };
         let mut encoder = self.encoder;
         let mut notifier = self.notifier;

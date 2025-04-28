@@ -99,6 +99,7 @@ impl Parser {
             command: self.header.command.clone(),
             title: self.header.title.clone(),
             env: self.header.env.clone(),
+            child_pid: None,
         };
 
         let events = Box::new(lines.filter_map(move |line| self.parse_line(line)));
@@ -152,7 +153,7 @@ impl Parser {
         let time = self.prev_time + event.time;
         self.prev_time = time;
 
-        Ok(Event { time, data })
+        Ok(Event { time, data, child_pid: None })
     }
 }
 
@@ -213,12 +214,16 @@ impl V3Encoder {
         let time = event.time - self.prev_time;
         self.prev_time = event.time;
 
-        Ok(format!(
-            "[{}, {}, {}]",
-            format_time(time),
-            serde_json::to_string(&code)?,
-            data,
-        ))
+        let time_str = format_time(time);
+        let code_str = serde_json::to_string(&code)?;
+
+        let output = if let Some(child_pid) = event.child_pid {
+            format!("[{time_str}, {code_str}, {data}, {}]", child_pid)
+        } else {
+            format!("[{time_str}, {code_str}, {data}]")
+        };
+
+        Ok(output)
     }
 }
 

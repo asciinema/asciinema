@@ -34,10 +34,10 @@ pub trait Output: Send {
 
 #[derive(Clone)]
 pub enum Event {
-    Output(u64, String),
-    Input(u64, String),
-    Resize(u64, TtySize),
-    Marker(u64, String),
+    Output(u64, String, Option<u32>),
+    Input(u64, String, Option<u32>),
+    Resize(u64, TtySize, Option<u32>),
+    Marker(u64, String, Option<u32>),
 }
 
 impl<N: Notifier> SessionStarter<N> {
@@ -57,7 +57,7 @@ impl<N: Notifier> SessionStarter<N> {
 }
 
 impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
-    fn start(self, tty_size: TtySize, tty_theme: Option<TtyTheme>) -> Session<N> {
+    fn start(self, tty_size: TtySize, tty_theme: Option<TtyTheme>, child_pid: u32) -> Session<N> {
         let time = SystemTime::now();
         let mut outputs = Vec::new();
 
@@ -111,6 +111,7 @@ impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
             pause_time: None,
             prefix_mode: false,
             _handle: JoinHandle::new(handle),
+            child_pid,
         }
     }
 }
@@ -127,6 +128,7 @@ pub struct Session<N> {
     pause_time: Option<u64>,
     prefix_mode: bool,
     _handle: JoinHandle,
+    child_pid: u32,
 }
 
 impl<N: Notifier> Session<N> {
@@ -151,7 +153,7 @@ impl<N: Notifier> pty::Handler for Session<N> {
             let text = self.output_decoder.feed(data);
 
             if !text.is_empty() {
-                let msg = Event::Output(self.elapsed_time(time), text);
+                let msg = Event::Output(self.elapsed_time(time), text, Some(self.child_pid));
                 self.sender.send(msg).expect("output send should succeed");
             }
         }
@@ -184,7 +186,7 @@ impl<N: Notifier> pty::Handler for Session<N> {
 
                 return false;
             } else if add_marker_key.is_some_and(|key| data == key) {
-                let msg = Event::Marker(self.elapsed_time(time), "".to_owned());
+                let msg = Event::Marker(self.elapsed_time(time), "".to_owned(), Some(self.child_pid));
                 self.sender.send(msg).expect("marker send should succeed");
                 self.notify("Marker added");
                 return false;
@@ -195,7 +197,7 @@ impl<N: Notifier> pty::Handler for Session<N> {
             let text = self.input_decoder.feed(data);
 
             if !text.is_empty() {
-                let msg = Event::Input(self.elapsed_time(time), text);
+                let msg = Event::Input(self.elapsed_time(time), text, Some(self.child_pid));
                 self.sender.send(msg).expect("input send should succeed");
             }
         }
@@ -205,7 +207,7 @@ impl<N: Notifier> pty::Handler for Session<N> {
 
     fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool {
         if tty_size != self.tty_size {
-            let msg = Event::Resize(self.elapsed_time(time), tty_size);
+            let msg = Event::Resize(self.elapsed_time(time), tty_size, Some(self.child_pid));
             self.sender.send(msg).expect("resize send should succeed");
 
             self.tty_size = tty_size;
