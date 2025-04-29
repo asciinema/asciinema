@@ -242,24 +242,19 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 			// Update current input for keystrokes and lines
 			if session.State == StateCommand || session.State == StatePrompt {
 				updateCurrentInput(&session.CurrentInput, data)
-				// If in Command state and a full command line is echoed, update CommandString
-				if session.State == StateCommand && looksLikeFullCommand(data) {
-					fmt.Printf("[debug] CommandString updated in Command state: %q -> %q\n", session.CommandString, session.CurrentInput)
-					session.CommandString = session.CurrentInput
-				}
 			}
 
 			switch {
 			case strings.Contains(data, "\x1b]133;A\a"):
+				// Extract and log the command from CurrentInput before resetting
+				if session.CurrentInput != "" {
+					fmt.Printf("[COMMAND] Just entered: %q\n", session.CurrentInput)
+					session.CommandString = session.CurrentInput
+				}
 				fmt.Printf("[debug] OSC 133;A: State=Prompt, CurrentInput reset\n")
 				session.State = StatePrompt
 				session.PromptBuffer = []string{data}
 				session.CurrentInput = ""
-			case strings.Contains(data, "\x1b]133;B\a"):
-				fmt.Printf("[debug] OSC 133;B: State=Command, snapshot CommandString=%q\n", session.CurrentInput)
-				session.State = StateCommand
-				session.CommandBuffer = []string{data}
-				session.CommandString = session.CurrentInput // snapshot
 			case strings.Contains(data, "\x1b]133;D"):
 				fmt.Printf("[debug] OSC 133;D: CommandBuffer=%v\n", session.CommandBuffer)
 				session.State = StatePrompt
