@@ -58,20 +58,21 @@ type TerminalSession struct {
 	State         SessionState
 	CommandBuffer []string
 	PromptBuffer  []string
-	LastExitCode  *int
+	LastExitCode  int
 	CommandString string
 	CurrentInput  string
 }
 
-func extractExitCode(data string) *int {
+func extractExitCode(data string) int {
 	re := regexp.MustCompile(`\x1b]133;D;(\d+)\x07`)
 	matches := re.FindStringSubmatch(data)
 	if len(matches) == 2 {
 		if code, err := strconv.Atoi(matches[1]); err == nil {
-			return &code
+			return code
 		}
 	}
-	return nil
+	// If not found or error, return -1 (should not happen if always present)
+	return -1
 }
 
 // Add this function for extracting the command from OSC 133;B
@@ -197,7 +198,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				exitCode := extractExitCode(data)
 				session.LastExitCode = exitCode
 				// Print command, exit code, and output directly
-				fmt.Printf("[COMMAND END] PID %d, exit=%v\n", session.PID, session.LastExitCode)
+				fmt.Printf("[COMMAND END] PID %d, exit=%d\n", session.PID, session.LastExitCode)
 				fmt.Printf("  Command: %q\n", session.CommandString)
 				for _, l := range session.CommandBuffer {
 					fmt.Printf("    %q\n", l)
