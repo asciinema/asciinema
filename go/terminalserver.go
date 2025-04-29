@@ -74,8 +74,6 @@ func extractExitCode(data string) *int {
 	return nil
 }
 
-
-
 // Add this function for extracting the command from OSC 133;B
 func extractCommandFromOSC133B(line string) string {
 	start := strings.Index(line, "\x1b]133;B\a")
@@ -88,6 +86,13 @@ func extractCommandFromOSC133B(line string) string {
 		afterB = afterB[:end]
 	}
 	return strings.TrimSpace(afterB)
+}
+
+// Add a helper to check if a line is real output (not just OSC/control)
+func isRealOutput(data string) bool {
+	// Skip OSC 133;C, 133;D, 1337;RemoteHost, 1337;CurrentDir, etc
+	oscPattern := regexp.MustCompile(`^\x1b\](133;[CD]|1337;RemoteHost=|1337;CurrentDir=)`)
+	return !oscPattern.MatchString(data) && strings.TrimSpace(data) != ""
 }
 
 func main() {
@@ -182,11 +187,13 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				if cmd != "" {
 					fmt.Printf("[COMMAND] Just entered: %q\n", cmd)
 					session.CommandString = cmd
+					session.State = StateCommand // Set state to Command
+					session.CommandBuffer = nil  // Clear previous buffer
 				}
 			case strings.Contains(data, "\x1b]133;D"):
 				fmt.Printf("[debug] OSC 133;D: CommandBuffer=%v\n", session.CommandBuffer)
 				session.State = StatePrompt
-				session.CommandBuffer = append(session.CommandBuffer, data)
+				// Do not append OSC 133;D to CommandBuffer, just handle exit code
 				exitCode := extractExitCode(data)
 				session.LastExitCode = exitCode
 				// Print command, exit code, and output directly
@@ -201,7 +208,9 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				session.CurrentInput = ""
 			default:
 				if session.State == StateCommand {
-					session.CommandBuffer = append(session.CommandBuffer, data)
+					if isRealOutput(data) {
+						session.CommandBuffer = append(session.CommandBuffer, data)
+					}
 				} else if session.State == StatePrompt {
 					session.PromptBuffer = append(session.PromptBuffer, data)
 				}
