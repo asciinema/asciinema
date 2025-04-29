@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"unicode"
 )
 
 // TermInfo represents terminal metadata
@@ -75,80 +74,20 @@ func extractExitCode(data string) *int {
 	return nil
 }
 
-func extractCommandString(data string) string {
-	start := strings.Index(data, "\x1b]133;B\a")
+
+
+// Add this function for extracting the command from OSC 133;B
+func extractCommandFromOSC133B(line string) string {
+	start := strings.Index(line, "\x1b]133;B\a")
 	if start == -1 {
 		return ""
 	}
-	afterB := data[start+len("\x1b]133;B\a"):]
+	afterB := line[start+len("\x1b]133;B\a"):]
 	end := strings.Index(afterB, "\x1b[K")
 	if end != -1 {
 		afterB = afterB[:end]
 	}
 	return strings.TrimSpace(afterB)
-}
-
-func stripAnsi(str string) string {
-	re := regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\a]*\a`)
-	return re.ReplaceAllString(str, "")
-}
-
-func isLikelyUserCommand(line string) bool {
-	s := stripAnsi(line)
-	s = strings.TrimSpace(s)
-	return len(s) > 0 && !strings.HasPrefix(s, "\x1b]")
-}
-
-func extractCommandStringFromBuffer(buffer []string) string {
-	for i := len(buffer) - 1; i >= 0; i-- {
-		line := buffer[i]
-		if isLikelyUserCommand(line) {
-			return strings.TrimSpace(stripAnsi(line))
-		}
-	}
-	return ""
-}
-
-func emitCommand(session *TerminalSession) {
-	fmt.Printf("[debug] emitCommand: CommandString=%q, CurrentInput=%q\n", session.CommandString, session.CurrentInput)
-	session.CommandString = extractCommandStringFromBuffer(session.CommandBuffer)
-	fmt.Printf("[debug] emitCommand: extracted CommandString=%q\n", session.CommandString)
-	fmt.Printf("[PID %d] Command finished (exit=%v):\n", session.PID, session.LastExitCode)
-	fmt.Printf("  Command: %q\n", session.CommandString)
-	for _, l := range session.CommandBuffer {
-		fmt.Printf("    %q\n", l)
-	}
-	fmt.Println("---")
-}
-
-func updateCurrentInput(current *string, line string) {
-	old := *current
-	if line == "\b" && len(*current) > 0 {
-		*current = (*current)[:len(*current)-1]
-	} else if len(line) == 1 && (unicode.IsPrint(rune(line[0])) || line == " ") {
-		*current += line
-	} else if looksLikeFullCommand(line) {
-		*current = extractCommandFromFullLine(line)
-	}
-	fmt.Printf("[debug] updateCurrentInput: old=%q, line=%q, new=%q\n", old, line, *current)
-}
-
-func looksLikeFullCommand(line string) bool {
-	s := stripAnsi(line)
-	s = strings.TrimSpace(s)
-	// Heuristic: contains a space and is not just prompt or control
-	return len(s) > 0 && strings.Contains(s, " ") && !strings.HasPrefix(s, "\x1b]")
-}
-
-func extractCommandFromFullLine(line string) string {
-	s := stripAnsi(line)
-	s = strings.TrimSpace(s)
-	// Heuristic: take last word group (after prompt)
-	parts := strings.Fields(s)
-	if len(parts) > 0 {
-		return strings.Join(parts[len(parts)-2:], " ")
-	}
-	return s
 }
 
 func main() {
@@ -175,8 +114,6 @@ func main() {
 	terminalInfoMutex := &sync.Mutex{}
 	terminalInfo := make(map[net.Conn]*CastHeader)
 	
-	// Track command buffers by child_pid
-	commandBuffers := make(map[int]*CommandBuffer)
 	
 	for {
 		// Accept a connection
@@ -188,11 +125,11 @@ func main() {
 		
 		// Launch a goroutine to handle this connection
 		wg.Add(1)
-		go handleConnection(conn, &wg, terminalInfo, terminalInfoMutex, commandBuffers)
+		go handleConnection(conn, &wg, terminalInfo, terminalInfoMutex)
 	}
 }
 
-func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Conn]*CastHeader, mutex *sync.Mutex, commandBuffers map[int]*CommandBuffer) {
+func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Conn]*CastHeader, mutex *sync.Mutex) {
 	defer func() {
 		conn.Close()
 		
@@ -239,29 +176,26 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 			// [raw <pid>] logging
 			fmt.Printf("[raw %d] %q\n", pidInt, data)
 
-			// Update current input for keystrokes and lines
-			if session.State == StateCommand || session.State == StatePrompt {
-				updateCurrentInput(&session.CurrentInput, data)
-			}
-
 			switch {
-			case strings.Contains(data, "\x1b]133;A\a"):
-				// Extract and log the command from CurrentInput before resetting
-				if session.CurrentInput != "" {
-					fmt.Printf("[COMMAND] Just entered: %q\n", session.CurrentInput)
-					session.CommandString = session.CurrentInput
+			case strings.Contains(data, "\x1b]133;B\a"):
+				cmd := extractCommandFromOSC133B(data)
+				if cmd != "" {
+					fmt.Printf("[COMMAND] Just entered: %q\n", cmd)
+					session.CommandString = cmd
 				}
-				fmt.Printf("[debug] OSC 133;A: State=Prompt, CurrentInput reset\n")
-				session.State = StatePrompt
-				session.PromptBuffer = []string{data}
-				session.CurrentInput = ""
 			case strings.Contains(data, "\x1b]133;D"):
 				fmt.Printf("[debug] OSC 133;D: CommandBuffer=%v\n", session.CommandBuffer)
 				session.State = StatePrompt
 				session.CommandBuffer = append(session.CommandBuffer, data)
 				exitCode := extractExitCode(data)
 				session.LastExitCode = exitCode
-				emitCommand(session)
+				// Print command, exit code, and output directly
+				fmt.Printf("[COMMAND END] PID %d, exit=%v\n", session.PID, session.LastExitCode)
+				fmt.Printf("  Command: %q\n", session.CommandString)
+				for _, l := range session.CommandBuffer {
+					fmt.Printf("    %q\n", l)
+				}
+				fmt.Println("---")
 				session.CommandBuffer = nil
 				session.CommandString = ""
 				session.CurrentInput = ""
