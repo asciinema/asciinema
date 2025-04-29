@@ -7,6 +7,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -41,6 +43,78 @@ type CastEvent struct {
 type CommandBuffer struct {
 	Lines []string
 	Active bool
+}
+
+type SessionState string
+
+const (
+	StateIdle    SessionState = "Idle"
+	StatePrompt  SessionState = "Prompt"
+	StateCommand SessionState = "Command"
+)
+
+type TerminalSession struct {
+	PID           int
+	State         SessionState
+	CommandBuffer []string
+	PromptBuffer  []string
+	LastExitCode  *int
+	CommandString string
+}
+
+func extractExitCode(data string) *int {
+	re := regexp.MustCompile(`\x1b]133;D;(\d+)\x07`)
+	matches := re.FindStringSubmatch(data)
+	if len(matches) == 2 {
+		if code, err := strconv.Atoi(matches[1]); err == nil {
+			return &code
+		}
+	}
+	return nil
+}
+
+func extractCommandString(data string) string {
+	start := strings.Index(data, "\x1b]133;B\a")
+	if start == -1 {
+		return ""
+	}
+	afterB := data[start+len("\x1b]133;B\a"):]
+	end := strings.Index(afterB, "\x1b[K")
+	if end != -1 {
+		afterB = afterB[:end]
+	}
+	return strings.TrimSpace(afterB)
+}
+
+func stripAnsi(str string) string {
+	re := regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\a]*\a`)
+	return re.ReplaceAllString(str, "")
+}
+
+func isLikelyUserCommand(line string) bool {
+	s := stripAnsi(line)
+	s = strings.TrimSpace(s)
+	return len(s) > 0 && !strings.HasPrefix(s, "\x1b]")
+}
+
+func extractCommandStringFromBuffer(buffer []string) string {
+	for i := len(buffer) - 1; i >= 0; i-- {
+		line := buffer[i]
+		if isLikelyUserCommand(line) {
+			return strings.TrimSpace(stripAnsi(line))
+		}
+	}
+	return ""
+}
+
+func emitCommand(session *TerminalSession) {
+	session.CommandString = extractCommandStringFromBuffer(session.CommandBuffer)
+	fmt.Printf("[PID %d] Command finished (exit=%v):\n", session.PID, session.LastExitCode)
+	fmt.Printf("  Command: %q\n", session.CommandString)
+	for _, l := range session.CommandBuffer {
+		fmt.Printf("    %q\n", l)
+	}
+	fmt.Println("---")
 }
 
 func main() {
@@ -103,49 +177,58 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 	connID := fmt.Sprintf("%p", conn)
 	fmt.Printf("New connection established: %s\n", connID)
 	
+	sessions := make(map[int]*TerminalSession)
+	
 	for scanner.Scan() {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
-		// fmt.Printf("[debug] Raw line: %q\n", line)
-		// fmt.Printf("[debug] Trimmed line: %q\n", trimmed)
-		// fmt.Printf("[debug] HasPrefix [ : %v\n", strings.HasPrefix(trimmed, "["))
 		if strings.HasPrefix(trimmed, "[") {
 			var arr []interface{}
 			err := json.Unmarshal([]byte(trimmed), &arr)
-			if err != nil {
-				// fmt.Printf("[debug] JSON unmarshal error: %v\n", err)
-			} else {
-				// fmt.Printf("[debug] Unmarshaled array: %#v\n", arr)
-				if len(arr) >= 4 {
-					// fmt.Printf("[debug] arr[0] type: %T, arr[1] type: %T, arr[2] type: %T, arr[3] type: %T\n", arr[0], arr[1], arr[2], arr[3])
-					pid, okPid := arr[3].(float64)
-					data, okData := arr[2].(string)
-					// fmt.Printf("[debug] okPid: %v, pid: %v | okData: %v, data: %v\n", okPid, pid, okData, data)
-					if okPid && okData {
-						pidInt := int(pid)
-						fmt.Printf("[%d] %q\n", pidInt, data)
-						// Detect OSC 133;B (start) and OSC 133;D (end)
-						if strings.Contains(data, "\u001b]133;B\u0007") {
-							commandBuffers[pidInt] = &CommandBuffer{Active: true}
-						} else if strings.Contains(data, "\u001b]133;D\u0007") {
-							if buf, ok := commandBuffers[pidInt]; ok && buf.Active {
-								fmt.Printf("[PID %d] Command output:\n%s\n---\n", pidInt, strings.Join(buf.Lines, "\n"))
-								buf.Active = false
-							}
-						} else {
-							if buf, ok := commandBuffers[pidInt]; ok && buf.Active {
-								buf.Lines = append(buf.Lines, data)
-							}
-						}
-					} else {
-						fmt.Printf("[unknown] %s\n", trimmed)
-					}
-				} else {
-					fmt.Printf("[unknown] %s\n", trimmed)
+			if err != nil || len(arr) < 4 {
+				fmt.Printf("[unknown] %s\n", trimmed)
+				continue
+			}
+			pid, okPid := arr[3].(float64)
+			data, okData := arr[2].(string)
+			if !okPid || !okData {
+				fmt.Printf("[unknown] %s\n", trimmed)
+				continue
+			}
+			pidInt := int(pid)
+			session, exists := sessions[pidInt]
+			if !exists {
+				session = &TerminalSession{PID: pidInt, State: StateIdle}
+				sessions[pidInt] = session
+			}
+
+			// [raw <pid>] logging
+			fmt.Printf("[raw %d] %q\n", pidInt, data)
+
+			switch {
+			case strings.Contains(data, "\x1b]133;A\a"):
+				session.State = StatePrompt
+				session.PromptBuffer = []string{data}
+			case strings.Contains(data, "\x1b]133;B\a"):
+				session.State = StateCommand
+				session.CommandBuffer = []string{data}
+				session.CommandString = extractCommandString(data)
+			case strings.Contains(data, "\x1b]133;D"):
+				session.State = StatePrompt
+				session.CommandBuffer = append(session.CommandBuffer, data)
+				exitCode := extractExitCode(data)
+				session.LastExitCode = exitCode
+				emitCommand(session)
+				session.CommandBuffer = nil
+				session.CommandString = ""
+			default:
+				if session.State == StateCommand {
+					session.CommandBuffer = append(session.CommandBuffer, data)
+				} else if session.State == StatePrompt {
+					session.PromptBuffer = append(session.PromptBuffer, data)
 				}
 			}
 		} else {
-			// fmt.Printf("[debug] Line does not start with [: %q\n", trimmed)
 			fmt.Printf("[unknown] %s\n", trimmed)
 		}
 	}
