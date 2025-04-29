@@ -63,9 +63,21 @@ type TerminalSession struct {
 	CurrentInput  string
 }
 
+var (
+	oscDRegexp = regexp.MustCompile(`\x1b]133;D;(\d+)\x07`)
+	oscPattern = regexp.MustCompile(`^\x1b\](133;[CD]|1337;RemoteHost=|1337;CurrentDir=)`)
+)
+
+func looksLikeJSON(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) < 2 {
+		return false
+	}
+	return (s[0] == '{' && s[len(s)-1] == '}') || (s[0] == '[' && s[len(s)-1] == ']')
+}
+
 func extractExitCode(data string) int {
-	re := regexp.MustCompile(`\x1b]133;D;(\d+)\x07`)
-	matches := re.FindStringSubmatch(data)
+	matches := oscDRegexp.FindStringSubmatch(data)
 	if len(matches) == 2 {
 		if code, err := strconv.Atoi(matches[1]); err == nil {
 			return code
@@ -92,7 +104,6 @@ func extractCommandFromOSC133B(line string) string {
 // Add a helper to check if a line is real output (not just OSC/control)
 func isRealOutput(data string) bool {
 	// Skip OSC 133;C, 133;D, 1337;RemoteHost, 1337;CurrentDir, etc
-	oscPattern := regexp.MustCompile(`^\x1b\](133;[CD]|1337;RemoteHost=|1337;CurrentDir=)`)
 	return !oscPattern.MatchString(data) && strings.TrimSpace(data) != ""
 }
 
@@ -159,7 +170,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 	for scanner.Scan() {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "[") {
+		if looksLikeJSON(trimmed) && trimmed[0] == '[' {
 			var arr []interface{}
 			err := json.Unmarshal([]byte(trimmed), &arr)
 			if err != nil || len(arr) < 4 {
