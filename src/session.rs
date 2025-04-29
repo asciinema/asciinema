@@ -24,6 +24,7 @@ pub trait OutputStarter {
         time: SystemTime,
         tty_size: TtySize,
         theme: Option<TtyTheme>,
+        child_pid: u32,
     ) -> io::Result<Box<dyn Output>>;
 }
 
@@ -62,7 +63,7 @@ impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
         let mut outputs = Vec::new();
 
         for starter in self.starters {
-            match starter.start(time, tty_size, tty_theme.clone()) {
+            match starter.start(time, tty_size, tty_theme.clone(), child_pid) {
                 Ok(output) => {
                     outputs.push(output);
                 }

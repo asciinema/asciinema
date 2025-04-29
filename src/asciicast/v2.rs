@@ -19,6 +19,7 @@ struct V2Header {
     title: Option<String>,
     env: Option<HashMap<String, String>>,
     theme: Option<V2Theme>,
+    child_pid: Option<u32>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -83,7 +84,7 @@ impl Parser {
             command: self.0.command.clone(),
             title: self.0.title.clone(),
             env: self.0.env.clone(),
-            child_pid: None,
+            child_pid: self.0.child_pid,
         };
 
         let events = Box::new(lines.filter_map(parse_line));
@@ -253,6 +254,10 @@ impl serde::Serialize for V2Header {
             len += 1;
         }
 
+        if self.child_pid.is_some() {
+            len += 1;
+        }
+
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &2)?;
         map.serialize_entry("width", &self.width)?;
@@ -282,6 +287,10 @@ impl serde::Serialize for V2Header {
 
         if let Some(theme) = &self.theme {
             map.serialize_entry("theme", &theme)?;
+        }
+
+        if let Some(child_pid) = self.child_pid {
+            map.serialize_entry("child_pid", &child_pid)?;
         }
 
         map.end()
@@ -368,6 +377,7 @@ impl From<&Header> for V2Header {
             title: header.title.clone(),
             env: header.env.clone(),
             theme: header.term_theme.as_ref().map(|t| t.into()),
+            child_pid: header.child_pid,
         }
     }
 }

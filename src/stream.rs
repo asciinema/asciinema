@@ -175,6 +175,7 @@ impl session::OutputStarter for OutputStarter {
         _time: SystemTime,
         tty_size: TtySize,
         theme: Option<TtyTheme>,
+        _child_pid: u32,
     ) -> io::Result<Box<dyn session::Output>> {
         let (stream_tx, stream_rx) = mpsc::unbounded_channel();
         let request_rx = self.request_rx;

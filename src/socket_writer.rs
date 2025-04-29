@@ -45,6 +45,7 @@ impl session::OutputStarter for SocketWriterStarter {
         time: SystemTime,
         tty_size: TtySize,
         theme: Option<TtyTheme>,
+        child_pid: u32,
     ) -> io::Result<Box<dyn session::Output>> {
         let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
         let header = asciicast::Header {
@@ -58,7 +59,7 @@ impl session::OutputStarter for SocketWriterStarter {
             command: self.metadata.command.as_ref().cloned(),
             title: self.metadata.title.as_ref().cloned(),
             env: self.metadata.env.as_ref().cloned(),
-            child_pid: None,
+            child_pid: Some(child_pid),
         };
         let mut encoder = self.encoder;
         let mut notifier = self.notifier;
