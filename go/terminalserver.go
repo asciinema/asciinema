@@ -111,18 +111,6 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				// This might be an event with time and data
 				var event CastEvent
 				if err := json.Unmarshal([]byte(line), &event); err == nil {
-					// Get the terminal info for this connection
-					mutex.Lock()
-					info := terminalInfo[conn]
-					mutex.Unlock()
-					
-					if info != nil {
-						fmt.Printf("[Terminal %s] Event time=%.6f type=%s data=%q\n", 
-							connID, event.Time, event.Type, strings.TrimSpace(event.Data))
-					} else {
-						fmt.Printf("[Terminal %s] Event time=%.6f type=%s data=%q\n", 
-							connID, event.Time, event.Type, strings.TrimSpace(event.Data))
-					}
 					
 					// Add the connection ID as the PID
 					fmt.Printf("[Terminal %s] Event time=%.6f type=%s data=%q\n", 
