@@ -26,6 +26,7 @@ type CastHeader struct {
 	Term      TermInfo `json:"term"`
 	Timestamp int64    `json:"timestamp"`
 	Env       map[string]string `json:"env"`
+	ChildPID  int        `json:"child_pid"`
 }
 
 // CastEvent represents an event in an asciinema cast file
@@ -34,6 +35,12 @@ type CastEvent struct {
 	Type   string  `json:"type,omitempty"`
 	Data   string  `json:"data,omitempty"`
 	PID    int     `json:"pid,omitempty"`
+}
+
+// CommandBuffer holds lines for a command session
+type CommandBuffer struct {
+	Lines []string
+	Active bool
 }
 
 func main() {
@@ -51,7 +58,7 @@ func main() {
 	}
 	defer listener.Close()
 	
-	fmt.Printf("Unix socket server listening on %s\n", socketPath)
+	fmt.Printf("2Unix socket server listening on %s\n", socketPath)
 	
 	// WaitGroup to track active connections
 	var wg sync.WaitGroup
@@ -59,6 +66,9 @@ func main() {
 	// Track terminal info by connection
 	terminalInfoMutex := &sync.Mutex{}
 	terminalInfo := make(map[net.Conn]*CastHeader)
+	
+	// Track command buffers by child_pid
+	commandBuffers := make(map[int]*CommandBuffer)
 	
 	for {
 		// Accept a connection
@@ -70,11 +80,11 @@ func main() {
 		
 		// Launch a goroutine to handle this connection
 		wg.Add(1)
-		go handleConnection(conn, &wg, terminalInfo, terminalInfoMutex)
+		go handleConnection(conn, &wg, terminalInfo, terminalInfoMutex, commandBuffers)
 	}
 }
 
-func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Conn]*CastHeader, mutex *sync.Mutex) {
+func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Conn]*CastHeader, mutex *sync.Mutex, commandBuffers map[int]*CommandBuffer) {
 	defer func() {
 		conn.Close()
 		
@@ -95,34 +105,48 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 	
 	for scanner.Scan() {
 		line := scanner.Text()
-		
-		// Process the line - could be JSON header or event
-		if strings.HasPrefix(line, "{") {
-			var header CastHeader
-			if err := json.Unmarshal([]byte(line), &header); err == nil {
-				// This is the header, store it for this connection
-				mutex.Lock()
-				terminalInfo[conn] = &header
-				mutex.Unlock()
-				
-				fmt.Printf("[Terminal %s] Header received: v%d terminal %dx%d\n", 
-					connID, header.Version, header.Term.Cols, header.Term.Rows)
+		trimmed := strings.TrimSpace(line)
+		// fmt.Printf("[debug] Raw line: %q\n", line)
+		// fmt.Printf("[debug] Trimmed line: %q\n", trimmed)
+		// fmt.Printf("[debug] HasPrefix [ : %v\n", strings.HasPrefix(trimmed, "["))
+		if strings.HasPrefix(trimmed, "[") {
+			var arr []interface{}
+			err := json.Unmarshal([]byte(trimmed), &arr)
+			if err != nil {
+				// fmt.Printf("[debug] JSON unmarshal error: %v\n", err)
 			} else {
-				// This might be an event with time and data
-				var event CastEvent
-				if err := json.Unmarshal([]byte(line), &event); err == nil {
-					
-					// Add the connection ID as the PID
-					fmt.Printf("[Terminal %s] Event time=%.6f type=%s data=%q\n", 
-						connID, event.Time, event.Type, strings.TrimSpace(event.Data))
+				// fmt.Printf("[debug] Unmarshaled array: %#v\n", arr)
+				if len(arr) >= 4 {
+					// fmt.Printf("[debug] arr[0] type: %T, arr[1] type: %T, arr[2] type: %T, arr[3] type: %T\n", arr[0], arr[1], arr[2], arr[3])
+					pid, okPid := arr[3].(float64)
+					data, okData := arr[2].(string)
+					// fmt.Printf("[debug] okPid: %v, pid: %v | okData: %v, data: %v\n", okPid, pid, okData, data)
+					if okPid && okData {
+						pidInt := int(pid)
+						fmt.Printf("[%d] %q\n", pidInt, data)
+						// Detect OSC 133;B (start) and OSC 133;D (end)
+						if strings.Contains(data, "\u001b]133;B\u0007") {
+							commandBuffers[pidInt] = &CommandBuffer{Active: true}
+						} else if strings.Contains(data, "\u001b]133;D\u0007") {
+							if buf, ok := commandBuffers[pidInt]; ok && buf.Active {
+								fmt.Printf("[PID %d] Command output:\n%s\n---\n", pidInt, strings.Join(buf.Lines, "\n"))
+								buf.Active = false
+							}
+						} else {
+							if buf, ok := commandBuffers[pidInt]; ok && buf.Active {
+								buf.Lines = append(buf.Lines, data)
+							}
+						}
+					} else {
+						fmt.Printf("[unknown] %s\n", trimmed)
+					}
 				} else {
-					// Just print the line with the connection ID
-					fmt.Printf("[Terminal %s] %s\n", connID, line)
+					fmt.Printf("[unknown] %s\n", trimmed)
 				}
 			}
 		} else {
-			// Just print the line with the connection ID
-			fmt.Printf("[Terminal %s] %s\n", connID, line)
+			// fmt.Printf("[debug] Line does not start with [: %q\n", trimmed)
+			fmt.Printf("[unknown] %s\n", trimmed)
 		}
 	}
 	
