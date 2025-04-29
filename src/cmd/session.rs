@@ -159,7 +159,6 @@ impl cli::Session {
                 socket_path: socket_path.clone(),
                 encoder,
                 metadata,
-                notifier: Box::new(crate::notifier::NullNotifier),
                 handle: runtime.handle().clone(),
             };
             outputs.push(Box::new(socket_writer));

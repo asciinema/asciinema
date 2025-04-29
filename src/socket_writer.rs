@@ -10,23 +10,20 @@ use tokio::io::AsyncWriteExt;
 
 use crate::asciicast;
 use crate::encoder;
-use crate::notifier::Notifier;
 use crate::session;
 use crate::tty::{TtySize, TtyTheme};
+use crate::status;
 
 pub struct SocketWriterStarter {
     pub socket_path: String,
     pub encoder: Box<dyn encoder::Encoder + Send>,
     pub metadata: Metadata,
-    pub notifier: Box<dyn Notifier>,
     pub handle: Handle,
 }
 
 pub struct SocketWriter {
-    stream: Arc<Mutex<UnixStream>>,
+    stream: Arc<Mutex<Option<UnixStream>>>,
     encoder: Box<dyn encoder::Encoder + Send>,
-    #[allow(dead_code)]
-    notifier: Box<dyn Notifier>,
     handle: Handle,
 }
 
@@ -62,30 +59,60 @@ impl session::OutputStarter for SocketWriterStarter {
             child_pid: Some(child_pid),
         };
         let mut encoder = self.encoder;
-        let mut notifier = self.notifier;
         let socket_path = self.socket_path.clone();
         let handle = self.handle.clone();
         let header_bytes = encoder.header(&header);
         let fut = async move {
-            let stream = UnixStream::connect(socket_path).await;
+            let stream = UnixStream::connect(socket_path.clone()).await;
+            let shared_stream = Arc::new(Mutex::new(None));
             match stream {
-                Ok(mut stream) => {
-                    if let Err(e) = stream.write_all(&header_bytes).await {
-                        let _ = notifier.notify("Socket write error, session won't be recorded".to_owned());
-                        return Err(io::Error::new(io::ErrorKind::Other, e));
+                Ok(mut s) => {
+                    if let Err(e) = s.write_all(&header_bytes).await {
+                        //status::warning!("Socket write error, session won't be recorded: {e}");
+                    } else {
+                      //  status::info!("SocketWriter: initial connection established");
+                        *shared_stream.lock().await = Some(s);
                     }
-                    Ok(Box::new(SocketWriter {
-                        stream: Arc::new(Mutex::new(stream)),
-                        encoder,
-                        notifier,
-                        handle,
-                    }) as Box<dyn session::Output>)
                 }
                 Err(e) => {
-                    let _ = notifier.notify("Socket connect error, session won't be recorded".to_owned());
-                    Err(io::Error::new(io::ErrorKind::Other, e))
+                    //status::warning!("Socket connect error, session won't be recorded: {e}");
                 }
             }
+            // Spawn background reconnection task
+            let stream_clone = shared_stream.clone();
+            let socket_path_clone = socket_path.clone();
+            let header_bytes_clone = header_bytes.clone();
+            handle.spawn(async move {
+                loop {
+                    let mut guard = stream_clone.lock().await;
+                    if guard.is_none() {
+                        match UnixStream::connect(socket_path_clone.clone()).await {
+                            Ok(mut s) => {
+                                // Try to send header
+                                match s.write_all(&header_bytes_clone).await {
+                                    Ok(_) => {
+                                        //status::info!("SocketWriter: reconnected and header sent");
+                                        *guard = Some(s);
+                                    }
+                                    Err(e) => {
+                                        //status::warning!("Socket write error on reconnect: {e}");
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                //status::warning!("Socket reconnect failed: {e}");
+                            }
+                        }
+                    }
+                    drop(guard);
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            });
+            Ok(Box::new(SocketWriter {
+                stream: shared_stream,
+                encoder,
+                handle,
+            }) as Box<dyn session::Output>)
         };
         self.handle.block_on(fut)
     }
@@ -96,8 +123,20 @@ impl session::Output for SocketWriter {
         let bytes = self.encoder.event(event.into());
         let stream = self.stream.clone();
         let fut = async move {
-            let mut stream = stream.lock().await;
-            stream.write_all(&bytes).await
+            let mut guard = stream.lock().await;
+            if let Some(ref mut s) = *guard {
+                match s.write_all(&bytes).await {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        // status::warning!("SocketWriter: event write failed, dropping connection: {e}");
+                        *guard = None;
+                        Ok(())
+                    }
+                }
+            } else {
+                // If no connection, drop the event
+                Ok(())
+            }
         };
         self.handle.block_on(fut)
     }
@@ -106,8 +145,20 @@ impl session::Output for SocketWriter {
         let bytes = self.encoder.flush();
         let stream = self.stream.clone();
         let fut = async move {
-            let mut stream = stream.lock().await;
-            stream.write_all(&bytes).await
+            let mut guard = stream.lock().await;
+            if let Some(ref mut s) = *guard {
+                match s.write_all(&bytes).await {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        //status::warning!("SocketWriter: flush write failed, dropping connection: {e}");
+                        *guard = None;
+                        Ok(())
+                    }
+                }
+            } else {
+                // If no connection, drop the flush
+                Ok(())
+            }
         };
         self.handle.block_on(fut)
     }
