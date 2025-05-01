@@ -5,7 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use tokio::net::UnixStream;
 use tokio::runtime::Handle;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, mpsc};
 use tokio::io::AsyncWriteExt;
 
 use crate::asciicast;
@@ -22,9 +22,8 @@ pub struct SocketWriterStarter {
 }
 
 pub struct SocketWriter {
-    stream: Arc<Mutex<Option<UnixStream>>>,
+    sender: mpsc::Sender<Vec<u8>>,
     encoder: Box<dyn encoder::Encoder + Send>,
-    handle: Handle,
 }
 
 pub struct Metadata {
@@ -62,104 +61,62 @@ impl session::OutputStarter for SocketWriterStarter {
         let socket_path = self.socket_path.clone();
         let handle = self.handle.clone();
         let header_bytes = encoder.header(&header);
-        let fut = async move {
-            let stream = UnixStream::connect(socket_path.clone()).await;
-            let shared_stream = Arc::new(Mutex::new(None));
-            match stream {
-                Ok(mut s) => {
-                    if let Err(e) = s.write_all(&header_bytes).await {
-                        //status::warning!("Socket write error, session won't be recorded: {e}");
-                    } else {
-                      //  status::info!("SocketWriter: initial connection established");
-                        *shared_stream.lock().await = Some(s);
-                    }
-                }
-                Err(e) => {
-                    //status::warning!("Socket connect error, session won't be recorded: {e}");
-                }
-            }
-            // Spawn background reconnection task
-            let stream_clone = shared_stream.clone();
-            let socket_path_clone = socket_path.clone();
-            let header_bytes_clone = header_bytes.clone();
-            handle.spawn(async move {
-                loop {
-                    let mut guard = stream_clone.lock().await;
-                    if guard.is_none() {
-                        match UnixStream::connect(socket_path_clone.clone()).await {
-                            Ok(mut s) => {
-                                // Try to send header
-                                match s.write_all(&header_bytes_clone).await {
-                                    Ok(_) => {
-                                        //status::info!("SocketWriter: reconnected and header sent");
-                                        *guard = Some(s);
-                                    }
-                                    Err(e) => {
-                                        //status::warning!("Socket write error on reconnect: {e}");
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                //status::warning!("Socket reconnect failed: {e}");
+        let (sender, mut receiver) = mpsc::channel::<Vec<u8>>(100); // buffer size 100, adjust as needed
+        // Spawn background async task for socket writing
+        handle.spawn(async move {
+            let mut stream: Option<UnixStream> = None;
+            // Try initial connect and send header
+            loop {
+                if stream.is_none() {
+                    match UnixStream::connect(socket_path.clone()).await {
+                        Ok(mut s) => {
+                            if s.write_all(&header_bytes).await.is_ok() {
+                                stream = Some(s);
                             }
                         }
+                        Err(_) => {
+                            // Could not connect, will retry
+                        }
                     }
-                    drop(guard);
+                }
+                // If connected, try to write events
+                if let Some(s) = stream.as_mut() {
+                    tokio::select! {
+                        Some(bytes) = receiver.recv() => {
+                            if let Err(_) = s.write_all(&bytes).await {
+                                // Drop connection on error
+                                stream = None;
+                            }
+                        }
+                        else => {
+                            // Channel closed, exit
+                            break;
+                        }
+                    }
+                } else {
+                    // Not connected, wait and retry
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 }
-            });
-            Ok(Box::new(SocketWriter {
-                stream: shared_stream,
-                encoder,
-                handle,
-            }) as Box<dyn session::Output>)
-        };
-        self.handle.block_on(fut)
+            }
+        });
+        Ok(Box::new(SocketWriter {
+            sender,
+            encoder,
+        }) as Box<dyn session::Output>)
     }
 }
 
 impl session::Output for SocketWriter {
     fn event(&mut self, event: session::Event) -> io::Result<()> {
         let bytes = self.encoder.event(event.into());
-        let stream = self.stream.clone();
-        let fut = async move {
-            let mut guard = stream.lock().await;
-            if let Some(ref mut s) = *guard {
-                match s.write_all(&bytes).await {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        // status::warning!("SocketWriter: event write failed, dropping connection: {e}");
-                        *guard = None;
-                        Ok(())
-                    }
-                }
-            } else {
-                // If no connection, drop the event
-                Ok(())
-            }
-        };
-        self.handle.block_on(fut)
+        // Try to send, drop if channel is full
+        let _ = self.sender.try_send(bytes);
+        Ok(())
     }
 
     fn flush(&mut self) -> io::Result<()> {
         let bytes = self.encoder.flush();
-        let stream = self.stream.clone();
-        let fut = async move {
-            let mut guard = stream.lock().await;
-            if let Some(ref mut s) = *guard {
-                match s.write_all(&bytes).await {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        //status::warning!("SocketWriter: flush write failed, dropping connection: {e}");
-                        *guard = None;
-                        Ok(())
-                    }
-                }
-            } else {
-                // If no connection, drop the flush
-                Ok(())
-            }
-        };
-        self.handle.block_on(fut)
+        let _ = self.sender.try_send(bytes);
+        Ok(())
     }
 } 
