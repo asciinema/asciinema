@@ -124,6 +124,7 @@ dependencies = [
  "hostname",
  "mime_guess",
  "nix",
+ "regex",
  "reqwest",
  "rgb",
  "rust-embed",
