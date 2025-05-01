@@ -2,15 +2,18 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // TermInfo represents terminal metadata
@@ -107,6 +110,35 @@ func isRealOutput(data string) bool {
 	return !oscPattern.MatchString(data) && strings.TrimSpace(data) != ""
 }
 
+// sendCommandEvent sends a command lifecycle event to the Electron app's local server
+func sendCommandEvent(event string, command string, commandId string, shell string, exitCode int, duration int64) {
+	url := "http://127.0.0.1:54321/"
+	msg := map[string]interface{}{
+		"event": event,
+		"command": command,
+		"directory": "[fix directory]", // Directory not available in current context
+		"commandId": commandId,
+		"shell": shell,
+	}
+	if event == "end" {
+		msg["exitCode"] = exitCode
+		msg["duration"] = duration
+	}
+	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Failed to marshal command event: %v", err)
+		return
+	}
+	go func() {
+		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBytes))
+		if err != nil {
+			log.Printf("Failed to send command event: %v", err)
+			return
+		}
+		defer resp.Body.Close()
+	}()
+}
+
 func main() {
 	socketPath := "/tmp/test.sock"
 	
@@ -193,14 +225,19 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 			// [raw <pid>] logging
 			fmt.Printf("[raw %d] %q\n", pidInt, data)
 
+			commandId := fmt.Sprintf("%dN-%d", time.Now().Unix(), pidInt)
+			shell := "[fix shell]" // Not available in current context
+
 			switch {
 			case strings.Contains(data, "\x1b]133;B\a"):
 				cmd := extractCommandFromOSC133B(data)
 				if cmd != "" {
-					fmt.Printf("[COMMAND] Just entered: %q\n", cmd)
+					fmt.Printf("[COMMAND START] Just entered: %q\n", cmd)
 					session.CommandString = cmd
 					session.State = StateCommand // Set state to Command
 					session.CommandBuffer = nil  // Clear previous buffer
+					// Send start event
+					sendCommandEvent("start", cmd, commandId, shell, 0, 0)
 				}
 			case strings.Contains(data, "\x1b]133;D"):
 				fmt.Printf("[debug] OSC 133;D: CommandBuffer=%v\n", session.CommandBuffer)
@@ -215,6 +252,9 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					fmt.Printf("    %q\n", l)
 				}
 				fmt.Println("---")
+				// Send end event
+				duration := int64(10000) // Not tracked, could be improved. 10000 for testing
+				sendCommandEvent("end", session.CommandString, commandId, shell, exitCode, duration)
 				session.CommandBuffer = nil
 				session.CommandString = ""
 				session.CurrentInput = ""
