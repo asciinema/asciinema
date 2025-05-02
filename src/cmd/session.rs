@@ -150,7 +150,6 @@ impl cli::Session {
             let username = std::env::var("USER").ok();
             let directory = std::env::current_dir().ok().and_then(|p| p.to_str().map(|s| s.to_string()));
             let shell = std::env::var("SHELL").ok();
-            status::info!("SocketMetadata: username={:?} shell={:?}", username, shell);
             let metadata = SocketMetadata {
                 term_type: _socket_term_type,
                 term_version: _socket_term_version,
@@ -162,7 +161,6 @@ impl cli::Session {
                 directory,
                 shell,
             };
-            
             
             let socket_writer = SocketWriterStarter {
                 socket_path: socket_path.clone(),
