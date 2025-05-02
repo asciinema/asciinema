@@ -112,10 +112,14 @@ func isRealOutput(data string) bool {
 
 // sendCommandEvent sends a command lifecycle event to the Electron app's local server
 func sendCommandEvent(event string, command string, commandId string, shell string, exitCode int, duration int64) {
+	if command == "" { // Don't send events for empty commands
+		return
+	}
 	url := "http://127.0.0.1:54321/"
 	msg := map[string]interface{}{
 		"event": event,
 		"command": command,
+		"username": "[fix username]",
 		"directory": "[fix directory]", // Directory not available in current context
 		"commandId": commandId,
 		"shell": shell,
