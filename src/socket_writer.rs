@@ -89,6 +89,9 @@ impl session::OutputStarter for SocketWriterStarter {
             title: self.metadata.title.as_ref().cloned(),
             env: self.metadata.env.as_ref().cloned(),
             child_pid: Some(child_pid),
+            username: self.metadata.username.clone(),
+            directory: self.metadata.directory.clone(),
+            shell: self.metadata.shell.clone(),
         };
         let mut encoder = self.encoder;
         let socket_path = self.socket_path.clone();

@@ -85,6 +85,9 @@ impl Parser {
             title: self.0.title.clone(),
             env: self.0.env.clone(),
             child_pid: self.0.child_pid,
+            username: None,
+            directory: None,
+            shell: None,
         };
 
         let events = Box::new(lines.filter_map(parse_line));

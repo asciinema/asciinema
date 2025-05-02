@@ -40,7 +40,7 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
     let header = Header {
         term_cols: asciicast.width,
         term_rows: asciicast.height,
-        term_type,
+        term_type: term_type,
         term_version: None,
         term_theme: None,
         timestamp: None,
@@ -49,6 +49,9 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         title: asciicast.title.clone(),
         env: asciicast.env.clone(),
         child_pid: None,
+        username: None,
+        directory: None,
+        shell: None,
     };
 
     let events = Box::new(

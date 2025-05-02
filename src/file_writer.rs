@@ -52,6 +52,9 @@ impl session::OutputStarter for FileWriterStarter {
             title: self.metadata.title.as_ref().cloned(),
             env: self.metadata.env.as_ref().cloned(),
             child_pid: Some(child_pid),
+            username: None,
+            directory: None,
+            shell: None,
         };
 
         if let Err(e) = self.writer.write_all(&self.encoder.header(&header)) {

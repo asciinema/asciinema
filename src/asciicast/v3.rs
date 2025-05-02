@@ -18,6 +18,9 @@ struct V3Header {
     title: Option<String>,
     env: Option<HashMap<String, String>>,
     child_pid: Option<u32>,
+    username: Option<String>,
+    directory: Option<String>,
+    shell: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -101,6 +104,9 @@ impl Parser {
             title: self.header.title.clone(),
             env: self.header.env.clone(),
             child_pid: self.header.child_pid,
+            username: self.header.username.clone(),
+            directory: self.header.directory.clone(),
+            shell: self.header.shell.clone(),
         };
 
         let events = Box::new(lines.filter_map(move |line| self.parse_line(line)));
@@ -276,6 +282,16 @@ impl serde::Serialize for V3Header {
             len += 1;
         }
 
+        if self.username.is_some() {
+            len += 1;
+        }
+        if self.directory.is_some() {
+            len += 1;
+        }
+        if self.shell.is_some() {
+            len += 1;
+        }
+
         let mut map = serializer.serialize_map(Some(len))?;
         map.serialize_entry("version", &3)?;
         map.serialize_entry("term", &self.term)?;
@@ -304,6 +320,16 @@ impl serde::Serialize for V3Header {
 
         if let Some(child_pid) = self.child_pid {
             map.serialize_entry("child_pid", &child_pid)?;
+        }
+
+        if let Some(username) = &self.username {
+            map.serialize_entry("username", username)?;
+        }
+        if let Some(directory) = &self.directory {
+            map.serialize_entry("directory", directory)?;
+        }
+        if let Some(shell) = &self.shell {
+            map.serialize_entry("shell", shell)?;
         }
 
         map.end()
@@ -436,6 +462,9 @@ impl From<&Header> for V3Header {
             title: header.title.clone(),
             env: header.env.clone(),
             child_pid: header.child_pid,
+            username: header.username.clone(),
+            directory: header.directory.clone(),
+            shell: header.shell.clone(),
         }
     }
 }

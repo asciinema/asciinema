@@ -147,6 +147,10 @@ impl cli::Session {
                 Format::Raw => Box::new(RawEncoder::new(false)),
                 Format::Txt => Box::new(TextEncoder::new()),
             };
+            let username = std::env::var("USER").ok();
+            let directory = std::env::current_dir().ok().and_then(|p| p.to_str().map(|s| s.to_string()));
+            let shell = std::env::var("SHELL").ok();
+            status::info!("SocketMetadata: username={:?} shell={:?}", username, shell);
             let metadata = SocketMetadata {
                 term_type: _socket_term_type,
                 term_version: _socket_term_version,
@@ -154,10 +158,12 @@ impl cli::Session {
                 command: self.get_command(cmd_config),
                 title: self.title.clone(),
                 env: Some(env.clone()),
-                username: std::env::var("USER").ok(),
-                directory: std::env::current_dir().ok().and_then(|p| p.to_str().map(|s| s.to_string())),
-                shell: std::env::var("SHELL").ok(),
+                username,
+                directory,
+                shell,
             };
+            
+            
             let socket_writer = SocketWriterStarter {
                 socket_path: socket_path.clone(),
                 encoder,

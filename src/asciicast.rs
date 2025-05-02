@@ -32,6 +32,9 @@ pub struct Header {
     pub env: Option<HashMap<String, String>>,
     #[allow(dead_code)]
     pub child_pid: Option<u32>,
+    pub username: Option<String>,
+    pub directory: Option<String>,
+    pub shell: Option<String>,
 }
 
 pub struct Event {
@@ -62,6 +65,9 @@ impl Default for Header {
             title: None,
             env: None,
             child_pid: None,
+            username: None,
+            directory: None,
+            shell: None,
         }
     }
 }
@@ -325,6 +331,9 @@ mod tests {
             env: Some(env),
             term_theme: Some(theme),
             child_pid: None,
+            username: None,
+            directory: None,
+            shell: None,
             ..Default::default()
         };
 
