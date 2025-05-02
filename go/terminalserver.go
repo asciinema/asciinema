@@ -64,6 +64,7 @@ type TerminalSession struct {
 	LastExitCode  int
 	CommandString string
 	CurrentInput  string
+	StartTime     time.Time
 }
 
 var (
@@ -240,6 +241,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					session.CommandString = cmd
 					session.State = StateCommand // Set state to Command
 					session.CommandBuffer = nil  // Clear previous buffer
+					session.StartTime = time.Now()
 					// Send start event
 					sendCommandEvent("start", cmd, commandId, shell, 0, 0)
 				}
@@ -257,10 +259,14 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				}
 				fmt.Println("---")
 				// Send end event
-				duration := int64(10000) // Not tracked, could be improved. 10000 for testing
+				duration := int64(100) // Default 100ms
+				if !session.StartTime.IsZero() {
+					duration = time.Since(session.StartTime).Milliseconds()
+				}
 				sendCommandEvent("end", session.CommandString, commandId, shell, exitCode, duration)
 				session.CommandBuffer = nil
 				session.CommandString = ""
+				session.StartTime = time.Time{}
 				session.CurrentInput = ""
 			default:
 				if session.State == StateCommand {
