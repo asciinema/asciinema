@@ -154,6 +154,9 @@ impl cli::Session {
                 command: self.get_command(cmd_config),
                 title: self.title.clone(),
                 env: Some(env.clone()),
+                username: std::env::var("USER").ok(),
+                directory: std::env::current_dir().ok().and_then(|p| p.to_str().map(|s| s.to_string())),
+                shell: std::env::var("SHELL").ok(),
             };
             let socket_writer = SocketWriterStarter {
                 socket_path: socket_path.clone(),

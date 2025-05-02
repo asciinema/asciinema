@@ -36,6 +36,9 @@ pub struct Metadata {
     pub command: Option<String>,
     pub title: Option<String>,
     pub env: Option<HashMap<String, String>>,
+    pub username: Option<String>,
+    pub directory: Option<String>,
+    pub shell: Option<String>,
 }
 
 fn load_regex_filters() -> Vec<(Regex, String)> {

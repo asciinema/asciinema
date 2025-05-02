@@ -32,6 +32,9 @@ type CastHeader struct {
 	Timestamp int64    `json:"timestamp"`
 	Env       map[string]string `json:"env"`
 	ChildPID  int        `json:"child_pid"`
+	Username  string     `json:"username,omitempty"`
+	Directory string     `json:"directory,omitempty"`
+	Shell     string     `json:"shell,omitempty"`
 }
 
 // CastEvent represents an event in an asciinema cast file
@@ -70,6 +73,7 @@ type TerminalSession struct {
 var (
 	oscDRegexp = regexp.MustCompile(`\x1b]133;D;(\d+)\x07`)
 	oscPattern = regexp.MustCompile(`^\x1b\](133;[CD]|1337;RemoteHost=|1337;CurrentDir=)`)
+	oscCurrentDirPattern = regexp.MustCompile(`\x1b]1337;CurrentDir=([^\x07]*)\x07`)
 )
 
 func looksLikeJSON(s string) bool {
@@ -112,7 +116,7 @@ func isRealOutput(data string) bool {
 }
 
 // sendCommandEvent sends a command lifecycle event to the Electron app's local server
-func sendCommandEvent(event string, command string, commandId string, shell string, exitCode int, duration int64) {
+func sendCommandEvent(event string, command string, commandId string, shell string, username string, directory string, exitCode int, duration int64) {
 	if command == "" { // Don't send events for empty commands
 		return
 	}
@@ -120,8 +124,8 @@ func sendCommandEvent(event string, command string, commandId string, shell stri
 	msg := map[string]interface{}{
 		"event": event,
 		"command": command,
-		"username": "[fix username]",
-		"directory": "[fix directory]", // Directory not available in current context
+		"username": username,
+		"directory": directory,
 		"commandId": commandId,
 		"shell": shell,
 	}
@@ -202,11 +206,29 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 	connID := fmt.Sprintf("%p", conn)
 	fmt.Printf("New connection established: %s\n", connID)
 	
+	var headerParsed bool
+	var header CastHeader
+	var username, directory, shell string
+
 	sessions := make(map[int]*TerminalSession)
 	
 	for scanner.Scan() {
 		line := scanner.Text()
 		trimmed := strings.TrimSpace(line)
+		if !headerParsed && looksLikeJSON(trimmed) && trimmed[0] == '{' {
+			err := json.Unmarshal([]byte(trimmed), &header)
+			if err == nil {
+				headerParsed = true
+				mutex.Lock()
+				terminalInfo[conn] = &header
+				mutex.Unlock()
+				username = header.Username
+				directory = header.Directory
+				shell = header.Shell
+				fmt.Printf("[header] username=%q directory=%q shell=%q\n", username, directory, shell)
+				continue
+			}
+		}
 		if looksLikeJSON(trimmed) && trimmed[0] == '[' {
 			var arr []interface{}
 			err := json.Unmarshal([]byte(trimmed), &arr)
@@ -230,9 +252,13 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 			// [raw <pid>] logging
 			fmt.Printf("[raw %d] %q\n", pidInt, data)
 
-			commandId := fmt.Sprintf("%dN-%d", time.Now().Unix(), pidInt)
-			shell := "[fix shell]" // Not available in current context
+			// Check for OSC 1337;CurrentDir= in the data field
+			if matches := oscCurrentDirPattern.FindStringSubmatch(data); len(matches) == 2 {
+				directory = matches[1]
+				fmt.Printf("[directory changed] %s\n", directory)
+			}
 
+			commandId := fmt.Sprintf("%dN-%d", time.Now().Unix(), pidInt)
 			switch {
 			case strings.Contains(data, "\x1b]133;B\a"):
 				cmd := extractCommandFromOSC133B(data)
@@ -243,7 +269,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					session.CommandBuffer = nil  // Clear previous buffer
 					session.StartTime = time.Now()
 					// Send start event
-					sendCommandEvent("start", cmd, commandId, shell, 0, 0)
+					sendCommandEvent("start", cmd, commandId, shell, username, directory, 0, 0)
 				}
 			case strings.Contains(data, "\x1b]133;D"):
 				fmt.Printf("[debug] OSC 133;D: CommandBuffer=%v\n", session.CommandBuffer)
@@ -263,7 +289,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				if !session.StartTime.IsZero() {
 					duration = time.Since(session.StartTime).Milliseconds()
 				}
-				sendCommandEvent("end", session.CommandString, commandId, shell, exitCode, duration)
+				sendCommandEvent("end", session.CommandString, commandId, shell, username, directory, exitCode, duration)
 				session.CommandBuffer = nil
 				session.CommandString = ""
 				session.StartTime = time.Time{}
