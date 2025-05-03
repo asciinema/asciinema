@@ -38,14 +38,14 @@ fn main() -> anyhow::Result<()> {
     match cli.command {
         Commands::Rec(cmd) => {
             let cmd = Session {
-                output: Some(cmd.path),
-                input: cmd.input,
+                output_file: Some(cmd.output_path),
+                rec_input: cmd.rec_input,
                 append: cmd.append,
-                format: cmd.format,
+                output_format: cmd.output_format,
                 overwrite: cmd.overwrite,
                 command: cmd.command,
                 filename: cmd.filename,
-                env: cmd.env,
+                rec_env: cmd.rec_env,
                 title: cmd.title,
                 idle_time_limit: cmd.idle_time_limit,
                 headless: cmd.headless,
@@ -60,14 +60,14 @@ fn main() -> anyhow::Result<()> {
 
         Commands::Stream(stream) => {
             let cmd = Session {
-                output: None,
-                input: stream.input,
+                output_file: None,
+                rec_input: stream.rec_input,
                 append: false,
-                format: None,
+                output_format: None,
                 overwrite: false,
                 command: stream.command,
                 filename: None,
-                env: stream.env,
+                rec_env: stream.rec_env,
                 title: None,
                 idle_time_limit: None,
                 headless: stream.headless,

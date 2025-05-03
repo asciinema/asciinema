@@ -14,7 +14,7 @@ pub struct Cli {
     pub command: Commands,
 
     /// asciinema server URL
-    #[arg(long, global = true, display_order = 100)]
+    #[arg(long, global = true, display_order = 100, value_name = "URL")]
     pub server_url: Option<String>,
 
     /// Quiet mode, i.e. suppress diagnostic messages
@@ -52,38 +52,35 @@ pub enum Commands {
 #[derive(Debug, Args)]
 pub struct Record {
     /// Output path - either a file or a directory path
-    pub path: String,
+    pub output_path: String,
 
-    /// Enable input recording
-    #[arg(long, short = 'I', alias = "stdin")]
-    pub input: bool,
-
-    /// Append to an existing recording file
-    #[arg(short, long)]
-    pub append: bool,
-
-    /// Recording file format [default: asciicast-v3]
-    #[arg(short, long, value_enum)]
-    pub format: Option<Format>,
-
-    #[arg(long, hide = true)]
-    pub raw: bool,
-
-    /// Overwrite target file if it already exists
-    #[arg(long, conflicts_with = "append")]
-    pub overwrite: bool,
+    /// Output file format [default: asciicast-v3]
+    #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
+    pub output_format: Option<Format>,
 
     /// Command to start in the session [default: $SHELL]
     #[arg(short, long)]
     pub command: Option<String>,
 
+    /// Enable input (keys) recording
+    #[arg(long, short = 'I', alias = "stdin")]
+    pub rec_input: bool,
+
+    /// List of env vars to capture [default: TERM,SHELL]
+    #[arg(long, value_name = "VARS")]
+    pub rec_env: Option<String>,
+
+    /// Append to an existing recording file
+    #[arg(short, long)]
+    pub append: bool,
+
+    /// Overwrite output file if it already exists
+    #[arg(long, conflicts_with = "append")]
+    pub overwrite: bool,
+
     /// Filename template, used when recording to a directory
     #[arg(long, value_name = "TEMPLATE")]
     pub filename: Option<String>,
-
-    /// List of env vars to save [default: TERM,SHELL]
-    #[arg(long)]
-    pub env: Option<String>,
 
     /// Title of the recording
     #[arg(short, long)]
@@ -93,7 +90,7 @@ pub struct Record {
     #[arg(short, long, value_name = "SECS")]
     pub idle_time_limit: Option<f64>,
 
-    /// Use headless mode - don't use TTY for input/output
+    /// Headless mode, i.e. don't use TTY for input/output
     #[arg(long)]
     pub headless: bool,
 
@@ -106,6 +103,9 @@ pub struct Record {
 
     #[arg(long, hide = true)]
     pub rows: Option<u16>,
+
+    #[arg(long, hide = true)]
+    pub raw: bool,
 }
 
 #[derive(Debug, Args)]
@@ -132,13 +132,17 @@ pub struct Play {
 
 #[derive(Debug, Args)]
 pub struct Stream {
-    /// Enable input capture
-    #[arg(long, short = 'I', alias = "stdin")]
-    pub input: bool,
-
-    /// Command to stream [default: $SHELL]
+    /// Command to start in the session [default: $SHELL]
     #[arg(short, long)]
     pub command: Option<String>,
+
+    /// Enable input (keys) recording
+    #[arg(long, short = 'I')]
+    pub rec_input: bool,
+
+    /// List of env vars to capture [default: TERM,SHELL]
+    #[arg(long, value_name = "VARS")]
+    pub rec_env: Option<String>,
 
     /// Serve the stream with the built-in HTTP server
     #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
@@ -148,11 +152,7 @@ pub struct Stream {
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
     pub relay: Option<RelayTarget>,
 
-    /// List of env vars to save [default: TERM,SHELL]
-    #[arg(long)]
-    pub env: Option<String>,
-
-    /// Use headless mode - don't use TTY for input/output
+    /// Headless mode, i.e. don't use TTY for input/output
     #[arg(long)]
     pub headless: bool,
 
@@ -161,43 +161,43 @@ pub struct Stream {
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
 
     /// Log file path
-    #[arg(long)]
+    #[arg(long, value_name = "PATH")]
     pub log_file: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
 pub struct Session {
     /// Output path - either a file or a directory path
-    #[arg(short, long)]
-    pub output: Option<String>,
+    #[arg(short, long, value_name = "PATH")]
+    pub output_file: Option<String>,
 
-    /// Enable input recording
-    #[arg(long, short = 'I', alias = "stdin")]
-    pub input: bool,
-
-    /// Append to an existing recording file
-    #[arg(short, long)]
-    pub append: bool,
-
-    /// Recording file format [default: asciicast-v3]
-    #[arg(short, long, value_enum)]
-    pub format: Option<Format>,
-
-    /// Overwrite target file if it already exists
-    #[arg(long, conflicts_with = "append")]
-    pub overwrite: bool,
+    /// Output file format [default: asciicast-v3]
+    #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
+    pub output_format: Option<Format>,
 
     /// Command to start in the session [default: $SHELL]
     #[arg(short, long)]
     pub command: Option<String>,
 
+    /// Enable input (keys) recording
+    #[arg(long, short = 'I')]
+    pub rec_input: bool,
+
+    /// List of env vars to capture [default: TERM,SHELL]
+    #[arg(long, value_name = "VARS")]
+    pub rec_env: Option<String>,
+
+    /// Append to an existing recording file
+    #[arg(short, long)]
+    pub append: bool,
+
+    /// Overwrite output file if it already exists
+    #[arg(long, conflicts_with = "append")]
+    pub overwrite: bool,
+
     /// Filename template, used when recording to a directory
     #[arg(long, value_name = "TEMPLATE")]
     pub filename: Option<String>,
-
-    /// List of env vars to save [default: TERM,SHELL]
-    #[arg(long)]
-    pub env: Option<String>,
 
     /// Title of the recording
     #[arg(short, long)]
@@ -207,7 +207,7 @@ pub struct Session {
     #[arg(short, long, value_name = "SECS")]
     pub idle_time_limit: Option<f64>,
 
-    /// Use headless mode - don't use TTY for input/output
+    /// Headless mode, i.e. don't use TTY for input/output
     #[arg(long)]
     pub headless: bool,
 
@@ -224,7 +224,7 @@ pub struct Session {
     pub relay: Option<RelayTarget>,
 
     /// Log file path
-    #[arg(long)]
+    #[arg(long, value_name = "PATH")]
     pub log_file: Option<PathBuf>,
 }
 

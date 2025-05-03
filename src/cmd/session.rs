@@ -42,13 +42,13 @@ impl cli::Session {
         let command = self.get_command(cmd_config);
         let keys = get_key_bindings(cmd_config)?;
         let notifier = notifier::threaded(get_notifier(config));
-        let record_input = self.input || cmd_config.input;
+        let record_input = self.rec_input || cmd_config.rec_input;
         let term_type = self.get_term_type();
         let term_version = self.get_term_version()?;
-        let env = capture_env(self.env.clone(), cmd_config);
+        let env = capture_env(self.rec_env.clone(), cmd_config);
 
         let path = self
-            .output
+            .output_file
             .take()
             .map(|path| self.ensure_filename(path, cmd_config))
             .transpose()?;
@@ -232,7 +232,7 @@ impl cli::Session {
         env: &HashMap<String, String>,
         notifier: N,
     ) -> Result<FileWriterStarter> {
-        let format = self.format.unwrap_or_else(|| {
+        let format = self.output_format.unwrap_or_else(|| {
             if path.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
@@ -496,7 +496,7 @@ fn get_key_bindings(config: &config::Session) -> Result<KeyBindings> {
 
 fn capture_env(var_names: Option<String>, config: &config::Session) -> HashMap<String, String> {
     let var_names = var_names
-        .or(config.env.clone())
+        .or(config.rec_env.clone())
         .unwrap_or(String::from("TERM,SHELL"));
 
     let vars = var_names.split(',').collect::<HashSet<_>>();

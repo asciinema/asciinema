@@ -42,8 +42,8 @@ pub struct Cmd {
 pub struct Session {
     pub command: Option<String>,
     pub filename: String,
-    pub input: bool,
-    pub env: Option<String>,
+    pub rec_input: bool,
+    pub rec_env: Option<String>,
     pub idle_time_limit: Option<f64>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
@@ -55,8 +55,8 @@ pub struct Session {
 pub struct Rec {
     pub command: Option<String>,
     pub filename: String,
-    pub input: bool,
-    pub env: Option<String>,
+    pub rec_input: bool,
+    pub rec_env: Option<String>,
     pub idle_time_limit: Option<f64>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
@@ -77,8 +77,8 @@ pub struct Play {
 #[allow(unused)]
 pub struct Stream {
     pub command: Option<String>,
-    pub input: bool,
-    pub env: Option<String>,
+    pub rec_input: bool,
+    pub rec_env: Option<String>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
     pub add_marker_key: Option<String>,
@@ -95,11 +95,11 @@ impl Config {
     pub fn new(server_url: Option<String>) -> Result<Self> {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
-            .set_default("cmd.rec.input", false)?
+            .set_default("cmd.rec.rec_input", false)?
             .set_default("cmd.rec.filename", DEFAULT_REC_FILENAME)?
             .set_default("cmd.play.speed", None::<Option<f64>>)?
-            .set_default("cmd.stream.input", false)?
-            .set_default("cmd.session.input", false)?
+            .set_default("cmd.stream.rec_input", false)?
+            .set_default("cmd.session.rec_input", false)?
             .set_default("cmd.session.filename", DEFAULT_REC_FILENAME)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
@@ -155,8 +155,8 @@ impl Config {
         Session {
             command: self.cmd.rec.command.clone(),
             filename: self.cmd.rec.filename.clone(),
-            input: self.cmd.rec.input,
-            env: self.cmd.rec.env.clone(),
+            rec_input: self.cmd.rec.rec_input,
+            rec_env: self.cmd.rec.rec_env.clone(),
             idle_time_limit: self.cmd.rec.idle_time_limit,
             prefix_key: self.cmd.rec.prefix_key.clone(),
             pause_key: self.cmd.rec.pause_key.clone(),
@@ -168,8 +168,8 @@ impl Config {
         Session {
             command: self.cmd.stream.command.clone(),
             filename: "".to_string(),
-            input: self.cmd.stream.input,
-            env: self.cmd.stream.env.clone(),
+            rec_input: self.cmd.stream.rec_input,
+            rec_env: self.cmd.stream.rec_env.clone(),
             idle_time_limit: None,
             prefix_key: self.cmd.stream.prefix_key.clone(),
             pause_key: self.cmd.stream.pause_key.clone(),
