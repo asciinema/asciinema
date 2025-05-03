@@ -138,7 +138,7 @@ type EventPayload struct {
 	Shell     string            `json:"shell,omitempty"`
 	Username  string            `json:"username,omitempty"`
 	Directory string            `json:"directory,omitempty"`
-	ExitCode  int64             `json:"exitCode,omitempty"`
+	ExitCode  *int64            `json:"exitCode,omitempty"`
 	Duration  int64             `json:"duration,omitempty"`
 	Name      string            `json:"name,omitempty"`
 	Detail    map[string]string `json:"detail,omitempty"`
@@ -342,7 +342,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					session.State = StateCommand // Set state to Command
 					session.CommandBuffer = nil  // Clear previous buffer
 					session.StartTime = time.Now()
-					// Send start event
+					// Send start event (no exitCode)
 					sendEvent(EventPayload{
 						Event:     "start",
 						Command:   cmd,
@@ -350,6 +350,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 						Shell:     shell,
 						Username:  username,
 						Directory: directory,
+						ExitCode:  nil,
 					})
 				}
 			case strings.Contains(data, "\x1b]133;D"):
@@ -365,7 +366,8 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					fmt.Printf("    %q\n", l)
 				}
 				fmt.Println("---")
-				// Send end event
+				// Send end event (always send exitCode as pointer)
+				endExitCode := exitCode
 				duration := int64(100) // Default 100ms
 				if !session.StartTime.IsZero() {
 					duration = time.Since(session.StartTime).Milliseconds()
@@ -377,7 +379,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					Shell:     shell,
 					Username:  username,
 					Directory: directory,
-					ExitCode:  exitCode,
+					ExitCode:  &endExitCode,
 					Duration:  duration,
 				})
 				session.CommandBuffer = nil
@@ -395,7 +397,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 							} else {
 								fmt.Printf("[step %s] %q\n", stepName, data)
 							}
-							// Send step event to Electron app
+							// Send step event to Electron app (no exitCode)
 							sendEvent(EventPayload{
 								Event:     "step",
 								Command:   session.CommandString,
@@ -406,6 +408,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 								Name:      stepName,
 								Detail:    detail,
 								ShouldEnd: false,
+								ExitCode:  nil,
 							})
 						}
 						session.CommandBuffer = append(session.CommandBuffer, data)
