@@ -203,7 +203,8 @@ mod tests {
     #[test]
     fn open_v2_minimal() {
         let Asciicast { header, events } =
-            super::open_from_path("tests/casts/minimal.cast").unwrap();
+            super::open_from_path("tests/casts/minimal-v2.cast").unwrap();
+
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
@@ -215,7 +216,8 @@ mod tests {
 
     #[test]
     fn open_v2_full() {
-        let Asciicast { header, events } = super::open_from_path("tests/casts/full.cast").unwrap();
+        let Asciicast { header, events } =
+            super::open_from_path("tests/casts/full-v2.cast").unwrap();
         let events = events.take(5).collect::<Result<Vec<Event>>>().unwrap();
         let theme = header.term_theme.unwrap();
 
@@ -235,11 +237,58 @@ mod tests {
         assert!(matches!(events[2].data, EventData::Input(ref s) if s == "\n"));
 
         assert_eq!(events[3].time, 5_600_001);
+
         assert!(
             matches!(events[3].data, EventData::Resize(ref cols, ref rows) if *cols == 80 && *rows == 40)
         );
 
         assert_eq!(events[4].time, 10_500_000);
+        assert!(matches!(events[4].data, EventData::Output(ref s) if s == "\r\n"));
+    }
+
+    #[test]
+    fn open_v3_minimal() {
+        let Asciicast { header, events } =
+            super::open_from_path("tests/casts/minimal-v3.cast").unwrap();
+
+        let events = events.collect::<Result<Vec<Event>>>().unwrap();
+
+        assert_eq!((header.term_cols, header.term_rows), (100, 50));
+        assert!(header.term_theme.is_none());
+
+        assert_eq!(events[0].time, 1230000);
+        assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
+    }
+
+    #[test]
+    fn open_v3_full() {
+        let Asciicast { header, events } =
+            super::open_from_path("tests/casts/full-v3.cast").unwrap();
+        let events = events.take(5).collect::<Result<Vec<Event>>>().unwrap();
+        let theme = header.term_theme.unwrap();
+
+        assert_eq!((header.term_cols, header.term_rows), (100, 50));
+        assert_eq!(header.timestamp, Some(1509091818));
+        assert_eq!(theme.fg, RGB8::new(0, 0, 0));
+        assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
+        assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
+
+        assert_eq!(events[0].time, 1);
+        assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
+
+        assert_eq!(events[1].time, 1_000_001);
+        assert!(matches!(events[1].data, EventData::Output(ref s) if s == "ółć"));
+
+        assert_eq!(events[2].time, 1_300_001);
+        assert!(matches!(events[2].data, EventData::Input(ref s) if s == "\n"));
+
+        assert_eq!(events[3].time, 2_900_002);
+
+        assert!(
+            matches!(events[3].data, EventData::Resize(ref cols, ref rows) if *cols == 80 && *rows == 40)
+        );
+
+        assert_eq!(events[4].time, 13_400_002);
         assert!(matches!(events[4].data, EventData::Output(ref s) if s == "\r\n"));
     }
 
