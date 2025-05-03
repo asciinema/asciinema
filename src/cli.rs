@@ -14,11 +14,11 @@ pub struct Cli {
     pub command: Commands,
 
     /// asciinema server URL
-    #[arg(long, global = true)]
+    #[arg(long, global = true, display_order = 100)]
     pub server_url: Option<String>,
 
     /// Quiet mode, i.e. suppress diagnostic messages
-    #[clap(short, long, global = true)]
+    #[clap(short, long, global = true, display_order = 101)]
     pub quiet: bool,
 }
 
