@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -64,7 +65,7 @@ type TerminalSession struct {
 	State         SessionState
 	CommandBuffer []string
 	PromptBuffer  []string
-	LastExitCode  int
+	LastExitCode  int64
 	CommandString string
 	CurrentInput  string
 	StartTime     time.Time
@@ -74,7 +75,22 @@ var (
 	oscDRegexp = regexp.MustCompile(`\x1b]133;D;(\d+)\x07`)
 	oscPattern = regexp.MustCompile(`^\x1b\](133;[CD]|1337;RemoteHost=|1337;CurrentDir=)`)
 	oscCurrentDirPattern = regexp.MustCompile(`\x1b]1337;CurrentDir=([^\x07]*)\x07`)
+	regexFilters atomic.Value // []RegexFilter, protected by atomic swap
 )
+
+func init() {
+	regexFilters.Store([]RegexFilter{})
+}
+
+// RegexFilter represents a step regex with optional detail extraction
+// e.g. {"type": "step", "name": "Nextjs Ready", "pattern": "...", "detail": "..."}
+type RegexFilter struct {
+	Type    string         `json:"type"`
+	Name    string         `json:"name"`
+	Pattern string         `json:"pattern"`
+	Detail  string         `json:"detail,omitempty"`
+	Regex   *regexp.Regexp `json:"-"`
+}
 
 func looksLikeJSON(s string) bool {
 	s = strings.TrimSpace(s)
@@ -84,10 +100,10 @@ func looksLikeJSON(s string) bool {
 	return (s[0] == '{' && s[len(s)-1] == '}') || (s[0] == '[' && s[len(s)-1] == ']')
 }
 
-func extractExitCode(data string) int {
+func extractExitCode(data string) int64 {
 	matches := oscDRegexp.FindStringSubmatch(data)
 	if len(matches) == 2 {
-		if code, err := strconv.Atoi(matches[1]); err == nil {
+		if code, err := strconv.ParseInt(matches[1], 10, 64); err == nil {
 			return code
 		}
 	}
@@ -115,37 +131,90 @@ func isRealOutput(data string) bool {
 	return !oscPattern.MatchString(data) && strings.TrimSpace(data) != ""
 }
 
-// sendCommandEvent sends a command lifecycle event to the Electron app's local server
-func sendCommandEvent(event string, command string, commandId string, shell string, username string, directory string, exitCode int, duration int64) {
-	if command == "" { // Don't send events for empty commands
-		return
-	}
+type EventPayload struct {
+	Event     string            `json:"event"`
+	Command   string            `json:"command,omitempty"`
+	CommandId string            `json:"commandId,omitempty"`
+	Shell     string            `json:"shell,omitempty"`
+	Username  string            `json:"username,omitempty"`
+	Directory string            `json:"directory,omitempty"`
+	ExitCode  int64             `json:"exitCode,omitempty"`
+	Duration  int64             `json:"duration,omitempty"`
+	Name      string            `json:"name,omitempty"`
+	Detail    map[string]string `json:"detail,omitempty"`
+	ShouldEnd bool              `json:"shouldEnd,omitempty"`
+}
+
+// sendEvent sends a command or step event to the Electron app's local server
+func sendEvent(payload EventPayload) {
 	url := "http://127.0.0.1:54321/"
-	msg := map[string]interface{}{
-		"event": event,
-		"command": command,
-		"username": username,
-		"directory": directory,
-		"commandId": commandId,
-		"shell": shell,
-	}
-	if event == "end" {
-		msg["exitCode"] = exitCode
-		msg["duration"] = duration
-	}
-	jsonBytes, err := json.Marshal(msg)
+	log.Printf("Sending %s event: %+v", payload.Event, payload)
+	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Failed to marshal command event: %v", err)
+		log.Printf("Failed to marshal %s event: %v", payload.Event, err)
 		return
 	}
 	go func() {
 		resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonBytes))
 		if err != nil {
-			log.Printf("Failed to send command event: %v", err)
+			log.Printf("Failed to send %s event: %v", payload.Event, err)
 			return
 		}
 		defer resp.Body.Close()
 	}()
+}
+
+func regexFiltersHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	var incoming []struct {
+		Type    string `json:"type"`
+		Name    string `json:"name"`
+		Pattern string `json:"pattern"`
+		Detail  string `json:"detail,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid JSON"))
+		return
+	}
+	fmt.Printf("Received regex filters: %v\n", incoming)
+	var compiled []RegexFilter
+	for _, f := range incoming {
+		re, err := regexp.Compile(f.Pattern)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("Invalid regex: " + f.Pattern))
+			return
+		}
+		compiled = append(compiled, RegexFilter{Type: f.Type, Name: f.Name, Pattern: f.Pattern, Detail: f.Detail, Regex: re})
+	}
+	regexFilters.Store(compiled)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
+
+// matchStepEvent returns the name and detail (if any) of the first matching regex filter, or empty strings
+func matchStepEvent(line string) (string, map[string]string) {
+	filters := regexFilters.Load().([]RegexFilter)
+	for _, f := range filters {
+		if f.Type != "step" { continue }
+		if m := f.Regex.FindStringSubmatch(line); m != nil {
+			fmt.Printf("Found match for %s: %v\n", f.Name, m)
+			result := map[string]string{}
+			if len(f.Regex.SubexpNames()) > 1 {
+				for i, name := range f.Regex.SubexpNames() {
+					if i != 0 && name != "" {
+						result[name] = m[i]
+					}
+				}
+			}
+			return f.Name, result
+		}
+	}
+	return "", nil
 }
 
 func main() {
@@ -172,6 +241,11 @@ func main() {
 	terminalInfoMutex := &sync.Mutex{}
 	terminalInfo := make(map[net.Conn]*CastHeader)
 	
+	// Start HTTP server for regex filters
+	go func() {
+		http.HandleFunc("/regexfilters", regexFiltersHandler)
+		log.Fatal(http.ListenAndServe(":54322", nil))
+	}()
 	
 	for {
 		// Accept a connection
@@ -269,7 +343,14 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					session.CommandBuffer = nil  // Clear previous buffer
 					session.StartTime = time.Now()
 					// Send start event
-					sendCommandEvent("start", cmd, commandId, shell, username, directory, 0, 0)
+					sendEvent(EventPayload{
+						Event:     "start",
+						Command:   cmd,
+						CommandId: commandId,
+						Shell:     shell,
+						Username:  username,
+						Directory: directory,
+					})
 				}
 			case strings.Contains(data, "\x1b]133;D"):
 				fmt.Printf("[debug] OSC 133;D: CommandBuffer=%v\n", session.CommandBuffer)
@@ -289,7 +370,16 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				if !session.StartTime.IsZero() {
 					duration = time.Since(session.StartTime).Milliseconds()
 				}
-				sendCommandEvent("end", session.CommandString, commandId, shell, username, directory, exitCode, duration)
+				sendEvent(EventPayload{
+					Event:     "end",
+					Command:   session.CommandString,
+					CommandId: commandId,
+					Shell:     shell,
+					Username:  username,
+					Directory: directory,
+					ExitCode:  exitCode,
+					Duration:  duration,
+				})
 				session.CommandBuffer = nil
 				session.CommandString = ""
 				session.StartTime = time.Time{}
@@ -297,6 +387,27 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 			default:
 				if session.State == StateCommand {
 					if isRealOutput(data) {
+						stepName, detail := matchStepEvent(data)
+						if stepName != "" {
+							if detail != nil && len(detail) > 0 {
+								detailJson, _ := json.Marshal(detail)
+								fmt.Printf("[step %s] %q detail=%s\n", stepName, data, detailJson)
+							} else {
+								fmt.Printf("[step %s] %q\n", stepName, data)
+							}
+							// Send step event to Electron app
+							sendEvent(EventPayload{
+								Event:     "step",
+								Command:   session.CommandString,
+								CommandId: commandId,
+								Shell:     shell,
+								Username:  username,
+								Directory: directory,
+								Name:      stepName,
+								Detail:    detail,
+								ShouldEnd: false,
+							})
+						}
 						session.CommandBuffer = append(session.CommandBuffer, data)
 					}
 				} else if session.State == StatePrompt {
