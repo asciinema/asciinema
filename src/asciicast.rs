@@ -220,6 +220,7 @@ mod tests {
         let theme = header.term_theme.unwrap();
 
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
+        assert_eq!(header.timestamp, Some(1509091818));
         assert_eq!(theme.fg, RGB8::new(0, 0, 0));
         assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
         assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
