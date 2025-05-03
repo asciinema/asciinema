@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{self, ErrorKind, Read, Write};
 use std::os::fd::AsFd;
 use std::os::fd::{BorrowedFd, OwnedFd};
-use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::os::unix::io::AsRawFd;
 use std::time::{Duration, Instant};
 
 use anyhow::bail;
@@ -14,7 +14,7 @@ use nix::libc::EIO;
 use nix::sys::select::{select, FdSet};
 use nix::sys::signal::{self, kill, Signal};
 use nix::sys::wait::{self, WaitPidFlag, WaitStatus};
-use nix::unistd::{self, ForkResult};
+use nix::unistd;
 use nix::{libc, pty};
 use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SIGWINCH};
 use signal_hook::SigId;
@@ -46,13 +46,13 @@ pub fn exec<S: AsRef<str>, T: Tty, H: Handler, R: HandlerStarter<H>>(
     let mut handler = handler_starter.start(winsize.into(), tty.get_theme());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
-    match result.fork_result {
-        ForkResult::Parent { child } => {
-            handle_parent(result.master, child, tty, &mut handler, epoch)
+    match result {
+        pty::ForkptyResult::Parent { child, master } => {
+            handle_parent(master, child, tty, &mut handler, epoch)
                 .map(|code| (code, handler.stop()))
         }
 
-        ForkResult::Child => {
+        pty::ForkptyResult::Child => {
             handle_child(command, extra_env)?;
             unreachable!();
         }
@@ -108,7 +108,7 @@ fn copy<T: Tty, H: Handler>(
     let sigalrm_fd = SignalFd::open(SIGALRM)?;
     let sigchld_fd = SignalFd::open(SIGCHLD)?;
 
-    set_non_blocking(&master_raw_fd)?;
+    set_non_blocking(&master)?;
 
     loop {
         let master_fd = master.as_fd();
@@ -116,25 +116,25 @@ fn copy<T: Tty, H: Handler>(
         let mut rfds = FdSet::new();
         let mut wfds = FdSet::new();
 
-        rfds.insert(&tty_fd);
-        rfds.insert(&sigwinch_fd);
-        rfds.insert(&sigint_fd);
-        rfds.insert(&sigterm_fd);
-        rfds.insert(&sigquit_fd);
-        rfds.insert(&sighup_fd);
-        rfds.insert(&sigalrm_fd);
-        rfds.insert(&sigchld_fd);
+        rfds.insert(tty_fd);
+        rfds.insert(sigwinch_fd.as_fd());
+        rfds.insert(sigint_fd.as_fd());
+        rfds.insert(sigterm_fd.as_fd());
+        rfds.insert(sigquit_fd.as_fd());
+        rfds.insert(sighup_fd.as_fd());
+        rfds.insert(sigalrm_fd.as_fd());
+        rfds.insert(sigchld_fd.as_fd());
 
         if !master_closed {
-            rfds.insert(&master_fd);
+            rfds.insert(master_fd);
 
             if !input.is_empty() {
-                wfds.insert(&master_fd);
+                wfds.insert(master_fd);
             }
         }
 
         if !output.is_empty() {
-            wfds.insert(&tty_fd);
+            wfds.insert(tty_fd);
         }
 
         if let Err(e) = select(None, &mut rfds, &mut wfds, None, None) {
@@ -145,17 +145,17 @@ fn copy<T: Tty, H: Handler>(
             bail!(e);
         }
 
-        let master_read = rfds.contains(&master_fd);
-        let master_write = wfds.contains(&master_fd);
-        let tty_read = rfds.contains(&tty_fd);
-        let tty_write = wfds.contains(&tty_fd);
-        let sigwinch_read = rfds.contains(&sigwinch_fd);
-        let sigint_read = rfds.contains(&sigint_fd);
-        let sigterm_read = rfds.contains(&sigterm_fd);
-        let sigquit_read = rfds.contains(&sigquit_fd);
-        let sighup_read = rfds.contains(&sighup_fd);
-        let sigalrm_read = rfds.contains(&sigalrm_fd);
-        let sigchld_read = rfds.contains(&sigchld_fd);
+        let master_read = rfds.contains(master_fd);
+        let master_write = wfds.contains(master_fd);
+        let tty_read = rfds.contains(tty_fd);
+        let tty_write = wfds.contains(tty_fd);
+        let sigwinch_read = rfds.contains(sigwinch_fd.as_fd());
+        let sigint_read = rfds.contains(sigint_fd.as_fd());
+        let sigterm_read = rfds.contains(sigterm_fd.as_fd());
+        let sigquit_read = rfds.contains(sigquit_fd.as_fd());
+        let sighup_read = rfds.contains(sighup_fd.as_fd());
+        let sigalrm_read = rfds.contains(sigalrm_fd.as_fd());
+        let sigchld_read = rfds.contains(sigchld_fd.as_fd());
 
         if master_read {
             while let Some(n) = read_non_blocking(&mut master, &mut buf)? {
@@ -347,12 +347,10 @@ impl SignalFd {
         let (rx, tx) = unistd::pipe()?;
         set_non_blocking(&rx)?;
         set_non_blocking(&tx)?;
-        let rx = unsafe { OwnedFd::from_raw_fd(rx) };
-        let tx = unsafe { OwnedFd::from_raw_fd(tx) };
 
         let sigid = unsafe {
             signal_hook::low_level::register(signal, move || {
-                let _ = unistd::write(tx.as_raw_fd(), &[0]);
+                let _ = unistd::write(&tx, &[0]);
             })
         }?;
 
@@ -362,7 +360,7 @@ impl SignalFd {
     fn flush(&self) {
         let mut buf = [0; 256];
 
-        while let Ok(n) = unistd::read(self.rx.as_raw_fd(), &mut buf) {
+        while let Ok(n) = unistd::read(&self.rx, &mut buf) {
             if n == 0 {
                 break;
             };

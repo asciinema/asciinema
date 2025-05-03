@@ -1,5 +1,4 @@
 use core::future::{self, Future};
-use std::borrow::Cow;
 use std::pin::Pin;
 use std::time::Duration;
 
@@ -238,12 +237,12 @@ fn ws_result(m: Result<Vec<u8>, BroadcastStreamRecvError>) -> anyhow::Result<Mes
 fn close_message() -> Message {
     Message::Close(Some(CloseFrame {
         code: CloseCode::Normal,
-        reason: Cow::from("ended"),
+        reason: "ended".into(),
     }))
 }
 
 fn ping_stream() -> impl Stream<Item = Message> {
     IntervalStream::new(interval(Duration::from_secs(PING_INTERVAL)))
         .skip(1)
-        .map(|_| Message::Ping(vec![]))
+        .map(|_| Message::Ping(vec![].into()))
 }

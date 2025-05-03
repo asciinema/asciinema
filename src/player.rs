@@ -145,15 +145,16 @@ fn open_recording(
 }
 
 fn read_input<T: Tty>(tty: &mut T, timeout: i64) -> Result<Option<Vec<u8>>> {
-    let nfds = Some(tty.as_fd().as_raw_fd() + 1);
+    let tty_fd = tty.as_fd();
+    let nfds = Some(tty_fd.as_raw_fd() + 1);
     let mut rfds = FdSet::new();
-    rfds.insert(tty);
+    rfds.insert(tty_fd);
     let timeout = TimeSpec::microseconds(timeout);
     let mut input: Vec<u8> = Vec::new();
 
     pselect(nfds, &mut rfds, None, None, &timeout, None)?;
 
-    if rfds.contains(tty) {
+    if rfds.contains(tty_fd) {
         let mut buf = [0u8; 1024];
 
         while let Ok(n) = tty.read(&mut buf) {

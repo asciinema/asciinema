@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd};
+use std::os::fd::{AsFd, AsRawFd, BorrowedFd, OwnedFd};
 
 use anyhow::Result;
 use nix::{
@@ -67,7 +67,7 @@ impl DevTty {
             .open("/dev/tty")?
             .into_raw_mode()?;
 
-        crate::io::set_non_blocking(&file.as_raw_fd())?;
+        crate::io::set_non_blocking(&file)?;
 
         Ok(Self { file })
     }
@@ -78,23 +78,23 @@ impl DevTty {
         let mut query = &query[..];
         let mut response = Vec::new();
         let mut buf = [0u8; 1024];
-        let fd = self.as_fd().as_raw_fd();
+        let fd = self.as_fd();
 
         loop {
             let mut timeout = TimeVal::new(0, 100_000);
             let mut rfds = FdSet::new();
             let mut wfds = FdSet::new();
-            rfds.insert(self);
+            rfds.insert(fd);
 
             if !query.is_empty() {
-                wfds.insert(self);
+                wfds.insert(fd);
             }
 
             match select(None, &mut rfds, &mut wfds, None, &mut timeout) {
                 Ok(0) => break,
 
                 Ok(_) => {
-                    if rfds.contains(self) {
+                    if rfds.contains(fd) {
                         let n = unistd::read(fd, &mut buf)?;
                         response.extend_from_slice(&buf[..n]);
                         let mut reversed = response.iter().rev();
@@ -124,7 +124,7 @@ impl DevTty {
                         }
                     }
 
-                    if wfds.contains(self) {
+                    if wfds.contains(fd) {
                         let n = unistd::write(fd, query)?;
                         query = &query[n..];
                     }
@@ -239,8 +239,6 @@ pub struct NullTty {
 impl NullTty {
     pub fn open() -> Result<Self> {
         let (rx, tx) = unistd::pipe()?;
-        let rx = unsafe { OwnedFd::from_raw_fd(rx) };
-        let tx = unsafe { OwnedFd::from_raw_fd(tx) };
 
         Ok(Self { tx, _rx: rx })
     }

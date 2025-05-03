@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::future;
 use std::io;
 use std::net::SocketAddr;
@@ -9,6 +8,7 @@ use axum::extract::State;
 use axum::http::{header, StatusCode, Uri};
 use axum::response::IntoResponse;
 use axum::routing::get;
+use axum::serve::ListenerExt;
 use axum::Router;
 use futures_util::{sink, StreamExt};
 use rust_embed::RustEmbed;
@@ -50,12 +50,15 @@ pub async fn serve(
         listener.local_addr().unwrap()
     );
 
+    let listener = listener.tap_io(|tcp_stream| {
+        let _ = tcp_stream.set_nodelay(true);
+    });
+
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
     .with_graceful_shutdown(signal)
-    .tcp_nodelay(true)
     .await
 }
 
@@ -123,13 +126,13 @@ async fn close_socket(mut socket: WebSocket) {
 fn close_message(code: CloseCode, reason: &'static str) -> Message {
     Message::Close(Some(CloseFrame {
         code,
-        reason: Cow::from(reason),
+        reason: reason.into(),
     }))
 }
 
 fn ws_result(m: Result<Vec<u8>, BroadcastStreamRecvError>) -> Result<Message, axum::Error> {
     match m {
-        Ok(bytes) => Ok(Message::Binary(bytes)),
+        Ok(bytes) => Ok(Message::Binary(bytes.into())),
         Err(e) => Err(axum::Error::new(e)),
     }
 }

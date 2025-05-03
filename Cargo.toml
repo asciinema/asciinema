@@ -14,38 +14,38 @@ rust-version = "1.75.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.75"
-nix = { version = "0.27", features = [ "fs", "term", "process", "signal" ] }
+anyhow = "1.0.98"
+nix = { version = "0.30", features = ["fs", "term", "process", "signal", "poll"] }
 termion = "3.0.0"
-serde = { version = "1.0.189", features = ["derive"] }
-serde_json = "1.0.107"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
 clap = { version = "4.5.37", features = ["derive"] }
 signal-hook = { version = "0.3.17", default-features = false }
 uuid = { version = "1.6.1", features = ["v4"] }
-reqwest = { version = "0.12.8", default-features = false, features = ["blocking", "rustls-tls-native-roots", "multipart", "gzip", "json"] }
+reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "rustls-tls-native-roots", "multipart", "gzip", "json"] }
 rustyline = "13.0.0"
-config = { version = "0.14.0", default-features = false, features = ["toml", "ini"] }
-which = "6.0.0"
+config = { version = "0.15.11", default-features = false, features = ["toml", "ini"] }
+which = "6.0.3"
 tempfile = "3.9.0"
-scraper = { version = "0.19.0", default-features = false }
+scraper = { version = "0.23.1", default-features = false }
 avt = "0.15.1"
-axum = { version = "0.7.7", default-features = false, features = ["http1", "ws"] }
-tokio = { version = "1.35.1", features = ["full"] }
-futures-util = "0.3.30"
-tokio-stream = { version = "0.1.14", features = ["sync"] }
+axum = { version = "0.8.4", default-features = false, features = ["http1", "ws"] }
+tokio = { version = "1.44.2", features = ["full"] }
+futures-util = "0.3.31"
+tokio-stream = { version = "0.1.17", features = ["sync"] }
 rust-embed = "8.2.0"
 mime_guess = "2.0.4"
-tower-http = { version = "0.5.1", features = ["trace"] }
-tracing = "0.1.40"
+tower-http = { version = "0.6.2", features = ["trace"] }
+tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 rgb = "0.8.37"
 url = "2.5.0"
-tokio-tungstenite = { version = "0.24.0", features = ["rustls-tls-native-roots"] }
-rustls = { version = "0.23.15", default-features = false, features = ["aws_lc_rs"] }
+tokio-tungstenite = { version = "0.26.2", features = ["rustls-tls-native-roots"] }
+rustls = { version = "0.23.26", default-features = false, features = ["aws_lc_rs"] }
 sha2 = "0.10.8"
 tokio-util = "0.7.10"
 chrono = "0.4.38"
-hostname = "0.4.0"
+hostname = "0.4.1"
 
 [build-dependencies]
 clap = { version = "4.5.37", features = ["derive"] }
