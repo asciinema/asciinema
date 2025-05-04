@@ -282,7 +282,7 @@ fn copy<T: Tty, H: Handler>(
 }
 
 fn handle_child<S: AsRef<str>>(command: &[S], extra_env: &ExtraEnv) -> anyhow::Result<()> {
-    use signal::{SigHandler, Signal};
+    use signal::SigHandler;
 
     let command = command
         .iter()
