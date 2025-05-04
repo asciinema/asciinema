@@ -45,7 +45,7 @@ impl cli::Session {
         let record_input = self.rec_input || cmd_config.rec_input;
         let term_type = self.get_term_type();
         let term_version = self.get_term_version()?;
-        let env = capture_env(self.rec_env.clone(), cmd_config);
+        let env = capture_env(self.rec_env.take(), cmd_config);
 
         let path = self
             .output_file
@@ -497,7 +497,7 @@ fn get_key_bindings(config: &config::Session) -> Result<KeyBindings> {
 fn capture_env(var_names: Option<String>, config: &config::Session) -> HashMap<String, String> {
     let var_names = var_names
         .or(config.rec_env.clone())
-        .unwrap_or(String::from("TERM,SHELL"));
+        .unwrap_or(String::from("SHELL"));
 
     let vars = var_names.split(',').collect::<HashSet<_>>();
 

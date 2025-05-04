@@ -66,7 +66,7 @@ pub struct Record {
     #[arg(long, short = 'I', alias = "stdin")]
     pub rec_input: bool,
 
-    /// List of env vars to capture [default: TERM,SHELL]
+    /// List of env vars to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -140,7 +140,7 @@ pub struct Stream {
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
-    /// List of env vars to capture [default: TERM,SHELL]
+    /// List of env vars to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -183,7 +183,7 @@ pub struct Session {
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
-    /// List of env vars to capture [default: TERM,SHELL]
+    /// List of env vars to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
