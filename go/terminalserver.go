@@ -76,6 +76,8 @@ var (
 	oscPattern = regexp.MustCompile(`^\x1b\](133;[CD]|1337;RemoteHost=|1337;CurrentDir=)`)
 	oscCurrentDirPattern = regexp.MustCompile(`\x1b]1337;CurrentDir=([^\x07]*)\x07`)
 	regexFilters atomic.Value // []RegexFilter, protected by atomic swap
+	sourceName    = "Go Terminal Server"
+	sourceVersion = getBinaryModTime()
 )
 
 func init() {
@@ -143,10 +145,27 @@ type EventPayload struct {
 	Name      string            `json:"name,omitempty"`
 	Detail    map[string]string `json:"detail,omitempty"`
 	ShouldEnd bool              `json:"shouldEnd,omitempty"`
+	SourceName    string        `json:"sourceName,omitempty"`
+	SourceVersion string        `json:"sourceVersion,omitempty"`
+}
+
+// getBinaryModTime returns the mod time of the running binary as RFC3339 string
+func getBinaryModTime() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	fi, err := os.Stat(exePath)
+	if err != nil {
+		return ""
+	}
+	return fi.ModTime().Format(time.RFC3339)
 }
 
 // sendEvent sends a command or step event to the Electron app's local server
 func sendEvent(payload EventPayload) {
+	payload.SourceName = sourceName
+	payload.SourceVersion = sourceVersion
 	url := "http://127.0.0.1:54321/"
 	log.Printf("Sending %s event: %+v", payload.Event, payload)
 	jsonBytes, err := json.Marshal(payload)
@@ -350,7 +369,6 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 						Shell:     shell,
 						Username:  username,
 						Directory: directory,
-						ExitCode:  nil,
 					})
 				}
 			case strings.Contains(data, "\x1b]133;D"):
@@ -408,7 +426,6 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 								Name:      stepName,
 								Detail:    detail,
 								ShouldEnd: false,
-								ExitCode:  nil,
 							})
 						}
 						session.CommandBuffer = append(session.CommandBuffer, data)
