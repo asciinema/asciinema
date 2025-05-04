@@ -3,12 +3,10 @@ use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::LineWriter;
 use std::net::TcpListener;
-use std::path::{Path, PathBuf};
-use std::process;
+use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
-use chrono::Local;
 use tokio::runtime::Runtime;
 use tokio::time;
 use tokio_util::sync::CancellationToken;
@@ -47,13 +45,8 @@ impl cli::Session {
         let term_version = self.get_term_version()?;
         let env = capture_env(self.rec_env.take(), cmd_config);
 
-        let path = self
+        let file_writer = self
             .output_file
-            .take()
-            .map(|path| self.ensure_filename(path, cmd_config))
-            .transpose()?;
-
-        let file_writer = path
             .as_ref()
             .map(|path| {
                 self.get_file_writer(
@@ -100,7 +93,7 @@ impl cli::Session {
 
         status::info!("asciinema session started");
 
-        if let Some(path) = path {
+        if let Some(path) = self.output_file.as_ref() {
             status::info!("Recording to {}", path);
         }
 
@@ -183,44 +176,6 @@ impl cli::Session {
         status::info!("asciinema session ended");
 
         Ok(())
-    }
-
-    fn ensure_filename(&mut self, path_: String, config: &config::Session) -> Result<String> {
-        let mut path = PathBuf::from(&path_);
-
-        if path.exists() && fs::metadata(&path)?.is_dir() {
-            let mut tpl = self.filename.clone().unwrap_or(config.filename.clone());
-
-            if tpl.contains("{pid}") {
-                let pid = process::id().to_string();
-                tpl = tpl.replace("{pid}", &pid);
-            }
-
-            if tpl.contains("{user}") {
-                let user = env::var("USER").ok().unwrap_or("unknown".to_owned());
-                tpl = tpl.replace("{user}", &user);
-            }
-
-            if tpl.contains("{hostname}") {
-                let hostname = hostname::get()
-                    .ok()
-                    .and_then(|h| h.into_string().ok())
-                    .unwrap_or("unknown".to_owned());
-
-                tpl = tpl.replace("{hostname}", &hostname);
-            }
-
-            let filename = Local::now().format(&tpl).to_string();
-            path.push(Path::new(&filename));
-
-            if let Some(dir) = path.parent() {
-                fs::create_dir_all(dir)?;
-            }
-
-            Ok(path.to_string_lossy().to_string())
-        } else {
-            Ok(path_)
-        }
     }
 
     fn get_file_writer<N: Notifier + 'static>(

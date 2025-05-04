@@ -78,10 +78,6 @@ pub struct Record {
     #[arg(long, conflicts_with = "append")]
     pub overwrite: bool,
 
-    /// Filename template, used when recording to a directory
-    #[arg(long, value_name = "TEMPLATE")]
-    pub filename: Option<String>,
-
     /// Title of the recording
     #[arg(short, long)]
     pub title: Option<String>,
@@ -194,10 +190,6 @@ pub struct Session {
     /// Overwrite output file if it already exists
     #[arg(long, conflicts_with = "append")]
     pub overwrite: bool,
-
-    /// Filename template, used when recording to a directory
-    #[arg(long, value_name = "TEMPLATE")]
-    pub filename: Option<String>,
 
     /// Title of the recording
     #[arg(short, long)]

@@ -9,7 +9,6 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 const DEFAULT_SERVER_URL: &str = "https://asciinema.org";
-const DEFAULT_REC_FILENAME: &str = "%Y-%m-%d-%H-%M-%S-{pid}.cast";
 const INSTALL_ID_FILENAME: &str = "install-id";
 
 pub type Key = Option<Vec<u8>>;
@@ -41,7 +40,6 @@ pub struct Cmd {
 #[allow(unused)]
 pub struct Session {
     pub command: Option<String>,
-    pub filename: String,
     pub rec_input: bool,
     pub rec_env: Option<String>,
     pub idle_time_limit: Option<f64>,
@@ -54,7 +52,6 @@ pub struct Session {
 #[allow(unused)]
 pub struct Rec {
     pub command: Option<String>,
-    pub filename: String,
     pub rec_input: bool,
     pub rec_env: Option<String>,
     pub idle_time_limit: Option<f64>,
@@ -96,11 +93,9 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("cmd.rec.rec_input", false)?
-            .set_default("cmd.rec.filename", DEFAULT_REC_FILENAME)?
             .set_default("cmd.play.speed", None::<Option<f64>>)?
             .set_default("cmd.stream.rec_input", false)?
             .set_default("cmd.session.rec_input", false)?
-            .set_default("cmd.session.filename", DEFAULT_REC_FILENAME)?
             .set_default("notifications.enabled", true)?
             .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(
@@ -154,7 +149,6 @@ impl Config {
     pub fn cmd_rec(&self) -> Session {
         Session {
             command: self.cmd.rec.command.clone(),
-            filename: self.cmd.rec.filename.clone(),
             rec_input: self.cmd.rec.rec_input,
             rec_env: self.cmd.rec.rec_env.clone(),
             idle_time_limit: self.cmd.rec.idle_time_limit,
@@ -167,7 +161,6 @@ impl Config {
     pub fn cmd_stream(&self) -> Session {
         Session {
             command: self.cmd.stream.command.clone(),
-            filename: "".to_string(),
             rec_input: self.cmd.stream.rec_input,
             rec_env: self.cmd.stream.rec_env.clone(),
             idle_time_limit: None,
