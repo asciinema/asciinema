@@ -69,6 +69,7 @@ type TerminalSession struct {
 	CommandString string
 	CurrentInput  string
 	StartTime     time.Time
+	CommandId     string
 }
 
 var (
@@ -164,6 +165,9 @@ func getBinaryModTime() string {
 
 // sendEvent sends a command or step event to the Electron app's local server
 func sendEvent(payload EventPayload) {
+	if payload.Command == "" {
+		return	
+	}
 	payload.SourceName = sourceName
 	payload.SourceVersion = sourceVersion
 	url := "http://127.0.0.1:54321/"
@@ -351,7 +355,6 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				fmt.Printf("[directory changed] %s\n", directory)
 			}
 
-			commandId := fmt.Sprintf("%dN-%d", time.Now().Unix(), pidInt)
 			switch {
 			case strings.Contains(data, "\x1b]133;B\a"):
 				cmd := extractCommandFromOSC133B(data)
@@ -361,11 +364,12 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 					session.State = StateCommand // Set state to Command
 					session.CommandBuffer = nil  // Clear previous buffer
 					session.StartTime = time.Now()
+					session.CommandId = fmt.Sprintf("%dN-%d", time.Now().Unix(), pidInt)
 					// Send start event (no exitCode)
 					sendEvent(EventPayload{
 						Event:     "start",
 						Command:   cmd,
-						CommandId: commandId,
+						CommandId: session.CommandId,
 						Shell:     shell,
 						Username:  username,
 						Directory: directory,
@@ -393,7 +397,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 				sendEvent(EventPayload{
 					Event:     "end",
 					Command:   session.CommandString,
-					CommandId: commandId,
+					CommandId: session.CommandId,
 					Shell:     shell,
 					Username:  username,
 					Directory: directory,
@@ -419,7 +423,7 @@ func handleConnection(conn net.Conn, wg *sync.WaitGroup, terminalInfo map[net.Co
 							sendEvent(EventPayload{
 								Event:     "step",
 								Command:   session.CommandString,
-								CommandId: commandId,
+								CommandId: session.CommandId,
 								Shell:     shell,
 								Username:  username,
 								Directory: directory,
