@@ -2,9 +2,9 @@
   description = "Terminal session recorder";
 
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
-    rust-overlay.url = github:oxalica/rust-overlay;
-    flake-parts.url = github:hercules-ci/flake-parts;
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
   outputs = inputs @ {
