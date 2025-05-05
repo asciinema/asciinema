@@ -31,7 +31,7 @@
           };
         };
 
-        devShells = pkgs.callPackages ./shell.nix {inherit packageToml self';};
+        devShells = pkgs.callPackages ./shell.nix {inherit pkgs packageToml self';};
 
         packages.default = pkgs.callPackage ./default.nix {
           inherit packageToml;

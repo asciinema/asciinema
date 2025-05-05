@@ -1,5 +1,6 @@
 {
   self',
+  pkgs,
   packageToml,
   rust-bin,
   mkShell,
@@ -20,6 +21,8 @@ let
           };
         })
       ];
+
+      buildInputs = [ pkgs.bashInteractive ];
 
       env.RUST_BACKTRACE = 1;
     };
