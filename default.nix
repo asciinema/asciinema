@@ -11,25 +11,25 @@
 (makeRustPlatform {
   cargo = rust;
   rustc = rust;
-})
-.buildRustPackage {
-  pname = packageToml.name;
-  inherit (packageToml) version;
+}).buildRustPackage
+  {
+    pname = packageToml.name;
+    inherit (packageToml) version;
 
-  src = builtins.path {
-    path = ./.;
-    inherit (packageToml) name;
-  };
+    src = builtins.path {
+      path = ./.;
+      inherit (packageToml) name;
+    };
 
-  dontUseCargoParallelTests = true;
+    dontUseCargoParallelTests = true;
 
-  cargoLock.lockFile = ./Cargo.lock;
+    cargoLock.lockFile = ./Cargo.lock;
 
-  nativeBuildInputs = [rust];
-  buildInputs = lib.optional stdenv.isDarwin [
-    libiconv
-    darwin.apple_sdk.frameworks.Foundation
-  ];
+    nativeBuildInputs = [ rust ];
+    buildInputs = lib.optional stdenv.isDarwin [
+      libiconv
+      darwin.apple_sdk.frameworks.Foundation
+    ];
 
-  nativeCheckInputs = [python3];
-}
+    nativeCheckInputs = [ python3 ];
+  }
