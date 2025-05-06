@@ -228,14 +228,16 @@ pub struct Cat {
 
 #[derive(Debug, Args)]
 pub struct Convert {
+    /// File to convert from, in asciicast format (use - for stdin)
     #[arg(value_name = "INPUT_FILENAME_OR_URL")]
     pub input_filename: String,
 
+    /// File to convert to (use - for stdout)
     pub output_filename: String,
 
     /// Output file format [default: asciicast-v3]
-    #[arg(short, long, value_enum)]
-    pub format: Option<Format>,
+    #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
+    pub output_format: Option<Format>,
 
     /// Overwrite target file if it already exists
     #[arg(long)]

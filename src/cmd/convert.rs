@@ -13,16 +13,17 @@ use crate::util;
 
 impl cli::Convert {
     pub fn run(self, _config: &Config) -> Result<()> {
-        let path = util::get_local_path(&self.input_filename)?;
-        let cast = asciicast::open_from_path(&*path)?;
+        let input_path = self.get_input_path()?;
+        let output_path = self.get_output_path();
+        let cast = asciicast::open_from_path(&*input_path)?;
         let mut encoder = self.get_encoder();
-        let mut file = self.open_file()?;
+        let mut output_file = self.open_output_file(output_path)?;
 
-        encoder.encode_to_file(cast, &mut file)
+        encoder.encode_to_file(cast, &mut output_file)
     }
 
     fn get_encoder(&self) -> Box<dyn encoder::Encoder> {
-        let format = self.format.unwrap_or_else(|| {
+        let format = self.output_format.unwrap_or_else(|| {
             if self.output_filename.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
@@ -38,22 +39,38 @@ impl cli::Convert {
         }
     }
 
-    fn open_file(&self) -> Result<fs::File> {
-        let overwrite = self.get_mode()?;
+    fn get_input_path(&self) -> Result<Box<dyn AsRef<Path>>> {
+        if self.input_filename == "-" {
+            Ok(Box::new(Path::new("/dev/stdin")))
+        } else {
+            util::get_local_path(&self.input_filename)
+        }
+    }
+
+    fn get_output_path(&self) -> String {
+        if self.output_filename == "-" {
+            "/dev/stdout".to_owned()
+        } else {
+            self.output_filename.clone()
+        }
+    }
+
+    fn open_output_file(&self, path: String) -> Result<fs::File> {
+        let overwrite = self.get_mode(&path)?;
 
         let file = fs::OpenOptions::new()
             .write(true)
             .create(overwrite)
             .create_new(!overwrite)
             .truncate(overwrite)
-            .open(&self.output_filename)?;
+            .open(&path)?;
 
         Ok(file)
     }
 
-    fn get_mode(&self) -> Result<bool> {
+    fn get_mode(&self, path: &str) -> Result<bool> {
         let mut overwrite = self.overwrite;
-        let path = Path::new(&self.output_filename);
+        let path = Path::new(path);
 
         if path.exists() {
             let metadata = fs::metadata(path)?;
