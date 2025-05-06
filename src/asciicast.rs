@@ -116,11 +116,11 @@ impl Encoder for V3Encoder {
 }
 
 pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Asciicast<'static>> {
-    fs::File::open(path)
+    fs::File::open(&path)
         .map(io::BufReader::new)
         .map_err(|e| anyhow!(e))
         .and_then(open)
-        .map_err(|e| anyhow!("can't open asciicast file: {e}"))
+        .map_err(|e| anyhow!("can't open {}: {}", path.as_ref().to_string_lossy(), e))
 }
 
 pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Asciicast<'a>> {
