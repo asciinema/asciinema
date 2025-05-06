@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::asciicast;
 use crate::cli;
@@ -9,10 +9,20 @@ use crate::config::Config;
 
 impl cli::Cat {
     pub fn run(self, _config: &Config) -> Result<()> {
-        let mut encoder = asciicast::V2Encoder::new(0);
         let mut stdout = io::stdout();
         let mut time_offset: u64 = 0;
         let mut first = true;
+
+        let casts = self
+            .filename
+            .iter()
+            .map(asciicast::open_from_path)
+            .collect::<Result<Vec<_>>>()?;
+
+        let version = casts[0].version;
+
+        let mut encoder = asciicast::encoder(version)
+            .ok_or(anyhow!("asciicast v{version} files can't be concatenated"))?;
 
         for path in self.filename.iter() {
             let recording = asciicast::open_from_path(path)?;

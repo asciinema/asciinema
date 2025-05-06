@@ -4,6 +4,7 @@ mod v2;
 mod v3;
 
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -15,8 +16,16 @@ pub use v2::V2Encoder;
 pub use v3::V3Encoder;
 
 pub struct Asciicast<'a> {
+    pub version: Version,
     pub header: Header,
     pub events: Box<dyn Iterator<Item = Result<Event>> + 'a>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Version {
+    One,
+    Two,
+    Three,
 }
 
 pub struct Header {
@@ -45,6 +54,30 @@ pub enum EventData {
     Other(char, String),
 }
 
+pub trait Encoder {
+    fn header(&mut self, header: &Header) -> Vec<u8>;
+    fn event(&mut self, event: &Event) -> Vec<u8>;
+}
+
+impl PartialEq<u8> for Version {
+    fn eq(&self, other: &u8) -> bool {
+        matches!(
+            (self, other),
+            (Version::One, 1) | (Version::Two, 2) | (Version::Three, 3)
+        )
+    }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Version::One => write!(f, "1"),
+            Version::Two => write!(f, "2"),
+            Version::Three => write!(f, "3"),
+        }
+    }
+}
+
 impl Default for Header {
     fn default() -> Self {
         Self {
@@ -59,6 +92,26 @@ impl Default for Header {
             title: None,
             env: None,
         }
+    }
+}
+
+impl Encoder for V2Encoder {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
+        self.header(header)
+    }
+
+    fn event(&mut self, event: &Event) -> Vec<u8> {
+        self.event(event)
+    }
+}
+
+impl Encoder for V3Encoder {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
+        self.header(header)
+    }
+
+    fn event(&mut self, event: &Event) -> Vec<u8> {
+        self.event(event)
     }
 }
 
@@ -161,6 +214,14 @@ pub fn accelerate(
     })
 }
 
+pub fn encoder(version: Version) -> Option<Box<dyn Encoder>> {
+    match version {
+        Version::One => None,
+        Version::Two => Some(Box::new(V2Encoder::new(0))),
+        Version::Three => Some(Box::new(V3Encoder::new())),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Asciicast, Event, EventData, Header, V2Encoder};
@@ -171,11 +232,15 @@ mod tests {
 
     #[test]
     fn open_v1_minimal() {
-        let Asciicast { header, events } =
-            super::open_from_path("tests/casts/minimal.json").unwrap();
+        let Asciicast {
+            version,
+            header,
+            events,
+        } = super::open_from_path("tests/casts/minimal.json").unwrap();
 
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
+        assert_eq!(version, 1);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert!(header.term_theme.is_none());
 
@@ -185,9 +250,14 @@ mod tests {
 
     #[test]
     fn open_v1_full() {
-        let Asciicast { header, events } = super::open_from_path("tests/casts/full.json").unwrap();
+        let Asciicast {
+            version,
+            header,
+            events,
+        } = super::open_from_path("tests/casts/full.json").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
+        assert_eq!(version, 1);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
 
         assert_eq!(events[0].time, 1);
@@ -202,11 +272,15 @@ mod tests {
 
     #[test]
     fn open_v2_minimal() {
-        let Asciicast { header, events } =
-            super::open_from_path("tests/casts/minimal-v2.cast").unwrap();
+        let Asciicast {
+            version,
+            header,
+            events,
+        } = super::open_from_path("tests/casts/minimal-v2.cast").unwrap();
 
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
+        assert_eq!(version, 2);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert!(header.term_theme.is_none());
 
@@ -216,11 +290,15 @@ mod tests {
 
     #[test]
     fn open_v2_full() {
-        let Asciicast { header, events } =
-            super::open_from_path("tests/casts/full-v2.cast").unwrap();
+        let Asciicast {
+            version,
+            header,
+            events,
+        } = super::open_from_path("tests/casts/full-v2.cast").unwrap();
         let events = events.take(5).collect::<Result<Vec<Event>>>().unwrap();
         let theme = header.term_theme.unwrap();
 
+        assert_eq!(version, 2);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert_eq!(header.timestamp, Some(1509091818));
         assert_eq!(theme.fg, RGB8::new(0, 0, 0));
@@ -248,11 +326,15 @@ mod tests {
 
     #[test]
     fn open_v3_minimal() {
-        let Asciicast { header, events } =
-            super::open_from_path("tests/casts/minimal-v3.cast").unwrap();
+        let Asciicast {
+            version,
+            header,
+            events,
+        } = super::open_from_path("tests/casts/minimal-v3.cast").unwrap();
 
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
+        assert_eq!(version, 3);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert!(header.term_theme.is_none());
 
@@ -262,11 +344,15 @@ mod tests {
 
     #[test]
     fn open_v3_full() {
-        let Asciicast { header, events } =
-            super::open_from_path("tests/casts/full-v3.cast").unwrap();
+        let Asciicast {
+            version,
+            header,
+            events,
+        } = super::open_from_path("tests/casts/full-v3.cast").unwrap();
         let events = events.take(5).collect::<Result<Vec<Event>>>().unwrap();
         let theme = header.term_theme.unwrap();
 
+        assert_eq!(version, 3);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert_eq!(header.timestamp, Some(1509091818));
         assert_eq!(theme.fg, RGB8::new(0, 0, 0));

@@ -7,8 +7,7 @@ use std::io::Write;
 
 use anyhow::Result;
 
-use crate::asciicast::Event;
-use crate::asciicast::Header;
+use crate::asciicast::{Event, Header};
 pub use asciicast::{AsciicastV2Encoder, AsciicastV3Encoder};
 pub use raw::RawEncoder;
 pub use txt::TextEncoder;

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{bail, Result};
 use serde::Deserialize;
 
-use super::{Asciicast, Event, Header};
+use super::{Asciicast, Event, Header, Version};
 use crate::asciicast::util::deserialize_time;
 
 #[derive(Debug, Deserialize)]
@@ -57,5 +57,9 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         Some(Ok(Event::output(time, event.data)))
     }));
 
-    Ok(Asciicast { header, events })
+    Ok(Asciicast {
+        version: Version::One,
+        header,
+        events,
+    })
 }

@@ -5,7 +5,7 @@ use std::io;
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
 
-use super::{util, Asciicast, Event, EventData, Header};
+use super::{util, Asciicast, Event, EventData, Header, Version};
 use crate::tty::TtyTheme;
 
 #[derive(Deserialize)]
@@ -87,7 +87,11 @@ impl Parser {
 
         let events = Box::new(lines.filter_map(parse_line));
 
-        Asciicast { header, events }
+        Asciicast {
+            version: Version::Two,
+            header,
+            events,
+        }
     }
 }
 
