@@ -222,7 +222,7 @@ pub struct Session {
 
 #[derive(Debug, Args)]
 pub struct Cat {
-    #[arg(required = true)]
+    #[arg(required = true, num_args = 2..)]
     pub filename: Vec<String>,
 }
 
