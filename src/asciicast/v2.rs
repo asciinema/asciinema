@@ -371,24 +371,24 @@ impl From<&Header> for V2Header {
 }
 
 impl From<&TtyTheme> for V2Theme {
-    fn from(theme: &TtyTheme) -> Self {
-        let palette = theme.palette.iter().copied().map(RGB8).collect();
+    fn from(tty_theme: &TtyTheme) -> Self {
+        let palette = tty_theme.palette.iter().copied().map(RGB8).collect();
 
         V2Theme {
-            fg: RGB8(theme.fg),
-            bg: RGB8(theme.bg),
+            fg: RGB8(tty_theme.fg),
+            bg: RGB8(tty_theme.bg),
             palette: V2Palette(palette),
         }
     }
 }
 
 impl From<&V2Theme> for TtyTheme {
-    fn from(theme: &V2Theme) -> Self {
-        let palette = theme.palette.0.iter().map(|c| c.0).collect();
+    fn from(tty_theme: &V2Theme) -> Self {
+        let palette = tty_theme.palette.0.iter().map(|c| c.0).collect();
 
         TtyTheme {
-            fg: theme.fg.0,
-            bg: theme.bg.0,
+            fg: tty_theme.fg.0,
+            bg: tty_theme.bg.0,
             palette,
         }
     }

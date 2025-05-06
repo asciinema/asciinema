@@ -23,7 +23,7 @@ pub trait OutputStarter {
         self: Box<Self>,
         time: SystemTime,
         tty_size: TtySize,
-        theme: Option<TtyTheme>,
+        tty_theme: Option<TtyTheme>,
     ) -> io::Result<Box<dyn Output>>;
 }
 

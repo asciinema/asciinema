@@ -336,7 +336,7 @@ mod tests {
         env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
         env.insert("TERM".to_owned(), "xterm256-color".to_owned());
 
-        let theme = TtyTheme {
+        let tty_theme = TtyTheme {
             fg: RGB8::new(0, 1, 2),
             bg: RGB8::new(0, 100, 200),
             palette: vec![
@@ -365,7 +365,7 @@ mod tests {
             command: Some("/bin/bash".to_owned()),
             title: Some("Demo".to_owned()),
             env: Some(env),
-            term_theme: Some(theme),
+            term_theme: Some(tty_theme),
             ..Default::default()
         };
 

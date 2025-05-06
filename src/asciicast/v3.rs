@@ -425,24 +425,24 @@ impl From<&Header> for V3Header {
 }
 
 impl From<&TtyTheme> for V3Theme {
-    fn from(theme: &TtyTheme) -> Self {
-        let palette = theme.palette.iter().copied().map(RGB8).collect();
+    fn from(tty_theme: &TtyTheme) -> Self {
+        let palette = tty_theme.palette.iter().copied().map(RGB8).collect();
 
         V3Theme {
-            fg: RGB8(theme.fg),
-            bg: RGB8(theme.bg),
+            fg: RGB8(tty_theme.fg),
+            bg: RGB8(tty_theme.bg),
             palette: V3Palette(palette),
         }
     }
 }
 
 impl From<&V3Theme> for TtyTheme {
-    fn from(theme: &V3Theme) -> Self {
-        let palette = theme.palette.0.iter().map(|c| c.0).collect();
+    fn from(tty_theme: &V3Theme) -> Self {
+        let palette = tty_theme.palette.0.iter().map(|c| c.0).collect();
 
         TtyTheme {
-            fg: theme.fg.0,
-            bg: theme.bg.0,
+            fg: tty_theme.fg.0,
+            bg: tty_theme.bg.0,
             palette,
         }
     }

@@ -25,7 +25,7 @@ use crate::tty::{Tty, TtySize, TtyTheme};
 type ExtraEnv = HashMap<String, String>;
 
 pub trait HandlerStarter<H: Handler> {
-    fn start(self, tty_size: TtySize, theme: Option<TtyTheme>) -> H;
+    fn start(self, tty_size: TtySize, tty_theme: Option<TtyTheme>) -> H;
 }
 
 pub trait Handler {
@@ -396,7 +396,7 @@ mod tests {
     }
 
     impl HandlerStarter<TestHandler> for TestHandlerStarter {
-        fn start(self, tty_size: TtySize, _theme: Option<TtyTheme>) -> TestHandler {
+        fn start(self, tty_size: TtySize, _tty_theme: Option<TtyTheme>) -> TestHandler {
             TestHandler {
                 tty_size,
                 output: Vec::new(),

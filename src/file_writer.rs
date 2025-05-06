@@ -35,7 +35,7 @@ impl session::OutputStarter for FileWriterStarter {
         mut self: Box<Self>,
         time: SystemTime,
         tty_size: TtySize,
-        theme: Option<TtyTheme>,
+        tty_theme: Option<TtyTheme>,
     ) -> io::Result<Box<dyn session::Output>> {
         let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
 
@@ -44,7 +44,7 @@ impl session::OutputStarter for FileWriterStarter {
             term_rows: tty_size.1,
             term_type: self.metadata.term_type,
             term_version: self.metadata.term_version,
-            term_theme: theme,
+            term_theme: tty_theme,
             timestamp: Some(timestamp),
             idle_time_limit: self.metadata.idle_time_limit,
             command: self.metadata.command.as_ref().cloned(),

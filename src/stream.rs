@@ -174,13 +174,13 @@ impl session::OutputStarter for OutputStarter {
         self: Box<Self>,
         _time: SystemTime,
         tty_size: TtySize,
-        theme: Option<TtyTheme>,
+        tty_theme: Option<TtyTheme>,
     ) -> io::Result<Box<dyn session::Output>> {
         let (stream_tx, stream_rx) = mpsc::unbounded_channel();
         let request_rx = self.request_rx;
 
         self.handle
-            .spawn(async move { run(tty_size, theme, stream_rx, request_rx).await });
+            .spawn(async move { run(tty_size, tty_theme, stream_rx, request_rx).await });
 
         Ok(Box::new(Output(stream_tx)))
     }
