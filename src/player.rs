@@ -35,19 +35,18 @@ pub fn play(
     idle_time_limit: Option<f64>,
     pause_on_markers: bool,
     keys: &KeyBindings,
-    enable_resize: bool,
+    auto_resize: bool,
 ) -> Result<bool> {
-    let initial_cols = recording.header.cols;
-    let initial_rows = recording.header.rows;
+    let initial_cols = recording.header.term_cols;
+    let initial_rows = recording.header.term_rows;
     let mut events = open_recording(recording, speed, idle_time_limit)?;
     let mut stdout = io::stdout();
     let mut epoch = Instant::now();
     let mut pause_elapsed_time: Option<u64> = None;
     let mut next_event = events.next().transpose()?;
 
-    // Send initial resize sequence if enabled and dimensions are available
-    if enable_resize {
-        send_resize_sequence(&mut stdout, initial_cols, initial_rows)?;
+    if auto_resize {
+        resize_terminal(&mut stdout, initial_cols, initial_rows)?;
     }
 
     while let Some(Event { time, data }) = &next_event {
@@ -69,9 +68,11 @@ pub fn play(
                             stdout.write_all(data.as_bytes())?;
                             stdout.flush()?;
                         }
-                        EventData::Resize(cols, rows) if enable_resize => {
-                            send_resize_sequence(&mut stdout, *cols, *rows)?;
+
+                        EventData::Resize(cols, rows) if auto_resize => {
+                            resize_terminal(&mut stdout, *cols, *rows)?;
                         }
+
                         _ => {}
                     }
 
@@ -90,8 +91,8 @@ pub fn play(
                                 break;
                             }
 
-                            EventData::Resize(cols, rows) if enable_resize => {
-                                send_resize_sequence(&mut stdout, cols, rows)?;
+                            EventData::Resize(cols, rows) if auto_resize => {
+                                resize_terminal(&mut stdout, cols, rows)?;
                             }
 
                             _ => {}
@@ -128,8 +129,8 @@ pub fn play(
                         stdout.write_all(data.as_bytes())?;
                     }
 
-                    EventData::Resize(cols, rows) if enable_resize => {
-                        send_resize_sequence(&mut stdout, *cols, *rows)?;
+                    EventData::Resize(cols, rows) if auto_resize => {
+                        resize_terminal(&mut stdout, *cols, *rows)?;
                     }
 
                     EventData::Marker(_) => {
@@ -151,10 +152,11 @@ pub fn play(
     Ok(true)
 }
 
-fn send_resize_sequence(stdout: &mut impl Write, cols: u16, rows: u16) -> io::Result<()> {
+fn resize_terminal(stdout: &mut impl Write, cols: u16, rows: u16) -> io::Result<()> {
     let resize_sequence = format!("\x1b[8;{};{}t", rows, cols);
     stdout.write_all(resize_sequence.as_bytes())?;
     stdout.flush()?;
+
     Ok(())
 }
 

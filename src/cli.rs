@@ -125,7 +125,7 @@ pub struct Play {
     #[arg(short = 'm', long)]
     pub pause_on_markers: bool,
 
-    /// Resize terminal window with control sequences.
+    /// Auto-resize terminal window to always match the original size (supported on some terminals)
     #[arg(short = 'r', long)]
     pub resize: bool,
 }
