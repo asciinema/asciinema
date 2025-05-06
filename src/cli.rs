@@ -51,7 +51,7 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct Record {
-    /// Output path - either a file or a directory path
+    /// Output file path
     pub output_path: String,
 
     /// Output file format [default: asciicast-v3]
@@ -66,7 +66,7 @@ pub struct Record {
     #[arg(long, short = 'I', alias = "stdin")]
     pub rec_input: bool,
 
-    /// List of env vars to capture [default: SHELL]
+    /// Comma-separated list of env vars to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -128,6 +128,14 @@ pub struct Play {
 
 #[derive(Debug, Args)]
 pub struct Stream {
+    /// Stream the session via a local HTTP server
+    #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
+    pub local: Option<SocketAddr>,
+
+    /// Stream the session via a remote asciinema server
+    #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
+    pub remote: Option<RelayTarget>,
+
     /// Command to start in the session [default: $SHELL]
     #[arg(short, long)]
     pub command: Option<String>,
@@ -136,17 +144,9 @@ pub struct Stream {
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
-    /// List of env vars to capture [default: SHELL]
+    /// Comma-separated list of env vars to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
-
-    /// Serve the stream with the built-in HTTP server
-    #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
-    pub serve: Option<SocketAddr>,
-
-    /// Relay the stream via an asciinema server
-    #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
-    pub relay: Option<RelayTarget>,
 
     /// Headless mode, i.e. don't use TTY for input/output
     #[arg(long)]
@@ -163,13 +163,21 @@ pub struct Stream {
 
 #[derive(Debug, Args)]
 pub struct Session {
-    /// Output path - either a file or a directory path
+    /// Save the session in a file
     #[arg(short, long, value_name = "PATH")]
     pub output_file: Option<String>,
 
     /// Output file format [default: asciicast-v3]
     #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
     pub output_format: Option<Format>,
+
+    /// Stream the session via a local HTTP server
+    #[arg(short = 'l', long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
+    pub stream_local: Option<SocketAddr>,
+
+    /// Stream the session via a remote asciinema server
+    #[arg(short = 'r', long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
+    pub stream_remote: Option<RelayTarget>,
 
     /// Command to start in the session [default: $SHELL]
     #[arg(short, long)]
@@ -179,7 +187,7 @@ pub struct Session {
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
-    /// List of env vars to capture [default: SHELL]
+    /// Comma-separated list of env vars to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -206,14 +214,6 @@ pub struct Session {
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
     pub tty_size: Option<(Option<u16>, Option<u16>)>,
-
-    /// Stream the session with the built-in HTTP server
-    #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
-    pub serve: Option<SocketAddr>,
-
-    /// Stream the session via an asciinema server
-    #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target)]
-    pub relay: Option<RelayTarget>,
 
     /// Log file path
     #[arg(long, value_name = "PATH")]

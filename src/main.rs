@@ -49,8 +49,8 @@ fn main() -> anyhow::Result<()> {
                 idle_time_limit: cmd.idle_time_limit,
                 headless: cmd.headless,
                 tty_size: cmd.tty_size,
-                serve: None,
-                relay: None,
+                stream_local: None,
+                stream_remote: None,
                 log_file: None,
             };
 
@@ -70,8 +70,8 @@ fn main() -> anyhow::Result<()> {
                 idle_time_limit: None,
                 headless: stream.headless,
                 tty_size: stream.tty_size,
-                serve: stream.serve,
-                relay: stream.relay,
+                stream_local: stream.local,
+                stream_remote: stream.remote,
                 log_file: stream.log_file,
             };
 

@@ -61,14 +61,14 @@ impl cli::Session {
             .transpose()?;
 
         let mut listener = self
-            .serve
+            .stream_local
             .take()
             .map(TcpListener::bind)
             .transpose()
             .context("cannot start listener")?;
 
         let mut relay = self
-            .relay
+            .stream_remote
             .take()
             .map(|target| get_relay(target, config, term_type, term_version, &env))
             .transpose()?;
