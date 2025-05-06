@@ -193,10 +193,10 @@ mod tests {
         assert_eq!(events[0].time, 1);
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
 
-        assert_eq!(events[1].time, 1000000);
+        assert_eq!(events[1].time, 10000001);
         assert!(matches!(events[1].data, EventData::Output(ref s) if s == "ółć"));
 
-        assert_eq!(events[2].time, 10500000);
+        assert_eq!(events[2].time, 10500001);
         assert!(matches!(events[2].data, EventData::Output(ref s) if s == "\r\n"));
     }
 

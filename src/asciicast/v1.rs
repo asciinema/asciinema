@@ -50,12 +50,12 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         env: asciicast.env.clone(),
     };
 
-    let events = Box::new(
-        asciicast
-            .stdout
-            .into_iter()
-            .map(|e| Ok(Event::output(e.time, e.data))),
-    );
+    let events = Box::new(asciicast.stdout.into_iter().scan(0, |prev_time, event| {
+        let time = *prev_time + event.time;
+        *prev_time = time;
+
+        Some(Ok(Event::output(time, event.data)))
+    }));
 
     Ok(Asciicast { header, events })
 }
