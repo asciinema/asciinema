@@ -4,6 +4,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
+use config::{self, Environment, File};
 use reqwest::Url;
 use serde::Deserialize;
 use uuid::Uuid;
@@ -97,14 +98,10 @@ impl Config {
             .set_default("cmd.stream.rec_input", false)?
             .set_default("cmd.session.rec_input", false)?
             .set_default("notifications.enabled", true)?
-            .add_source(config::File::with_name("/etc/asciinema/config.toml").required(false))
-            .add_source(
-                config::File::with_name(&user_defaults_path()?.to_string_lossy()).required(false),
-            )
-            .add_source(
-                config::File::with_name(&user_config_path()?.to_string_lossy()).required(false),
-            )
-            .add_source(config::Environment::with_prefix("asciinema").separator("_"));
+            .add_source(File::with_name("/etc/asciinema/config.toml").required(false))
+            .add_source(File::with_name(&user_defaults_path()?.to_string_lossy()).required(false))
+            .add_source(File::with_name(&user_config_path()?.to_string_lossy()).required(false))
+            .add_source(Environment::with_prefix("asciinema").separator("_"));
 
         if let Some(url) = server_url {
             config = config.set_override("server.url", Some(url))?;
@@ -209,11 +206,12 @@ impl Play {
 
 fn ask_for_server_url() -> Result<String> {
     println!("No asciinema server configured for this CLI.");
-    let mut rl = rustyline::DefaultEditor::new()?;
-    let url = rl.readline_with_initial(
+
+    let url = rustyline::DefaultEditor::new()?.readline_with_initial(
         "Enter the server URL to use by default: ",
         (DEFAULT_SERVER_URL, ""),
     )?;
+
     println!();
 
     Ok(url)
