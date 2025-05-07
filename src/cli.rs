@@ -91,8 +91,8 @@ pub struct Record {
     pub headless: bool,
 
     /// Override terminal size for the session
-    #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
-    pub tty_size: Option<(Option<u16>, Option<u16>)>,
+    #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
+    pub window_size: Option<(Option<u16>, Option<u16>)>,
 
     #[arg(long, hide = true)]
     pub cols: Option<u16>,
@@ -157,8 +157,8 @@ pub struct Stream {
     pub headless: bool,
 
     /// Override terminal size for the session
-    #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
-    pub tty_size: Option<(Option<u16>, Option<u16>)>,
+    #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
+    pub window_size: Option<(Option<u16>, Option<u16>)>,
 
     /// Log file path
     #[arg(long, value_name = "PATH")]
@@ -216,8 +216,8 @@ pub struct Session {
     pub headless: bool,
 
     /// Override terminal size for the session
-    #[arg(long, value_name = "COLSxROWS", value_parser = parse_tty_size)]
-    pub tty_size: Option<(Option<u16>, Option<u16>)>,
+    #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
+    pub window_size: Option<(Option<u16>, Option<u16>)>,
 
     /// Log file path
     #[arg(long, value_name = "PATH")]
@@ -272,7 +272,7 @@ pub enum RelayTarget {
     WsProducerUrl(url::Url),
 }
 
-fn parse_tty_size(s: &str) -> Result<(Option<u16>, Option<u16>), String> {
+fn parse_window_size(s: &str) -> Result<(Option<u16>, Option<u16>), String> {
     match s.split_once('x') {
         Some((cols, "")) => {
             let cols: u16 = cols.parse().map_err(|e: ParseIntError| e.to_string())?;

@@ -317,7 +317,7 @@ impl cli::Session {
     }
 
     fn get_tty(&self, quiet: bool) -> Result<impl Tty> {
-        let (cols, rows) = self.tty_size.unwrap_or((None, None));
+        let (cols, rows) = self.window_size.unwrap_or((None, None));
 
         if self.headless {
             Ok(FixedSizeTty::new(NullTty::open()?, cols, rows))
