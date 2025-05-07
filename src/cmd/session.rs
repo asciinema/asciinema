@@ -33,17 +33,17 @@ use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 use crate::util;
 
 impl cli::Session {
-    pub fn run(mut self, config: &Config, cmd_config: &config::Session) -> Result<()> {
+    pub fn run(mut self, config: &Config) -> Result<()> {
         locale::check_utf8_locale()?;
 
         let runtime = Runtime::new()?;
-        let command = self.get_command(cmd_config);
-        let keys = get_key_bindings(cmd_config)?;
+        let command = self.get_command(&config.recording);
+        let keys = get_key_bindings(&config.recording)?;
         let notifier = notifier::threaded(get_notifier(config));
-        let record_input = self.rec_input || cmd_config.rec_input;
+        let record_input = self.rec_input || config.recording.rec_input;
         let term_type = self.get_term_type();
         let term_version = self.get_term_version()?;
-        let env = capture_env(self.rec_env.take(), cmd_config);
+        let env = capture_env(self.rec_env.take(), &config.recording);
 
         let file_writer = self
             .output_file
@@ -51,7 +51,7 @@ impl cli::Session {
             .map(|path| {
                 self.get_file_writer(
                     path,
-                    cmd_config,
+                    &config.recording,
                     term_type.clone(),
                     term_version.clone(),
                     &env,
@@ -181,7 +181,7 @@ impl cli::Session {
     fn get_file_writer<N: Notifier + 'static>(
         &self,
         path: &str,
-        config: &config::Session,
+        config: &config::Recording,
         term_type: Option<String>,
         term_version: Option<String>,
         env: &HashMap<String, String>,
@@ -292,7 +292,7 @@ impl cli::Session {
         self.get_tty(false).map(|tty| tty.get_version())
     }
 
-    fn get_command(&self, config: &config::Session) -> Option<String> {
+    fn get_command(&self, config: &config::Recording) -> Option<String> {
         self.command.as_ref().cloned().or(config.command.clone())
     }
 
@@ -301,7 +301,7 @@ impl cli::Session {
         term_type: Option<String>,
         term_version: Option<String>,
         env: &HashMap<String, String>,
-        config: &config::Session,
+        config: &config::Recording,
     ) -> Metadata {
         let idle_time_limit = self.idle_time_limit.or(config.idle_time_limit);
         let command = self.get_command(config);
@@ -431,7 +431,7 @@ fn build_producer_url(
     Ok(url)
 }
 
-fn get_key_bindings(config: &config::Session) -> Result<KeyBindings> {
+fn get_key_bindings(config: &config::Recording) -> Result<KeyBindings> {
     let mut keys = KeyBindings::default();
 
     if let Some(key) = config.prefix_key()? {
@@ -449,7 +449,7 @@ fn get_key_bindings(config: &config::Session) -> Result<KeyBindings> {
     Ok(keys)
 }
 
-fn capture_env(var_names: Option<String>, config: &config::Session) -> HashMap<String, String> {
+fn capture_env(var_names: Option<String>, config: &config::Recording) -> HashMap<String, String> {
     let var_names = var_names
         .or(config.rec_env.clone())
         .unwrap_or(String::from("SHELL"));

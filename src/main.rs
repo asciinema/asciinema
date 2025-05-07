@@ -54,7 +54,7 @@ fn main() -> anyhow::Result<()> {
                 log_file: None,
             };
 
-            cmd.run(&config, &config.cmd_rec())
+            cmd.run(&config)
         }
 
         Commands::Stream(stream) => {
@@ -75,10 +75,10 @@ fn main() -> anyhow::Result<()> {
                 log_file: stream.log_file,
             };
 
-            cmd.run(&config, &config.cmd_stream())
+            cmd.run(&config)
         }
 
-        Commands::Session(cmd) => cmd.run(&config, &config.cmd_session()),
+        Commands::Session(cmd) => cmd.run(&config),
         Commands::Play(cmd) => cmd.run(&config),
         Commands::Cat(cmd) => cmd.run(&config),
         Commands::Convert(cmd) => cmd.run(&config),

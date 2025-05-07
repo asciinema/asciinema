@@ -10,14 +10,13 @@ use crate::util;
 
 impl cli::Play {
     pub fn run(self, config: &Config) -> Result<()> {
-        let cmd_config = config.cmd_play();
-        let speed = self.speed.or(cmd_config.speed).unwrap_or(1.0);
-        let idle_time_limit = self.idle_time_limit.or(cmd_config.idle_time_limit);
+        let speed = self.speed.or(config.playback.speed).unwrap_or(1.0);
+        let idle_time_limit = self.idle_time_limit.or(config.playback.idle_time_limit);
 
         status::info!("Replaying session from {}", self.filename);
 
         let path = util::get_local_path(&self.filename)?;
-        let keys = get_key_bindings(&cmd_config)?;
+        let keys = get_key_bindings(&config.playback)?;
 
         let ended = loop {
             let recording = asciicast::open_from_path(&*path)?;
@@ -48,7 +47,7 @@ impl cli::Play {
     }
 }
 
-fn get_key_bindings(config: &config::Play) -> Result<KeyBindings> {
+fn get_key_bindings(config: &config::Playback) -> Result<KeyBindings> {
     let mut keys = KeyBindings::default();
 
     if let Some(key) = config.pause_key()? {

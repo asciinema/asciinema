@@ -18,7 +18,8 @@ pub type Key = Option<Vec<u8>>;
 #[allow(unused)]
 pub struct Config {
     server: Server,
-    cmd: Cmd,
+    pub recording: Recording,
+    pub playback: Playback,
     pub notifications: Notifications,
 }
 
@@ -28,30 +29,9 @@ pub struct Server {
     url: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-#[allow(unused)]
-pub struct Cmd {
-    rec: Rec,
-    play: Play,
-    stream: Stream,
-    session: Session,
-}
-
 #[derive(Debug, Clone, Deserialize, Default)]
 #[allow(unused)]
-pub struct Session {
-    pub command: Option<String>,
-    pub rec_input: bool,
-    pub rec_env: Option<String>,
-    pub idle_time_limit: Option<f64>,
-    pub prefix_key: Option<String>,
-    pub pause_key: Option<String>,
-    pub add_marker_key: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Default)]
-#[allow(unused)]
-pub struct Rec {
+pub struct Recording {
     pub command: Option<String>,
     pub rec_input: bool,
     pub rec_env: Option<String>,
@@ -63,23 +43,12 @@ pub struct Rec {
 
 #[derive(Debug, Clone, Deserialize)]
 #[allow(unused)]
-pub struct Play {
+pub struct Playback {
     pub speed: Option<f64>,
     pub idle_time_limit: Option<f64>,
     pub pause_key: Option<String>,
     pub step_key: Option<String>,
     pub next_marker_key: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, Default)]
-#[allow(unused)]
-pub struct Stream {
-    pub command: Option<String>,
-    pub rec_input: bool,
-    pub rec_env: Option<String>,
-    pub prefix_key: Option<String>,
-    pub pause_key: Option<String>,
-    pub add_marker_key: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -93,10 +62,8 @@ impl Config {
     pub fn new(server_url: Option<String>) -> Result<Self> {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
-            .set_default("cmd.rec.rec_input", false)?
-            .set_default("cmd.play.speed", None::<Option<f64>>)?
-            .set_default("cmd.stream.rec_input", false)?
-            .set_default("cmd.session.rec_input", false)?
+            .set_default("playback.speed", None::<Option<f64>>)?
+            .set_default("recording.rec_input", false)?
             .set_default("notifications.enabled", true)?
             .add_source(File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(File::with_name(&user_defaults_path()?.to_string_lossy()).required(false))
@@ -142,41 +109,9 @@ impl Config {
             Ok(id)
         }
     }
-
-    pub fn cmd_rec(&self) -> Session {
-        Session {
-            command: self.cmd.rec.command.clone(),
-            rec_input: self.cmd.rec.rec_input,
-            rec_env: self.cmd.rec.rec_env.clone(),
-            idle_time_limit: self.cmd.rec.idle_time_limit,
-            prefix_key: self.cmd.rec.prefix_key.clone(),
-            pause_key: self.cmd.rec.pause_key.clone(),
-            add_marker_key: self.cmd.rec.add_marker_key.clone(),
-        }
-    }
-
-    pub fn cmd_stream(&self) -> Session {
-        Session {
-            command: self.cmd.stream.command.clone(),
-            rec_input: self.cmd.stream.rec_input,
-            rec_env: self.cmd.stream.rec_env.clone(),
-            idle_time_limit: None,
-            prefix_key: self.cmd.stream.prefix_key.clone(),
-            pause_key: self.cmd.stream.pause_key.clone(),
-            add_marker_key: self.cmd.stream.add_marker_key.clone(),
-        }
-    }
-
-    pub fn cmd_session(&self) -> Session {
-        self.cmd.session.clone()
-    }
-
-    pub fn cmd_play(&self) -> Play {
-        self.cmd.play.clone()
-    }
 }
 
-impl Session {
+impl Recording {
     pub fn prefix_key(&self) -> Result<Option<Key>> {
         self.prefix_key.as_ref().map(parse_key).transpose()
     }
@@ -190,7 +125,7 @@ impl Session {
     }
 }
 
-impl Play {
+impl Playback {
     pub fn pause_key(&self) -> Result<Option<Key>> {
         self.pause_key.as_ref().map(parse_key).transpose()
     }
