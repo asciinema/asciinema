@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::num::ParseIntError;
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 
 pub const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:8080";
 
@@ -131,6 +131,7 @@ pub struct Play {
 }
 
 #[derive(Debug, Args)]
+#[clap(group(ArgGroup::new("mode").args(&["local", "remote"]).multiple(true).required(true)))]
 pub struct Stream {
     /// Stream the session via a local HTTP server
     #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1)]
