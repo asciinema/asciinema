@@ -38,7 +38,7 @@
   </style>
 </head>
 <body>
-  <script src="asciinema-player.min.js"></script>
+  <script src="asciinema-player-ui.min.js"></script>
 
   <script>
     const loc = window.location;
@@ -70,7 +70,7 @@
 
     console.debug('initializing the player', { src, opts });
 
-    window.player = AsciinemaPlayer.create(src, document.body, opts);
+    window.player = AsciinemaPlayer.create(src, document.body, 'asciinema-player-worker.min.js', opts);
 
     window.player.addEventListener('reset', () => {
       const el = window.player.el.getElementsByClassName('ap-player')[0];
