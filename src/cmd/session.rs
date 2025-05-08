@@ -16,7 +16,7 @@ use tracing_subscriber::EnvFilter;
 use url::{form_urlencoded, Url};
 
 use crate::api;
-use crate::asciicast;
+use crate::asciicast::{self, Version};
 use crate::cli::{self, Format, RelayTarget};
 use crate::config::{self, Config};
 use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, RawEncoder, TextEncoder};
@@ -187,14 +187,6 @@ impl cli::Session {
         env: &HashMap<String, String>,
         notifier: N,
     ) -> Result<FileWriterStarter> {
-        let format = self.output_format.unwrap_or_else(|| {
-            if path.to_lowercase().ends_with(".txt") {
-                Format::Txt
-            } else {
-                Format::AsciicastV3
-            }
-        });
-
         let mut overwrite = self.overwrite;
         let mut append = self.append;
         let path = Path::new(path);
@@ -214,6 +206,24 @@ impl cli::Session {
             append = false;
         }
 
+        let format = self.output_format.map(Ok).unwrap_or_else(|| {
+            if path.extension().is_some_and(|ext| ext == "txt") {
+                Ok(Format::Txt)
+            } else if append {
+                match asciicast::open_from_path(path) {
+                    Ok(cast) => match cast.version {
+                        Version::One => bail!("appending to asciicast v1 files is not supported"),
+                        Version::Two => Ok(Format::AsciicastV2),
+                        Version::Three => Ok(Format::AsciicastV3),
+                    },
+
+                    Err(e) => bail!("can't append: {e}"),
+                }
+            } else {
+                Ok(Format::AsciicastV3)
+            }
+        })?;
+
         let file = OpenOptions::new()
             .write(true)
             .append(append)
@@ -221,12 +231,6 @@ impl cli::Session {
             .create_new(!overwrite && !append)
             .truncate(overwrite)
             .open(path)?;
-
-        let time_offset = if append && format == Format::AsciicastV2 {
-            asciicast::get_duration(path)?
-        } else {
-            0
-        };
 
         let metadata = self.build_asciicast_metadata(term_type, term_version, env, config);
         let notifier = Box::new(notifier);
@@ -245,6 +249,12 @@ impl cli::Session {
             }
 
             Format::AsciicastV2 => {
+                let time_offset = if append {
+                    asciicast::get_duration(path)?
+                } else {
+                    0
+                };
+
                 let writer = Box::new(LineWriter::new(file));
                 let encoder = Box::new(AsciicastV2Encoder::new(append, time_offset));
 
