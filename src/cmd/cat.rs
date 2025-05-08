@@ -3,26 +3,17 @@ use std::io::Write;
 
 use anyhow::{anyhow, Result};
 
-use crate::asciicast;
+use crate::asciicast::{self, Asciicast, Encoder, Version};
 use crate::cli;
 use crate::config::Config;
 
 impl cli::Cat {
     pub fn run(self, _config: &Config) -> Result<()> {
         let mut stdout = io::stdout();
+        let casts = self.open_input_files()?;
+        let mut encoder = self.get_encoder(casts[0].version)?;
         let mut time_offset: u64 = 0;
         let mut first = true;
-
-        let casts = self
-            .filename
-            .iter()
-            .map(asciicast::open_from_path)
-            .collect::<Result<Vec<_>>>()?;
-
-        let version = casts[0].version;
-
-        let mut encoder = asciicast::encoder(version)
-            .ok_or(anyhow!("asciicast v{version} files can't be concatenated"))?;
 
         for cast in casts.into_iter() {
             let mut time = time_offset;
@@ -43,5 +34,17 @@ impl cli::Cat {
         }
 
         Ok(())
+    }
+
+    fn open_input_files(&self) -> Result<Vec<Asciicast>> {
+        self.filename
+            .iter()
+            .map(asciicast::open_from_path)
+            .collect()
+    }
+
+    fn get_encoder(&self, version: Version) -> Result<Box<dyn Encoder>> {
+        asciicast::encoder(version)
+            .ok_or(anyhow!("asciicast v{version} files can't be concatenated"))
     }
 }
