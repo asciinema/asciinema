@@ -24,16 +24,15 @@ impl cli::Cat {
         let mut encoder = asciicast::encoder(version)
             .ok_or(anyhow!("asciicast v{version} files can't be concatenated"))?;
 
-        for path in self.filename.iter() {
-            let recording = asciicast::open_from_path(path)?;
+        for cast in casts.into_iter() {
             let mut time = time_offset;
 
             if first {
-                stdout.write_all(&encoder.header(&recording.header))?;
+                stdout.write_all(&encoder.header(&cast.header))?;
                 first = false;
             }
 
-            for event in recording.events {
+            for event in cast.events {
                 let mut event = event?;
                 time = time_offset + event.time;
                 event.time = time;
