@@ -140,7 +140,7 @@ impl cli::Session {
         }
 
         if outputs.is_empty() {
-            status::warning!("No outputs enabled, consider using -o, -s, or -r");
+            status::warning!("No outputs enabled, consider using -o, -l, or -r");
         }
 
         if command.is_none() {
