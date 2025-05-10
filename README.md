@@ -26,8 +26,7 @@ Notable features:
   and
   [replaying](https://docs.asciinema.org/manual/cli/usage/#asciinema-play-filename)
   of sessions inside a terminal,
-* live streaming of terminal sessions, with local HTTP server mode, and a relay
-  forwarding mode,
+* live streaming of terminal sessions, via local HTTP server, and via remote asciinema server,
 * [light-weight recording
   format](https://docs.asciinema.org/manual/asciicast/v2/), which is highly
   compressible (down to 15% of the original size e.g. with `zstd` or `gzip`),
@@ -44,13 +43,13 @@ asciinema rec demo.cast
 To stream a session via built-in HTTP server run:
 
 ```sh
-asciinema stream --serve
+asciinema stream --local
 ```
 
 To stream a session via a relay (asciinema server) run:
 
 ```sh
-asciinema stream --relay
+asciinema stream --remote
 ```
 
 Check out the [Getting started
