@@ -3,15 +3,10 @@ use std::io;
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd, OwnedFd};
 
 use anyhow::Result;
-use nix::{
-    errno::Errno,
-    libc, pty,
-    sys::{
-        select::{select, FdSet},
-        time::TimeVal,
-    },
-    unistd,
-};
+use nix::errno::Errno;
+use nix::sys::select::{select, FdSet};
+use nix::sys::time::TimeVal;
+use nix::{libc, pty, unistd};
 use rgb::RGB8;
 use termion::raw::{IntoRawMode, RawTerminal};
 
