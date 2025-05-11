@@ -1,10 +1,8 @@
-use std::fmt::Write;
 use std::path::{Path, PathBuf};
 use std::{io, thread};
 
 use anyhow::{anyhow, bail, Result};
 use reqwest::Url;
-use sha2::Digest;
 use tempfile::NamedTempFile;
 
 pub fn get_local_path(filename: &str) -> Result<Box<dyn AsRef<Path>>> {
@@ -116,20 +114,6 @@ impl Utf8Decoder {
 
         output
     }
-}
-
-pub fn sha2_digest(s: &str) -> String {
-    let mut hasher = sha2::Sha224::new();
-    hasher.update(s.as_bytes());
-
-    hasher
-        .finalize()
-        .as_slice()
-        .iter()
-        .fold(String::new(), |mut out, byte| {
-            let _ = write!(out, "{byte:02X}");
-            out
-        })
 }
 
 #[cfg(test)]

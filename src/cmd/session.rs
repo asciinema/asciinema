@@ -22,6 +22,7 @@ use crate::config::{self, Config};
 use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, RawEncoder, TextEncoder};
 use crate::file_writer::{FileWriterStarter, Metadata};
 use crate::forwarder;
+use crate::hash;
 use crate::locale;
 use crate::notifier::{self, Notifier, NullNotifier};
 use crate::pty;
@@ -30,7 +31,6 @@ use crate::session::{self, KeyBindings, SessionStarter};
 use crate::status;
 use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
-use crate::util;
 
 impl cli::Session {
     pub fn run(mut self, config: &Config) -> Result<()> {
@@ -375,7 +375,7 @@ struct Relay {
 
 impl Relay {
     fn id(&self) -> String {
-        util::sha2_digest(self.ws_producer_url.as_ref())
+        format!("{:x}", hash::fnv1a_128(self.ws_producer_url.as_ref()))
     }
 }
 
