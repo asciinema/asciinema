@@ -94,7 +94,6 @@ dependencies = [
  "clap_mangen",
  "config",
  "futures-util",
- "mime_guess",
  "nix 0.30.1",
  "reqwest",
  "rgb",

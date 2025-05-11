@@ -34,7 +34,6 @@ tokio = { version = "1.44.2", features = ["full"] }
 futures-util = "0.3.31"
 tokio-stream = { version = "0.1.17", features = ["sync"] }
 rust-embed = "8.2.0"
-mime_guess = "2.0.4"
 tower-http = { version = "0.6.2", features = ["trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

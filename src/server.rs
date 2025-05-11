@@ -1,6 +1,7 @@
 use std::future;
 use std::io;
 use std::net::SocketAddr;
+use std::path::Path;
 
 use axum::extract::connect_info::ConnectInfo;
 use axum::extract::ws::{self, CloseCode, CloseFrame, Message, WebSocket, WebSocketUpgrade};
@@ -71,12 +72,27 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 
     match Assets::get(path) {
         Some(content) => {
-            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            let mime = mime_from_path(path);
 
-            ([(header::CONTENT_TYPE, mime.as_ref())], content.data).into_response()
+            ([(header::CONTENT_TYPE, mime)], content.data).into_response()
         }
 
         None => (StatusCode::NOT_FOUND, "404").into_response(),
+    }
+}
+
+fn mime_from_path(path: &str) -> &str {
+    let lowercase_path = &path.to_lowercase();
+
+    let ext = Path::new(lowercase_path)
+        .extension()
+        .and_then(|e| e.to_str());
+
+    match ext {
+        Some("html") => "text/html",
+        Some("js") => "text/javascript",
+        Some("css") => "text/css",
+        Some(_) | None => "application/octet-stream",
     }
 }
 
