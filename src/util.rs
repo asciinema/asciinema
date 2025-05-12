@@ -5,6 +5,8 @@ use anyhow::{anyhow, bail, Result};
 use reqwest::Url;
 use tempfile::NamedTempFile;
 
+use crate::html;
+
 pub fn get_local_path(filename: &str) -> Result<Box<dyn AsRef<Path>>> {
     if filename.starts_with("https://") || filename.starts_with("http://") {
         match download_asciicast(filename) {
@@ -16,11 +18,8 @@ pub fn get_local_path(filename: &str) -> Result<Box<dyn AsRef<Path>>> {
     }
 }
 
-const LINK_REL_SELECTOR: &str = r#"link[rel="alternate"][type="application/x-asciicast"], link[rel="alternate"][type="application/asciicast+json"]"#;
-
 fn download_asciicast(url: &str) -> Result<NamedTempFile> {
     use reqwest::blocking::get;
-    use scraper::{Html, Selector};
 
     let mut response = get(Url::parse(url)?)?;
     response.error_for_status_ref()?;
@@ -33,12 +32,8 @@ fn download_asciicast(url: &str) -> Result<NamedTempFile> {
         .to_str()?;
 
     if content_type.starts_with("text/html") {
-        let document = Html::parse_document(&response.text()?);
-        let selector = Selector::parse(LINK_REL_SELECTOR).unwrap();
-        let mut elements = document.select(&selector);
-
-        if let Some(url) = elements.find_map(|e| e.value().attr("href")) {
-            let mut response = get(Url::parse(url)?)?;
+        if let Some(url) = html::extract_asciicast_link(&response.text()?) {
+            let mut response = get(Url::parse(&url)?)?;
             response.error_for_status_ref()?;
             io::copy(&mut response, &mut file)?;
 

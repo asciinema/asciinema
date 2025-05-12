@@ -8,6 +8,7 @@ mod encoder;
 mod file_writer;
 mod forwarder;
 mod hash;
+mod html;
 mod io;
 mod leb128;
 mod locale;
