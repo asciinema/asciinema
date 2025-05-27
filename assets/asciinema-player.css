@@ -2364,3 +2364,26 @@ span.ap-marker-container:hover span.ap-marker {
   --term-color-14: #34e2e2;
   --term-color-15: #eeeeec;
 }
+/*
+  Based on gruvbox: https://github.com/morhetz/gruvbox
+ */
+.asciinema-player-theme-gruvbox-dark {
+  --term-color-foreground: #fbf1c7;
+  --term-color-background: #282828;
+  --term-color-0: #282828;
+  --term-color-1: #cc241d;
+  --term-color-2: #98971a;
+  --term-color-3: #d79921;
+  --term-color-4: #458588;
+  --term-color-5: #b16286;
+  --term-color-6: #689d6a;
+  --term-color-7: #a89984;
+  --term-color-8: #7c6f65;
+  --term-color-9: #fb4934;
+  --term-color-10: #b8bb26;
+  --term-color-11: #fabd2f;
+  --term-color-12: #83a598;
+  --term-color-13: #d3869b;
+  --term-color-14: #8ec07c;
+  --term-color-15: #fbf1c7;
+}
