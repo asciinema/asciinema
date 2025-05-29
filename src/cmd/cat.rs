@@ -3,7 +3,7 @@ use std::io::Write;
 
 use anyhow::{anyhow, Result};
 
-use crate::asciicast::{self, Asciicast, Encoder, Version};
+use crate::asciicast::{self, Asciicast, Encoder, Event, EventData, Version};
 use crate::cli;
 
 impl cli::Cat {
@@ -13,20 +13,33 @@ impl cli::Cat {
         let mut encoder = self.get_encoder(casts[0].version)?;
         let mut time_offset: u64 = 0;
         let mut first = true;
+        let mut cols = 0;
+        let mut rows = 0;
 
         for cast in casts.into_iter() {
             let mut time = time_offset;
 
             if first {
-                stdout.write_all(&encoder.header(&cast.header))?;
                 first = false;
+                stdout.write_all(&encoder.header(&cast.header))?;
+            } else if cast.header.term_cols != cols || cast.header.term_rows != rows {
+                let event = Event::resize(time, (cast.header.term_cols, cast.header.term_rows));
+                stdout.write_all(&encoder.event(&event))?;
             }
+
+            cols = cast.header.term_cols;
+            rows = cast.header.term_rows;
 
             for event in cast.events {
                 let mut event = event?;
                 time = time_offset + event.time;
                 event.time = time;
                 stdout.write_all(&encoder.event(&event))?;
+
+                if let EventData::Resize(cols_, rows_) = event.data {
+                    cols = cols_;
+                    rows = rows_;
+                }
             }
 
             time_offset = time;
