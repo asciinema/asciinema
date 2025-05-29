@@ -149,6 +149,10 @@ pub struct Stream {
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
+    /// Title of the session
+    #[arg(short, long)]
+    pub title: Option<String>,
+
     /// Headless mode, i.e. don't use TTY for input/output
     #[arg(long)]
     pub headless: bool,
@@ -204,7 +208,7 @@ pub struct Session {
     #[arg(long, conflicts_with = "append")]
     pub overwrite: bool,
 
-    /// Title of the recording
+    /// Title of the session
     #[arg(short, long)]
     pub title: Option<String>,
 

@@ -67,7 +67,7 @@ fn main() -> anyhow::Result<()> {
                 overwrite: false,
                 command: stream.command,
                 rec_env: stream.rec_env,
-                title: None,
+                title: stream.title,
                 idle_time_limit: None,
                 headless: stream.headless,
                 window_size: stream.window_size,

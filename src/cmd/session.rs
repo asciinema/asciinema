@@ -71,7 +71,16 @@ impl cli::Session {
         let mut relay = self
             .stream_remote
             .take()
-            .map(|target| get_relay(target, &config, term_type, term_version, &env))
+            .map(|target| {
+                get_relay(
+                    target,
+                    &config,
+                    term_type,
+                    term_version,
+                    self.title.take(),
+                    &env,
+                )
+            })
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -385,13 +394,14 @@ fn get_relay(
     config: &Config,
     term_type: Option<String>,
     term_version: Option<String>,
+    title: Option<String>,
     env: &HashMap<String, String>,
 ) -> Result<Relay> {
     match target {
         RelayTarget::StreamId(id) => {
             let stream = api::create_user_stream(id, config)?;
             let ws_producer_url =
-                build_producer_url(&stream.ws_producer_url, term_type, term_version, env)?;
+                build_producer_url(&stream.ws_producer_url, term_type, term_version, title, env)?;
 
             Ok(Relay {
                 ws_producer_url,
@@ -410,6 +420,7 @@ fn build_producer_url(
     url: &str,
     term_type: Option<String>,
     term_version: Option<String>,
+    title: Option<String>,
     env: &HashMap<String, String>,
 ) -> Result<Url> {
     let mut url: Url = url.parse()?;
@@ -425,6 +436,10 @@ fn build_producer_url(
 
     if let Ok(shell) = env::var("SHELL") {
         params.push(("shell".to_string(), shell));
+    }
+
+    if let Some(title) = title {
+        params.push(("title".to_string(), title));
     }
 
     for (k, v) in env {
