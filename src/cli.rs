@@ -13,10 +13,6 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// asciinema server URL
-    #[arg(long, global = true, display_order = 100, value_name = "URL")]
-    pub server_url: Option<String>,
-
     /// Quiet mode, i.e. suppress diagnostic messages
     #[clap(short, long, global = true, display_order = 101)]
     pub quiet: bool,
@@ -164,6 +160,10 @@ pub struct Stream {
     /// Log file path
     #[arg(long, value_name = "PATH")]
     pub log_file: Option<PathBuf>,
+
+    /// asciinema server URL
+    #[arg(long, value_name = "URL")]
+    pub server_url: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -223,6 +223,10 @@ pub struct Session {
     /// Log file path
     #[arg(long, value_name = "PATH")]
     pub log_file: Option<PathBuf>,
+
+    /// asciinema server URL
+    #[arg(long, value_name = "URL")]
+    pub server_url: Option<String>,
 }
 
 #[derive(Debug, Args)]
@@ -253,10 +257,18 @@ pub struct Convert {
 pub struct Upload {
     /// Filename/path of asciicast to upload
     pub filename: String,
+
+    /// asciinema server URL
+    #[arg(long, value_name = "URL")]
+    pub server_url: Option<String>,
 }
 
 #[derive(Debug, Args)]
-pub struct Auth {}
+pub struct Auth {
+    /// asciinema server URL
+    #[arg(long, value_name = "URL")]
+    pub server_url: Option<String>,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
 pub enum Format {

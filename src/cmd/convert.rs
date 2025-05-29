@@ -5,14 +5,13 @@ use anyhow::{bail, Result};
 
 use crate::asciicast;
 use crate::cli::{self, Format};
-use crate::config::Config;
 use crate::encoder::{
     self, AsciicastV2Encoder, AsciicastV3Encoder, EncoderExt, RawEncoder, TextEncoder,
 };
 use crate::util;
 
 impl cli::Convert {
-    pub fn run(self, _config: &Config) -> Result<()> {
+    pub fn run(self) -> Result<()> {
         let input_path = self.get_input_path()?;
         let output_path = self.get_output_path();
         let cast = asciicast::open_from_path(&*input_path)?;

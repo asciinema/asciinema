@@ -5,10 +5,9 @@ use anyhow::{anyhow, Result};
 
 use crate::asciicast::{self, Asciicast, Encoder, Version};
 use crate::cli;
-use crate::config::Config;
 
 impl cli::Cat {
-    pub fn run(self, _config: &Config) -> Result<()> {
+    pub fn run(self) -> Result<()> {
         let mut stdout = io::stdout();
         let casts = self.open_input_files()?;
         let mut encoder = self.get_encoder(casts[0].version)?;

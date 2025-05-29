@@ -6,9 +6,10 @@ use crate::cli;
 use crate::config::Config;
 
 impl cli::Upload {
-    pub fn run(self, config: &Config) -> Result<()> {
+    pub fn run(self) -> Result<()> {
+        let config = Config::new(self.server_url.clone())?;
         let _ = asciicast::open_from_path(&self.filename)?;
-        let response = api::upload_asciicast(&self.filename, config)?;
+        let response = api::upload_asciicast(&self.filename, &config)?;
         println!("{}", response.message.unwrap_or(response.url));
 
         Ok(())

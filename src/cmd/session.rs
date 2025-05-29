@@ -33,13 +33,14 @@ use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 
 impl cli::Session {
-    pub fn run(mut self, config: &Config) -> Result<()> {
+    pub fn run(mut self) -> Result<()> {
         locale::check_utf8_locale()?;
 
+        let config = Config::new(self.server_url.clone())?;
         let runtime = Runtime::new()?;
         let command = self.get_command(&config.recording);
         let keys = get_key_bindings(&config.recording)?;
-        let notifier = notifier::threaded(get_notifier(config));
+        let notifier = notifier::threaded(get_notifier(&config));
         let record_input = self.rec_input || config.recording.rec_input;
         let term_type = self.get_term_type();
         let term_version = self.get_term_version()?;
@@ -70,7 +71,7 @@ impl cli::Session {
         let mut relay = self
             .stream_remote
             .take()
-            .map(|target| get_relay(target, config, term_type, term_version, &env))
+            .map(|target| get_relay(target, &config, term_type, term_version, &env))
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());

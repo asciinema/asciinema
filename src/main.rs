@@ -25,11 +25,9 @@ mod util;
 use clap::Parser;
 
 use self::cli::{Cli, Commands, Session};
-use self::config::Config;
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let config = Config::new(cli.server_url.clone())?;
 
     if cli.quiet {
         status::disable();
@@ -54,9 +52,10 @@ fn main() -> anyhow::Result<()> {
                 stream_local: None,
                 stream_remote: None,
                 log_file: None,
+                server_url: None,
             };
 
-            cmd.run(&config)
+            cmd.run()
         }
 
         Commands::Stream(stream) => {
@@ -75,16 +74,17 @@ fn main() -> anyhow::Result<()> {
                 stream_local: stream.local,
                 stream_remote: stream.remote,
                 log_file: stream.log_file,
+                server_url: stream.server_url,
             };
 
-            cmd.run(&config)
+            cmd.run()
         }
 
-        Commands::Session(cmd) => cmd.run(&config),
-        Commands::Play(cmd) => cmd.run(&config),
-        Commands::Cat(cmd) => cmd.run(&config),
-        Commands::Convert(cmd) => cmd.run(&config),
-        Commands::Upload(cmd) => cmd.run(&config),
-        Commands::Auth(cmd) => cmd.run(&config),
+        Commands::Session(cmd) => cmd.run(),
+        Commands::Play(cmd) => cmd.run(),
+        Commands::Cat(cmd) => cmd.run(),
+        Commands::Convert(cmd) => cmd.run(),
+        Commands::Upload(cmd) => cmd.run(),
+        Commands::Auth(cmd) => cmd.run(),
     }
 }

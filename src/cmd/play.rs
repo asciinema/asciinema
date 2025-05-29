@@ -9,7 +9,8 @@ use crate::tty;
 use crate::util;
 
 impl cli::Play {
-    pub fn run(self, config: &Config) -> Result<()> {
+    pub fn run(self) -> Result<()> {
+        let config = Config::new(None)?;
         let speed = self.speed.or(config.playback.speed).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(config.playback.idle_time_limit);
 
