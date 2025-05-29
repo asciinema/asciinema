@@ -181,29 +181,33 @@ impl V2Encoder {
     }
 
     pub fn event(&mut self, event: &Event) -> Vec<u8> {
-        let mut data = self.serialize_event(event).unwrap().into_bytes();
+        let mut data = self.serialize_event(event).into_bytes();
         data.push(b'\n');
 
         data
     }
 
-    fn serialize_event(&self, event: &Event) -> Result<String, serde_json::Error> {
+    fn serialize_event(&self, event: &Event) -> String {
         use EventData::*;
 
         let (code, data) = match &event.data {
-            Output(data) => ('o', serde_json::to_string(data)?),
-            Input(data) => ('i', serde_json::to_string(data)?),
-            Resize(cols, rows) => ('r', serde_json::to_string(&format!("{cols}x{rows}"))?),
-            Marker(data) => ('m', serde_json::to_string(data)?),
-            Other(code, data) => (*code, serde_json::to_string(data)?),
+            Output(data) => ('o', self.to_json_string(data)),
+            Input(data) => ('i', self.to_json_string(data)),
+            Resize(cols, rows) => ('r', self.to_json_string(&format!("{cols}x{rows}"))),
+            Marker(data) => ('m', self.to_json_string(data)),
+            Other(code, data) => (*code, self.to_json_string(data)),
         };
 
-        Ok(format!(
+        format!(
             "[{}, {}, {}]",
             format_time(event.time + self.time_offset),
-            serde_json::to_string(&code)?,
+            self.to_json_string(&code.to_string()),
             data,
-        ))
+        )
+    }
+
+    fn to_json_string(&self, s: &str) -> String {
+        serde_json::to_string(s).unwrap()
     }
 }
 
