@@ -90,6 +90,10 @@ pub struct Record {
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
     pub window_size: Option<(Option<u16>, Option<u16>)>,
 
+    /// Return session exit status
+    #[arg(long)]
+    pub return_: bool,
+
     #[arg(long, hide = true)]
     pub cols: Option<u16>,
 
@@ -161,6 +165,10 @@ pub struct Stream {
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
     pub window_size: Option<(Option<u16>, Option<u16>)>,
 
+    /// Return session exit status
+    #[arg(long)]
+    pub return_: bool,
+
     /// Log file path
     #[arg(long, value_name = "PATH")]
     pub log_file: Option<PathBuf>,
@@ -223,6 +231,10 @@ pub struct Session {
     /// Override terminal size for the session
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
     pub window_size: Option<(Option<u16>, Option<u16>)>,
+
+    /// Return session exit status
+    #[arg(long)]
+    pub return_: bool,
 
     /// Log file path
     #[arg(long, value_name = "PATH")]

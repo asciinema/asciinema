@@ -4,6 +4,7 @@ use std::fs::{self, OpenOptions};
 use std::io::LineWriter;
 use std::net::TcpListener;
 use std::path::Path;
+use std::process::ExitCode;
 use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -33,7 +34,7 @@ use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 
 impl cli::Session {
-    pub fn run(mut self) -> Result<()> {
+    pub fn run(mut self) -> Result<ExitCode> {
         locale::check_utf8_locale()?;
 
         let config = Config::new(self.server_url.clone())?;
@@ -160,11 +161,11 @@ impl cli::Session {
         let exec_command = build_exec_command(command.as_ref().cloned());
         let exec_extra_env = build_exec_extra_env(relay_id.as_ref());
 
-        {
+        let (exit_status, _) = {
             let starter = SessionStarter::new(outputs, record_input, keys, notifier);
             let mut tty = self.get_tty(true)?;
-            pty::exec(&exec_command, &exec_extra_env, &mut tty, starter)?;
-        }
+            pty::exec(&exec_command, &exec_extra_env, &mut tty, starter)?
+        };
 
         runtime.block_on(async {
             debug!("session shutting down...");
@@ -185,7 +186,13 @@ impl cli::Session {
 
         status::info!("asciinema session ended");
 
-        Ok(())
+        if !self.return_ || exit_status == 0 {
+            Ok(ExitCode::from(0))
+        } else if exit_status > 0 {
+            Ok(ExitCode::from(exit_status as u8))
+        } else {
+            Ok(ExitCode::from(1))
+        }
     }
 
     fn get_file_writer<N: Notifier + 'static>(

@@ -22,11 +22,13 @@ mod stream;
 mod tty;
 mod util;
 
+use std::process::{ExitCode, Termination};
+
 use clap::Parser;
 
 use self::cli::{Cli, Commands, Session};
 
-fn main() -> anyhow::Result<()> {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
     if cli.quiet {
@@ -51,11 +53,12 @@ fn main() -> anyhow::Result<()> {
                 window_size: cmd.window_size,
                 stream_local: None,
                 stream_remote: None,
+                return_: cmd.return_,
                 log_file: None,
                 server_url: None,
             };
 
-            cmd.run()
+            cmd.run().report()
         }
 
         Commands::Stream(stream) => {
@@ -73,18 +76,19 @@ fn main() -> anyhow::Result<()> {
                 window_size: stream.window_size,
                 stream_local: stream.local,
                 stream_remote: stream.remote,
+                return_: stream.return_,
                 log_file: stream.log_file,
                 server_url: stream.server_url,
             };
 
-            cmd.run()
+            cmd.run().report()
         }
 
-        Commands::Session(cmd) => cmd.run(),
-        Commands::Play(cmd) => cmd.run(),
-        Commands::Cat(cmd) => cmd.run(),
-        Commands::Convert(cmd) => cmd.run(),
-        Commands::Upload(cmd) => cmd.run(),
-        Commands::Auth(cmd) => cmd.run(),
+        Commands::Session(cmd) => cmd.run().report(),
+        Commands::Play(cmd) => cmd.run().report(),
+        Commands::Cat(cmd) => cmd.run().report(),
+        Commands::Convert(cmd) => cmd.run().report(),
+        Commands::Upload(cmd) => cmd.run().report(),
+        Commands::Auth(cmd) => cmd.run().report(),
     }
 }
