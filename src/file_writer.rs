@@ -97,6 +97,7 @@ impl From<session::Event> for asciicast::Event {
                 asciicast::Event::resize(time, tty_size.into())
             }
             session::Event::Marker(time, label) => asciicast::Event::marker(time, label),
+            session::Event::Exit(time, status) => asciicast::Event::exit(time, status),
         }
     }
 }

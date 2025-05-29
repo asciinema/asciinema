@@ -32,7 +32,7 @@ pub trait Handler {
     fn output(&mut self, time: Duration, data: &[u8]) -> bool;
     fn input(&mut self, time: Duration, data: &[u8]) -> bool;
     fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool;
-    fn stop(self) -> Self;
+    fn stop(self, time: Duration, exit_status: i32) -> Self;
 }
 
 pub fn exec<S: AsRef<str>, T: Tty, H: Handler, R: HandlerStarter<H>>(
@@ -49,7 +49,7 @@ pub fn exec<S: AsRef<str>, T: Tty, H: Handler, R: HandlerStarter<H>>(
     match result {
         pty::ForkptyResult::Parent { child, master } => {
             handle_parent(master, child, tty, &mut handler, epoch)
-                .map(|code| (code, handler.stop()))
+                .map(|code| (code, handler.stop(epoch.elapsed(), code)))
         }
 
         pty::ForkptyResult::Child => {
@@ -419,7 +419,7 @@ mod tests {
             true
         }
 
-        fn stop(self) -> Self {
+        fn stop(self, _time: Duration, _exit_status: i32) -> Self {
             self
         }
     }

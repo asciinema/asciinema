@@ -111,6 +111,8 @@ async fn run(
                                 let _ = broadcast_tx.send(Event::Marker(last_event_id, time, label));
                                 stream_time = time;
                             }
+
+                            session::Event::Exit(_time, _status) => {}
                         }
                     }
 

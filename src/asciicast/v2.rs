@@ -195,6 +195,7 @@ impl V2Encoder {
             Input(data) => ('i', self.to_json_string(data)),
             Resize(cols, rows) => ('r', self.to_json_string(&format!("{cols}x{rows}"))),
             Marker(data) => ('m', self.to_json_string(data)),
+            Exit(data) => ('x', self.to_json_string(&data.to_string())),
             Other(code, data) => (*code, self.to_json_string(data)),
         };
 

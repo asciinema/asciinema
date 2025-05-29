@@ -60,6 +60,7 @@ enum V3EventCode {
     Input,
     Resize,
     Marker,
+    Exit,
     Other(char),
 }
 
@@ -150,6 +151,7 @@ impl Parser {
             },
 
             V3EventCode::Marker => EventData::Marker(event.data),
+            V3EventCode::Exit => EventData::Exit(event.data.parse()?),
             V3EventCode::Other(c) => EventData::Other(c, event.data),
         };
 
@@ -174,6 +176,7 @@ where
         "i" => Ok(Input),
         "r" => Ok(Resize),
         "m" => Ok(Marker),
+        "x" => Ok(Exit),
         "" => Err(Error::custom("missing event code")),
         s => Ok(Other(s.chars().next().unwrap())),
     }
@@ -211,6 +214,7 @@ impl V3Encoder {
             Input(data) => ('i', self.to_json_string(data)),
             Resize(cols, rows) => ('r', self.to_json_string(&format!("{cols}x{rows}"))),
             Marker(data) => ('m', self.to_json_string(data)),
+            Exit(data) => ('x', self.to_json_string(&data.to_string())),
             Other(code, data) => (*code, self.to_json_string(data)),
         };
 

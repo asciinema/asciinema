@@ -51,6 +51,7 @@ pub enum EventData {
     Input(String),
     Resize(u16, u16),
     Marker(String),
+    Exit(i32),
     Other(char, String),
 }
 
@@ -173,6 +174,13 @@ impl Event {
         Event {
             time,
             data: EventData::Marker(label),
+        }
+    }
+
+    pub fn exit(time: u64, status: i32) -> Self {
+        Event {
+            time,
+            data: EventData::Exit(status),
         }
     }
 }

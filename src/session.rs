@@ -38,6 +38,7 @@ pub enum Event {
     Input(u64, String),
     Resize(u64, TtySize),
     Marker(u64, String),
+    Exit(u64, i32),
 }
 
 impl<N: Notifier> SessionStarter<N> {
@@ -214,7 +215,10 @@ impl<N: Notifier> pty::Handler for Session<N> {
         true
     }
 
-    fn stop(self) -> Self {
+    fn stop(self, time: Duration, exit_status: i32) -> Self {
+        let msg = Event::Exit(self.elapsed_time(time), exit_status);
+        self.sender.send(msg).expect("exit send should succeed");
+
         self
     }
 }
