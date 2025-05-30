@@ -72,7 +72,7 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
 
     match response.status().as_u16() {
         401 => bail!(
-            "this CLI hasn't been authenticated with {server_hostname} - run `ascinema auth` first"
+            "this CLI hasn't been authenticated with {server_hostname} - run `asciinema auth` first"
         ),
 
         404 => match response.json::<ErrorResponse>() {
