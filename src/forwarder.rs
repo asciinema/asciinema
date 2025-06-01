@@ -5,6 +5,7 @@ use std::time::Duration;
 use anyhow::{anyhow, bail};
 use axum::http::Uri;
 use futures_util::{SinkExt, Stream, StreamExt};
+use rand::Rng;
 use tokio::net::TcpStream;
 use tokio::time::{interval, sleep, timeout};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
@@ -23,7 +24,8 @@ use crate::stream::Subscriber;
 const PING_INTERVAL: u64 = 15;
 const PING_TIMEOUT: u64 = 10;
 const SEND_TIMEOUT: u64 = 10;
-const MAX_RECONNECT_DELAY: u64 = 5000;
+const RECONNECT_DELAY_BASE: u64 = 500;
+const RECONNECT_DELAY_CAP: u64 = 10_000;
 
 pub async fn forward<N: Notifier>(
     url: url::Url,
@@ -224,7 +226,10 @@ fn handle_close_frame(frame: Option<CloseFrame>) -> anyhow::Result<()> {
 }
 
 fn exponential_delay(attempt: usize) -> u64 {
-    (2_u64.pow(attempt as u32) * 500).min(MAX_RECONNECT_DELAY)
+    let mut rng = rand::rng();
+    let base = (RECONNECT_DELAY_BASE * 2_u64.pow(attempt as u32)).min(RECONNECT_DELAY_CAP);
+
+    rng.random_range(..base)
 }
 
 fn ws_result(m: Result<Vec<u8>, BroadcastStreamRecvError>) -> anyhow::Result<Message> {

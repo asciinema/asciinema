@@ -95,6 +95,7 @@ dependencies = [
  "config",
  "futures-util",
  "nix 0.30.1",
+ "rand",
  "reqwest",
  "rgb",
  "rust-embed",
