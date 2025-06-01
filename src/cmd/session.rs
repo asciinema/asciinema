@@ -223,6 +223,10 @@ impl cli::Session {
             append = false;
         }
 
+        if let Some(dir) = path.parent() {
+            let _ = fs::create_dir_all(dir);
+        }
+
         let format = self.output_format.map(Ok).unwrap_or_else(|| {
             if path.extension().is_some_and(|ext| ext == "txt") {
                 Ok(Format::Txt)
