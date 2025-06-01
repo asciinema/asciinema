@@ -289,7 +289,7 @@ impl cli::Session {
 
             Format::Raw => {
                 let writer = Box::new(file);
-                let encoder = Box::new(RawEncoder::new(append));
+                let encoder = Box::new(RawEncoder::new());
 
                 FileWriterStarter {
                     writer,

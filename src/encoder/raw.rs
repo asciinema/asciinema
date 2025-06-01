@@ -1,22 +1,16 @@
 use crate::asciicast::{Event, EventData, Header};
 
-pub struct RawEncoder {
-    append: bool,
-}
+pub struct RawEncoder;
 
 impl RawEncoder {
-    pub fn new(append: bool) -> Self {
-        RawEncoder { append }
+    pub fn new() -> Self {
+        RawEncoder
     }
 }
 
 impl super::Encoder for RawEncoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
-        if self.append {
-            Vec::new()
-        } else {
-            format!("\x1b[8;{};{}t", header.term_rows, header.term_cols).into_bytes()
-        }
+        format!("\x1b[8;{};{}t", header.term_rows, header.term_cols).into_bytes()
     }
 
     fn event(&mut self, event: Event) -> Vec<u8> {
@@ -40,7 +34,7 @@ mod tests {
 
     #[test]
     fn encoder() {
-        let mut enc = RawEncoder::new(false);
+        let mut enc = RawEncoder::new();
 
         let header = Header {
             term_cols: 100,

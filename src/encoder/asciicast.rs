@@ -16,7 +16,8 @@ impl AsciicastV2Encoder {
 impl super::Encoder for AsciicastV2Encoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
         if self.append {
-            Vec::new()
+            let size = (header.term_cols, header.term_rows);
+            self.inner.event(&Event::resize(0, size))
         } else {
             self.inner.header(header)
         }
@@ -47,7 +48,8 @@ impl AsciicastV3Encoder {
 impl super::Encoder for AsciicastV3Encoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
         if self.append {
-            Vec::new()
+            let size = (header.term_cols, header.term_rows);
+            self.inner.event(&Event::resize(0, size))
         } else {
             self.inner.header(header)
         }

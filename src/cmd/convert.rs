@@ -33,7 +33,7 @@ impl cli::Convert {
         match format {
             Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
             Format::AsciicastV2 => Box::new(AsciicastV2Encoder::new(false, 0)),
-            Format::Raw => Box::new(RawEncoder::new(false)),
+            Format::Raw => Box::new(RawEncoder::new()),
             Format::Txt => Box::new(TextEncoder::new()),
         }
     }
