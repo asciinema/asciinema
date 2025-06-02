@@ -49,10 +49,7 @@ impl cli::Cat {
     }
 
     fn open_input_files(&self) -> Result<Vec<Asciicast>> {
-        self.filename
-            .iter()
-            .map(asciicast::open_from_path)
-            .collect()
+        self.file.iter().map(asciicast::open_from_path).collect()
     }
 
     fn get_encoder(&self, version: Version) -> Result<Box<dyn Encoder>> {

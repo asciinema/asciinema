@@ -40,7 +40,7 @@ fn main() -> ExitCode {
     match cli.command {
         Commands::Rec(cmd) => {
             let cmd = Session {
-                output_file: Some(cmd.output_path),
+                output_file: Some(cmd.file),
                 rec_input: cmd.rec_input,
                 append: cmd.append,
                 output_format: cmd.output_format,

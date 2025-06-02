@@ -14,9 +14,9 @@ impl cli::Play {
         let speed = self.speed.or(config.playback.speed).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(config.playback.idle_time_limit);
 
-        status::info!("Replaying session from {}", self.filename);
+        status::info!("Replaying session from {}", self.file);
 
-        let path = util::get_local_path(&self.filename)?;
+        let path = util::get_local_path(&self.file)?;
         let keys = get_key_bindings(&config.playback)?;
 
         let ended = loop {

@@ -29,7 +29,7 @@ pub enum Commands {
     /// Stream a terminal session
     Stream(Stream),
 
-    /// Record and/or stream a terminal session
+    /// Record and stream a terminal session
     Session(Session),
 
     /// Concatenate multiple recordings
@@ -48,7 +48,7 @@ pub enum Commands {
 #[derive(Debug, Args)]
 pub struct Record {
     /// Output file path
-    pub output_path: String,
+    pub file: String,
 
     /// Output file format [default: asciicast-v3]
     #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
@@ -58,7 +58,7 @@ pub struct Record {
     #[arg(short, long)]
     pub command: Option<String>,
 
-    /// Enable input (keys) recording
+    /// Enable input (keyboard) recording
     #[arg(long, short = 'I', alias = "stdin")]
     pub rec_input: bool,
 
@@ -106,8 +106,8 @@ pub struct Record {
 
 #[derive(Debug, Args)]
 pub struct Play {
-    #[arg(value_name = "FILENAME_OR_URL")]
-    pub filename: String,
+    /// A path or an HTTP(S) URL of a recording file
+    pub file: String,
 
     /// Limit idle time to a given number of seconds
     #[arg(short, long, value_name = "SECS")]
@@ -145,7 +145,7 @@ pub struct Stream {
     #[arg(short, long)]
     pub command: Option<String>,
 
-    /// Enable input (keys) recording
+    /// Enable input (keyboard) recording
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
@@ -180,7 +180,7 @@ pub struct Stream {
 
 #[derive(Debug, Args)]
 pub struct Session {
-    /// Save the session in a file
+    /// Save the session to a file
     #[arg(short, long, value_name = "PATH")]
     pub output_file: Option<String>,
 
@@ -200,7 +200,7 @@ pub struct Session {
     #[arg(short, long)]
     pub command: Option<String>,
 
-    /// Enable input (keys) recording
+    /// Enable input (keyboard) recording
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
@@ -248,17 +248,16 @@ pub struct Session {
 #[derive(Debug, Args)]
 pub struct Cat {
     #[arg(required = true, num_args = 2..)]
-    pub filename: Vec<String>,
+    pub file: Vec<String>,
 }
 
 #[derive(Debug, Args)]
 pub struct Convert {
-    /// File to convert from, in asciicast format (use - for stdin)
-    #[arg(value_name = "INPUT_FILENAME_OR_URL")]
-    pub input_filename: String,
+    /// Input asciicast file path, an HTTP(S) URL, or - (for stdin)
+    pub input: String,
 
-    /// File to convert to (use - for stdout)
-    pub output_filename: String,
+    /// Output file path, or - (for stdout)
+    pub output: String,
 
     /// Output file format [default: asciicast-v3]
     #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
@@ -271,8 +270,8 @@ pub struct Convert {
 
 #[derive(Debug, Args)]
 pub struct Upload {
-    /// Filename/path of asciicast to upload
-    pub filename: String,
+    /// Path to an asciicast file to upload
+    pub file: String,
 
     /// asciinema server URL
     #[arg(long, value_name = "URL")]

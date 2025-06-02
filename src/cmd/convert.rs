@@ -23,7 +23,7 @@ impl cli::Convert {
 
     fn get_encoder(&self) -> Box<dyn encoder::Encoder> {
         let format = self.output_format.unwrap_or_else(|| {
-            if self.output_filename.to_lowercase().ends_with(".txt") {
+            if self.output.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
                 Format::AsciicastV3
@@ -39,18 +39,18 @@ impl cli::Convert {
     }
 
     fn get_input_path(&self) -> Result<Box<dyn AsRef<Path>>> {
-        if self.input_filename == "-" {
+        if self.input == "-" {
             Ok(Box::new(Path::new("/dev/stdin")))
         } else {
-            util::get_local_path(&self.input_filename)
+            util::get_local_path(&self.input)
         }
     }
 
     fn get_output_path(&self) -> String {
-        if self.output_filename == "-" {
+        if self.output == "-" {
             "/dev/stdout".to_owned()
         } else {
-            self.output_filename.clone()
+            self.output.clone()
         }
     }
 
