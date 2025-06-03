@@ -9,6 +9,8 @@ use reqwest::Url;
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::status;
+
 const DEFAULT_SERVER_URL: &str = "https://asciinema.org";
 const INSTALL_ID_FILENAME: &str = "install-id";
 
@@ -202,8 +204,12 @@ fn save_install_id(path: &PathBuf, id: &str) -> Result<()> {
     Ok(())
 }
 
-fn user_config_path() -> Result<PathBuf> {
+pub fn user_config_path() -> Result<PathBuf> {
     Ok(home()?.join("config.toml"))
+}
+
+fn legacy_user_config_path() -> Result<PathBuf> {
+    Ok(home()?.join("config"))
 }
 
 fn user_defaults_path() -> Result<PathBuf> {
@@ -259,4 +265,28 @@ fn parse_key<S: AsRef<str>>(key: S) -> Result<Key> {
     }
 
     Err(anyhow!("invalid key definition '{key}'"))
+}
+
+pub fn check_legacy_config_file() {
+    let Ok(legacy_path) = legacy_user_config_path() else {
+        return;
+    };
+
+    let Ok(new_path) = user_config_path() else {
+        return;
+    };
+
+    if legacy_path.exists() {
+        status::warning!(
+            "Your config file at {} uses the location and format from asciinema 2.x.",
+            legacy_path.to_string_lossy()
+        );
+
+        status::warning!(
+            "For asciinema 3.x (this version) create a new config file at {}.",
+            new_path.to_string_lossy()
+        );
+
+        status::warning!("Read the documentation (CLI -> Configuration) for details.\n");
+    }
 }
