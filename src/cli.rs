@@ -13,7 +13,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Quiet mode, i.e. suppress diagnostic messages
+    /// Quiet mode - suppress diagnostic messages
     #[clap(short, long, global = true, display_order = 101)]
     pub quiet: bool,
 }
@@ -23,7 +23,7 @@ pub enum Commands {
     /// Record a terminal session
     Rec(Record),
 
-    /// Replay a terminal session
+    /// Play back a terminal session
     Play(Play),
 
     /// Stream a terminal session
@@ -35,7 +35,7 @@ pub enum Commands {
     /// Concatenate multiple recordings
     Cat(Cat),
 
-    /// Convert a recording into another format
+    /// Convert a recording to another format
     Convert(Convert),
 
     /// Upload a recording to an asciinema server
@@ -62,7 +62,7 @@ pub struct Record {
     #[arg(long, short = 'I', alias = "stdin")]
     pub rec_input: bool,
 
-    /// Comma-separated list of env vars to capture [default: SHELL]
+    /// Comma-separated list of environment variables to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -70,7 +70,7 @@ pub struct Record {
     #[arg(short, long)]
     pub append: bool,
 
-    /// Overwrite output file if it already exists
+    /// Overwrite the output file if it already exists
     #[arg(long, conflicts_with = "append")]
     pub overwrite: bool,
 
@@ -82,15 +82,15 @@ pub struct Record {
     #[arg(short, long, value_name = "SECS")]
     pub idle_time_limit: Option<f64>,
 
-    /// Headless mode, i.e. don't use TTY for input/output
+    /// Headless mode - don't use the terminal for I/O
     #[arg(long)]
     pub headless: bool,
 
-    /// Override terminal size for the session
+    /// Override session's terminal window size
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
     pub window_size: Option<(Option<u16>, Option<u16>)>,
 
-    /// Return session exit status
+    /// Return the session's exit status
     #[arg(long)]
     pub return_: bool,
 
@@ -106,12 +106,8 @@ pub struct Record {
 
 #[derive(Debug, Args)]
 pub struct Play {
-    /// A path or an HTTP(S) URL of a recording file
+    /// A path or HTTP(S) URL of a recording file
     pub file: String,
-
-    /// Limit idle time to a given number of seconds
-    #[arg(short, long, value_name = "SECS")]
-    pub idle_time_limit: Option<f64>,
 
     /// Set playback speed
     #[arg(short, long)]
@@ -121,11 +117,15 @@ pub struct Play {
     #[arg(short, long, name = "loop")]
     pub loop_: bool,
 
+    /// Limit idle time to a given number of seconds
+    #[arg(short, long, value_name = "SECS")]
+    pub idle_time_limit: Option<f64>,
+
     /// Automatically pause on markers
     #[arg(short = 'm', long)]
     pub pause_on_markers: bool,
 
-    /// Auto-resize terminal window to always match the original size (supported on some terminals)
+    /// Auto-resize the terminal window to match the original size (supported on some terminals)
     #[arg(short = 'r', long)]
     pub resize: bool,
 }
@@ -149,7 +149,7 @@ pub struct Stream {
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
-    /// Comma-separated list of env vars to capture [default: SHELL]
+    /// Comma-separated list of environment variables to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -157,15 +157,15 @@ pub struct Stream {
     #[arg(short, long)]
     pub title: Option<String>,
 
-    /// Headless mode, i.e. don't use TTY for input/output
+    /// Headless mode - don't use the terminal for I/O
     #[arg(long)]
     pub headless: bool,
 
-    /// Override terminal size for the session
+    /// Override session's terminal window size
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
     pub window_size: Option<(Option<u16>, Option<u16>)>,
 
-    /// Return session exit status
+    /// Return the session's exit status
     #[arg(long)]
     pub return_: bool,
 
@@ -204,7 +204,7 @@ pub struct Session {
     #[arg(long, short = 'I')]
     pub rec_input: bool,
 
-    /// Comma-separated list of env vars to capture [default: SHELL]
+    /// Comma-separated list of environment variables to capture [default: SHELL]
     #[arg(long, value_name = "VARS")]
     pub rec_env: Option<String>,
 
@@ -212,7 +212,7 @@ pub struct Session {
     #[arg(short, long)]
     pub append: bool,
 
-    /// Overwrite output file if it already exists
+    /// Overwrite the output file if it already exists
     #[arg(long, conflicts_with = "append")]
     pub overwrite: bool,
 
@@ -224,15 +224,15 @@ pub struct Session {
     #[arg(short, long, value_name = "SECS")]
     pub idle_time_limit: Option<f64>,
 
-    /// Headless mode, i.e. don't use TTY for input/output
+    /// Headless mode - don't use the terminal for I/O
     #[arg(long)]
     pub headless: bool,
 
-    /// Override terminal size for the session
+    /// Override session's terminal window size
     #[arg(long, value_name = "COLSxROWS", value_parser = parse_window_size)]
     pub window_size: Option<(Option<u16>, Option<u16>)>,
 
-    /// Return session exit status
+    /// Return the session's exit status
     #[arg(long)]
     pub return_: bool,
 
@@ -253,17 +253,17 @@ pub struct Cat {
 
 #[derive(Debug, Args)]
 pub struct Convert {
-    /// Input asciicast file path, an HTTP(S) URL, or - (for stdin)
+    /// Input asciicast file path, HTTP(S) URL, or '-' (for stdin)
     pub input: String,
 
-    /// Output file path, or - (for stdout)
+    /// Output file path, or '-' (for stdout)
     pub output: String,
 
     /// Output file format [default: asciicast-v3]
     #[arg(short = 'f', long, value_enum, value_name = "FORMAT")]
     pub output_format: Option<Format>,
 
-    /// Overwrite target file if it already exists
+    /// Overwrite the output file if it already exists
     #[arg(long)]
     pub overwrite: bool,
 }
