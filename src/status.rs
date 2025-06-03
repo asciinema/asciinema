@@ -23,7 +23,7 @@ pub fn do_info(message: String) {
 
 pub fn do_warn(message: String) {
     if ENABLED.load(SeqCst) {
-        println!("!!! {message}");
+        eprintln!("!!! {message}");
     }
 }
 
