@@ -276,7 +276,7 @@ pub fn check_legacy_config_file() {
         return;
     };
 
-    if legacy_path.exists() {
+    if legacy_path.exists() && !new_path.exists() {
         status::warning!(
             "Your config file at {} uses the location and format from asciinema 2.x.",
             legacy_path.to_string_lossy()
