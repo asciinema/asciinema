@@ -22,7 +22,8 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     /// Record a terminal session
-    Rec(Record),
+    #[clap(visible_alias = "rec")]
+    Record(Record),
 
     /// Stream a terminal session
     Stream(Stream),

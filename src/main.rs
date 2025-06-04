@@ -40,7 +40,7 @@ fn main() -> ExitCode {
     crate::config::check_legacy_config_file();
 
     match cli.command {
-        Commands::Rec(cmd) => {
+        Commands::Record(cmd) => {
             let cmd = Session {
                 output_file: Some(cmd.file),
                 rec_input: cmd.rec_input,
