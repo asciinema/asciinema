@@ -23,26 +23,26 @@ pub enum Commands {
     /// Record a terminal session
     Rec(Record),
 
-    /// Play back a terminal session
-    Play(Play),
-
     /// Stream a terminal session
     Stream(Stream),
 
     /// Record and stream a terminal session
     Session(Session),
 
-    /// Concatenate multiple recordings
-    Cat(Cat),
-
-    /// Convert a recording to another format
-    Convert(Convert),
+    /// Play back a terminal session
+    Play(Play),
 
     /// Upload a recording to an asciinema server
     Upload(Upload),
 
     /// Authenticate this CLI with an asciinema server account
     Auth(Auth),
+
+    /// Concatenate multiple recordings
+    Cat(Cat),
+
+    /// Convert a recording to another format
+    Convert(Convert),
 }
 
 #[derive(Debug, Args)]
