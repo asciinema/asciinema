@@ -61,12 +61,12 @@ fn upload_request(server_url: &Url, path: &str, install_id: String) -> Result<Re
         .header(header::ACCEPT, "application/json"))
 }
 
-pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserStreamResponse> {
+pub fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetUserStreamResponse> {
     let server_url = config.get_server_url()?;
     let server_hostname = server_url.host().unwrap();
     let install_id = config.get_install_id()?;
 
-    let response = user_stream_request(&server_url, stream_id, install_id)
+    let response = user_stream_request(&server_url, stream_id, &install_id)
         .send()
         .context("cannot obtain stream producer endpoint - is the server down?")?;
 
@@ -95,7 +95,7 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
         .map_err(|e| e.into())
 }
 
-fn user_stream_request(server_url: &Url, stream_id: String, install_id: String) -> RequestBuilder {
+fn user_stream_request(server_url: &Url, stream_id: &str, install_id: &str) -> RequestBuilder {
     let client = Client::new();
     let mut url = server_url.clone();
 

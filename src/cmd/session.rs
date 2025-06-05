@@ -1,9 +1,9 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
-use std::fs::{self, OpenOptions};
+use std::fs::{self, File, OpenOptions};
 use std::io::LineWriter;
 use std::net::TcpListener;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{Duration, SystemTime};
 
@@ -42,29 +42,11 @@ impl cli::Session {
         let command = self.get_command(&config.recording);
         let keys = get_key_bindings(&config.recording)?;
         let notifier = notifier::threaded(get_notifier(&config));
-        let record_input = self.rec_input || config.recording.rec_input;
         let signal_fd = pty::open_signal_fd()?;
         let metadata = self.get_session_metadata(&config.recording)?;
-
-        let file_writer = self
-            .output_file
-            .as_ref()
-            .map(|path| self.get_file_writer(path, &metadata, notifier.clone()))
-            .transpose()?;
-
-        let mut listener = self
-            .stream_local
-            .take()
-            .map(TcpListener::bind)
-            .transpose()
-            .context("cannot start listener")?;
-
-        let mut relay = self
-            .stream_remote
-            .take()
-            .map(|target| get_relay(target, &metadata, &config))
-            .transpose()?;
-
+        let file_writer = self.get_file_writer(&metadata, notifier.clone())?;
+        let listener = self.get_listener()?;
+        let relay = self.get_relay(&metadata, &config)?;
         let relay_id = relay.as_ref().map(|r| r.id());
         let parent_session_relay_id = get_parent_session_relay_id();
 
@@ -85,11 +67,11 @@ impl cli::Session {
 
         status::info!("asciinema session started");
 
-        let mut output_count = 0;
+        let mut no_outputs = true;
 
         if let Some(path) = self.output_file.as_ref() {
             status::info!("Recording to {}", path);
-            output_count += 1;
+            no_outputs = false;
         }
 
         if let Some(listener) = &listener {
@@ -98,15 +80,15 @@ impl cli::Session {
                 listener.local_addr().unwrap()
             );
 
-            output_count += 1;
+            no_outputs = false;
         }
 
         if let Some(Relay { url: Some(url), .. }) = &relay {
             status::info!("Live streaming at {}", url);
-            output_count += 1;
+            no_outputs = false;
         }
 
-        if output_count == 0 {
+        if no_outputs {
             status::warning!("No outputs enabled, consider using -o, -l, or -r");
         }
 
@@ -123,7 +105,7 @@ impl cli::Session {
             outputs.push(Box::new(output));
         }
 
-        let server = listener.take().map(|listener| {
+        let server = listener.map(|listener| {
             runtime.spawn(server::serve(
                 listener,
                 stream.subscriber(),
@@ -131,7 +113,7 @@ impl cli::Session {
             ))
         });
 
-        let forwarder = relay.take().map(|relay| {
+        let forwarder = relay.map(|relay| {
             runtime.spawn(forwarder::forward(
                 relay.ws_producer_url,
                 stream.subscriber(),
@@ -145,18 +127,20 @@ impl cli::Session {
             outputs.push(Box::new(output));
         }
 
-        let exec_command = build_exec_command(command.as_ref().cloned());
-        let exec_extra_env = build_exec_extra_env(relay_id.as_ref());
-
         let exit_status = {
             let mut tty = self.get_tty(true)?;
 
-            let mut session =
-                Session::new(outputs, metadata.term.size, record_input, keys, notifier);
+            let mut session = Session::new(
+                outputs,
+                metadata.term.size,
+                self.rec_input || config.recording.rec_input,
+                keys,
+                notifier,
+            );
 
             pty::exec(
-                &exec_command,
-                &exec_extra_env,
+                &build_exec_command(command.as_ref().cloned()),
+                &build_exec_extra_env(relay_id.as_ref()),
                 metadata.term.size,
                 &mut tty,
                 &mut session,
@@ -192,6 +176,10 @@ impl cli::Session {
         }
     }
 
+    fn get_command(&self, config: &config::Recording) -> Option<String> {
+        self.command.as_ref().cloned().or(config.command.clone())
+    }
+
     fn get_session_metadata(&self, config: &config::Recording) -> Result<Metadata> {
         Ok(Metadata {
             time: SystemTime::now(),
@@ -216,59 +204,17 @@ impl cli::Session {
 
     fn get_file_writer<N: Notifier + 'static>(
         &self,
-        path: &str,
         metadata: &Metadata,
         notifier: N,
-    ) -> Result<FileWriter> {
-        let mut overwrite = self.overwrite;
-        let mut append = self.append;
+    ) -> Result<Option<FileWriter>> {
+        let Some(path) = self.output_file.as_ref() else {
+            return Ok(None);
+        };
+
         let path = Path::new(path);
-
-        if path.exists() {
-            let metadata = fs::metadata(path)?;
-
-            if metadata.len() == 0 {
-                overwrite = true;
-                append = false;
-            }
-
-            if !append && !overwrite {
-                bail!("file exists, use --overwrite or --append");
-            }
-        } else {
-            append = false;
-        }
-
-        if let Some(dir) = path.parent() {
-            let _ = fs::create_dir_all(dir);
-        }
-
-        let format = self.output_format.map(Ok).unwrap_or_else(|| {
-            if path.extension().is_some_and(|ext| ext == "txt") {
-                Ok(Format::Txt)
-            } else if append {
-                match asciicast::open_from_path(path) {
-                    Ok(cast) => match cast.version {
-                        Version::One => bail!("appending to asciicast v1 files is not supported"),
-                        Version::Two => Ok(Format::AsciicastV2),
-                        Version::Three => Ok(Format::AsciicastV3),
-                    },
-
-                    Err(e) => bail!("can't append: {e}"),
-                }
-            } else {
-                Ok(Format::AsciicastV3)
-            }
-        })?;
-
-        let file = OpenOptions::new()
-            .write(true)
-            .append(append)
-            .create(overwrite)
-            .create_new(!overwrite && !append)
-            .truncate(overwrite)
-            .open(path)?;
-
+        let (overwrite, append) = self.get_file_mode(path)?;
+        let file = self.open_output_file(path, overwrite, append)?;
+        let format = self.get_file_format(path, append)?;
         let notifier = Box::new(notifier);
 
         let file_writer = match format {
@@ -307,11 +253,99 @@ impl cli::Session {
             }
         };
 
-        Ok(file_writer)
+        Ok(Some(file_writer))
     }
 
-    fn get_command(&self, config: &config::Recording) -> Option<String> {
-        self.command.as_ref().cloned().or(config.command.clone())
+    fn get_file_mode(&self, path: &Path) -> Result<(bool, bool)> {
+        let mut overwrite = self.overwrite;
+        let mut append = self.append;
+
+        if path.exists() {
+            let metadata = fs::metadata(path)?;
+
+            if metadata.len() == 0 {
+                overwrite = true;
+                append = false;
+            }
+
+            if !append && !overwrite {
+                bail!("file exists, use --overwrite or --append");
+            }
+        } else {
+            append = false;
+        }
+
+        Ok((overwrite, append))
+    }
+
+    fn get_file_format(&self, path: &Path, append: bool) -> Result<Format> {
+        self.output_format.map(Ok).unwrap_or_else(|| {
+            if path.extension().is_some_and(|ext| ext == "txt") {
+                Ok(Format::Txt)
+            } else if append {
+                match asciicast::open_from_path(path) {
+                    Ok(cast) => match cast.version {
+                        Version::One => bail!("appending to asciicast v1 files is not supported"),
+                        Version::Two => Ok(Format::AsciicastV2),
+                        Version::Three => Ok(Format::AsciicastV3),
+                    },
+
+                    Err(e) => bail!("can't append: {e}"),
+                }
+            } else {
+                Ok(Format::AsciicastV3)
+            }
+        })
+    }
+
+    fn open_output_file(&self, path: &Path, overwrite: bool, append: bool) -> Result<File> {
+        if let Some(dir) = path.parent() {
+            let _ = fs::create_dir_all(dir);
+        }
+
+        OpenOptions::new()
+            .write(true)
+            .append(append)
+            .create(overwrite)
+            .create_new(!overwrite && !append)
+            .truncate(overwrite)
+            .open(path)
+            .map_err(|e| e.into())
+    }
+
+    fn get_listener(&self) -> Result<Option<TcpListener>> {
+        let Some(addr) = self.stream_local else {
+            return Ok(None);
+        };
+
+        TcpListener::bind(addr)
+            .map(Some)
+            .context("cannot start listener")
+    }
+
+    fn get_relay(&mut self, metadata: &Metadata, config: &config::Config) -> Result<Option<Relay>> {
+        let Some(target) = &self.stream_remote else {
+            return Ok(None);
+        };
+
+        let relay = match target {
+            RelayTarget::StreamId(id) => {
+                let stream = api::create_user_stream(id, config)?;
+                let ws_producer_url = build_producer_url(&stream.ws_producer_url, metadata)?;
+
+                Relay {
+                    ws_producer_url,
+                    url: Some(stream.url.parse()?),
+                }
+            }
+
+            RelayTarget::WsProducerUrl(url) => Relay {
+                ws_producer_url: url.clone(),
+                url: None,
+            },
+        };
+
+        Ok(Some(relay))
     }
 
     fn get_tty(&self, quiet: bool) -> Result<impl Tty> {
@@ -331,27 +365,31 @@ impl cli::Session {
     }
 
     fn init_logging(&self) -> Result<()> {
-        let log_file = self.log_file.as_ref().cloned();
+        let Some(path) = &self.log_file else {
+            return Ok(());
+        };
 
-        if let Some(path) = &log_file {
-            let file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(path)
-                .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))?;
+        let file = self.open_log_file(path)?;
 
-            let filter = EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
-                .from_env_lossy();
+        let filter = EnvFilter::builder()
+            .with_default_directive(LevelFilter::INFO.into())
+            .from_env_lossy();
 
-            tracing_subscriber::fmt()
-                .with_ansi(false)
-                .with_env_filter(filter)
-                .with_writer(file)
-                .init();
-        }
+        tracing_subscriber::fmt()
+            .with_ansi(false)
+            .with_env_filter(filter)
+            .with_writer(file)
+            .init();
 
         Ok(())
+    }
+
+    fn open_log_file(&self, path: &PathBuf) -> Result<File> {
+        OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))
     }
 }
 
@@ -364,25 +402,6 @@ struct Relay {
 impl Relay {
     fn id(&self) -> String {
         format!("{:x}", hash::fnv1a_128(self.ws_producer_url.as_ref()))
-    }
-}
-
-fn get_relay(target: RelayTarget, metadata: &Metadata, config: &Config) -> Result<Relay> {
-    match target {
-        RelayTarget::StreamId(id) => {
-            let stream = api::create_user_stream(id, config)?;
-            let ws_producer_url = build_producer_url(&stream.ws_producer_url, metadata)?;
-
-            Ok(Relay {
-                ws_producer_url,
-                url: Some(stream.url.parse()?),
-            })
-        }
-
-        RelayTarget::WsProducerUrl(url) => Ok(Relay {
-            ws_producer_url: url,
-            url: None,
-        }),
     }
 }
 
