@@ -5,7 +5,7 @@ use std::io::LineWriter;
 use std::net::TcpListener;
 use std::path::Path;
 use std::process::ExitCode;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, bail, Context, Result};
 use tokio::runtime::Runtime;
@@ -21,14 +21,14 @@ use crate::asciicast::{self, Version};
 use crate::cli::{self, Format, RelayTarget};
 use crate::config::{self, Config};
 use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, RawEncoder, TextEncoder};
-use crate::file_writer::{FileWriterStarter, Metadata};
+use crate::file_writer::FileWriter;
 use crate::forwarder;
 use crate::hash;
 use crate::locale;
 use crate::notifier::{self, Notifier, NullNotifier};
 use crate::pty;
 use crate::server;
-use crate::session::{self, KeyBindings, SessionStarter};
+use crate::session::{self, KeyBindings, Metadata, Session, TermInfo};
 use crate::status;
 use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
@@ -43,23 +43,13 @@ impl cli::Session {
         let keys = get_key_bindings(&config.recording)?;
         let notifier = notifier::threaded(get_notifier(&config));
         let record_input = self.rec_input || config.recording.rec_input;
-        let term_type = self.get_term_type();
-        let term_version = self.get_term_version()?;
-        let env = capture_env(self.rec_env.take(), &config.recording);
+        let signal_fd = pty::open_signal_fd()?;
+        let metadata = self.get_session_metadata(&config.recording)?;
 
         let file_writer = self
             .output_file
             .as_ref()
-            .map(|path| {
-                self.get_file_writer(
-                    path,
-                    &config.recording,
-                    term_type.clone(),
-                    term_version.clone(),
-                    &env,
-                    notifier.clone(),
-                )
-            })
+            .map(|path| self.get_file_writer(path, &metadata, notifier.clone()))
             .transpose()?;
 
         let mut listener = self
@@ -72,16 +62,7 @@ impl cli::Session {
         let mut relay = self
             .stream_remote
             .take()
-            .map(|target| {
-                get_relay(
-                    target,
-                    &config,
-                    term_type,
-                    term_version,
-                    self.title.take(),
-                    &env,
-                )
-            })
+            .map(|target| get_relay(target, &metadata, &config))
             .transpose()?;
 
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -104,8 +85,11 @@ impl cli::Session {
 
         status::info!("asciinema session started");
 
+        let mut output_count = 0;
+
         if let Some(path) = self.output_file.as_ref() {
             status::info!("Recording to {}", path);
+            output_count += 1;
         }
 
         if let Some(listener) = &listener {
@@ -113,14 +97,31 @@ impl cli::Session {
                 "Live streaming at http://{}",
                 listener.local_addr().unwrap()
             );
+
+            output_count += 1;
         }
 
         if let Some(Relay { url: Some(url), .. }) = &relay {
             status::info!("Live streaming at {}", url);
+            output_count += 1;
+        }
+
+        if output_count == 0 {
+            status::warning!("No outputs enabled, consider using -o, -l, or -r");
+        }
+
+        if command.is_none() {
+            status::info!("Press <ctrl+d> or type 'exit' to end");
         }
 
         let stream = Stream::new();
         let shutdown_token = CancellationToken::new();
+        let mut outputs: Vec<Box<dyn session::Output>> = Vec::new();
+
+        if let Some(writer) = file_writer {
+            let output = writer.start()?;
+            outputs.push(Box::new(output));
+        }
 
         let server = listener.take().map(|listener| {
             runtime.spawn(server::serve(
@@ -139,32 +140,28 @@ impl cli::Session {
             ))
         });
 
-        let mut outputs: Vec<Box<dyn session::OutputStarter>> = Vec::new();
-
         if server.is_some() || forwarder.is_some() {
-            let output = stream.start(runtime.handle().clone());
+            let output = stream.start(runtime.handle().clone(), &metadata);
             outputs.push(Box::new(output));
-        }
-
-        if let Some(output) = file_writer {
-            outputs.push(Box::new(output));
-        }
-
-        if outputs.is_empty() {
-            status::warning!("No outputs enabled, consider using -o, -l, or -r");
-        }
-
-        if command.is_none() {
-            status::info!("Press <ctrl+d> or type 'exit' to end");
         }
 
         let exec_command = build_exec_command(command.as_ref().cloned());
         let exec_extra_env = build_exec_extra_env(relay_id.as_ref());
 
-        let (exit_status, _) = {
-            let starter = SessionStarter::new(outputs, record_input, keys, notifier);
+        let exit_status = {
             let mut tty = self.get_tty(true)?;
-            pty::exec(&exec_command, &exec_extra_env, &mut tty, starter)?
+
+            let mut session =
+                Session::new(outputs, metadata.term.size, record_input, keys, notifier);
+
+            pty::exec(
+                &exec_command,
+                &exec_extra_env,
+                metadata.term.size,
+                &mut tty,
+                &mut session,
+                signal_fd,
+            )?
         };
 
         runtime.block_on(async {
@@ -195,15 +192,34 @@ impl cli::Session {
         }
     }
 
+    fn get_session_metadata(&self, config: &config::Recording) -> Result<Metadata> {
+        Ok(Metadata {
+            time: SystemTime::now(),
+            term: self.get_term_info()?,
+            idle_time_limit: self.idle_time_limit.or(config.idle_time_limit),
+            command: self.get_command(config),
+            title: self.title.clone(),
+            env: capture_env(self.rec_env.clone(), config),
+        })
+    }
+
+    fn get_term_info(&self) -> Result<TermInfo> {
+        let tty = self.get_tty(false)?;
+
+        Ok(TermInfo {
+            type_: env::var("TERM").ok(),
+            version: tty.get_version(),
+            size: tty.get_size().into(),
+            theme: tty.get_theme(),
+        })
+    }
+
     fn get_file_writer<N: Notifier + 'static>(
         &self,
         path: &str,
-        config: &config::Recording,
-        term_type: Option<String>,
-        term_version: Option<String>,
-        env: &HashMap<String, String>,
+        metadata: &Metadata,
         notifier: N,
-    ) -> Result<FileWriterStarter> {
+    ) -> Result<FileWriter> {
         let mut overwrite = self.overwrite;
         let mut append = self.append;
         let path = Path::new(path);
@@ -253,20 +269,14 @@ impl cli::Session {
             .truncate(overwrite)
             .open(path)?;
 
-        let metadata = self.build_asciicast_metadata(term_type, term_version, env, config);
         let notifier = Box::new(notifier);
 
-        let writer = match format {
+        let file_writer = match format {
             Format::AsciicastV3 => {
                 let writer = Box::new(LineWriter::new(file));
                 let encoder = Box::new(AsciicastV3Encoder::new(append));
 
-                FileWriterStarter {
-                    writer,
-                    encoder,
-                    metadata,
-                    notifier,
-                }
+                FileWriter::new(writer, encoder, notifier, metadata.clone())
             }
 
             Format::AsciicastV2 => {
@@ -279,72 +289,29 @@ impl cli::Session {
                 let writer = Box::new(LineWriter::new(file));
                 let encoder = Box::new(AsciicastV2Encoder::new(append, time_offset));
 
-                FileWriterStarter {
-                    writer,
-                    encoder,
-                    metadata,
-                    notifier,
-                }
+                FileWriter::new(writer, encoder, notifier, metadata.clone())
             }
 
             Format::Raw => {
                 let writer = Box::new(file);
                 let encoder = Box::new(RawEncoder::new());
 
-                FileWriterStarter {
-                    writer,
-                    encoder,
-                    metadata,
-                    notifier,
-                }
+                FileWriter::new(writer, encoder, notifier, metadata.clone())
             }
 
             Format::Txt => {
                 let writer = Box::new(file);
                 let encoder = Box::new(TextEncoder::new());
 
-                FileWriterStarter {
-                    writer,
-                    encoder,
-                    metadata,
-                    notifier,
-                }
+                FileWriter::new(writer, encoder, notifier, metadata.clone())
             }
         };
 
-        Ok(writer)
-    }
-
-    fn get_term_type(&self) -> Option<String> {
-        env::var("TERM").ok()
-    }
-
-    fn get_term_version(&self) -> Result<Option<String>> {
-        self.get_tty(false).map(|tty| tty.get_version())
+        Ok(file_writer)
     }
 
     fn get_command(&self, config: &config::Recording) -> Option<String> {
         self.command.as_ref().cloned().or(config.command.clone())
-    }
-
-    fn build_asciicast_metadata(
-        &self,
-        term_type: Option<String>,
-        term_version: Option<String>,
-        env: &HashMap<String, String>,
-        config: &config::Recording,
-    ) -> Metadata {
-        let idle_time_limit = self.idle_time_limit.or(config.idle_time_limit);
-        let command = self.get_command(config);
-
-        Metadata {
-            term_type,
-            term_version,
-            idle_time_limit,
-            command,
-            title: self.title.clone(),
-            env: Some(env.clone()),
-        }
     }
 
     fn get_tty(&self, quiet: bool) -> Result<impl Tty> {
@@ -400,19 +367,11 @@ impl Relay {
     }
 }
 
-fn get_relay(
-    target: RelayTarget,
-    config: &Config,
-    term_type: Option<String>,
-    term_version: Option<String>,
-    title: Option<String>,
-    env: &HashMap<String, String>,
-) -> Result<Relay> {
+fn get_relay(target: RelayTarget, metadata: &Metadata, config: &Config) -> Result<Relay> {
     match target {
         RelayTarget::StreamId(id) => {
             let stream = api::create_user_stream(id, config)?;
-            let ws_producer_url =
-                build_producer_url(&stream.ws_producer_url, term_type, term_version, title, env)?;
+            let ws_producer_url = build_producer_url(&stream.ws_producer_url, metadata)?;
 
             Ok(Relay {
                 ws_producer_url,
@@ -427,33 +386,27 @@ fn get_relay(
     }
 }
 
-fn build_producer_url(
-    url: &str,
-    term_type: Option<String>,
-    term_version: Option<String>,
-    title: Option<String>,
-    env: &HashMap<String, String>,
-) -> Result<Url> {
+fn build_producer_url(url: &str, metadata: &Metadata) -> Result<Url> {
     let mut url: Url = url.parse()?;
     let mut params = Vec::new();
 
-    if let Some(type_) = term_type {
-        params.push(("term[type]".to_string(), type_));
+    if let Some(type_) = &metadata.term.type_ {
+        params.push(("term[type]".to_string(), type_.clone()));
     }
 
-    if let Some(version) = term_version {
-        params.push(("term[version]".to_string(), version));
+    if let Some(version) = &metadata.term.version {
+        params.push(("term[version]".to_string(), version.clone()));
     }
 
     if let Ok(shell) = env::var("SHELL") {
         params.push(("shell".to_string(), shell));
     }
 
-    if let Some(title) = title {
-        params.push(("title".to_string(), title));
+    if let Some(title) = &metadata.title {
+        params.push(("title".to_string(), title.clone()));
     }
 
-    for (k, v) in env {
+    for (k, v) in &metadata.env {
         params.push((format!("env[{k}]"), v.to_string()));
     }
 

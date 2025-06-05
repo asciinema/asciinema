@@ -25,6 +25,17 @@ impl From<pty::Winsize> for TtySize {
     }
 }
 
+impl From<TtySize> for pty::Winsize {
+    fn from(tty_size: TtySize) -> Self {
+        pty::Winsize {
+            ws_col: tty_size.0,
+            ws_row: tty_size.1,
+            ws_xpixel: 0,
+            ws_ypixel: 0,
+        }
+    }
+}
+
 impl From<(usize, usize)> for TtySize {
     fn from((cols, rows): (usize, usize)) -> Self {
         TtySize(cols as u16, rows as u16)

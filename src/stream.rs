@@ -1,6 +1,6 @@
 use std::future;
 use std::io;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use avt::Vt;
@@ -12,7 +12,7 @@ use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::info;
 
-use crate::session;
+use crate::session::{self, Metadata};
 use crate::tty::TtySize;
 use crate::tty::TtyTheme;
 
@@ -20,6 +20,8 @@ pub struct Stream {
     request_tx: mpsc::Sender<Request>,
     request_rx: mpsc::Receiver<Request>,
 }
+
+pub struct LiveStream(mpsc::UnboundedSender<session::Event>);
 
 type Request = oneshot::Sender<Subscription>;
 
@@ -30,13 +32,6 @@ struct Subscription {
 
 #[derive(Clone)]
 pub struct Subscriber(mpsc::Sender<Request>);
-
-pub struct OutputStarter {
-    handle: Handle,
-    request_rx: mpsc::Receiver<Request>,
-}
-
-struct Output(mpsc::UnboundedSender<session::Event>);
 
 #[derive(Clone)]
 pub enum Event {
@@ -62,11 +57,20 @@ impl Stream {
         Subscriber(self.request_tx.clone())
     }
 
-    pub fn start(self, handle: Handle) -> OutputStarter {
-        OutputStarter {
-            handle,
-            request_rx: self.request_rx,
-        }
+    pub fn start(self, handle: Handle, metadata: &Metadata) -> LiveStream {
+        let (stream_tx, stream_rx) = mpsc::unbounded_channel();
+        let request_rx = self.request_rx;
+
+        let fut = run(
+            metadata.term.size,
+            metadata.term.theme.clone(),
+            stream_rx,
+            request_rx,
+        );
+
+        handle.spawn(fut);
+
+        LiveStream(stream_tx)
     }
 }
 
@@ -175,24 +179,7 @@ fn build_vt(tty_size: TtySize) -> Vt {
         .build()
 }
 
-impl session::OutputStarter for OutputStarter {
-    fn start(
-        self: Box<Self>,
-        _time: SystemTime,
-        tty_size: TtySize,
-        tty_theme: Option<TtyTheme>,
-    ) -> io::Result<Box<dyn session::Output>> {
-        let (stream_tx, stream_rx) = mpsc::unbounded_channel();
-        let request_rx = self.request_rx;
-
-        self.handle
-            .spawn(async move { run(tty_size, tty_theme, stream_rx, request_rx).await });
-
-        Ok(Box::new(Output(stream_tx)))
-    }
-}
-
-impl session::Output for Output {
+impl session::Output for LiveStream {
     fn event(&mut self, event: session::Event) -> io::Result<()> {
         self.0.send(event).map_err(io::Error::other)
     }

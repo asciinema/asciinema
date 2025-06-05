@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc;
 use std::thread;
@@ -10,22 +11,6 @@ use crate::notifier::Notifier;
 use crate::pty;
 use crate::tty::{TtySize, TtyTheme};
 use crate::util::{JoinHandle, Utf8Decoder};
-
-pub struct SessionStarter<N> {
-    starters: Vec<Box<dyn OutputStarter>>,
-    record_input: bool,
-    keys: KeyBindings,
-    notifier: N,
-}
-
-pub trait OutputStarter {
-    fn start(
-        self: Box<Self>,
-        time: SystemTime,
-        tty_size: TtySize,
-        tty_theme: Option<TtyTheme>,
-    ) -> io::Result<Box<dyn Output>>;
-}
 
 pub trait Output: Send {
     fn event(&mut self, event: Event) -> io::Result<()>;
@@ -41,39 +26,46 @@ pub enum Event {
     Exit(u64, i32),
 }
 
-impl<N: Notifier> SessionStarter<N> {
+pub struct Session<N> {
+    notifier: N,
+    input_decoder: Utf8Decoder,
+    output_decoder: Utf8Decoder,
+    tty_size: TtySize,
+    record_input: bool,
+    keys: KeyBindings,
+    sender: mpsc::Sender<Event>,
+    time_offset: u64,
+    pause_time: Option<u64>,
+    prefix_mode: bool,
+    _handle: JoinHandle,
+}
+
+#[derive(Clone)]
+pub struct Metadata {
+    pub time: SystemTime,
+    pub term: TermInfo,
+    pub idle_time_limit: Option<f64>,
+    pub command: Option<String>,
+    pub title: Option<String>,
+    pub env: HashMap<String, String>,
+}
+
+#[derive(Clone)]
+pub struct TermInfo {
+    pub type_: Option<String>,
+    pub version: Option<String>,
+    pub size: TtySize,
+    pub theme: Option<TtyTheme>,
+}
+
+impl<N: Notifier> Session<N> {
     pub fn new(
-        starters: Vec<Box<dyn OutputStarter>>,
+        mut outputs: Vec<Box<dyn Output>>,
+        tty_size: TtySize,
         record_input: bool,
         keys: KeyBindings,
         notifier: N,
     ) -> Self {
-        SessionStarter {
-            starters,
-            record_input,
-            keys,
-            notifier,
-        }
-    }
-}
-
-impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
-    fn start(self, tty_size: TtySize, tty_theme: Option<TtyTheme>) -> Session<N> {
-        let time = SystemTime::now();
-        let mut outputs = Vec::new();
-
-        for starter in self.starters {
-            match starter.start(time, tty_size, tty_theme.clone()) {
-                Ok(output) => {
-                    outputs.push(output);
-                }
-
-                Err(e) => {
-                    error!("output startup failed: {e:?}");
-                }
-            }
-        }
-
         let (sender, receiver) = mpsc::channel::<Event>();
 
         let handle = thread::spawn(move || {
@@ -101,11 +93,11 @@ impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
         });
 
         Session {
-            notifier: self.notifier,
+            notifier,
             input_decoder: Utf8Decoder::new(),
             output_decoder: Utf8Decoder::new(),
-            record_input: self.record_input,
-            keys: self.keys,
+            record_input,
+            keys,
             tty_size,
             sender,
             time_offset: 0,
@@ -114,23 +106,7 @@ impl<N: Notifier> pty::HandlerStarter<Session<N>> for SessionStarter<N> {
             _handle: JoinHandle::new(handle),
         }
     }
-}
 
-pub struct Session<N> {
-    notifier: N,
-    input_decoder: Utf8Decoder,
-    output_decoder: Utf8Decoder,
-    tty_size: TtySize,
-    record_input: bool,
-    keys: KeyBindings,
-    sender: mpsc::Sender<Event>,
-    time_offset: u64,
-    pause_time: Option<u64>,
-    prefix_mode: bool,
-    _handle: JoinHandle,
-}
-
-impl<N: Notifier> Session<N> {
     fn elapsed_time(&self, time: Duration) -> u64 {
         if let Some(pause_time) = self.pause_time {
             pause_time
@@ -215,11 +191,9 @@ impl<N: Notifier> pty::Handler for Session<N> {
         true
     }
 
-    fn stop(self, time: Duration, exit_status: i32) -> Self {
+    fn stop(&mut self, time: Duration, exit_status: i32) {
         let msg = Event::Exit(self.elapsed_time(time), exit_status);
         self.sender.send(msg).expect("exit send should succeed");
-
-        self
     }
 }
 

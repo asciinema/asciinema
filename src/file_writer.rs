@@ -1,55 +1,58 @@
-use std::collections::HashMap;
 use std::io::{self, Write};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
 use crate::asciicast;
 use crate::encoder;
 use crate::notifier::Notifier;
-use crate::session;
-use crate::tty::{TtySize, TtyTheme};
-
-pub struct FileWriterStarter {
-    pub writer: Box<dyn Write + Send>,
-    pub encoder: Box<dyn encoder::Encoder + Send>,
-    pub metadata: Metadata,
-    pub notifier: Box<dyn Notifier>,
-}
+use crate::session::{self, Metadata};
 
 pub struct FileWriter {
-    pub writer: Box<dyn Write + Send>,
-    pub encoder: Box<dyn encoder::Encoder + Send>,
-    pub notifier: Box<dyn Notifier>,
+    writer: Box<dyn Write + Send>,
+    encoder: Box<dyn encoder::Encoder + Send>,
+    notifier: Box<dyn Notifier>,
+    metadata: Metadata,
 }
 
-pub struct Metadata {
-    pub term_type: Option<String>,
-    pub term_version: Option<String>,
-    pub idle_time_limit: Option<f64>,
-    pub command: Option<String>,
-    pub title: Option<String>,
-    pub env: Option<HashMap<String, String>>,
+pub struct LiveFileWriter {
+    writer: Box<dyn Write + Send>,
+    encoder: Box<dyn encoder::Encoder + Send>,
+    notifier: Box<dyn Notifier>,
 }
 
-impl session::OutputStarter for FileWriterStarter {
-    fn start(
-        mut self: Box<Self>,
-        time: SystemTime,
-        tty_size: TtySize,
-        tty_theme: Option<TtyTheme>,
-    ) -> io::Result<Box<dyn session::Output>> {
-        let timestamp = time.duration_since(UNIX_EPOCH).unwrap().as_secs();
+impl FileWriter {
+    pub fn new(
+        writer: Box<dyn Write + Send>,
+        encoder: Box<dyn encoder::Encoder + Send>,
+        notifier: Box<dyn Notifier>,
+        metadata: Metadata,
+    ) -> Self {
+        FileWriter {
+            writer,
+            encoder,
+            notifier,
+            metadata,
+        }
+    }
+
+    pub fn start(mut self) -> io::Result<LiveFileWriter> {
+        let timestamp = self
+            .metadata
+            .time
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         let header = asciicast::Header {
-            term_cols: tty_size.0,
-            term_rows: tty_size.1,
-            term_type: self.metadata.term_type,
-            term_version: self.metadata.term_version,
-            term_theme: tty_theme,
+            term_cols: self.metadata.term.size.0,
+            term_rows: self.metadata.term.size.1,
+            term_type: self.metadata.term.type_.clone(),
+            term_version: self.metadata.term.version.clone(),
+            term_theme: self.metadata.term.theme.clone(),
             timestamp: Some(timestamp),
             idle_time_limit: self.metadata.idle_time_limit,
             command: self.metadata.command.as_ref().cloned(),
             title: self.metadata.title.as_ref().cloned(),
-            env: self.metadata.env.as_ref().cloned(),
+            env: Some(self.metadata.env.clone()),
         };
 
         if let Err(e) = self.writer.write_all(&self.encoder.header(&header)) {
@@ -60,15 +63,15 @@ impl session::OutputStarter for FileWriterStarter {
             return Err(e);
         }
 
-        Ok(Box::new(FileWriter {
+        Ok(LiveFileWriter {
             writer: self.writer,
             encoder: self.encoder,
             notifier: self.notifier,
-        }))
+        })
     }
 }
 
-impl session::Output for FileWriter {
+impl session::Output for LiveFileWriter {
     fn event(&mut self, event: session::Event) -> io::Result<()> {
         match self.writer.write_all(&self.encoder.event(event.into())) {
             Ok(_) => Ok(()),

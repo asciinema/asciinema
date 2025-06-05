@@ -21,36 +21,39 @@ use signal_hook::consts::{SIGALRM, SIGCHLD, SIGHUP, SIGINT, SIGQUIT, SIGTERM, SI
 use signal_hook::SigId;
 
 use crate::io::set_non_blocking;
-use crate::tty::{Tty, TtySize, TtyTheme};
+use crate::tty::{Tty, TtySize};
 
 type ExtraEnv = HashMap<String, String>;
-
-pub trait HandlerStarter<H: Handler> {
-    fn start(self, tty_size: TtySize, tty_theme: Option<TtyTheme>) -> H;
-}
 
 pub trait Handler {
     fn output(&mut self, time: Duration, data: &[u8]) -> bool;
     fn input(&mut self, time: Duration, data: &[u8]) -> bool;
     fn resize(&mut self, time: Duration, tty_size: TtySize) -> bool;
-    fn stop(self, time: Duration, exit_status: i32) -> Self;
+    fn stop(&mut self, time: Duration, exit_status: i32);
 }
 
-pub fn exec<S: AsRef<str>, T: Tty, H: Handler, R: HandlerStarter<H>>(
+pub fn open_signal_fd() -> anyhow::Result<SignalFd> {
+    SignalFd::open(&[SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP, SIGALRM, SIGCHLD])
+}
+
+pub fn exec<S: AsRef<str>, T: Tty, H: Handler>(
     command: &[S],
     extra_env: &ExtraEnv,
+    initial_tty_size: TtySize,
     tty: &mut T,
-    handler_starter: R,
-) -> anyhow::Result<(i32, H)> {
-    let winsize = tty.get_size();
+    handler: &mut H,
+    signal_fd: SignalFd,
+) -> anyhow::Result<i32> {
+    let winsize = initial_tty_size.into();
     let epoch = Instant::now();
-    let mut handler = handler_starter.start(winsize.into(), tty.get_theme());
     let result = unsafe { pty::forkpty(Some(&winsize), None) }?;
 
     match result {
         pty::ForkptyResult::Parent { child, master } => {
-            handle_parent(master, child, tty, &mut handler, epoch)
-                .map(|code| (code, handler.stop(epoch.elapsed(), code)))
+            let code = handle_parent(master, child, tty, handler, epoch, signal_fd)?;
+            handler.stop(epoch.elapsed(), code);
+
+            Ok(code)
         }
 
         pty::ForkptyResult::Child => {
@@ -66,8 +69,9 @@ fn handle_parent<T: Tty, H: Handler>(
     tty: &mut T,
     handler: &mut H,
     epoch: Instant,
+    signal_fd: SignalFd,
 ) -> anyhow::Result<i32> {
-    let wait_result = match copy(master_fd, child, tty, handler, epoch) {
+    let wait_result = match copy(master_fd, child, tty, handler, epoch, signal_fd) {
         Ok(Some(status)) => Ok(status),
         Ok(None) => wait::waitpid(child, None),
 
@@ -93,6 +97,7 @@ fn copy<T: Tty, H: Handler>(
     tty: &mut T,
     handler: &mut H,
     epoch: Instant,
+    mut signal_fd: SignalFd,
 ) -> anyhow::Result<Option<WaitStatus>> {
     let mut master = File::from(master_fd);
     let master_raw_fd = master.as_raw_fd();
@@ -100,9 +105,6 @@ fn copy<T: Tty, H: Handler>(
     let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
     let mut master_closed = false;
-
-    let mut signal_fd =
-        SignalFd::open(&[SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP, SIGALRM, SIGCHLD])?;
 
     set_non_blocking(&master)?;
 
@@ -306,7 +308,7 @@ fn write_non_blocking<W: Write + ?Sized>(sink: &mut W, buf: &[u8]) -> io::Result
     }
 }
 
-struct SignalFd {
+pub struct SignalFd {
     sigids: Vec<SigId>,
     rx: OwnedFd,
 }
@@ -371,26 +373,15 @@ impl Drop for SignalFd {
 
 #[cfg(test)]
 mod tests {
-    use super::{Handler, HandlerStarter};
+    use super::{Handler, SignalFd};
     use crate::pty::ExtraEnv;
-    use crate::tty::{FixedSizeTty, NullTty, TtySize, TtyTheme};
+    use crate::tty::{NullTty, TtySize};
     use std::time::Duration;
-
-    struct TestHandlerStarter;
 
     #[derive(Default)]
     struct TestHandler {
         tty_size: TtySize,
         output: Vec<Vec<u8>>,
-    }
-
-    impl HandlerStarter<TestHandler> for TestHandlerStarter {
-        fn start(self, tty_size: TtySize, _tty_theme: Option<TtyTheme>) -> TestHandler {
-            TestHandler {
-                tty_size,
-                output: Vec::new(),
-            }
-        }
     }
 
     impl Handler for TestHandler {
@@ -408,12 +399,17 @@ mod tests {
             true
         }
 
-        fn stop(self, _time: Duration, _exit_status: i32) -> Self {
-            self
-        }
+        fn stop(&mut self, _time: Duration, _exit_status: i32) {}
     }
 
     impl TestHandler {
+        fn new() -> Self {
+            Self {
+                tty_size: Default::default(),
+                output: Vec::new(),
+            }
+        }
+
         fn output(&self) -> Vec<String> {
             self.output
                 .iter()
@@ -422,9 +418,16 @@ mod tests {
         }
     }
 
+    fn setup() -> (TestHandler, SignalFd) {
+        let handler = TestHandler::new();
+        let signal_fd = super::open_signal_fd().unwrap();
+
+        (handler, signal_fd)
+    }
+
     #[test]
     fn exec_basic() {
-        let starter = TestHandlerStarter;
+        let (mut handler, signal_fd) = setup();
 
         let code = r#"
 import sys;
@@ -435,11 +438,13 @@ time.sleep(0.1);
 sys.stdout.write('bar');
 "#;
 
-        let (_code, handler) = super::exec(
+        let _code = super::exec(
             &["python3", "-c", code],
             &ExtraEnv::new(),
+            TtySize::default(),
             &mut NullTty::open().unwrap(),
-            starter,
+            &mut handler,
+            signal_fd,
         )
         .unwrap();
 
@@ -449,13 +454,15 @@ sys.stdout.write('bar');
 
     #[test]
     fn exec_no_output() {
-        let starter = TestHandlerStarter;
+        let (mut handler, signal_fd) = setup();
 
-        let (_code, handler) = super::exec(
+        let _code = super::exec(
             &["true"],
             &ExtraEnv::new(),
+            TtySize::default(),
             &mut NullTty::open().unwrap(),
-            starter,
+            &mut handler,
+            signal_fd,
         )
         .unwrap();
 
@@ -464,13 +471,15 @@ sys.stdout.write('bar');
 
     #[test]
     fn exec_quick() {
-        let starter = TestHandlerStarter;
+        let (mut handler, signal_fd) = setup();
 
-        let (_code, handler) = super::exec(
+        let _code = super::exec(
             &["printf", "hello world\n"],
             &ExtraEnv::new(),
+            TtySize::default(),
             &mut NullTty::open().unwrap(),
-            starter,
+            &mut handler,
+            signal_fd,
         )
         .unwrap();
 
@@ -479,34 +488,21 @@ sys.stdout.write('bar');
 
     #[test]
     fn exec_extra_env() {
-        let starter = TestHandlerStarter;
+        let (mut handler, signal_fd) = setup();
 
         let mut env = ExtraEnv::new();
         env.insert("ASCIINEMA_TEST_FOO".to_owned(), "bar".to_owned());
 
-        let (_code, handler) = super::exec(
+        let _code = super::exec(
             &["sh", "-c", "echo -n $ASCIINEMA_TEST_FOO"],
             &env,
+            TtySize::default(),
             &mut NullTty::open().unwrap(),
-            starter,
+            &mut handler,
+            signal_fd,
         )
         .unwrap();
 
         assert_eq!(handler.output(), vec!["bar"]);
-    }
-
-    #[test]
-    fn exec_winsize_override() {
-        let starter = TestHandlerStarter;
-
-        let (_code, handler) = super::exec(
-            &["true"],
-            &ExtraEnv::new(),
-            &mut FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50)),
-            starter,
-        )
-        .unwrap();
-
-        assert_eq!(handler.tty_size, TtySize(100, 50));
     }
 }
