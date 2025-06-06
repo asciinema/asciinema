@@ -19,13 +19,12 @@ struct EventSerializer(u64);
 
 pub async fn stream<S: Stream<Item = Result<Event, BroadcastStreamRecvError>>>(
     stream: S,
-) -> Result<impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>>> {
+) -> impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>> {
     let header = stream::once(future::ready(Ok(MAGIC_STRING.into())));
     let mut serializer = EventSerializer(0);
-
     let events = stream.map(move |event| event.map(|event| serializer.serialize_event(event)));
 
-    Ok(header.chain(events))
+    header.chain(events)
 }
 
 impl EventSerializer {

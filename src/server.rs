@@ -122,7 +122,7 @@ async fn handle_socket(socket: WebSocket, subscriber: Subscriber) -> anyhow::Res
     let stream = subscriber.subscribe().await?;
 
     let result = alis::stream(stream)
-        .await?
+        .await
         .map(ws_result)
         .chain(futures_util::stream::once(future::ready(Ok(close_msg))))
         .forward(sink)

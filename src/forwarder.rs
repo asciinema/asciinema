@@ -143,7 +143,7 @@ async fn event_stream(
     let stream = subscriber.subscribe().await?;
 
     let stream = alis::stream(stream)
-        .await?
+        .await
         .map(ws_result)
         .chain(futures_util::stream::once(future::ready(Ok(
             close_message(),
