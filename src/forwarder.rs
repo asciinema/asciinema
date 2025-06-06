@@ -33,17 +33,13 @@ pub async fn forward<N: Notifier>(
     subscriber: Subscriber,
     mut notifier: N,
     shutdown_token: tokio_util::sync::CancellationToken,
-) {
+) -> anyhow::Result<()> {
     info!("forwarding to {url}");
     let mut reconnect_attempt = 0;
     let mut connection_count: u64 = 0;
 
     loop {
-        let session_stream = subscriber
-            .subscribe()
-            .await
-            .expect("stream should be alive");
-
+        let session_stream = subscriber.subscribe().await?;
         let conn = connect_and_forward(&url, session_stream);
         tokio::pin!(conn);
 
@@ -129,6 +125,8 @@ pub async fn forward<N: Notifier>(
             _ = shutdown_token.cancelled() => break
         }
     }
+
+    Ok(())
 }
 
 async fn connect_and_forward(
