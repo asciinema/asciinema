@@ -6,6 +6,7 @@ use std::process::Stdio;
 use async_trait::async_trait;
 use tokio::process::Command;
 use tokio::sync::mpsc;
+use tracing::error;
 use which::which;
 
 #[async_trait]
@@ -128,7 +129,8 @@ pub fn background(mut notifier: Box<dyn Notifier>) -> BackgroundNotifier {
 
     tokio::spawn(async move {
         while let Some(message) = rx.recv().await {
-            if notifier.notify(message).await.is_err() {
+            if let Err(e) = notifier.notify(message).await {
+                error!("notification failed: {e}");
                 break;
             }
         }
