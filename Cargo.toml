@@ -40,7 +40,7 @@ rgb = { version = "0.8.37", default-features = false }
 url = "2.5.0"
 tokio-tungstenite = { version = "0.26.2", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 rustls = { version = "0.23.26", default-features = false, features = ["aws_lc_rs"] }
-tokio-util = "0.7.10"
+tokio-util = { version = "0.7.10", features = ["rt"] }
 rand = "0.9.1"
 
 [build-dependencies]

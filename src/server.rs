@@ -13,8 +13,10 @@ use axum::serve::ListenerExt;
 use axum::Router;
 use futures_util::{sink, StreamExt};
 use rust_embed::RustEmbed;
+use tokio::time::{self, Duration};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_util::sync::CancellationToken;
+use tokio_util::task::TaskTracker;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::info;
 
@@ -24,6 +26,12 @@ use crate::stream::Subscriber;
 #[derive(RustEmbed)]
 #[folder = "assets/"]
 struct Assets;
+
+#[derive(Clone)]
+struct AppState {
+    subscriber: Subscriber,
+    tracker: TaskTracker,
+}
 
 pub async fn serve(
     listener: std::net::TcpListener,
@@ -36,9 +44,16 @@ pub async fn serve(
     let trace =
         TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true));
 
+    let tracker = TaskTracker::new();
+
+    let state = AppState {
+        subscriber,
+        tracker: tracker.clone(),
+    };
+
     let app = Router::new()
         .route("/ws", get(ws_handler))
-        .with_state(subscriber)
+        .with_state(state)
         .fallback(static_handler)
         .layer(trace);
 
@@ -55,12 +70,17 @@ pub async fn serve(
         let _ = tcp_stream.set_nodelay(true);
     });
 
-    axum::serve(
+    let result = axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
     .with_graceful_shutdown(signal)
-    .await
+    .await;
+
+    tracker.close();
+    let _ = time::timeout(Duration::from_secs(3), tracker.wait()).await;
+
+    result
 }
 
 async fn static_handler(uri: Uri) -> impl IntoResponse {
@@ -99,14 +119,18 @@ fn mime_from_path(path: &str) -> &str {
 async fn ws_handler(
     ws: WebSocketUpgrade,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    State(subscriber): State<Subscriber>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
     ws.protocols(["v1.alis"])
         .on_upgrade(move |socket| async move {
             info!("websocket client {addr} connected");
 
             if socket.protocol().is_some() {
-                let _ = handle_socket(socket, subscriber).await;
+                let _ = state
+                    .tracker
+                    .track_future(handle_socket(socket, state.subscriber))
+                    .await;
+
                 info!("websocket client {addr} disconnected");
             } else {
                 info!("subprotocol negotiation failed, closing connection");
