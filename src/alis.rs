@@ -17,7 +17,7 @@ static MAGIC_STRING: &str = "ALiS\x01";
 
 struct EventSerializer(u64);
 
-pub async fn stream<S: Stream<Item = Result<Event, BroadcastStreamRecvError>>>(
+pub fn stream<S: Stream<Item = Result<Event, BroadcastStreamRecvError>>>(
     stream: S,
 ) -> impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>> {
     let header = stream::once(future::ready(Ok(MAGIC_STRING.into())));
