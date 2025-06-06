@@ -49,9 +49,9 @@ pub async fn forward<N: Notifier>(
             _ = time::sleep(Duration::from_secs(3)) => {
                 if reconnect_attempt > 0 {
                     if connection_count == 0 {
-                        let _ = notifier.notify("Connected to the server".to_string());
+                        let _ = notifier.notify("Connected to the server".to_string()).await;
                     } else {
-                        let _ = notifier.notify("Reconnected to the server".to_string());
+                        let _ = notifier.notify("Reconnected to the server".to_string()).await;
                     }
                 }
 
@@ -68,7 +68,10 @@ pub async fn forward<N: Notifier>(
             }
 
             Ok(false) => {
-                let _ = notifier.notify("Stream halted by the server".to_string());
+                let _ = notifier
+                    .notify("Stream halted by the server".to_string())
+                    .await;
+
                 break;
             }
 
@@ -82,7 +85,8 @@ pub async fn forward<N: Notifier>(
                     // This applies to asciinema-server v20241103 and earlier.
 
                     let _ = notifier
-                        .notify("The server version is too old, forwarding failed".to_string());
+                        .notify("The server version is too old, forwarding failed".to_string())
+                        .await;
 
                     break;
                 }
@@ -94,9 +98,11 @@ pub async fn forward<N: Notifier>(
                         // This happens when the server doesn't support our protocol (version).
                         // This applies to asciinema-server versions newer than v20241103.
 
-                        let _ = notifier.notify(
-                            "CLI not compatible with the server, forwarding failed".to_string(),
-                        );
+                        let _ = notifier
+                            .notify(
+                                "CLI not compatible with the server, forwarding failed".to_string(),
+                            )
+                            .await;
 
                         break;
                     }
@@ -107,10 +113,12 @@ pub async fn forward<N: Notifier>(
                 if reconnect_attempt == 0 {
                     if connection_count == 0 {
                         let _ = notifier
-                            .notify("Cannot connect to the server, retrying...".to_string());
+                            .notify("Cannot connect to the server, retrying...".to_string())
+                            .await;
                     } else {
                         let _ = notifier
-                            .notify("Disconnected from the server, reconnecting...".to_string());
+                            .notify("Disconnected from the server, reconnecting...".to_string())
+                            .await;
                     }
                 }
             }

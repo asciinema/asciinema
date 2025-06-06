@@ -1,27 +1,22 @@
 use std::future;
-use std::io;
 use std::time::{Duration, Instant};
 
-use anyhow::Result;
+use async_trait::async_trait;
 use avt::Vt;
 use futures_util::{stream, StreamExt};
-use tokio::runtime::Handle;
 use tokio::sync::{broadcast, mpsc, oneshot};
-use tokio::time;
+use tokio::{io, time};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::BroadcastStream;
 use tracing::info;
 
 use crate::session::{self, Metadata};
-use crate::tty::TtySize;
-use crate::tty::TtyTheme;
+use crate::tty::{TtySize, TtyTheme};
 
 pub struct Stream {
     request_tx: mpsc::Sender<Request>,
     request_rx: mpsc::Receiver<Request>,
 }
-
-pub struct LiveStream(mpsc::UnboundedSender<session::Event>);
 
 type Request = oneshot::Sender<Subscription>;
 
@@ -29,9 +24,6 @@ struct Subscription {
     init: Event,
     events_rx: broadcast::Receiver<Event>,
 }
-
-#[derive(Clone)]
-pub struct Subscriber(mpsc::Sender<Request>);
 
 #[derive(Clone)]
 pub enum Event {
@@ -43,9 +35,14 @@ pub enum Event {
     Exit(u64, u64, i32),
 }
 
+#[derive(Clone)]
+pub struct Subscriber(mpsc::Sender<Request>);
+
+pub struct LiveStream(mpsc::UnboundedSender<session::Event>);
+
 impl Stream {
     pub fn new() -> Self {
-        let (request_tx, request_rx) = mpsc::channel(1);
+        let (request_tx, request_rx) = mpsc::channel(16);
 
         Stream {
             request_tx,
@@ -57,18 +54,16 @@ impl Stream {
         Subscriber(self.request_tx.clone())
     }
 
-    pub fn start(self, handle: Handle, metadata: &Metadata) -> LiveStream {
+    pub async fn start(self, metadata: &Metadata) -> LiveStream {
         let (stream_tx, stream_rx) = mpsc::unbounded_channel();
         let request_rx = self.request_rx;
 
-        let fut = run(
+        tokio::spawn(run(
             metadata.term.size,
             metadata.term.theme.clone(),
             stream_rx,
             request_rx,
-        );
-
-        handle.spawn(fut);
+        ));
 
         LiveStream(stream_tx)
     }
@@ -162,7 +157,8 @@ async fn run(
 impl Subscriber {
     pub async fn subscribe(
         &self,
-    ) -> Result<impl futures_util::Stream<Item = Result<Event, BroadcastStreamRecvError>>> {
+    ) -> anyhow::Result<impl futures_util::Stream<Item = Result<Event, BroadcastStreamRecvError>>>
+    {
         let (tx, rx) = oneshot::channel();
         self.0.send(tx).await?;
         let subscription = time::timeout(Duration::from_secs(5), rx).await??;
@@ -179,12 +175,13 @@ fn build_vt(tty_size: TtySize) -> Vt {
         .build()
 }
 
+#[async_trait]
 impl session::Output for LiveStream {
-    fn event(&mut self, event: session::Event) -> io::Result<()> {
+    async fn event(&mut self, event: session::Event) -> io::Result<()> {
         self.0.send(event).map_err(io::Error::other)
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    async fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
 }

@@ -1,15 +1,16 @@
 use std::env;
 use std::ffi::OsStr;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
-use std::sync::mpsc;
-use std::thread;
+use std::process::Stdio;
 
-use anyhow::Result;
+use async_trait::async_trait;
+use tokio::process::Command;
+use tokio::sync::mpsc;
 use which::which;
 
+#[async_trait]
 pub trait Notifier: Send {
-    fn notify(&mut self, message: String) -> Result<()>;
+    async fn notify(&mut self, message: String) -> anyhow::Result<()>;
 }
 
 pub fn get_notifier(custom_command: Option<String>) -> Box<dyn Notifier> {
@@ -34,11 +35,12 @@ impl TmuxNotifier {
     }
 }
 
+#[async_trait]
 impl Notifier for TmuxNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
         let args = ["display-message", &format!("asciinema: {message}")];
 
-        exec(&mut Command::new(&self.0), &args)
+        exec(&mut Command::new(&self.0), &args).await
     }
 }
 
@@ -50,9 +52,10 @@ impl LibNotifyNotifier {
     }
 }
 
+#[async_trait]
 impl Notifier for LibNotifyNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
-        exec(&mut Command::new(&self.0), &["asciinema", &message])
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
+        exec(&mut Command::new(&self.0), &["asciinema", &message]).await
     }
 }
 
@@ -64,43 +67,48 @@ impl AppleScriptNotifier {
     }
 }
 
+#[async_trait]
 impl Notifier for AppleScriptNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
         let text = message.replace('\"', "\\\"");
         let script = format!("display notification \"{text}\" with title \"asciinema\"");
 
-        exec(&mut Command::new(&self.0), &["-e", &script])
+        exec(&mut Command::new(&self.0), &["-e", &script]).await
     }
 }
 
 pub struct CustomNotifier(String);
 
+#[async_trait]
 impl Notifier for CustomNotifier {
-    fn notify(&mut self, text: String) -> Result<()> {
+    async fn notify(&mut self, text: String) -> anyhow::Result<()> {
         exec::<&str>(
             Command::new("/bin/sh")
                 .args(["-c", &self.0])
                 .env("TEXT", text),
             &[],
         )
+        .await
     }
 }
 
 pub struct NullNotifier;
 
+#[async_trait]
 impl Notifier for NullNotifier {
-    fn notify(&mut self, _text: String) -> Result<()> {
+    async fn notify(&mut self, _text: String) -> anyhow::Result<()> {
         Ok(())
     }
 }
 
-fn exec<S: AsRef<OsStr>>(command: &mut Command, args: &[S]) -> Result<()> {
+async fn exec<S: AsRef<OsStr>>(command: &mut Command, args: &[S]) -> anyhow::Result<()> {
     let status = command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .args(args)
-        .status()?;
+        .status()
+        .await?;
 
     if status.success() {
         Ok(())
@@ -113,27 +121,28 @@ fn exec<S: AsRef<OsStr>>(command: &mut Command, args: &[S]) -> Result<()> {
 }
 
 #[derive(Clone)]
-pub struct ThreadedNotifier(mpsc::Sender<String>);
+pub struct BackgroundNotifier(mpsc::Sender<String>);
 
-pub fn threaded(mut notifier: Box<dyn Notifier>) -> ThreadedNotifier {
-    let (tx, rx) = mpsc::channel();
+pub fn background(mut notifier: Box<dyn Notifier>) -> BackgroundNotifier {
+    let (tx, mut rx) = mpsc::channel(16);
 
-    thread::spawn(move || {
-        for message in &rx {
-            if notifier.notify(message).is_err() {
+    tokio::spawn(async move {
+        while let Some(message) = rx.recv().await {
+            if notifier.notify(message).await.is_err() {
                 break;
             }
         }
 
-        for _ in rx {}
+        while rx.recv().await.is_some() {}
     });
 
-    ThreadedNotifier(tx)
+    BackgroundNotifier(tx)
 }
 
-impl Notifier for ThreadedNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
-        self.0.send(message)?;
+#[async_trait]
+impl Notifier for BackgroundNotifier {
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
+        self.0.send(message).await?;
 
         Ok(())
     }

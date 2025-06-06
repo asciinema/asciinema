@@ -1,13 +1,11 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
-use std::fs::{self, File, OpenOptions};
-use std::io::LineWriter;
-use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, bail, Context, Result};
+use tokio::net::TcpListener;
 use tokio::runtime::Runtime;
 use tokio::time;
 use tokio_util::sync::CancellationToken;
@@ -20,15 +18,14 @@ use crate::api;
 use crate::asciicast::{self, Version};
 use crate::cli::{self, Format, RelayTarget};
 use crate::config::{self, Config};
-use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, RawEncoder, TextEncoder};
+use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, Encoder, RawEncoder, TextEncoder};
 use crate::file_writer::FileWriter;
 use crate::forwarder;
 use crate::hash;
 use crate::locale;
-use crate::notifier::{self, Notifier, NullNotifier};
-use crate::pty;
+use crate::notifier::{self, BackgroundNotifier, Notifier, NullNotifier};
 use crate::server;
-use crate::session::{self, KeyBindings, Metadata, Session, TermInfo};
+use crate::session::{self, KeyBindings, Metadata, TermInfo};
 use crate::status;
 use crate::stream::Stream;
 use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
@@ -37,15 +34,25 @@ impl cli::Session {
     pub fn run(mut self) -> Result<ExitCode> {
         locale::check_utf8_locale()?;
 
+        let exit_status = Runtime::new()?.block_on(self.do_run())?;
+
+        if !self.return_ || exit_status == 0 {
+            Ok(ExitCode::from(0))
+        } else if exit_status > 0 {
+            Ok(ExitCode::from(exit_status as u8))
+        } else {
+            Ok(ExitCode::from(1))
+        }
+    }
+
+    async fn do_run(&mut self) -> Result<i32> {
         let config = Config::new(self.server_url.clone())?;
-        let runtime = Runtime::new()?;
         let command = self.get_command(&config.recording);
         let keys = get_key_bindings(&config.recording)?;
-        let notifier = notifier::threaded(get_notifier(&config));
-        let signal_fd = pty::open_signal_fd()?;
-        let metadata = self.get_session_metadata(&config.recording)?;
-        let file_writer = self.get_file_writer(&metadata, notifier.clone())?;
-        let listener = self.get_listener()?;
+        let notifier = get_notifier(&config);
+        let metadata = self.get_session_metadata(&config.recording).await?;
+        let file_writer = self.get_file_writer(&metadata, notifier.clone()).await?;
+        let listener = self.get_listener().await?;
         let relay = self.get_relay(&metadata, &config)?;
         let relay_id = relay.as_ref().map(|r| r.id());
         let parent_session_relay_id = get_parent_session_relay_id();
@@ -101,12 +108,12 @@ impl cli::Session {
         let mut outputs: Vec<Box<dyn session::Output>> = Vec::new();
 
         if let Some(writer) = file_writer {
-            let output = writer.start()?;
+            let output = writer.start().await?;
             outputs.push(Box::new(output));
         }
 
         let server = listener.map(|listener| {
-            runtime.spawn(server::serve(
+            tokio::spawn(server::serve(
                 listener,
                 stream.subscriber(),
                 shutdown_token.clone(),
@@ -114,7 +121,7 @@ impl cli::Session {
         });
 
         let forwarder = relay.map(|relay| {
-            runtime.spawn(forwarder::forward(
+            tokio::spawn(forwarder::forward(
                 relay.ws_producer_url,
                 stream.subscriber(),
                 notifier.clone(),
@@ -123,67 +130,52 @@ impl cli::Session {
         });
 
         if server.is_some() || forwarder.is_some() {
-            let output = stream.start(runtime.handle().clone(), &metadata);
+            let output = stream.start(&metadata).await;
             outputs.push(Box::new(output));
         }
 
-        let exit_status = {
-            let mut tty = self.get_tty(true)?;
+        let command = &build_exec_command(command.as_ref().cloned());
+        let extra_env = &build_exec_extra_env(relay_id.as_ref());
 
-            let mut session = Session::new(
-                outputs,
-                metadata.term.size,
+        let exit_status = {
+            let mut tty = self.get_tty(true).await?;
+
+            session::run(
+                command,
+                extra_env,
+                tty.as_mut(),
                 self.rec_input || config.recording.rec_input,
+                outputs,
                 keys,
                 notifier,
-            );
-
-            pty::exec(
-                &build_exec_command(command.as_ref().cloned()),
-                &build_exec_extra_env(relay_id.as_ref()),
-                metadata.term.size,
-                &mut tty,
-                &mut session,
-                signal_fd,
-            )?
+            )
+            .await?
         };
 
-        runtime.block_on(async {
-            debug!("session shutting down...");
-            shutdown_token.cancel();
-
-            if let Some(task) = server {
-                debug!("waiting for server shutdown...");
-                let _ = time::timeout(Duration::from_secs(5), task).await;
-            }
-
-            if let Some(task) = forwarder {
-                debug!("waiting for forwarder shutdown...");
-                let _ = time::timeout(Duration::from_secs(5), task).await;
-            }
-
-            debug!("shutdown complete");
-        });
-
         status::info!("asciinema session ended");
+        shutdown_token.cancel();
 
-        if !self.return_ || exit_status == 0 {
-            Ok(ExitCode::from(0))
-        } else if exit_status > 0 {
-            Ok(ExitCode::from(exit_status as u8))
-        } else {
-            Ok(ExitCode::from(1))
+        if let Some(task) = server {
+            debug!("waiting for server shutdown...");
+            let _ = time::timeout(Duration::from_secs(5), task).await;
         }
+
+        if let Some(task) = forwarder {
+            debug!("waiting for forwarder shutdown...");
+            let _ = time::timeout(Duration::from_secs(5), task).await;
+        }
+
+        Ok(exit_status)
     }
 
     fn get_command(&self, config: &config::Recording) -> Option<String> {
         self.command.as_ref().cloned().or(config.command.clone())
     }
 
-    fn get_session_metadata(&self, config: &config::Recording) -> Result<Metadata> {
+    async fn get_session_metadata(&self, config: &config::Recording) -> Result<Metadata> {
         Ok(Metadata {
             time: SystemTime::now(),
-            term: self.get_term_info()?,
+            term: self.get_term_info().await?,
             idle_time_limit: self.idle_time_limit.or(config.idle_time_limit),
             command: self.get_command(config),
             title: self.title.clone(),
@@ -191,18 +183,18 @@ impl cli::Session {
         })
     }
 
-    fn get_term_info(&self) -> Result<TermInfo> {
-        let tty = self.get_tty(false)?;
+    async fn get_term_info(&self) -> Result<TermInfo> {
+        let tty = self.get_tty(false).await?;
 
         Ok(TermInfo {
             type_: env::var("TERM").ok(),
-            version: tty.get_version(),
+            version: tty.get_version().await,
             size: tty.get_size().into(),
-            theme: tty.get_theme(),
+            theme: tty.get_theme().await,
         })
     }
 
-    fn get_file_writer<N: Notifier + 'static>(
+    async fn get_file_writer<N: Notifier + 'static>(
         &self,
         metadata: &Metadata,
         notifier: N,
@@ -213,47 +205,18 @@ impl cli::Session {
 
         let path = Path::new(path);
         let (overwrite, append) = self.get_file_mode(path)?;
-        let file = self.open_output_file(path, overwrite, append)?;
+        let file = self.open_output_file(path, overwrite, append).await?;
         let format = self.get_file_format(path, append)?;
+        let writer = Box::new(file);
         let notifier = Box::new(notifier);
+        let encoder = self.get_encoder(format, path, append)?;
 
-        let file_writer = match format {
-            Format::AsciicastV3 => {
-                let writer = Box::new(LineWriter::new(file));
-                let encoder = Box::new(AsciicastV3Encoder::new(append));
-
-                FileWriter::new(writer, encoder, notifier, metadata.clone())
-            }
-
-            Format::AsciicastV2 => {
-                let time_offset = if append {
-                    asciicast::get_duration(path)?
-                } else {
-                    0
-                };
-
-                let writer = Box::new(LineWriter::new(file));
-                let encoder = Box::new(AsciicastV2Encoder::new(append, time_offset));
-
-                FileWriter::new(writer, encoder, notifier, metadata.clone())
-            }
-
-            Format::Raw => {
-                let writer = Box::new(file);
-                let encoder = Box::new(RawEncoder::new());
-
-                FileWriter::new(writer, encoder, notifier, metadata.clone())
-            }
-
-            Format::Txt => {
-                let writer = Box::new(file);
-                let encoder = Box::new(TextEncoder::new());
-
-                FileWriter::new(writer, encoder, notifier, metadata.clone())
-            }
-        };
-
-        Ok(Some(file_writer))
+        Ok(Some(FileWriter::new(
+            writer,
+            encoder,
+            notifier,
+            metadata.clone(),
+        )))
     }
 
     fn get_file_mode(&self, path: &Path) -> Result<(bool, bool)> {
@@ -261,7 +224,7 @@ impl cli::Session {
         let mut append = self.append;
 
         if path.exists() {
-            let metadata = fs::metadata(path)?;
+            let metadata = std::fs::metadata(path)?;
 
             if metadata.len() == 0 {
                 overwrite = true;
@@ -298,27 +261,58 @@ impl cli::Session {
         })
     }
 
-    fn open_output_file(&self, path: &Path, overwrite: bool, append: bool) -> Result<File> {
+    fn get_encoder(
+        &self,
+        format: Format,
+        path: &Path,
+        append: bool,
+    ) -> Result<Box<dyn Encoder + Send>> {
+        match format {
+            Format::AsciicastV3 => Ok(Box::new(AsciicastV3Encoder::new(append))),
+
+            Format::AsciicastV2 => {
+                let time_offset = if append {
+                    asciicast::get_duration(path)?
+                } else {
+                    0
+                };
+
+                Ok(Box::new(AsciicastV2Encoder::new(append, time_offset)))
+            }
+
+            Format::Raw => Ok(Box::new(RawEncoder::new())),
+            Format::Txt => Ok(Box::new(TextEncoder::new())),
+        }
+    }
+
+    async fn open_output_file(
+        &self,
+        path: &Path,
+        overwrite: bool,
+        append: bool,
+    ) -> Result<tokio::fs::File> {
         if let Some(dir) = path.parent() {
-            let _ = fs::create_dir_all(dir);
+            let _ = std::fs::create_dir_all(dir);
         }
 
-        OpenOptions::new()
+        tokio::fs::File::options()
             .write(true)
             .append(append)
             .create(overwrite)
             .create_new(!overwrite && !append)
             .truncate(overwrite)
             .open(path)
+            .await
             .map_err(|e| e.into())
     }
 
-    fn get_listener(&self) -> Result<Option<TcpListener>> {
+    async fn get_listener(&self) -> Result<Option<TcpListener>> {
         let Some(addr) = self.stream_local else {
             return Ok(None);
         };
 
         TcpListener::bind(addr)
+            .await
             .map(Some)
             .context("cannot start listener")
     }
@@ -348,19 +342,19 @@ impl cli::Session {
         Ok(Some(relay))
     }
 
-    fn get_tty(&self, quiet: bool) -> Result<impl Tty> {
+    async fn get_tty(&self, quiet: bool) -> Result<Box<dyn Tty>> {
         let (cols, rows) = self.window_size.unwrap_or((None, None));
 
         if self.headless {
-            Ok(FixedSizeTty::new(NullTty::open()?, cols, rows))
-        } else if let Ok(dev_tty) = DevTty::open() {
-            Ok(FixedSizeTty::new(dev_tty, cols, rows))
+            Ok(Box::new(FixedSizeTty::new(NullTty, cols, rows)))
+        } else if let Ok(dev_tty) = DevTty::open().await {
+            Ok(Box::new(FixedSizeTty::new(dev_tty, cols, rows)))
         } else {
             if !quiet {
                 status::info!("TTY not available, recording in headless mode");
             }
 
-            Ok(FixedSizeTty::new(NullTty::open()?, cols, rows))
+            Ok(Box::new(FixedSizeTty::new(NullTty, cols, rows)))
         }
     }
 
@@ -384,8 +378,8 @@ impl cli::Session {
         Ok(())
     }
 
-    fn open_log_file(&self, path: &PathBuf) -> Result<File> {
-        OpenOptions::new()
+    fn open_log_file(&self, path: &PathBuf) -> Result<std::fs::File> {
+        std::fs::File::options()
             .create(true)
             .append(true)
             .open(path)
@@ -470,12 +464,14 @@ fn capture_env(var_names: Option<String>, config: &config::Recording) -> HashMap
         .collect::<HashMap<_, _>>()
 }
 
-fn get_notifier(config: &Config) -> Box<dyn Notifier> {
-    if config.notifications.enabled {
+fn get_notifier(config: &Config) -> BackgroundNotifier {
+    let inner = if config.notifications.enabled {
         notifier::get_notifier(config.notifications.command.clone())
     } else {
         Box::new(NullNotifier)
-    }
+    };
+
+    notifier::background(inner)
 }
 
 fn build_exec_command(command: Option<String>) -> Vec<String> {

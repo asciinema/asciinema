@@ -1,28 +1,30 @@
-use std::io::{self, Write};
 use std::time::UNIX_EPOCH;
 
+use async_trait::async_trait;
+use tokio::io::{self, AsyncWrite, AsyncWriteExt};
+
 use crate::asciicast;
-use crate::encoder;
+use crate::encoder::Encoder;
 use crate::notifier::Notifier;
 use crate::session::{self, Metadata};
 
 pub struct FileWriter {
-    writer: Box<dyn Write + Send>,
-    encoder: Box<dyn encoder::Encoder + Send>,
+    writer: Box<dyn AsyncWrite + Send + Unpin>,
+    encoder: Box<dyn Encoder + Send>,
     notifier: Box<dyn Notifier>,
     metadata: Metadata,
 }
 
 pub struct LiveFileWriter {
-    writer: Box<dyn Write + Send>,
-    encoder: Box<dyn encoder::Encoder + Send>,
+    writer: Box<dyn AsyncWrite + Send + Unpin>,
+    encoder: Box<dyn Encoder + Send>,
     notifier: Box<dyn Notifier>,
 }
 
 impl FileWriter {
     pub fn new(
-        writer: Box<dyn Write + Send>,
-        encoder: Box<dyn encoder::Encoder + Send>,
+        writer: Box<dyn AsyncWrite + Send + Unpin>,
+        encoder: Box<dyn Encoder + Send>,
         notifier: Box<dyn Notifier>,
         metadata: Metadata,
     ) -> Self {
@@ -34,7 +36,7 @@ impl FileWriter {
         }
     }
 
-    pub fn start(mut self) -> io::Result<LiveFileWriter> {
+    pub async fn start(mut self) -> io::Result<LiveFileWriter> {
         let timestamp = self
             .metadata
             .time
@@ -55,10 +57,11 @@ impl FileWriter {
             env: Some(self.metadata.env.clone()),
         };
 
-        if let Err(e) = self.writer.write_all(&self.encoder.header(&header)) {
+        if let Err(e) = self.writer.write_all(&self.encoder.header(&header)).await {
             let _ = self
                 .notifier
-                .notify("Write error, session won't be recorded".to_owned());
+                .notify("Write error, session won't be recorded".to_owned())
+                .await;
 
             return Err(e);
         }
@@ -71,23 +74,29 @@ impl FileWriter {
     }
 }
 
+#[async_trait]
 impl session::Output for LiveFileWriter {
-    fn event(&mut self, event: session::Event) -> io::Result<()> {
-        match self.writer.write_all(&self.encoder.event(event.into())) {
+    async fn event(&mut self, event: session::Event) -> io::Result<()> {
+        match self
+            .writer
+            .write_all(&self.encoder.event(event.into()))
+            .await
+        {
             Ok(_) => Ok(()),
 
             Err(e) => {
                 let _ = self
                     .notifier
-                    .notify("Write error, recording suspended".to_owned());
+                    .notify("Write error, recording suspended".to_owned())
+                    .await;
 
                 Err(e)
             }
         }
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.writer.write_all(&self.encoder.flush())
+    async fn flush(&mut self) -> io::Result<()> {
+        self.writer.write_all(&self.encoder.flush()).await
     }
 }
 

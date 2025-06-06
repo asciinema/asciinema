@@ -1,17 +1,54 @@
-use std::fs;
-use std::io;
-use std::os::fd::{AsFd, AsRawFd, BorrowedFd, OwnedFd};
+use std::fs::File;
+use std::future::pending;
+use std::io::{Read, Write};
+use std::os::fd::{AsFd, AsRawFd};
+use std::os::unix::fs::OpenOptionsExt;
 
-use anyhow::Result;
-use nix::errno::Errno;
-use nix::sys::select::{select, FdSet};
-use nix::sys::time::TimeVal;
-use nix::{libc, pty, unistd};
+use async_trait::async_trait;
+use nix::libc;
+use nix::pty::Winsize;
+use nix::sys::termios::{self, SetArg, Termios};
 use rgb::RGB8;
-use termion::raw::{IntoRawMode, RawTerminal};
+use tokio::io::unix::AsyncFd;
+use tokio::io::{self, Interest};
+use tokio::time::{self, Duration};
+
+const QUERY_READ_TIMEOUT: u64 = 500;
+const COLORS_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
+const XTVERSION_QUERY: &str = "\x1b[>0q";
+
+pub struct DevTty {
+    file: AsyncFd<File>,
+    settings: libc::termios,
+}
+
+pub struct NullTty;
+
+pub struct FixedSizeTty<T> {
+    inner: T,
+    cols: Option<u16>,
+    rows: Option<u16>,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TtySize(pub u16, pub u16);
+
+#[derive(Clone)]
+pub struct TtyTheme {
+    pub fg: RGB8,
+    pub bg: RGB8,
+    pub palette: Vec<RGB8>,
+}
+
+#[async_trait]
+pub trait Tty {
+    fn get_size(&self) -> Winsize;
+    async fn get_theme(&self) -> Option<TtyTheme>;
+    async fn get_version(&self) -> Option<String>;
+    async fn read<'e>(&self, buffer: &'e mut [u8]) -> io::Result<usize>;
+    async fn write<'e>(&self, buffer: &'e [u8]) -> io::Result<usize>;
+    async fn write_all<'e>(&self, buffer: &'e [u8]) -> io::Result<()>;
+}
 
 impl Default for TtySize {
     fn default() -> Self {
@@ -19,15 +56,15 @@ impl Default for TtySize {
     }
 }
 
-impl From<pty::Winsize> for TtySize {
-    fn from(winsize: pty::Winsize) -> Self {
+impl From<Winsize> for TtySize {
+    fn from(winsize: Winsize) -> Self {
         TtySize(winsize.ws_col, winsize.ws_row)
     }
 }
 
-impl From<TtySize> for pty::Winsize {
+impl From<TtySize> for Winsize {
     fn from(tty_size: TtySize) -> Self {
-        pty::Winsize {
+        Winsize {
             ws_col: tty_size.0,
             ws_row: tty_size.1,
             ws_xpixel: 0,
@@ -48,82 +85,46 @@ impl From<TtySize> for (u16, u16) {
     }
 }
 
-pub trait Tty: io::Write + io::Read + AsFd {
-    fn get_size(&self) -> pty::Winsize;
-    fn get_theme(&self) -> Option<TtyTheme>;
-    fn get_version(&self) -> Option<String>;
-}
-
-#[derive(Clone)]
-pub struct TtyTheme {
-    pub fg: RGB8,
-    pub bg: RGB8,
-    pub palette: Vec<RGB8>,
-}
-
-pub struct DevTty {
-    file: RawTerminal<fs::File>,
-}
-
-const QUERY_READ_TIMEOUT: i64 = 500_000;
-
 impl DevTty {
-    pub fn open() -> Result<Self> {
-        let file = fs::OpenOptions::new()
+    pub async fn open() -> anyhow::Result<Self> {
+        let file = File::options()
             .read(true)
             .write(true)
-            .open("/dev/tty")?
-            .into_raw_mode()?;
+            .custom_flags(libc::O_NONBLOCK)
+            .open("/dev/tty")?;
 
-        crate::io::set_non_blocking(&file)?;
+        let file = AsyncFd::new(file)?;
+        let settings = make_raw(&file)?;
 
-        Ok(Self { file })
+        Ok(Self { file, settings })
     }
 
-    fn query(&self, query: &str) -> Result<Vec<u8>> {
+    async fn query(&self, query: &str) -> anyhow::Result<Vec<u8>> {
         let mut query = query.to_string().into_bytes();
         query.extend_from_slice(b"\x1b[c");
         let mut query = &query[..];
         let mut response = Vec::new();
         let mut buf = [0u8; 1024];
-        let fd = self.as_fd();
 
         loop {
-            let mut timeout = TimeVal::new(0, QUERY_READ_TIMEOUT);
-            let mut rfds = FdSet::new();
-            let mut wfds = FdSet::new();
-            rfds.insert(fd);
+            tokio::select! {
+                result = self.read(&mut buf) => {
+                    let n = result?;
+                    response.extend_from_slice(&buf[..n]);
 
-            if !query.is_empty() {
-                wfds.insert(fd);
-            }
-
-            match select(None, &mut rfds, &mut wfds, None, &mut timeout) {
-                Ok(0) => break,
-
-                Ok(_) => {
-                    if rfds.contains(fd) {
-                        let n = unistd::read(fd, &mut buf)?;
-                        response.extend_from_slice(&buf[..n]);
-
-                        if let Some(len) = self.complete_response_len(&response) {
-                            response.truncate(len);
-                            break;
-                        }
-                    }
-
-                    if wfds.contains(fd) {
-                        let n = unistd::write(fd, query)?;
-                        query = &query[n..];
+                    if let Some(len) = self.complete_response_len(&response) {
+                        response.truncate(len);
+                        break;
                     }
                 }
 
-                Err(e) => {
-                    if e == Errno::EINTR {
-                        continue;
-                    } else {
-                        return Err(e.into());
-                    }
+                result = self.write(query), if !query.is_empty() => {
+                    let n = result?;
+                    query = &query[n..];
+                }
+
+                _ = time::sleep(Duration::from_millis(QUERY_READ_TIMEOUT)) => {
+                    break;
                 }
             }
         }
@@ -159,6 +160,29 @@ impl DevTty {
             None
         }
     }
+
+    pub async fn resize(&mut self, size: TtySize) -> io::Result<()> {
+        let xtwinops_seq = format!("\x1b[8;{};{}t", size.1, size.0);
+        self.write_all(xtwinops_seq.as_bytes()).await?;
+
+        Ok(())
+    }
+}
+
+fn make_raw<F: AsFd>(fd: F) -> anyhow::Result<libc::termios> {
+    let termios = termios::tcgetattr(fd.as_fd())?;
+    let mut raw_termios = termios.clone();
+    termios::cfmakeraw(&mut raw_termios);
+    termios::tcsetattr(fd.as_fd(), SetArg::TCSANOW, &raw_termios)?;
+
+    Ok(termios.into())
+}
+
+impl Drop for DevTty {
+    fn drop(&mut self) {
+        let termios = Termios::from(self.settings);
+        let _ = termios::tcsetattr(self.file.as_fd(), SetArg::TCSANOW, &termios);
+    }
 }
 
 fn parse_color(rgb: &str) -> Option<RGB8> {
@@ -178,13 +202,10 @@ fn parse_color(rgb: &str) -> Option<RGB8> {
     Some(RGB8::new(r, g, b))
 }
 
-static COLORS_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
-
-static XTVERSION_QUERY: &str = "\x1b[>0q";
-
+#[async_trait]
 impl Tty for DevTty {
-    fn get_size(&self) -> pty::Winsize {
-        let mut winsize = pty::Winsize {
+    fn get_size(&self) -> Winsize {
+        let mut winsize = Winsize {
             ws_row: 24,
             ws_col: 80,
             ws_xpixel: 0,
@@ -196,8 +217,8 @@ impl Tty for DevTty {
         winsize
     }
 
-    fn get_theme(&self) -> Option<TtyTheme> {
-        let response = self.query(COLORS_QUERY).ok()?;
+    async fn get_theme(&self) -> Option<TtyTheme> {
+        let response = self.query(COLORS_QUERY).await.ok()?;
         let response = String::from_utf8_lossy(response.as_slice());
         let mut colors = response.match_indices("rgb:");
         let (idx, _) = colors.next()?;
@@ -215,8 +236,8 @@ impl Tty for DevTty {
         Some(TtyTheme { fg, bg, palette })
     }
 
-    fn get_version(&self) -> Option<String> {
-        let response = self.query(XTVERSION_QUERY).ok()?;
+    async fn get_version(&self) -> Option<String> {
+        let response = self.query(XTVERSION_QUERY).await.ok()?;
 
         if let [b'\x1b', b'P', b'>', b'|', version @ .., b'\x1b', b'\\'] = &response[..] {
             Some(String::from_utf8_lossy(version).to_string())
@@ -224,46 +245,35 @@ impl Tty for DevTty {
             None
         }
     }
-}
 
-impl io::Read for DevTty {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.file.read(buf)
+    async fn read<'e>(&self, buffer: &'e mut [u8]) -> io::Result<usize> {
+        self.file
+            .async_io(Interest::READABLE, |mut file| file.read(buffer))
+            .await
+    }
+
+    async fn write<'e>(&self, buffer: &'e [u8]) -> io::Result<usize> {
+        self.file
+            .async_io(Interest::WRITABLE, |mut file| file.write(buffer))
+            .await
+    }
+
+    async fn write_all<'e>(&self, buffer: &'e [u8]) -> io::Result<()> {
+        let mut buffer = buffer;
+
+        while !buffer.is_empty() {
+            let n = self.write(buffer).await?;
+            buffer = &buffer[n..];
+        }
+
+        Ok(())
     }
 }
 
-impl io::Write for DevTty {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.file.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.file.flush()
-    }
-}
-
-impl AsFd for DevTty {
-    fn as_fd(&self) -> BorrowedFd<'_> {
-        self.file.as_fd()
-    }
-}
-
-pub struct NullTty {
-    tx: OwnedFd,
-    _rx: OwnedFd,
-}
-
-impl NullTty {
-    pub fn open() -> Result<Self> {
-        let (rx, tx) = unistd::pipe()?;
-
-        Ok(Self { tx, _rx: rx })
-    }
-}
-
+#[async_trait]
 impl Tty for NullTty {
-    fn get_size(&self) -> pty::Winsize {
-        pty::Winsize {
+    fn get_size(&self) -> Winsize {
+        Winsize {
             ws_row: 24,
             ws_col: 80,
             ws_xpixel: 0,
@@ -271,55 +281,37 @@ impl Tty for NullTty {
         }
     }
 
-    fn get_theme(&self) -> Option<TtyTheme> {
+    async fn get_theme(&self) -> Option<TtyTheme> {
         None
     }
 
-    fn get_version(&self) -> Option<String> {
+    async fn get_version(&self) -> Option<String> {
         None
     }
-}
 
-impl io::Read for NullTty {
-    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        panic!("read attempt from NullTty");
-    }
-}
-
-impl io::Write for NullTty {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        Ok(buf.len())
+    async fn read<'e>(&self, _buffer: &'e mut [u8]) -> io::Result<usize> {
+        pending::<()>().await;
+        unreachable!()
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    async fn write<'e>(&self, buffer: &'e [u8]) -> io::Result<usize> {
+        Ok(buffer.len())
+    }
+
+    async fn write_all<'e>(&self, _buffer: &'e [u8]) -> io::Result<()> {
         Ok(())
     }
 }
 
-impl AsFd for NullTty {
-    fn as_fd(&self) -> BorrowedFd<'_> {
-        self.tx.as_fd()
+impl<T: Tty> FixedSizeTty<T> {
+    pub fn new(inner: T, cols: Option<u16>, rows: Option<u16>) -> Self {
+        Self { inner, cols, rows }
     }
 }
 
-pub struct FixedSizeTty {
-    inner: Box<dyn Tty>,
-    cols: Option<u16>,
-    rows: Option<u16>,
-}
-
-impl FixedSizeTty {
-    pub fn new<T: Tty + 'static>(inner: T, cols: Option<u16>, rows: Option<u16>) -> Self {
-        Self {
-            inner: Box::new(inner),
-            cols,
-            rows,
-        }
-    }
-}
-
-impl Tty for FixedSizeTty {
-    fn get_size(&self) -> pty::Winsize {
+#[async_trait]
+impl<T: Tty + Sync> Tty for FixedSizeTty<T> {
+    fn get_size(&self) -> Winsize {
         let mut winsize = self.inner.get_size();
 
         if let Some(cols) = self.cols {
@@ -333,34 +325,24 @@ impl Tty for FixedSizeTty {
         winsize
     }
 
-    fn get_theme(&self) -> Option<TtyTheme> {
-        self.inner.get_theme()
+    async fn get_theme(&self) -> Option<TtyTheme> {
+        self.inner.get_theme().await
     }
 
-    fn get_version(&self) -> Option<String> {
-        self.inner.get_version()
-    }
-}
-
-impl AsFd for FixedSizeTty {
-    fn as_fd(&self) -> BorrowedFd<'_> {
-        return self.inner.as_fd();
-    }
-}
-
-impl io::Read for FixedSizeTty {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner.read(buf)
-    }
-}
-
-impl io::Write for FixedSizeTty {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.inner.write(buf)
+    async fn get_version(&self) -> Option<String> {
+        self.inner.get_version().await
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
+    async fn read<'e>(&self, buffer: &'e mut [u8]) -> io::Result<usize> {
+        self.inner.read(buffer).await
+    }
+
+    async fn write<'e>(&self, buffer: &'e [u8]) -> io::Result<usize> {
+        self.inner.write(buffer).await
+    }
+
+    async fn write_all<'e>(&self, buffer: &'e [u8]) -> io::Result<()> {
+        self.inner.write_all(buffer).await
     }
 }
 
@@ -396,12 +378,20 @@ mod tests {
     }
 
     #[test]
-    fn fixed_size_tty() {
-        let tty = FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50));
-
+    fn fixed_size_tty_get_size() {
+        let tty = FixedSizeTty::new(NullTty, Some(100), Some(50));
         let winsize = tty.get_size();
-
         assert!(winsize.ws_col == 100);
         assert!(winsize.ws_row == 50);
+
+        let tty = FixedSizeTty::new(NullTty, Some(100), None);
+        let winsize = tty.get_size();
+        assert!(winsize.ws_col == 100);
+        assert!(winsize.ws_row == 24);
+
+        let tty = FixedSizeTty::new(NullTty, None, None);
+        let winsize = tty.get_size();
+        assert!(winsize.ws_col == 80);
+        assert!(winsize.ws_row == 24);
     }
 }

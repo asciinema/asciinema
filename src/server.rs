@@ -34,13 +34,10 @@ struct AppState {
 }
 
 pub async fn serve(
-    listener: std::net::TcpListener,
+    listener: tokio::net::TcpListener,
     subscriber: Subscriber,
     shutdown_token: CancellationToken,
 ) -> io::Result<()> {
-    listener.set_nonblocking(true)?;
-    let listener = tokio::net::TcpListener::from_std(listener)?;
-
     let trace =
         TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::default().include_headers(true));
 
