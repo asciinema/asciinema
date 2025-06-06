@@ -4,10 +4,11 @@ use std::time::Duration;
 
 use anyhow::{anyhow, bail};
 use axum::http::Uri;
+use futures_util::stream::SplitSink;
 use futures_util::{SinkExt, Stream, StreamExt};
 use rand::Rng;
 use tokio::net::TcpStream;
-use tokio::time::{interval, sleep, timeout};
+use tokio::time;
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
 use tokio_stream::wrappers::IntervalStream;
 use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
@@ -38,18 +39,18 @@ pub async fn forward<N: Notifier>(
     let mut connection_count: u64 = 0;
 
     loop {
-        let stream = subscriber
+        let session_stream = subscriber
             .subscribe()
             .await
             .expect("stream should be alive");
 
-        let conn = connect_and_forward(&url, stream);
+        let conn = connect_and_forward(&url, session_stream);
         tokio::pin!(conn);
 
         let result = tokio::select! {
             result = &mut conn => result,
 
-            _ = sleep(Duration::from_secs(3)) => {
+            _ = time::sleep(Duration::from_secs(3)) => {
                 if reconnect_attempt > 0 {
                     if connection_count == 0 {
                         let _ = notifier.notify("Connected to the server".to_string());
@@ -124,7 +125,7 @@ pub async fn forward<N: Notifier>(
         info!("reconnecting in {delay}");
 
         tokio::select! {
-            _ = sleep(Duration::from_millis(delay)) => (),
+            _ = time::sleep(Duration::from_millis(delay)) => (),
             _ = shutdown_token.cancelled() => break
         }
     }
@@ -132,44 +133,51 @@ pub async fn forward<N: Notifier>(
 
 async fn connect_and_forward(
     url: &url::Url,
-    stream: impl Stream<Item = Result<Event, BroadcastStreamRecvError>> + Unpin,
+    session_stream: impl Stream<Item = Result<Event, BroadcastStreamRecvError>> + Unpin,
 ) -> anyhow::Result<bool> {
-    let uri: Uri = url.to_string().parse()?;
-
-    let builder = ClientRequestBuilder::new(uri)
-        .with_sub_protocol("v1.alis")
-        .with_header("user-agent", api::build_user_agent());
-
-    let (ws, _) = tokio_tungstenite::connect_async_with_config(builder, None, true).await?;
+    let request = build_request(url)?;
+    let (ws, _) = tokio_tungstenite::connect_async_with_config(request, None, true).await?;
     info!("connected to the endpoint");
 
-    let events = alis::stream(stream)
+    handle_socket(ws, get_alis_stream(session_stream)).await
+}
+
+fn build_request(url: &url::Url) -> anyhow::Result<ClientRequestBuilder> {
+    let uri: Uri = url.to_string().parse()?;
+
+    Ok(ClientRequestBuilder::new(uri)
+        .with_sub_protocol("v1.alis")
+        .with_header("user-agent", api::build_user_agent()))
+}
+
+fn get_alis_stream(
+    stream: impl Stream<Item = Result<Event, BroadcastStreamRecvError>>,
+) -> impl Stream<Item = anyhow::Result<Message>> {
+    alis::stream(stream)
         .map(ws_result)
         .chain(futures_util::stream::once(future::ready(Ok(
             close_message(),
-        ))));
-
-    handle_socket(ws, events).await
+        ))))
 }
 
 async fn handle_socket<T>(
     ws: WebSocketStream<MaybeTlsStream<TcpStream>>,
-    events: T,
+    alis_messages: T,
 ) -> anyhow::Result<bool>
 where
     T: Stream<Item = anyhow::Result<Message>> + Unpin,
 {
     let (mut sink, mut stream) = ws.split();
-    let mut events = events;
+    let mut alis_messages = alis_messages;
     let mut pings = ping_stream();
     let mut ping_timeout: Pin<Box<dyn Future<Output = ()> + Send>> = Box::pin(future::pending());
 
     loop {
         tokio::select! {
-            event = events.next() => {
-                match event {
-                    Some(event) => {
-                        timeout(Duration::from_secs(SEND_TIMEOUT), sink.send(event?)).await.map_err(|_| anyhow!("send timeout"))??;
+            message = alis_messages.next() => {
+                match message {
+                    Some(message) => {
+                        send_with_timeout(&mut sink, message?).await??;
                     },
 
                     None => {
@@ -179,8 +187,8 @@ where
             },
 
             ping = pings.next() => {
-                timeout(Duration::from_secs(SEND_TIMEOUT), sink.send(ping.unwrap())).await.map_err(|_| anyhow!("send timeout"))??;
-                ping_timeout = Box::pin(sleep(Duration::from_secs(PING_TIMEOUT)));
+                send_with_timeout(&mut sink, ping.unwrap()).await??;
+                ping_timeout = Box::pin(time::sleep(Duration::from_secs(PING_TIMEOUT)));
             }
 
             _ = &mut ping_timeout => bail!("ping timeout"),
@@ -206,6 +214,15 @@ where
             }
         }
     }
+}
+
+async fn send_with_timeout(
+    sink: &mut SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>,
+    message: Message,
+) -> anyhow::Result<Result<(), tungstenite::Error>> {
+    time::timeout(Duration::from_secs(SEND_TIMEOUT), sink.send(message))
+        .await
+        .map_err(|_| anyhow!("send timeout"))
 }
 
 fn handle_close_frame(frame: Option<CloseFrame>) -> anyhow::Result<()> {
@@ -249,7 +266,7 @@ fn close_message() -> Message {
 }
 
 fn ping_stream() -> impl Stream<Item = Message> {
-    IntervalStream::new(interval(Duration::from_secs(PING_INTERVAL)))
+    IntervalStream::new(time::interval(Duration::from_secs(PING_INTERVAL)))
         .skip(1)
         .map(|_| Message::Ping(vec![].into()))
 }
