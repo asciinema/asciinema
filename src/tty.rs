@@ -65,6 +65,8 @@ pub struct DevTty {
     file: RawTerminal<fs::File>,
 }
 
+const QUERY_READ_TIMEOUT: i64 = 500_000;
+
 impl DevTty {
     pub fn open() -> Result<Self> {
         let file = fs::OpenOptions::new()
@@ -87,7 +89,7 @@ impl DevTty {
         let fd = self.as_fd();
 
         loop {
-            let mut timeout = TimeVal::new(0, 100_000);
+            let mut timeout = TimeVal::new(0, QUERY_READ_TIMEOUT);
             let mut rfds = FdSet::new();
             let mut wfds = FdSet::new();
             rfds.insert(fd);
