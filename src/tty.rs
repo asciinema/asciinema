@@ -105,29 +105,9 @@ impl DevTty {
                     if rfds.contains(fd) {
                         let n = unistd::read(fd, &mut buf)?;
                         response.extend_from_slice(&buf[..n]);
-                        let mut reversed = response.iter().rev();
-                        let mut got_da_response = false;
-                        let mut da_len = 0;
 
-                        if let Some(b'c') = reversed.next() {
-                            da_len += 1;
-
-                            for b in reversed {
-                                if *b == b'[' {
-                                    got_da_response = true;
-                                    break;
-                                }
-
-                                if *b != b';' && *b != b'?' && !b.is_ascii_digit() {
-                                    break;
-                                }
-
-                                da_len += 1;
-                            }
-                        }
-
-                        if got_da_response {
-                            response.truncate(response.len() - da_len - 2);
+                        if let Some(len) = self.complete_response_len(&response) {
+                            response.truncate(len);
                             break;
                         }
                     }
@@ -149,6 +129,35 @@ impl DevTty {
         }
 
         Ok(response)
+    }
+
+    fn complete_response_len(&self, response: &[u8]) -> Option<usize> {
+        let mut reversed = response.iter().rev();
+        let mut includes_da_response = false;
+        let mut da_response_len = 0;
+
+        if let Some(b'c') = reversed.next() {
+            da_response_len += 1;
+
+            for b in reversed {
+                if *b == b'[' {
+                    includes_da_response = true;
+                    break;
+                }
+
+                if *b != b';' && *b != b'?' && !b.is_ascii_digit() {
+                    break;
+                }
+
+                da_response_len += 1;
+            }
+        }
+
+        if includes_da_response {
+            Some(response.len() - da_response_len - 2)
+        } else {
+            None
+        }
     }
 }
 
