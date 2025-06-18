@@ -8,6 +8,7 @@ use nix::sys::wait::{WaitPidFlag, WaitStatus};
 use signal_hook::consts::signal::*;
 use signal_hook_tokio::Signals;
 use tokio::io;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc;
 use tokio::time::Instant;
 use tracing::error;
@@ -138,6 +139,7 @@ impl<N: Notifier> Session<N> {
         let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
         let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
         let mut wait_status = None;
+        let (mut tty_reader, mut tty_writer) = tty.split();
 
         loop {
             tokio::select! {
@@ -157,7 +159,7 @@ impl<N: Notifier> Session<N> {
                     input.drain(..n);
                 }
 
-                result = tty.read(&mut input_buf) => {
+                result = tty_reader.read(&mut input_buf) => {
                     let n = result?;
 
                     if n > 0 {
@@ -169,7 +171,7 @@ impl<N: Notifier> Session<N> {
                     }
                 }
 
-                result = tty.write(&output), if !output.is_empty() => {
+                result = tty_writer.write(&output), if !output.is_empty() => {
                     let n = result?;
                     output.drain(..n);
                 }
@@ -203,7 +205,7 @@ impl<N: Notifier> Session<N> {
 
         if !output.is_empty() {
             self.handle_output(&output).await;
-            let _ = tty.write_all(&output).await;
+            let _ = tty_writer.write_all(&output).await;
         }
 
         let wait_status = match wait_status {

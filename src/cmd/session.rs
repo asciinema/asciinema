@@ -189,7 +189,7 @@ impl cli::Session {
     }
 
     async fn get_term_info(&self) -> Result<TermInfo> {
-        let tty = self.get_tty(false).await?;
+        let mut tty = self.get_tty(false).await?;
 
         Ok(TermInfo {
             type_: env::var("TERM").ok(),
