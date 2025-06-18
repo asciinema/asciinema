@@ -80,7 +80,7 @@ pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
     let epoch = Instant::now();
     let (events_tx, events_rx) = mpsc::channel::<Event>(1024);
     let winsize = tty.get_size();
-    let pty = pty::spawn(command, winsize, extra_env).await?;
+    let pty = pty::spawn(command, winsize, extra_env)?;
     tokio::spawn(forward_events(events_rx, outputs));
 
     let mut session = Session {
@@ -140,10 +140,11 @@ impl<N: Notifier> Session<N> {
         let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
         let mut wait_status = None;
         let (mut tty_reader, mut tty_writer) = tty.split();
+        let (mut pty_reader, mut pty_writer) = pty.split();
 
         loop {
             tokio::select! {
-                result = pty.read(&mut output_buf) => {
+                result = pty_reader.read(&mut output_buf) => {
                     let n = result?;
 
                     if n > 0 {
@@ -154,7 +155,7 @@ impl<N: Notifier> Session<N> {
                     }
                 }
 
-                result = pty.write(&input), if !input.is_empty() => {
+                result = pty_writer.write(&input), if !input.is_empty() => {
                     let n = result?;
                     input.drain(..n);
                 }
