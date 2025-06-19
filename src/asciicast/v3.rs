@@ -114,7 +114,7 @@ impl Parser {
     fn parse_line(&mut self, line: io::Result<String>) -> Option<Result<Event>> {
         match line {
             Ok(line) => {
-                if line.is_empty() || line.starts_with("#") {
+                if line.is_empty() || line.starts_with('#') {
                     None
                 } else {
                     Some(self.parse_event(line))
