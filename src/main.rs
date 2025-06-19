@@ -35,7 +35,7 @@ fn main() -> ExitCode {
         status::disable();
     }
 
-    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+    let _ = rustls::crypto::ring::default_provider().install_default();
 
     crate::config::check_legacy_config_file();
 
