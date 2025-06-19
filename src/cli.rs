@@ -8,8 +8,7 @@ pub const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:8080";
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
-#[command(name = "asciinema")]
-#[command(infer_subcommands = true)]
+#[command(name = "asciinema", max_term_width = 100, infer_subcommands = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
