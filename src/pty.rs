@@ -281,4 +281,15 @@ sys.stdout.write('bar');
 
         assert_eq!(output, vec!["bar"]);
     }
+
+    #[tokio::test]
+    async fn spawn_echo_input() {
+        let mut pty = spawn(&["cat"], &HashMap::new()).await;
+        pty.write_all(b"foo").await.unwrap();
+        pty.write_all(b"bar").await.unwrap();
+        pty.kill();
+        let output = read_output(pty).await.join("");
+
+        assert_eq!(output, "foobar");
+    }
 }
