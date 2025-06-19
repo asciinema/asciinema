@@ -152,7 +152,12 @@ impl cli::Session {
             .await?
         };
 
-        status::info!("asciinema session ended");
+        if let Some(path) = self.output_file.as_ref() {
+            status::info!("asciinema session ended");
+            status::info!("Recorded to {}", path);
+        } else {
+            status::info!("asciinema session ended");
+        }
         shutdown_token.cancel();
 
         if let Some(task) = server {
