@@ -2,11 +2,8 @@ use std::env;
 use std::fmt::Debug;
 
 use anyhow::{bail, Context, Result};
-use reqwest::blocking::{
-    multipart::Form, Client as BlockingClient, RequestBuilder as BlockingRequestBuilder,
-};
 use reqwest::header;
-use reqwest::{Client as AsyncClient, RequestBuilder as AsyncRequestBuilder};
+use reqwest::{multipart::Form, Client, RequestBuilder};
 use serde::Deserialize;
 use url::Url;
 
@@ -36,10 +33,14 @@ pub fn get_auth_url(config: &Config) -> Result<Url> {
     Ok(url)
 }
 
-pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastResponse> {
+pub async fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastResponse> {
     let server_url = &config.get_server_url()?;
     let install_id = config.get_install_id()?;
-    let response = upload_request(server_url, path, install_id)?.send()?;
+
+    let response = upload_request(server_url, path, install_id)
+        .await?
+        .send()
+        .await?;
 
     if response.status().as_u16() == 413 {
         bail!("The size of the recording exceeds the server's configured limit");
@@ -47,18 +48,18 @@ pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastRe
 
     response.error_for_status_ref()?;
 
-    Ok(response.json::<UploadAsciicastResponse>()?)
+    Ok(response.json::<UploadAsciicastResponse>().await?)
 }
 
-fn upload_request(
+async fn upload_request(
     server_url: &Url,
     path: &str,
     install_id: String,
-) -> Result<BlockingRequestBuilder> {
-    let client = BlockingClient::new();
+) -> Result<RequestBuilder> {
+    let client = Client::new();
     let mut url = server_url.clone();
     url.set_path("api/asciicasts");
-    let form = Form::new().file("asciicast", path)?;
+    let form = Form::new().file("asciicast", path).await?;
 
     Ok(client
         .post(url)
@@ -104,8 +105,8 @@ pub async fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetU
         .map_err(|e| e.into())
 }
 
-fn user_stream_request(server_url: &Url, stream_id: &str, install_id: &str) -> AsyncRequestBuilder {
-    let client = AsyncClient::new();
+fn user_stream_request(server_url: &Url, stream_id: &str, install_id: &str) -> RequestBuilder {
+    let client = Client::new();
     let mut url = server_url.clone();
 
     let builder = if stream_id.is_empty() {
