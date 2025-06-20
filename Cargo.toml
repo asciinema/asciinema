@@ -22,7 +22,7 @@ clap = { version = "4.0", features = ["derive", "wrap_help"] }
 signal-hook = { version = "0.3", default-features = false }
 uuid = { version = "1.6", features = ["v4"] }
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots", "multipart", "gzip", "json"] }
-rustyline = { version = "13.0", default-features = false }
+rustyline = { version = "14.0", default-features = false }
 config = { version = "0.15", default-features = false, features = ["toml"] }
 which = "8.0"
 tempfile = "3.0"
@@ -34,7 +34,7 @@ tokio-stream = { version = "0.1", default-features = false, features = ["sync", 
 rust-embed = "8.0"
 tower-http = { version = "0.6", features = ["trace"] }
 tracing = { version = "0.1", default-features = false }
-tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter"] }
+tracing-subscriber = { version = "0.3.19", default-features = false, features = ["fmt", "env-filter"] }
 rgb = { version = "0.8", default-features = false }
 url = "2.5"
 tokio-tungstenite = { version = "0.26", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
