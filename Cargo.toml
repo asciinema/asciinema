@@ -14,41 +14,41 @@ rust-version = "1.75.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.98"
-nix = { version = "0.30.1", features = ["fs", "term", "process", "signal", "poll"] }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-clap = { version = "4.5.37", features = ["derive", "wrap_help"] }
-signal-hook = { version = "0.3.17", default-features = false }
-uuid = { version = "1.17.0", features = ["v4"] }
-reqwest = { version = "0.12.15", default-features = false, features = ["blocking", "rustls-tls-native-roots", "multipart", "gzip", "json"] }
-rustyline = { version = "13.0.0", default-features = false }
-config = { version = "0.15.11", default-features = false, features = ["toml"] }
-which = "8.0.0"
-tempfile = "3.20.0"
-avt = "0.16.0"
-axum = { version = "0.8.4", default-features = false, features = ["http1", "ws"] }
-tokio = { version = "1.45.1", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
-futures-util = { version = "0.3.31", default-features = false, features = ["sink"] }
-tokio-stream = { version = "0.1.17", default-features = false, features = ["sync", "time"] }
-rust-embed = "8.7.2"
-tower-http = { version = "0.6.2", features = ["trace"] }
-tracing = { version = "0.1.41", default-features = false }
-tracing-subscriber = { version = "0.3.19", default-features = false, features = ["fmt", "env-filter"] }
-rgb = { version = "0.8.50", default-features = false }
-url = "2.5.4"
-tokio-tungstenite = { version = "0.26.2", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
-rustls = { version = "0.23.26", default-features = false, features = ["ring"] }
-tokio-util = { version = "0.7.15", features = ["rt"] }
-rand = "0.9.1"
-async-trait = "0.1.88"
-signal-hook-tokio = { version = "0.3.1", features = ["futures-v0_3"] }
+anyhow = "1.0"
+nix = { version = "0.30", features = ["fs", "term", "process", "signal", "poll"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.0", features = ["derive", "wrap_help"] }
+signal-hook = { version = "0.3", default-features = false }
+uuid = { version = "1.6", features = ["v4"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots", "multipart", "gzip", "json"] }
+rustyline = { version = "13.0", default-features = false }
+config = { version = "0.15", default-features = false, features = ["toml"] }
+which = "8.0"
+tempfile = "3.0"
+avt = "0.16"
+axum = { version = "0.8", default-features = false, features = ["http1", "ws"] }
+tokio = { version = "1.40", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
+tokio-stream = { version = "0.1", default-features = false, features = ["sync", "time"] }
+rust-embed = "8.0"
+tower-http = { version = "0.6", features = ["trace"] }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter"] }
+rgb = { version = "0.8", default-features = false }
+url = "2.5"
+tokio-tungstenite = { version = "0.26", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+rand = "0.9"
+async-trait = "0.1"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
 
 [build-dependencies]
-clap = { version = "4.5.37", features = ["derive", "wrap_help"] }
-clap_complete = "4.5.48"
-clap_mangen = "0.2.26"
-url = "2.5.4"
+clap = { version = "4.0", features = ["derive", "wrap_help"] }
+clap_complete = "4.0"
+clap_mangen = "0.2"
+url = "2.5"
 
 [profile.release]
 strip = true
