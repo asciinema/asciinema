@@ -53,7 +53,7 @@ impl cli::Session {
         let metadata = self.get_session_metadata(&config.recording).await?;
         let file_writer = self.get_file_writer(&metadata, notifier.clone()).await?;
         let listener = self.get_listener().await?;
-        let relay = self.get_relay(&metadata, &config)?;
+        let relay = self.get_relay(&metadata, &config).await?;
         let relay_id = relay.as_ref().map(|r| r.id());
         let parent_session_relay_id = get_parent_session_relay_id();
 
@@ -322,14 +322,18 @@ impl cli::Session {
             .context("cannot start listener")
     }
 
-    fn get_relay(&mut self, metadata: &Metadata, config: &config::Config) -> Result<Option<Relay>> {
+    async fn get_relay(
+        &mut self,
+        metadata: &Metadata,
+        config: &config::Config,
+    ) -> Result<Option<Relay>> {
         let Some(target) = &self.stream_remote else {
             return Ok(None);
         };
 
         let relay = match target {
             RelayTarget::StreamId(id) => {
-                let stream = api::create_user_stream(id, config)?;
+                let stream = api::create_user_stream(id, config).await?;
                 let ws_producer_url = build_producer_url(&stream.ws_producer_url, metadata)?;
 
                 Relay {

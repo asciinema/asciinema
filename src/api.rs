@@ -2,8 +2,11 @@ use std::env;
 use std::fmt::Debug;
 
 use anyhow::{bail, Context, Result};
-use reqwest::blocking::{multipart::Form, Client, RequestBuilder};
+use reqwest::blocking::{
+    multipart::Form, Client as BlockingClient, RequestBuilder as BlockingRequestBuilder,
+};
 use reqwest::header;
+use reqwest::{Client as AsyncClient, RequestBuilder as AsyncRequestBuilder};
 use serde::Deserialize;
 use url::Url;
 
@@ -47,8 +50,12 @@ pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastRe
     Ok(response.json::<UploadAsciicastResponse>()?)
 }
 
-fn upload_request(server_url: &Url, path: &str, install_id: String) -> Result<RequestBuilder> {
-    let client = Client::new();
+fn upload_request(
+    server_url: &Url,
+    path: &str,
+    install_id: String,
+) -> Result<BlockingRequestBuilder> {
+    let client = BlockingClient::new();
     let mut url = server_url.clone();
     url.set_path("api/asciicasts");
     let form = Form::new().file("asciicast", path)?;
@@ -61,13 +68,14 @@ fn upload_request(server_url: &Url, path: &str, install_id: String) -> Result<Re
         .header(header::ACCEPT, "application/json"))
 }
 
-pub fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetUserStreamResponse> {
+pub async fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetUserStreamResponse> {
     let server_url = config.get_server_url()?;
     let server_hostname = server_url.host().unwrap();
     let install_id = config.get_install_id()?;
 
     let response = user_stream_request(&server_url, stream_id, &install_id)
         .send()
+        .await
         .context("cannot obtain stream producer endpoint - is the server down?")?;
 
     match response.status().as_u16() {
@@ -75,12 +83,12 @@ pub fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetUserStr
             "this CLI hasn't been authenticated with {server_hostname} - run `asciinema auth` first"
         ),
 
-        404 => match response.json::<ErrorResponse>() {
+        404 => match response.json::<ErrorResponse>().await {
             Ok(json) => bail!("{}", json.reason),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
 
-        422 => match response.json::<ErrorResponse>() {
+        422 => match response.json::<ErrorResponse>().await {
             Ok(json) => bail!("{}", json.reason),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
@@ -92,11 +100,12 @@ pub fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetUserStr
 
     response
         .json::<GetUserStreamResponse>()
+        .await
         .map_err(|e| e.into())
 }
 
-fn user_stream_request(server_url: &Url, stream_id: &str, install_id: &str) -> RequestBuilder {
-    let client = Client::new();
+fn user_stream_request(server_url: &Url, stream_id: &str, install_id: &str) -> AsyncRequestBuilder {
+    let client = AsyncClient::new();
     let mut url = server_url.clone();
 
     let builder = if stream_id.is_empty() {
