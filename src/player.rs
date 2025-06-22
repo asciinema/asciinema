@@ -1,11 +1,10 @@
 use anyhow::Result;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc;
 use tokio::time::{self, Duration, Instant};
 
 use crate::asciicast::{self, Event, EventData};
 use crate::config::Key;
-use crate::tty::DevTty;
+use crate::tty::{DevTty, Tty};
 
 pub struct KeyBindings {
     pub quit: Key,

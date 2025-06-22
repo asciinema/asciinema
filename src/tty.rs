@@ -2,8 +2,6 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::os::fd::{AsFd, AsRawFd};
 use std::os::unix::fs::OpenOptionsExt;
-use std::pin::Pin;
-use std::task::{ready, Context, Poll};
 
 use async_trait::async_trait;
 use nix::libc;
@@ -11,7 +9,7 @@ use nix::pty::Winsize;
 use nix::sys::termios::{self, SetArg, Termios};
 use rgb::RGB8;
 use tokio::io::unix::AsyncFd;
-use tokio::io::{self, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf};
+use tokio::io::{self, Interest};
 use tokio::time::{self, Duration};
 
 const QUERY_READ_TIMEOUT: u64 = 500;
@@ -33,19 +31,7 @@ pub struct DevTty {
     settings: libc::termios,
 }
 
-pub struct DevTtyReadHalf<'a> {
-    tty: &'a DevTty,
-}
-
-pub struct DevTtyWriteHalf<'a> {
-    tty: &'a DevTty,
-}
-
 pub struct NullTty;
-
-pub struct NullTtyReadHalf;
-
-pub struct NullTtyWriteHalf;
 
 pub struct FixedSizeTty<T> {
     inner: T,
@@ -53,25 +39,22 @@ pub struct FixedSizeTty<T> {
     rows: Option<u16>,
 }
 
-pub struct FixedSizeTtyReadHalf<'a> {
-    inner: Box<dyn AsyncRead + Send + Unpin + 'a>,
-}
-
-pub struct FixedSizeTtyWriteHalf<'a> {
-    inner: Box<dyn AsyncWrite + Send + Unpin + 'a>,
-}
-
-#[async_trait]
+#[async_trait(?Send)]
 pub trait Tty {
     fn get_size(&self) -> Winsize;
     async fn get_theme(&mut self) -> Option<TtyTheme>;
     async fn get_version(&mut self) -> Option<String>;
-    fn split(
-        &self,
-    ) -> (
-        Box<dyn AsyncRead + Send + Unpin + '_>,
-        Box<dyn AsyncWrite + Send + Unpin + '_>,
-    );
+    async fn read(&self, buf: &mut [u8]) -> io::Result<usize>;
+    async fn write(&self, buf: &[u8]) -> io::Result<usize>;
+
+    async fn write_all(&self, mut buf: &[u8]) -> io::Result<()> {
+        while !buf.is_empty() {
+            let n = self.write(buf).await?;
+            buf = &buf[n..];
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for TtySize {
@@ -123,17 +106,16 @@ impl DevTty {
         Ok(Self { file, settings })
     }
 
-    async fn query(&mut self, query: &str) -> anyhow::Result<Vec<u8>> {
+    async fn query(&self, query: &str) -> anyhow::Result<Vec<u8>> {
         let mut query = query.to_string().into_bytes();
         query.extend_from_slice(b"\x1b[c");
         let mut query = &query[..];
         let mut response = Vec::new();
         let mut buf = [0u8; 1024];
-        let (mut reader, mut writer) = self.split();
 
         loop {
             tokio::select! {
-                result = reader.read(&mut buf) => {
+                result = self.read(&mut buf) => {
                     let n = result?;
                     response.extend_from_slice(&buf[..n]);
 
@@ -143,7 +125,7 @@ impl DevTty {
                     }
                 }
 
-                result = writer.write(query), if !query.is_empty() => {
+                result = self.write(query), if !query.is_empty() => {
                     let n = result?;
                     query = &query[n..];
                 }
@@ -165,54 +147,6 @@ impl DevTty {
     }
 }
 
-impl AsyncRead for DevTty {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
-        loop {
-            let mut guard = ready!(self.file.poll_read_ready(cx))?;
-            let unfilled = buf.initialize_unfilled();
-
-            match guard.try_io(|inner| inner.get_ref().read(unfilled)) {
-                Ok(Ok(len)) => {
-                    buf.advance(len);
-                    return Poll::Ready(Ok(()));
-                }
-
-                Ok(Err(err)) => return Poll::Ready(Err(err)),
-                Err(_would_block) => continue,
-            }
-        }
-    }
-}
-
-impl AsyncWrite for DevTty {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        loop {
-            let mut guard = ready!(self.file.poll_write_ready(cx))?;
-
-            match guard.try_io(|inner| inner.get_ref().write(buf)) {
-                Ok(result) => return Poll::Ready(result),
-                Err(_would_block) => continue,
-            }
-        }
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-}
-
 impl Drop for DevTty {
     fn drop(&mut self) {
         let termios = Termios::from(self.settings);
@@ -220,7 +154,7 @@ impl Drop for DevTty {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl Tty for DevTty {
     fn get_size(&self) -> Winsize {
         let mut winsize = Winsize {
@@ -264,64 +198,16 @@ impl Tty for DevTty {
         }
     }
 
-    fn split(
-        &self,
-    ) -> (
-        Box<dyn AsyncRead + Send + Unpin + '_>,
-        Box<dyn AsyncWrite + Send + Unpin + '_>,
-    ) {
-        let reader = DevTtyReadHalf { tty: self };
-        let writer = DevTtyWriteHalf { tty: self };
-
-        (Box::new(reader), Box::new(writer))
-    }
-}
-
-impl AsyncRead for DevTtyReadHalf<'_> {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
-        loop {
-            let mut guard = ready!(self.tty.file.poll_read_ready(cx))?;
-            let unfilled = buf.initialize_unfilled();
-
-            match guard.try_io(|inner| inner.get_ref().read(unfilled)) {
-                Ok(Ok(len)) => {
-                    buf.advance(len);
-                    return Poll::Ready(Ok(()));
-                }
-
-                Ok(Err(err)) => return Poll::Ready(Err(err)),
-                Err(_would_block) => continue,
-            }
-        }
-    }
-}
-
-impl AsyncWrite for DevTtyWriteHalf<'_> {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        loop {
-            let mut guard = ready!(self.tty.file.poll_write_ready(cx))?;
-
-            match guard.try_io(|inner| inner.get_ref().write(buf)) {
-                Ok(result) => return Poll::Ready(result),
-                Err(_would_block) => continue,
-            }
-        }
+    async fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
+        self.file
+            .async_io(Interest::READABLE, |mut file| file.read(buf))
+            .await
     }
 
-    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Poll::Ready(Ok(()))
+    async fn write(&self, buf: &[u8]) -> io::Result<usize> {
+        self.file
+            .async_io(Interest::WRITABLE, |mut file| file.write(buf))
+            .await
     }
 }
 
@@ -331,7 +217,7 @@ impl<T: Tty> FixedSizeTty<T> {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl Tty for NullTty {
     fn get_size(&self) -> Winsize {
         Winsize {
@@ -350,46 +236,17 @@ impl Tty for NullTty {
         None
     }
 
-    fn split(
-        &self,
-    ) -> (
-        Box<dyn AsyncRead + Send + Unpin + '_>,
-        Box<dyn AsyncWrite + Send + Unpin + '_>,
-    ) {
-        (Box::new(NullTtyReadHalf), Box::new(NullTtyWriteHalf))
+    async fn read(&self, _buf: &mut [u8]) -> io::Result<usize> {
+        std::future::pending().await
+    }
+
+    async fn write(&self, buf: &[u8]) -> io::Result<usize> {
+        Ok(buf.len())
     }
 }
 
-impl AsyncRead for NullTtyReadHalf {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        _buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
-        Poll::Pending
-    }
-}
-
-impl AsyncWrite for NullTtyWriteHalf {
-    fn poll_write(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        Poll::Ready(Ok(buf.len()))
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Poll::Ready(Ok(()))
-    }
-}
-
-#[async_trait]
-impl<T: Tty + Send> Tty for FixedSizeTty<T> {
+#[async_trait(?Send)]
+impl<T: Tty> Tty for FixedSizeTty<T> {
     fn get_size(&self) -> Winsize {
         let mut winsize = self.inner.get_size();
 
@@ -412,46 +269,12 @@ impl<T: Tty + Send> Tty for FixedSizeTty<T> {
         self.inner.get_version().await
     }
 
-    fn split(
-        &self,
-    ) -> (
-        Box<dyn AsyncRead + Send + Unpin + '_>,
-        Box<dyn AsyncWrite + Send + Unpin + '_>,
-    ) {
-        let (reader, writer) = self.inner.split();
-
-        (
-            Box::new(FixedSizeTtyReadHalf { inner: reader }),
-            Box::new(FixedSizeTtyWriteHalf { inner: writer }),
-        )
-    }
-}
-
-impl AsyncRead for FixedSizeTtyReadHalf<'_> {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.inner).poll_read(cx, buf)
-    }
-}
-
-impl AsyncWrite for FixedSizeTtyWriteHalf<'_> {
-    fn poll_write(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
-        Pin::new(&mut self.inner).poll_write(cx, buf)
+    async fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf).await
     }
 
-    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.inner).poll_flush(cx)
-    }
-
-    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        Pin::new(&mut self.inner).poll_shutdown(cx)
+    async fn write(&self, buf: &[u8]) -> io::Result<usize> {
+        self.inner.write(buf).await
     }
 }
 
