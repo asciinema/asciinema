@@ -1,20 +1,28 @@
-use std::fs::File;
-use std::io::{Read, Write};
-use std::os::fd::{AsFd, AsRawFd};
-use std::os::unix::fs::OpenOptionsExt;
+use std::os::fd::AsFd;
 
 use async_trait::async_trait;
 use nix::libc;
 use nix::pty::Winsize;
-use nix::sys::termios::{self, SetArg, Termios};
+use nix::sys::termios::{self, SetArg};
 use rgb::RGB8;
-use tokio::io::unix::AsyncFd;
-use tokio::io::{self, Interest};
+use tokio::io;
 use tokio::time::{self, Duration};
 
 const QUERY_READ_TIMEOUT: u64 = 500;
-const COLORS_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
+const THEME_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
 const XTVERSION_QUERY: &str = "\x1b[>0q";
+
+#[cfg(all(not(target_os = "macos"), not(feature = "macos-tty")))]
+mod default;
+
+#[cfg(any(target_os = "macos", feature = "macos-tty"))]
+mod macos;
+
+#[cfg(all(not(target_os = "macos"), not(feature = "macos-tty")))]
+pub use default::DevTty;
+
+#[cfg(any(target_os = "macos", feature = "macos-tty"))]
+pub use macos::DevTty;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TtySize(pub u16, pub u16);
@@ -24,11 +32,6 @@ pub struct TtyTheme {
     pub fg: RGB8,
     pub bg: RGB8,
     pub palette: Vec<RGB8>,
-}
-
-pub struct DevTty {
-    file: AsyncFd<File>,
-    settings: libc::termios,
 }
 
 pub struct NullTty;
@@ -89,125 +92,6 @@ impl From<(usize, usize)> for TtySize {
 impl From<TtySize> for (u16, u16) {
     fn from(tty_size: TtySize) -> Self {
         (tty_size.0, tty_size.1)
-    }
-}
-
-impl DevTty {
-    pub async fn open() -> anyhow::Result<Self> {
-        let file = File::options()
-            .read(true)
-            .write(true)
-            .custom_flags(libc::O_NONBLOCK)
-            .open("/dev/tty")?;
-
-        let file = AsyncFd::new(file)?;
-        let settings = make_raw(&file)?;
-
-        Ok(Self { file, settings })
-    }
-
-    async fn query(&self, query: &str) -> anyhow::Result<Vec<u8>> {
-        let mut query = query.to_string().into_bytes();
-        query.extend_from_slice(b"\x1b[c");
-        let mut query = &query[..];
-        let mut response = Vec::new();
-        let mut buf = [0u8; 1024];
-
-        loop {
-            tokio::select! {
-                result = self.read(&mut buf) => {
-                    let n = result?;
-                    response.extend_from_slice(&buf[..n]);
-
-                    if let Some(len) = complete_da_response_len(&response) {
-                        response.truncate(len);
-                        break;
-                    }
-                }
-
-                result = self.write(query), if !query.is_empty() => {
-                    let n = result?;
-                    query = &query[n..];
-                }
-
-                _ = time::sleep(Duration::from_millis(QUERY_READ_TIMEOUT)) => {
-                    break;
-                }
-            }
-        }
-
-        Ok(response)
-    }
-
-    pub async fn resize(&mut self, size: TtySize) -> io::Result<()> {
-        let xtwinops_seq = format!("\x1b[8;{};{}t", size.1, size.0);
-        self.write_all(xtwinops_seq.as_bytes()).await?;
-
-        Ok(())
-    }
-}
-
-impl Drop for DevTty {
-    fn drop(&mut self) {
-        let termios = Termios::from(self.settings);
-        let _ = termios::tcsetattr(self.file.as_fd(), SetArg::TCSANOW, &termios);
-    }
-}
-
-#[async_trait(?Send)]
-impl Tty for DevTty {
-    fn get_size(&self) -> Winsize {
-        let mut winsize = Winsize {
-            ws_row: 24,
-            ws_col: 80,
-            ws_xpixel: 0,
-            ws_ypixel: 0,
-        };
-
-        unsafe { libc::ioctl(self.file.as_raw_fd(), libc::TIOCGWINSZ, &mut winsize) };
-
-        winsize
-    }
-
-    async fn get_theme(&mut self) -> Option<TtyTheme> {
-        let response = self.query(COLORS_QUERY).await.ok()?;
-        let response = String::from_utf8_lossy(response.as_slice());
-        let mut colors = response.match_indices("rgb:");
-        let (idx, _) = colors.next()?;
-        let fg = parse_color(&response[idx + 4..])?;
-        let (idx, _) = colors.next()?;
-        let bg = parse_color(&response[idx + 4..])?;
-        let mut palette = Vec::new();
-
-        for _ in 0..16 {
-            let (idx, _) = colors.next()?;
-            let color = parse_color(&response[idx + 4..])?;
-            palette.push(color);
-        }
-
-        Some(TtyTheme { fg, bg, palette })
-    }
-
-    async fn get_version(&mut self) -> Option<String> {
-        let response = self.query(XTVERSION_QUERY).await.ok()?;
-
-        if let [b'\x1b', b'P', b'>', b'|', version @ .., b'\x1b', b'\\'] = &response[..] {
-            Some(String::from_utf8_lossy(version).to_string())
-        } else {
-            None
-        }
-    }
-
-    async fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.file
-            .async_io(Interest::READABLE, |mut file| file.read(buf))
-            .await
-    }
-
-    async fn write(&self, buf: &[u8]) -> io::Result<usize> {
-        self.file
-            .async_io(Interest::WRITABLE, |mut file| file.write(buf))
-            .await
     }
 }
 
@@ -287,6 +171,47 @@ fn make_raw<F: AsFd>(fd: F) -> anyhow::Result<libc::termios> {
     Ok(termios.into())
 }
 
+async fn get_theme<T: Tty>(tty: &T) -> Option<TtyTheme> {
+    parse_theme_response(&query(tty, THEME_QUERY).await.ok()?)
+}
+
+async fn get_version<T: Tty>(tty: &T) -> Option<String> {
+    parse_version_response(&query(tty, XTVERSION_QUERY).await.ok()?)
+}
+
+async fn query<T: Tty>(tty: &T, query: &str) -> anyhow::Result<Vec<u8>> {
+    let mut query = query.to_string().into_bytes();
+    query.extend_from_slice(b"\x1b[c");
+    let mut query = &query[..];
+    let mut response = Vec::new();
+    let mut buf = [0u8; 1024];
+
+    loop {
+        tokio::select! {
+            result = tty.read(&mut buf) => {
+                let n = result?;
+                response.extend_from_slice(&buf[..n]);
+
+                if let Some(len) = complete_da_response_len(&response) {
+                    response.truncate(len);
+                    break;
+                }
+            }
+
+            result = tty.write(query), if !query.is_empty() => {
+                let n = result?;
+                query = &query[n..];
+            }
+
+            _ = time::sleep(Duration::from_millis(QUERY_READ_TIMEOUT)) => {
+                break;
+            }
+        }
+    }
+
+    Ok(response)
+}
+
 fn complete_da_response_len(response: &[u8]) -> Option<usize> {
     let mut reversed = response.iter().rev();
     let mut includes_da_response = false;
@@ -316,6 +241,24 @@ fn complete_da_response_len(response: &[u8]) -> Option<usize> {
     }
 }
 
+fn parse_theme_response(response: &[u8]) -> Option<TtyTheme> {
+    let response = String::from_utf8_lossy(response);
+    let mut colors = response.match_indices("rgb:");
+    let (idx, _) = colors.next()?;
+    let fg = parse_color(&response[idx + 4..])?;
+    let (idx, _) = colors.next()?;
+    let bg = parse_color(&response[idx + 4..])?;
+    let mut palette = Vec::new();
+
+    for _ in 0..16 {
+        let (idx, _) = colors.next()?;
+        let color = parse_color(&response[idx + 4..])?;
+        palette.push(color);
+    }
+
+    Some(TtyTheme { fg, bg, palette })
+}
+
 fn parse_color(rgb: &str) -> Option<RGB8> {
     let mut components = rgb.split('/');
     let r_hex = components.next()?;
@@ -331,6 +274,14 @@ fn parse_color(rgb: &str) -> Option<RGB8> {
     let b = u8::from_str_radix(&b_hex[..2], 16).ok()?;
 
     Some(RGB8::new(r, g, b))
+}
+
+fn parse_version_response(response: &[u8]) -> Option<String> {
+    if let [b'\x1b', b'P', b'>', b'|', version @ .., b'\x1b', b'\\'] = response {
+        Some(String::from_utf8_lossy(version).to_string())
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
