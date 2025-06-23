@@ -172,6 +172,7 @@ impl Subscriber {
 fn build_vt(tty_size: TtySize) -> Vt {
     Vt::builder()
         .size(tty_size.0 as usize, tty_size.1 as usize)
+        .scrollback_limit(1000)
         .build()
 }
 
