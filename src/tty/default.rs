@@ -4,13 +4,13 @@ use std::os::fd::{AsFd, AsRawFd};
 use std::os::unix::fs::OpenOptionsExt;
 
 use async_trait::async_trait;
+use nix::libc;
 use nix::pty::Winsize;
 use nix::sys::termios::{self, SetArg, Termios};
-use nix::libc;
 use tokio::io::unix::AsyncFd;
 use tokio::io::{self, Interest};
 
-use super::{TtySize, Tty, TtyTheme};
+use super::{Tty, TtySize, TtyTheme};
 
 pub struct DevTty {
     file: AsyncFd<File>,
