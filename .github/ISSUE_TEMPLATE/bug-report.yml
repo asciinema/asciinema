@@ -12,6 +12,17 @@ body:
         
         Thanks for taking the time to report a bug! Please fill out the sections below.
 
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      description: Please confirm the following before submitting your bug report
+      options:
+        - label: I have searched existing issues and this bug has not been reported yet
+          required: true
+        - label: This is a bug report for asciinema CLI (not player or server)
+          required: true
+
   - type: textarea
     id: bug-description
     attributes:
@@ -88,13 +99,3 @@ body:
     attributes:
       label: Additional Context
       description: Add any other context, screenshots, or relevant information about the problem here.
-
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Confirmation
-      options:
-        - label: I have searched existing issues to make sure this bug hasn't been reported already
-          required: true
-        - label: This is a bug report for asciinema CLI, not the web player or server
-          required: true
