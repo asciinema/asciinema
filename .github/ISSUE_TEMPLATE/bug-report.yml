@@ -30,10 +30,6 @@ body:
         1. Run command `asciinema ...`
         2. Do action '...'
         3. Observe error
-      value: |
-        1. 
-        2. 
-        3. 
     validations:
       required: true
 
