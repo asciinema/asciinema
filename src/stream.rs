@@ -38,7 +38,7 @@ pub enum Event {
 #[derive(Clone)]
 pub struct Subscriber(mpsc::Sender<Request>);
 
-pub struct LiveStream(mpsc::UnboundedSender<session::Event>);
+pub struct LiveStream(mpsc::Sender<session::Event>);
 
 impl Stream {
     pub fn new() -> Self {
@@ -55,7 +55,7 @@ impl Stream {
     }
 
     pub async fn start(self, metadata: &Metadata) -> LiveStream {
-        let (stream_tx, stream_rx) = mpsc::unbounded_channel();
+        let (stream_tx, stream_rx) = mpsc::channel(1024);
         let request_rx = self.request_rx;
 
         tokio::spawn(run(
@@ -72,7 +72,7 @@ impl Stream {
 async fn run(
     tty_size: TtySize,
     tty_theme: Option<TtyTheme>,
-    mut stream_rx: mpsc::UnboundedReceiver<session::Event>,
+    mut stream_rx: mpsc::Receiver<session::Event>,
     mut request_rx: mpsc::Receiver<Request>,
 ) {
     let (broadcast_tx, _) = broadcast::channel(1024);
@@ -179,7 +179,7 @@ fn build_vt(tty_size: TtySize) -> Vt {
 #[async_trait]
 impl session::Output for LiveStream {
     async fn event(&mut self, event: session::Event) -> io::Result<()> {
-        self.0.send(event).map_err(io::Error::other)
+        self.0.send(event).await.map_err(io::Error::other)
     }
 
     async fn flush(&mut self) -> io::Result<()> {
