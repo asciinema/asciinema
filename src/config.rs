@@ -251,7 +251,7 @@ fn parse_key<S: AsRef<str>>(key: S) -> Result<Key> {
         }
 
         3 => {
-            if chars[0].to_ascii_uppercase() == 'C'
+            if chars[0].eq_ignore_ascii_case(&'C')
                 && ['+', '-'].contains(&chars[1])
                 && chars[2].is_ascii_alphabetic()
             {
