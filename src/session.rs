@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use async_trait::async_trait;
+use bytes::{Buf, BytesMut};
 use futures_util::future;
 use futures_util::stream::StreamExt;
 use nix::sys::wait::{WaitPidFlag, WaitStatus};
@@ -135,8 +136,8 @@ impl<N: Notifier> Session<N> {
             Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP, SIGALRM, SIGCHLD])?;
         let mut output_buf = [0u8; BUF_SIZE];
         let mut input_buf = [0u8; BUF_SIZE];
-        let mut input: Vec<u8> = Vec::with_capacity(BUF_SIZE);
-        let mut output: Vec<u8> = Vec::with_capacity(BUF_SIZE);
+        let mut input = BytesMut::with_capacity(BUF_SIZE);
+        let mut output = BytesMut::with_capacity(BUF_SIZE);
         let mut wait_status = None;
 
         loop {
@@ -154,7 +155,7 @@ impl<N: Notifier> Session<N> {
 
                 result = pty.write(&input), if !input.is_empty() => {
                     let n = result?;
-                    input.drain(..n);
+                    input.advance(n);
                 }
 
                 result = tty.read(&mut input_buf) => {
@@ -171,7 +172,7 @@ impl<N: Notifier> Session<N> {
 
                 result = tty.write(&output), if !output.is_empty() => {
                     let n = result?;
-                    output.drain(..n);
+                    output.advance(n);
                 }
 
                 Some(signal) = signals.next() => {

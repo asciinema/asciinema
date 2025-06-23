@@ -90,6 +90,7 @@ dependencies = [
  "async-trait",
  "avt",
  "axum",
+ "bytes",
  "clap",
  "clap_complete",
  "clap_mangen",

@@ -11,6 +11,8 @@ use std::os::fd::{AsFd, AsRawFd, BorrowedFd, OwnedFd};
 use std::os::unix::fs::OpenOptionsExt;
 use std::thread;
 
+use bytes::{Buf, BytesMut};
+
 use async_trait::async_trait;
 use nix::errno::Errno;
 use nix::pty::Winsize;
@@ -135,7 +137,7 @@ fn copy<F: AsFd, G: AsFd>(src_fd: F, dst_fd: G) {
     let src_fd = src_fd.as_fd();
     let dst_fd = dst_fd.as_fd();
     let mut buf = [0u8; BUF_SIZE];
-    let mut data = Vec::with_capacity(BUF_SIZE);
+    let mut data = BytesMut::with_capacity(BUF_SIZE);
 
     loop {
         let mut read_fds = select::FdSet::new();
@@ -177,7 +179,7 @@ fn copy<F: AsFd, G: AsFd>(src_fd: F, dst_fd: G) {
         if write_fds.contains(dst_fd) {
             match unistd::write(dst_fd, &data) {
                 Ok(n) => {
-                    data.drain(..n);
+                    data.advance(n);
                 }
 
                 Err(Errno::EWOULDBLOCK) => {}
@@ -211,7 +213,7 @@ fn copy<F: AsFd, G: AsFd>(src_fd: F, dst_fd: G) {
 
         match unistd::write(dst_fd, &data) {
             Ok(n) => {
-                data.drain(..n);
+                data.advance(n);
             }
 
             Err(Errno::EWOULDBLOCK) => {}
