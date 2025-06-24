@@ -126,7 +126,7 @@ pub async fn forward<N: Notifier>(
 
         let delay = exponential_delay(reconnect_attempt);
         reconnect_attempt = (reconnect_attempt + 1).min(10);
-        info!("reconnecting in {delay}");
+        info!("reconnecting in {delay} ms");
 
         tokio::select! {
             _ = time::sleep(Duration::from_millis(delay)) => (),
