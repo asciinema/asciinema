@@ -183,6 +183,10 @@ pub struct Record {
     #[arg(long, help = "Return the session's exit status", long_help)]
     pub return_: bool,
 
+    /// Enable logging of internal events to a file at the specified path. Useful for debugging recording issues.
+    #[arg(long, value_name = "PATH", help = "Log file path", long_help)]
+    pub log_file: Option<PathBuf>,
+
     #[arg(long, hide = true)]
     pub cols: Option<u16>,
 

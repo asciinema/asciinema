@@ -56,7 +56,7 @@ fn main() -> ExitCode {
                 stream_local: None,
                 stream_remote: None,
                 return_: cmd.return_,
-                log_file: None,
+                log_file: cmd.log_file,
                 server_url: None,
             };
 
