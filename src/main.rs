@@ -63,24 +63,24 @@ fn main() -> ExitCode {
             cmd.run().report()
         }
 
-        Commands::Stream(stream) => {
+        Commands::Stream(cmd) => {
             let cmd = Session {
                 output_file: None,
-                rec_input: stream.rec_input,
+                rec_input: cmd.rec_input,
                 append: false,
                 output_format: None,
                 overwrite: false,
-                command: stream.command,
-                rec_env: stream.rec_env,
-                title: stream.title,
+                command: cmd.command,
+                rec_env: cmd.rec_env,
+                title: cmd.title,
                 idle_time_limit: None,
-                headless: stream.headless,
-                window_size: stream.window_size,
-                stream_local: stream.local,
-                stream_remote: stream.remote,
-                return_: stream.return_,
-                log_file: stream.log_file,
-                server_url: stream.server_url,
+                headless: cmd.headless,
+                window_size: cmd.window_size,
+                stream_local: cmd.local,
+                stream_remote: cmd.remote,
+                return_: cmd.return_,
+                log_file: cmd.log_file,
+                server_url: cmd.server_url,
             };
 
             cmd.run().report()
