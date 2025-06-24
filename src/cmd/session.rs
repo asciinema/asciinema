@@ -33,6 +33,7 @@ use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
 impl cli::Session {
     pub fn run(mut self) -> Result<ExitCode> {
         locale::check_utf8_locale()?;
+        self.init_logging()?;
 
         let exit_status = Runtime::new()?.block_on(self.do_run())?;
 
@@ -66,10 +67,6 @@ impl cli::Session {
             } else {
                 bail!("This shell is already being streamed");
             }
-        }
-
-        if listener.is_some() || relay.is_some() {
-            self.init_logging()?;
         }
 
         status::info!("asciinema session started");
