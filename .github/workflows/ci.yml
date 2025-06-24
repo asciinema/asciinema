@@ -11,19 +11,32 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [default, msrv]
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v31
+
+      - name: Setup Nix cache
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: nix-${{ runner.os }}-${{ matrix.rust }}-${{ hashFiles('**/*.nix', '**/flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-${{ matrix.rust }}-
+
       - name: Build
-        run: cargo build --verbose
+        run: nix develop .#${{ matrix.rust }} --command cargo build --verbose
 
       - name: Run tests
-        run: cargo test --verbose
+        run: nix develop .#${{ matrix.rust }} --command cargo test --verbose
 
       - name: Check formatting
-        run: cargo fmt --check
+        run: nix develop .#${{ matrix.rust }} --command cargo fmt --check
 
       - name: Lint with clippy
-        run: cargo clippy
+        run: nix develop .#${{ matrix.rust }} --command cargo clippy
