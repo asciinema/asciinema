@@ -77,7 +77,7 @@ impl EventSerializer {
 
             Output(id, time, text) => {
                 let id_bytes = leb128::encode(id);
-                let time_bytes = leb128::encode(time - self.0);
+                let time_bytes = leb128::encode(self.rel_time(time));
                 let text_len = text.len() as u32;
                 let text_len_bytes = leb128::encode(text_len);
 
@@ -87,14 +87,12 @@ impl EventSerializer {
                 msg.extend_from_slice(&text_len_bytes);
                 msg.extend_from_slice(text.as_bytes());
 
-                self.0 = time;
-
                 msg
             }
 
             Input(id, time, text) => {
                 let id_bytes = leb128::encode(id);
-                let time_bytes = leb128::encode(time - self.0);
+                let time_bytes = leb128::encode(self.rel_time(time));
                 let text_len = text.len() as u32;
                 let text_len_bytes = leb128::encode(text_len);
 
@@ -104,14 +102,12 @@ impl EventSerializer {
                 msg.extend_from_slice(&text_len_bytes);
                 msg.extend_from_slice(text.as_bytes());
 
-                self.0 = time;
-
                 msg
             }
 
             Resize(id, time, size) => {
                 let id_bytes = leb128::encode(id);
-                let time_bytes = leb128::encode(time - self.0);
+                let time_bytes = leb128::encode(self.rel_time(time));
                 let cols_bytes = leb128::encode(size.0);
                 let rows_bytes = leb128::encode(size.1);
 
@@ -121,14 +117,12 @@ impl EventSerializer {
                 msg.extend_from_slice(&cols_bytes);
                 msg.extend_from_slice(&rows_bytes);
 
-                self.0 = time;
-
                 msg
             }
 
             Marker(id, time, text) => {
                 let id_bytes = leb128::encode(id);
-                let time_bytes = leb128::encode(time - self.0);
+                let time_bytes = leb128::encode(self.rel_time(time));
                 let text_len = text.len() as u32;
                 let text_len_bytes = leb128::encode(text_len);
 
@@ -138,14 +132,12 @@ impl EventSerializer {
                 msg.extend_from_slice(&text_len_bytes);
                 msg.extend_from_slice(text.as_bytes());
 
-                self.0 = time;
-
                 msg
             }
 
             Exit(id, time, status) => {
                 let id_bytes = leb128::encode(id);
-                let time_bytes = leb128::encode(time - self.0);
+                let time_bytes = leb128::encode(self.rel_time(time));
                 let status_bytes = leb128::encode(status.max(0) as u64);
 
                 let mut msg = vec![b'x'];
@@ -153,10 +145,16 @@ impl EventSerializer {
                 msg.extend_from_slice(&time_bytes);
                 msg.extend_from_slice(&status_bytes);
 
-                self.0 = time;
-
                 msg
             }
         }
+    }
+
+    fn rel_time(&mut self, time: u64) -> u64 {
+        let time = time.max(self.0);
+        let rel_time = time - self.0;
+        self.0 = time;
+
+        rel_time
     }
 }
