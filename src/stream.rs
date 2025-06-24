@@ -126,21 +126,25 @@ async fn run(
             request = request_rx.recv() => {
                 match request {
                     Some(request) => {
-                        let elapsed_time = stream_time + last_event_time.elapsed().as_micros() as u64;
+                        let init = if last_event_id > 0 {
+                            let elapsed_time = stream_time + last_event_time.elapsed().as_micros() as u64;
 
-                        let vt_seed = if last_event_id > 0 {
-                            vt.dump()
+                            Event::Init(
+                                last_event_id,
+                                elapsed_time,
+                                vt.size().into(),
+                                tty_theme.clone(),
+                                vt.dump(),
+                            )
                         } else {
-                            "".to_owned()
+                            Event::Init(
+                                last_event_id,
+                                stream_time,
+                                vt.size().into(),
+                                tty_theme.clone(),
+                                "".to_owned(),
+                            )
                         };
-
-                        let init = Event::Init(
-                            last_event_id,
-                            elapsed_time,
-                            vt.size().into(),
-                            tty_theme.clone(),
-                            vt_seed,
-                        );
 
                         let events_rx = broadcast_tx.subscribe();
                         let _ = request.send(Subscription { init, events_rx });
