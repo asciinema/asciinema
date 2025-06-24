@@ -22,7 +22,9 @@ pub fn extract_asciicast_link(html: &str) -> Option<String> {
                         || t.eq_ignore_ascii_case("application/asciicast+json")
                     {
                         if let Some(href) = attr(link, "href") {
-                            return Some(href.to_string());
+                            if !href.is_empty() {
+                                return Some(href.to_string());
+                            }
                         }
                     }
                 }
@@ -55,17 +57,229 @@ fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
 
         Some(&tag[start..end])
     } else {
-        let start = i;
-        let mut end = i;
+        None
+    }
+}
 
-        while end < bytes.len()
-            && !bytes[end].is_ascii_whitespace()
-            && bytes[end] != b'>'
-            && bytes[end] != b'/'
-        {
-            end += 1;
-        }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        Some(&tag[start..end])
+    #[test]
+    fn extract_asciicast_link_valid_html() {
+        let html = r#"
+        <html>
+        <head>
+            <title>Test</title>
+            <link rel="alternate" type="application/x-asciicast" href="https://example.com/demo.cast">
+        </head>
+        <body>Content</body>
+        </html>
+        "#;
+
+        assert_eq!(
+            extract_asciicast_link(html),
+            Some("https://example.com/demo.cast".to_string())
+        );
+    }
+
+    #[test]
+    fn extract_asciicast_link_alternate_mime_type() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type="application/asciicast+json" href="/demo.json">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), Some("/demo.json".to_string()));
+    }
+
+    #[test]
+    fn extract_asciicast_link_multiple_rel_values() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="foobar alternate" type="application/x-asciicast" href="demo.cast">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), Some("demo.cast".to_string()));
+    }
+
+    #[test]
+    fn extract_asciicast_link_case_insensitive() {
+        let html = r#"
+        <HTML>
+        <HEAD>
+            <LINK REL="ALTERNATE" TYPE="APPLICATION/X-ASCIICAST" HREF="DEMO.CAST">
+        </HEAD>
+        </HTML>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), Some("DEMO.CAST".to_string()));
+    }
+
+    #[test]
+    fn extract_asciicast_link_single_quotes() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel='alternate' type='application/x-asciicast' href='demo.cast'>
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), Some("demo.cast".to_string()));
+    }
+
+    #[test]
+    fn extract_asciicast_link_mixed_quotes() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type='application/x-asciicast' href="demo.cast">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), Some("demo.cast".to_string()));
+    }
+
+    #[test]
+    fn extract_asciicast_link_multiple_links() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="stylesheet" href="style.css">
+            <link rel="alternate" type="application/rss+xml" href="feed.rss">
+            <link rel="alternate" type="application/x-asciicast" href="first.cast">
+            <link rel="alternate" type="application/x-asciicast" href="second.cast">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), Some("first.cast".to_string()));
+    }
+
+    #[test]
+    fn extract_asciicast_link_no_head() {
+        let html = r#"
+        <html>
+        <body>
+            <link rel="alternate" type="application/x-asciicast" href="demo.cast">
+        </body>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_no_matching_link() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="stylesheet" href="style.css">
+            <link rel="alternate" type="application/rss+xml" href="feed.rss">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_wrong_rel() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="stylesheet" type="application/x-asciicast" href="demo.cast">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_wrong_type() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type="text/plain" href="demo.cast">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_no_href() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type="application/x-asciicast">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_empty_href() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type="application/x-asciicast" href="">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_malformed_html() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type="application/x-asciicast" href="demo.cast"
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_empty_html() {
+        assert_eq!(extract_asciicast_link(""), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_invalid_html() {
+        let html = "This is not HTML at all";
+        assert_eq!(extract_asciicast_link(html), None);
+    }
+
+    #[test]
+    fn extract_asciicast_link_special_characters_in_href() {
+        let html = r#"
+        <html>
+        <head>
+            <link rel="alternate" type="application/x-asciicast" href="https://example.com/cast?id=123&format=v3">
+        </head>
+        </html>
+        "#;
+
+        assert_eq!(
+            extract_asciicast_link(html),
+            Some("https://example.com/cast?id=123&format=v3".to_string())
+        );
     }
 }
