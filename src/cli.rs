@@ -308,6 +308,7 @@ pub struct Stream {
 }
 
 #[derive(Debug, Args)]
+#[clap(group(ArgGroup::new("mode").args(&["stream_local", "stream_remote"]).multiple(true).required(true)))]
 pub struct Session {
     /// Save the session to a file at the specified path. Can be combined with local and remote streaming.
     #[arg(
