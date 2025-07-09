@@ -2,9 +2,10 @@ use std::env;
 use std::fmt::Debug;
 
 use anyhow::{bail, Context, Result};
-use reqwest::header;
+use reqwest::{header, Response};
 use reqwest::{multipart::Form, Client, RequestBuilder};
-use serde::Deserialize;
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::config::Config;
@@ -16,9 +17,18 @@ pub struct RecordingResponse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct GetUserStreamResponse {
+pub struct StreamResponse {
+    pub id: u64,
     pub ws_producer_url: String,
     pub url: String,
+}
+
+#[derive(Default, Serialize)]
+pub struct StreamChangeset {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub live: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<Option<u8>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,15 +79,89 @@ async fn create_recording_request(
         .header(header::ACCEPT, "application/json"))
 }
 
-pub async fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetUserStreamResponse> {
+pub async fn list_user_streams(prefix: &str, config: &Config) -> Result<Vec<StreamResponse>> {
     let server_url = config.get_server_url()?;
-    let server_hostname = server_url.host().unwrap();
     let install_id = config.get_install_id()?;
 
-    let response = user_stream_request(&server_url, stream_id, &install_id)
+    let response = list_user_streams_request(&server_url, prefix, &install_id)
         .send()
         .await
         .context("cannot obtain stream producer endpoint - is the server down?")?;
+
+    parse_stream_response(response, &server_url).await
+}
+
+fn list_user_streams_request(server_url: &Url, prefix: &str, install_id: &str) -> RequestBuilder {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path("api/v1/user/streams");
+    url.set_query(Some(&format!("prefix={prefix}&limit=10")));
+
+    add_headers(client.get(url), install_id)
+}
+
+pub async fn create_stream(changeset: StreamChangeset, config: &Config) -> Result<StreamResponse> {
+    let server_url = config.get_server_url()?;
+    let install_id = config.get_install_id()?;
+
+    let response = create_stream_request(&server_url, &install_id, changeset)
+        .send()
+        .await
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
+
+    parse_stream_response(response, &server_url).await
+}
+
+fn create_stream_request(
+    server_url: &Url,
+    install_id: &str,
+    changeset: StreamChangeset,
+) -> RequestBuilder {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path("api/v1/streams");
+    let builder = client.post(url);
+    let builder = add_headers(builder, install_id);
+
+    builder.json(&changeset)
+}
+
+pub async fn update_stream(
+    stream_id: u64,
+    changeset: StreamChangeset,
+    config: &Config,
+) -> Result<StreamResponse> {
+    let server_url = config.get_server_url()?;
+    let install_id = config.get_install_id()?;
+
+    let response = update_stream_request(&server_url, &install_id, stream_id, changeset)
+        .send()
+        .await
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
+
+    parse_stream_response(response, &server_url).await
+}
+
+fn update_stream_request(
+    server_url: &Url,
+    install_id: &str,
+    stream_id: u64,
+    changeset: StreamChangeset,
+) -> RequestBuilder {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path(&format!("api/v1/streams/{stream_id}"));
+    let builder = client.patch(url);
+    let builder = add_headers(builder, install_id);
+
+    builder.json(&changeset)
+}
+
+async fn parse_stream_response<T: DeserializeOwned>(
+    response: Response,
+    server_url: &Url,
+) -> Result<T> {
+    let server_hostname = server_url.host().unwrap();
 
     match response.status().as_u16() {
         401 => bail!(
@@ -99,24 +183,10 @@ pub async fn create_user_stream(stream_id: &str, config: &Config) -> Result<GetU
         }
     }
 
-    response
-        .json::<GetUserStreamResponse>()
-        .await
-        .map_err(|e| e.into())
+    response.json::<T>().await.map_err(|e| e.into())
 }
 
-fn user_stream_request(server_url: &Url, stream_id: &str, install_id: &str) -> RequestBuilder {
-    let client = Client::new();
-    let mut url = server_url.clone();
-
-    let builder = if stream_id.is_empty() {
-        url.set_path("api/streams");
-        client.post(url)
-    } else {
-        url.set_path(&format!("api/user/streams/{stream_id}"));
-        client.get(url)
-    };
-
+fn add_headers(builder: RequestBuilder, install_id: &str) -> RequestBuilder {
     builder
         .basic_auth(get_username(), Some(install_id))
         .header(header::USER_AGENT, build_user_agent())

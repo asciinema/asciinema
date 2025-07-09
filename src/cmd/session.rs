@@ -14,7 +14,7 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use url::{form_urlencoded, Url};
 
-use crate::api;
+use crate::api::{self, StreamChangeset, StreamResponse};
 use crate::asciicast::{self, Version};
 use crate::cli::{self, Format, RelayTarget};
 use crate::config::{self, Config};
@@ -330,7 +330,7 @@ impl cli::Session {
 
         let relay = match target {
             RelayTarget::StreamId(id) => {
-                let stream = api::create_user_stream(id, config).await?;
+                let stream = self.start_stream(id, config).await?;
                 let ws_producer_url = build_producer_url(&stream.ws_producer_url, metadata)?;
 
                 Relay {
@@ -346,6 +346,35 @@ impl cli::Session {
         };
 
         Ok(Some(relay))
+    }
+
+    async fn start_stream(&self, id: &str, config: &Config) -> Result<StreamResponse> {
+        let changeset = StreamChangeset {
+            live: Some(true),
+            ..Default::default()
+        };
+
+        if id.is_empty() {
+            api::create_stream(changeset, config).await
+        } else {
+            match &api::list_user_streams(id, config).await?[..] {
+                [] => {
+                    bail!("no stream matches \"{id}\"");
+                }
+
+                [stream] => api::update_stream(stream.id, changeset, config).await,
+
+                streams => {
+                    let urls = streams
+                        .iter()
+                        .map(|s| s.url.clone())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+
+                    bail!("multiple streams match \"{id}\" prefix:\n\n{urls}");
+                }
+            }
+        }
     }
 
     async fn get_tty(&self, quiet: bool) -> Result<Box<dyn Tty>> {
