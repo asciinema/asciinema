@@ -70,13 +70,9 @@ async fn create_recording_request(
     let mut url = server_url.clone();
     url.set_path("api/v1/recordings");
     let form = Form::new().file("file", path).await?;
+    let builder = client.post(url).multipart(form);
 
-    Ok(client
-        .post(url)
-        .multipart(form)
-        .basic_auth(get_username(), Some(install_id))
-        .header(header::USER_AGENT, build_user_agent())
-        .header(header::ACCEPT, "application/json"))
+    Ok(add_headers(builder, &install_id))
 }
 
 pub async fn list_user_streams(prefix: &str, config: &Config) -> Result<Vec<StreamResponse>> {
