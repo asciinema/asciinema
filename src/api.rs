@@ -10,7 +10,7 @@ use url::Url;
 use crate::config::Config;
 
 #[derive(Debug, Deserialize)]
-pub struct UploadAsciicastResponse {
+pub struct RecordingResponse {
     pub url: String,
     pub message: Option<String>,
 }
@@ -33,11 +33,11 @@ pub fn get_auth_url(config: &Config) -> Result<Url> {
     Ok(url)
 }
 
-pub async fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastResponse> {
+pub async fn create_recording(path: &str, config: &Config) -> Result<RecordingResponse> {
     let server_url = &config.get_server_url()?;
     let install_id = config.get_install_id()?;
 
-    let response = upload_request(server_url, path, install_id)
+    let response = create_recording_request(server_url, path, install_id)
         .await?
         .send()
         .await?;
@@ -48,18 +48,18 @@ pub async fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAscii
 
     response.error_for_status_ref()?;
 
-    Ok(response.json::<UploadAsciicastResponse>().await?)
+    Ok(response.json::<RecordingResponse>().await?)
 }
 
-async fn upload_request(
+async fn create_recording_request(
     server_url: &Url,
     path: &str,
     install_id: String,
 ) -> Result<RequestBuilder> {
     let client = Client::new();
     let mut url = server_url.clone();
-    url.set_path("api/asciicasts");
-    let form = Form::new().file("asciicast", path).await?;
+    url.set_path("api/v1/recordings");
+    let form = Form::new().file("file", path).await?;
 
     Ok(client
         .post(url)
