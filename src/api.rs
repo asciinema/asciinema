@@ -42,7 +42,7 @@ pub struct StreamChangeset {
 
 #[derive(Debug, Deserialize)]
 struct ErrorResponse {
-    reason: String,
+    message: String,
 }
 
 pub fn get_auth_url(config: &Config) -> Result<Url> {
@@ -174,12 +174,12 @@ async fn parse_stream_response<T: DeserializeOwned>(
         ),
 
         404 => match response.json::<ErrorResponse>().await {
-            Ok(json) => bail!("{}", json.reason),
+            Ok(json) => bail!("{}", json.message),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
 
         422 => match response.json::<ErrorResponse>().await {
-            Ok(json) => bail!("{}", json.reason),
+            Ok(json) => bail!("{}", json.message),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
 
