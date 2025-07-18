@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::fmt::Debug;
 
@@ -28,7 +29,15 @@ pub struct StreamChangeset {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub live: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub title: Option<Option<u8>>,
+    pub title: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub term_type: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub term_version: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shell: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub env: Option<Option<HashMap<String, String>>>,
 }
 
 #[derive(Debug, Deserialize)]

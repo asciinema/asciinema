@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::debug;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
-use url::{form_urlencoded, Url};
+use url::Url;
 
 use crate::api::{self, StreamChangeset, StreamResponse};
 use crate::asciicast::{self, Version};
@@ -330,11 +330,10 @@ impl cli::Session {
 
         let relay = match target {
             RelayTarget::StreamId(id) => {
-                let stream = self.start_stream(id, config).await?;
-                let ws_producer_url = build_producer_url(&stream.ws_producer_url, metadata)?;
+                let stream = self.start_stream(id, metadata, config).await?;
 
                 Relay {
-                    ws_producer_url,
+                    ws_producer_url: stream.ws_producer_url.parse()?,
                     url: Some(stream.url.parse()?),
                 }
             }
@@ -348,10 +347,25 @@ impl cli::Session {
         Ok(Some(relay))
     }
 
-    async fn start_stream(&self, id: &str, config: &Config) -> Result<StreamResponse> {
+    async fn start_stream(
+        &self,
+        id: &str,
+        metadata: &Metadata,
+        config: &Config,
+    ) -> Result<StreamResponse> {
+        let env = if metadata.env.is_empty() {
+            Some(None)
+        } else {
+            Some(Some(metadata.env.clone()))
+        };
+
         let changeset = StreamChangeset {
             live: Some(true),
-            ..Default::default()
+            title: metadata.title.clone().map(Some),
+            term_type: Some(metadata.term.type_.clone()),
+            term_version: Some(metadata.term.version.clone()),
+            shell: Some(env::var("SHELL").ok()),
+            env,
         };
 
         if id.is_empty() {
@@ -432,41 +446,6 @@ impl Relay {
     fn id(&self) -> String {
         format!("{:x}", hash::fnv1a_128(self.ws_producer_url.as_ref()))
     }
-}
-
-fn build_producer_url(url: &str, metadata: &Metadata) -> Result<Url> {
-    let mut url: Url = url.parse()?;
-    let mut params = Vec::new();
-
-    if let Some(type_) = &metadata.term.type_ {
-        params.push(("term[type]".to_string(), type_.clone()));
-    }
-
-    if let Some(version) = &metadata.term.version {
-        params.push(("term[version]".to_string(), version.clone()));
-    }
-
-    if let Ok(shell) = env::var("SHELL") {
-        params.push(("shell".to_string(), shell));
-    }
-
-    if let Some(title) = &metadata.title {
-        params.push(("title".to_string(), title.clone()));
-    }
-
-    for (k, v) in &metadata.env {
-        params.push((format!("env[{k}]"), v.to_string()));
-    }
-
-    let params = params.into_iter().filter(|(_k, v)| !v.is_empty());
-
-    let query = form_urlencoded::Serializer::new(String::new())
-        .extend_pairs(params)
-        .finish();
-
-    url.set_query(Some(&query));
-
-    Ok(url)
 }
 
 fn get_key_bindings(config: &config::Recording) -> Result<KeyBindings> {
