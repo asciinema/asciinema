@@ -31,7 +31,7 @@
           packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
         in
         {
-          formatter = pkgs.alejandra;
+          formatter = pkgs.nixfmt-tree;
 
           _module.args = {
             pkgs = import inputs.nixpkgs {
