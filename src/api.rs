@@ -62,10 +62,18 @@ pub async fn create_recording(path: &str, config: &Config) -> Result<RecordingRe
         .await?;
 
     if response.status().as_u16() == 413 {
-        bail!("The size of the recording exceeds the server's configured limit");
-    }
+        match response.json::<ErrorResponse>().await {
+            Ok(json) => {
+                bail!("{}", json.message);
+            }
 
-    response.error_for_status_ref()?;
+            Err(_) => {
+                bail!("The recording exceeds the server-configured size limit");
+            }
+        }
+    } else {
+        response.error_for_status_ref()?;
+    }
 
     Ok(response.json::<RecordingResponse>().await?)
 }
