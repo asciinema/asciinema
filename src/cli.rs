@@ -67,7 +67,7 @@ pub enum Commands {
 
     /// Upload a recording to an asciinema server.
     ///
-    /// Takes a local asciicast file and uploads it to an asciinema server (either asciinema.org or a self-hosted server) where it can be shared publicly via a URL.
+    /// Takes a local asciicast file and uploads it to an asciinema server (either asciinema.org or a self-hosted server), returning a recording URL which can be shared publicly.
     #[clap(about = "Upload a recording to an asciinema server", long_about)]
     Upload(Upload),
 
@@ -247,7 +247,7 @@ pub struct Stream {
     #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via local HTTP server", long_help)]
     pub local: Option<SocketAddr>,
 
-    /// Stream the session to a remote asciinema server for public viewing. This allows sharing your session on the web with anyone who has the stream URL. You can provide either a stream ID of an existing stream configuration in your asciinema server account, or a direct WebSocket URL (ws:// or wss://) for custom servers. Omitting the value for this option lets the asciinema server either allocate a new stream ID automatically or reuse an existing one (may depend on server configuration).
+    /// Stream the session to a remote asciinema server for public viewing. This allows sharing your session on the web with anyone who has the stream URL. You can provide either a stream ID of an existing stream configuration in your asciinema server account, or a direct WebSocket URL (ws:// or wss://) for custom servers. Omitting the value for this option lets the asciinema server allocate a new stream ID automatically.
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target, help = "Stream via remote asciinema server", long_help)]
     pub remote: Option<RelayTarget>,
 
@@ -335,7 +335,7 @@ pub struct Session {
     #[arg(short = 'l', long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via local HTTP server", long_help)]
     pub stream_local: Option<SocketAddr>,
 
-    /// Stream the session to a remote asciinema server for public viewing. This allows sharing your session on the web with anyone who has the stream URL. You can provide either a stream ID of an existing stream configuration in your asciinema server account, or a direct WebSocket URL (ws:// or wss://) for custom servers. Omitting the value for this option lets the asciinema server either allocate a new stream ID automatically or reuse an existing one (may depend on server configuration). Can be combined with local streaming and file output.
+    /// Stream the session to a remote asciinema server for public viewing. This allows sharing your session on the web with anyone who has the stream URL. You can provide either a stream ID of an existing stream configuration in your asciinema server account, or a direct WebSocket URL (ws:// or wss://) for custom servers. Omitting the value for this option lets the asciinema server allocate a new stream ID automatically. Can be combined with local streaming and file output.
     #[arg(short = 'r', long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target, help = "Stream via remote asciinema server", long_help)]
     pub stream_remote: Option<RelayTarget>,
 
@@ -409,7 +409,7 @@ pub struct Session {
     #[arg(long, help = "Return the session's exit status", long_help)]
     pub return_: bool,
 
-    /// Enable logging of internal events to a file at the specified path. Useful for debugging streaming issues (connection errors, disconnections, etc.).
+    /// Enable logging of internal events to a file at the specified path. Useful for debugging I/O issues (connection errors, disconnections, file write errors, etc.).
     #[arg(long, value_name = "PATH", help = "Log file path", long_help)]
     pub log_file: Option<PathBuf>,
 
@@ -455,7 +455,7 @@ pub struct Convert {
 
 #[derive(Debug, Args)]
 pub struct Upload {
-    /// The path to the asciicast recording file to upload. Must be a file in a supported asciicast format (v1, v2, or v3). After successful upload, you'll receive a URL where the recording can be viewed and shared.
+    /// The path to the asciicast recording file to upload, in a supported asciicast format (v1, v2, or v3).
     pub file: String,
 
     /// Specify a custom asciinema server URL for uploading to self-hosted servers. The URL should be the base URL of the server (e.g. https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
