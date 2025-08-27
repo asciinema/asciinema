@@ -71,11 +71,8 @@ impl cli::Session {
 
         status::info!("asciinema session started");
 
-        let mut no_outputs = true;
-
         if let Some(path) = self.output_file.as_ref() {
             status::info!("Recording to {}", path);
-            no_outputs = false;
         }
 
         if let Some(listener) = &listener {
@@ -83,17 +80,10 @@ impl cli::Session {
                 "Live streaming at http://{}",
                 listener.local_addr().unwrap()
             );
-
-            no_outputs = false;
         }
 
         if let Some(Relay { url: Some(url), .. }) = &relay {
             status::info!("Live streaming at {}", url);
-            no_outputs = false;
-        }
-
-        if no_outputs {
-            status::warning!("No outputs enabled, consider using -o, -l, or -r");
         }
 
         if command.is_none() {
