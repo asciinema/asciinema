@@ -35,18 +35,63 @@ pub enum Commands {
     /// Press <ctrl+\> to pause/resume capture of the session.
     ///
     /// During the session, the ASCIINEMA_SESSION environment variable is set to a unique session ID.
-    #[clap(visible_alias = "rec", about = "Record a terminal session", long_about)]
+    #[clap(
+        visible_alias = "rec",
+        about = "Record a terminal session",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema rec demo.cast
+      Record a shell session to a file
+
+  asciinema rec --command \"python script.py\" demo.cast
+      Record execution of a Python script
+
+  asciinema rec --idle-time-limit 2 demo.cast
+      Record with idle time capped at 2 seconds
+
+  asciinema rec --capture-input --title \"API Demo\" demo.cast
+      Record with keyboard input and set a title
+
+  asciinema rec --append demo.cast
+      Continue recording to an existing file
+
+  asciinema rec demo.txt
+      Record as a plain-text log - output format inferred from the .txt extension"
+    )]
     Record(Record),
 
     /// Stream a terminal session in real-time.
     ///
-    /// Broadcasts a terminal session live via either a local HTTP server (for local/LAN viewing) or a remote asciinema server (for public sharing). Viewers can watch the session as it happens through a web interface.
+    /// Broadcasts a terminal session live via either the local HTTP server (for local/LAN viewing) or a remote asciinema server (for public sharing). Viewers can watch the session as it happens through a web interface.
     ///
     /// Press <ctrl+d> or type 'exit' to end the streaming session.
     /// Press <ctrl+\> to pause/resume capture of the session.
     ///
     /// During the session, the ASCIINEMA_SESSION environment variable is set to a unique session ID.
-    #[clap(about = "Stream a terminal session", long_about)]
+    #[clap(
+        about = "Stream a terminal session",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema stream --local
+      Stream a shell session via the local HTTP server at 127.0.0.1:8080
+
+  asciinema stream --local 0.0.0.0:8080
+      Stream via the local HTTP server, listening on all network interfaces
+
+  asciinema stream --remote
+      Stream via an asciinema server for public viewing
+
+  asciinema stream -l -r
+      Stream both locally and remotely simultaneously
+
+  asciinema stream -r --command \"ping asciinema.org\"
+      Stream execution of the ping command
+
+  asciinema stream -r <ID> -t \"Live coding\"
+      Stream via a remote server, reusing the existing stream ID and setting the stream title"
+    )]
     Stream(Stream),
 
     /// Record and stream a terminal session simultaneously.
@@ -57,7 +102,29 @@ pub enum Commands {
     /// Press <ctrl+\> to pause/resume capture of the session.
     ///
     /// During the session, the ASCIINEMA_SESSION environment variable is set to a unique session ID.
-    #[clap(about = "Record and stream a terminal session", long_about)]
+    #[clap(
+        about = "Record and stream a terminal session",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema session --output-file demo.cast --stream-local
+      Record a shell session to a file and stream it via the local HTTP server at 127.0.0.1:8080
+
+  asciinema session -o demo.cast --stream-remote
+      Record to a file and stream via an asciinema server for public viewing
+
+  asciinema session --stream-local --stream-remote
+      Stream both locally and remotely simultaneously, without saving to a file
+
+  asciinema session -o demo.cast -l -r -t \"Live coding\"
+      Record + stream locally + stream remotely, setting the title of the recording/stream
+
+  asciinema session -o demo.cast --idle-time-limit 1.5
+      Record to a file with idle time capped at 1.5 seconds
+
+  asciinema session -o demo.cast -l 0.0.0.0:9000 -r <ID>
+      Record + stream locally on port 9000 + stream remotely, reusing existing stream ID"
+    )]
     Session(Session),
 
     /// Play back a recorded terminal session.
@@ -68,7 +135,26 @@ pub enum Commands {
     /// Press <space> to pause/resume.
     /// Press '.' to step forward (while paused).
     /// Press ']' to skip to the next marker (while paused).
-    #[clap(about = "Play back a terminal session", long_about)]
+    #[clap(
+        about = "Play back a terminal session",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema play demo.cast
+      Play back a local recording file once
+
+  asciinema play --speed 2.0 --loop demo.cast
+      Play back at double speed in a loop
+
+  asciinema play --idle-time-limit 2 demo.cast
+      Play back with idle time capped at 2 seconds
+
+  asciinema play https://asciinema.org/a/569727
+      Play back directly from a URL
+
+  asciinema play --pause-on-markers demo.cast
+      Play back, pausing automatically at every marker"
+    )]
     Play(Play),
 
     /// Upload a recording to an asciinema server.
@@ -92,13 +178,42 @@ pub enum Commands {
     ///
     /// Note: in asciinema 2.x this command used to print raw terminal output for a given session
     /// file. If you're looking for this behavior then use `asciinema convert -f raw <FILE> -` instead.
-    #[clap(about = "Concatenate multiple recordings", long_about)]
+    #[clap(
+        about = "Concatenate multiple recordings",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema cat demo1.cast demo2.cast demo3.cast > combined.cast
+      Combine local recordings into one file
+
+  asciinema cat https://asciinema.org/a/569727 part2.cast > combined.cast
+      Combine a remote and a local recording into one file"
+    )]
     Cat(Cat),
 
     /// Convert a recording to another format.
     ///
     /// Transform asciicast files between different formats (v1, v2, v3) or export to other formats like raw terminal output or plain text. Supports reading from files, URLs, or stdin and writing to files or stdout.
-    #[clap(about = "Convert a recording to another format", long_about)]
+    #[clap(
+        about = "Convert a recording to another format",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema convert old.cast new.cast
+      Convert a recording to the latest asciicast format (v3)
+
+  asciinema convert demo.cast demo.txt
+      Export a recording as a plain-text log - output format inferred from the .txt extension
+
+  asciinema convert --output-format raw demo.cast demo.txt
+      Export as raw terminal output
+
+  asciinema convert -f txt demo.cast -
+      Export as plain text to stdout
+
+  asciinema convert https://asciinema.org/a/569727 starwars.cast
+      Download a remote recording and convert it to the latest asciicast format (v3)"
+    )]
     Convert(Convert),
 }
 
@@ -249,8 +364,8 @@ pub struct Play {
 #[derive(Debug, Args)]
 #[clap(group(ArgGroup::new("mode").args(&["local", "remote"]).multiple(true).required(true)))]
 pub struct Stream {
-    /// Start a local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, defaults to 127.0.0.1:8080.
-    #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via local HTTP server", long_help)]
+    /// Start the local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, defaults to 127.0.0.1:8080.
+    #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via the local HTTP server", long_help)]
     pub local: Option<SocketAddr>,
 
     /// Stream the session to a remote asciinema server for public viewing. This allows sharing your session on the web with anyone who has the stream URL. You can provide either a stream ID of an existing stream configuration in your asciinema server account, or a direct WebSocket URL (ws:// or wss://) for custom servers. Omitting the value for this option lets the asciinema server allocate a new stream ID automatically.
@@ -332,8 +447,8 @@ pub struct Session {
     )]
     pub output_format: Option<Format>,
 
-    /// Start a local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, defaults to 127.0.0.1:8080. Can be combined with remote streaming and file output.
-    #[arg(short = 'l', long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via local HTTP server", long_help)]
+    /// Start the local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, defaults to 127.0.0.1:8080. Can be combined with remote streaming and file output.
+    #[arg(short = 'l', long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via the local HTTP server", long_help)]
     pub stream_local: Option<SocketAddr>,
 
     /// Stream the session to a remote asciinema server for public viewing. This allows sharing your session on the web with anyone who has the stream URL. You can provide either a stream ID of an existing stream configuration in your asciinema server account, or a direct WebSocket URL (ws:// or wss://) for custom servers. Omitting the value for this option lets the asciinema server allocate a new stream ID automatically. Can be combined with local streaming and file output.
