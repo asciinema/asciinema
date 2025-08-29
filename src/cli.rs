@@ -118,7 +118,7 @@ pub struct Record {
     )]
     pub output_format: Option<Format>,
 
-    /// Specify the command to execute in the recording session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option recording.command.
+    /// Specify the command to execute in the recording session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option session.command.
     #[arg(
         short,
         long,
@@ -127,7 +127,7 @@ pub struct Record {
     )]
     pub command: Option<String>,
 
-    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. Can also be set via the config file option recording.cap_input.
+    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. Can also be set via the config file option session.cap_input.
     #[arg(
         long,
         short = 'I',
@@ -137,7 +137,7 @@ pub struct Record {
     )]
     pub cap_input: bool,
 
-    /// Specify which environment variables to capture and include in the recording metadata. This helps ensure the recording context is preserved, e.g., for auditing. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. Can also be set via the config file option recording.cap_env.
+    /// Specify which environment variables to capture and include in the recording metadata. This helps ensure the recording context is preserved, e.g., for auditing. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. Can also be set via the config file option session.cap_env.
     #[arg(
         long,
         value_name = "VARS",
@@ -163,7 +163,7 @@ pub struct Record {
     #[arg(short, long, help = "Title of the recording", long_help)]
     pub title: Option<String>,
 
-    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Note that this option doesn't alter the original (captured) timing information and instead embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via the config file option recording.idle_time_limit.
+    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Note that this option doesn't alter the original (captured) timing information and instead embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via the config file option session.idle_time_limit.
     #[arg(
         short,
         long,
@@ -257,7 +257,7 @@ pub struct Stream {
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target, help = "Stream via remote asciinema server", long_help)]
     pub remote: Option<RelayTarget>,
 
-    /// Specify the command to execute in the streaming session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option recording.command.
+    /// Specify the command to execute in the streaming session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option session.command.
     #[arg(
         short,
         long,
@@ -266,11 +266,11 @@ pub struct Stream {
     )]
     pub command: Option<String>,
 
-    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option recording.cap_input.
+    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option session.cap_input.
     #[arg(long, short = 'I', help = "Enable input (keyboard) capture", long_help)]
     pub cap_input: bool,
 
-    /// Specify which environment variables to capture and include in the stream metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via the config file option recording.cap_env.
+    /// Specify which environment variables to capture and include in the stream metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via the config file option session.cap_env.
     #[arg(
         long,
         value_name = "VARS",
@@ -340,7 +340,7 @@ pub struct Session {
     #[arg(short = 'r', long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target, help = "Stream via remote asciinema server", long_help)]
     pub stream_remote: Option<RelayTarget>,
 
-    /// Specify the command to execute in the session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option recording.command.
+    /// Specify the command to execute in the session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option session.command.
     #[arg(
         short,
         long,
@@ -349,11 +349,11 @@ pub struct Session {
     )]
     pub command: Option<String>,
 
-    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option recording.cap_input.
+    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option session.cap_input.
     #[arg(long, short = 'I', help = "Enable input (keyboard) capture", long_help)]
     pub cap_input: bool,
 
-    /// Specify which environment variables to capture and include in the session metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via config file option recording.cap_env.
+    /// Specify which environment variables to capture and include in the session metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via config file option session.cap_env.
     #[arg(
         long,
         value_name = "VARS",
@@ -379,7 +379,7 @@ pub struct Session {
     #[arg(short, long, help = "Title of the session", long_help)]
     pub title: Option<String>,
 
-    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Only applies when --output-file is specified. Note that this option doesn't alter the original (captured) timing information and instead it embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via config file option recording.idle_time_limit.
+    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Only applies when --output-file is specified. Note that this option doesn't alter the original (captured) timing information and instead it embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via config file option session.idle_time_limit.
     #[arg(
         short,
         long,

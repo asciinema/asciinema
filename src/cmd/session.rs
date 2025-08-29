@@ -48,10 +48,10 @@ impl cli::Session {
 
     async fn do_run(&mut self) -> Result<i32> {
         let config = Config::new(self.server_url.clone())?;
-        let command = self.get_command(&config.recording);
-        let keys = get_key_bindings(&config.recording)?;
+        let command = self.get_command(&config.session);
+        let keys = get_key_bindings(&config.session)?;
         let notifier = get_notifier(&config);
-        let metadata = self.get_session_metadata(&config.recording).await?;
+        let metadata = self.get_session_metadata(&config.session).await?;
         let file_writer = self.get_file_writer(&metadata, notifier.clone()).await?;
         let listener = self.get_listener().await?;
         let relay = self.get_relay(&metadata, &config).await?;
@@ -131,7 +131,7 @@ impl cli::Session {
                 command,
                 extra_env,
                 tty.as_mut(),
-                self.cap_input || config.recording.cap_input,
+                self.cap_input || config.session.cap_input,
                 outputs,
                 keys,
                 notifier,
@@ -160,11 +160,11 @@ impl cli::Session {
         Ok(exit_status)
     }
 
-    fn get_command(&self, config: &config::Recording) -> Option<String> {
+    fn get_command(&self, config: &config::Session) -> Option<String> {
         self.command.as_ref().cloned().or(config.command.clone())
     }
 
-    async fn get_session_metadata(&self, config: &config::Recording) -> Result<Metadata> {
+    async fn get_session_metadata(&self, config: &config::Session) -> Result<Metadata> {
         Ok(Metadata {
             time: SystemTime::now(),
             term: self.get_term_info().await?,
@@ -438,7 +438,7 @@ impl Relay {
     }
 }
 
-fn get_key_bindings(config: &config::Recording) -> Result<KeyBindings> {
+fn get_key_bindings(config: &config::Session) -> Result<KeyBindings> {
     let mut keys = KeyBindings::default();
 
     if let Some(key) = config.prefix_key()? {
@@ -456,7 +456,7 @@ fn get_key_bindings(config: &config::Recording) -> Result<KeyBindings> {
     Ok(keys)
 }
 
-fn capture_env(var_names: Option<String>, config: &config::Recording) -> HashMap<String, String> {
+fn capture_env(var_names: Option<String>, config: &config::Session) -> HashMap<String, String> {
     let var_names = var_names
         .or(config.cap_env.clone())
         .unwrap_or(String::from("SHELL"));

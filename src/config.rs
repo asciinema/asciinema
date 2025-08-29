@@ -20,7 +20,7 @@ pub type Key = Option<Vec<u8>>;
 #[allow(unused)]
 pub struct Config {
     server: Server,
-    pub recording: Recording,
+    pub session: Session,
     pub playback: Playback,
     pub notifications: Notifications,
 }
@@ -33,7 +33,7 @@ pub struct Server {
 
 #[derive(Debug, Clone, Deserialize, Default)]
 #[allow(unused)]
-pub struct Recording {
+pub struct Session {
     pub command: Option<String>,
     pub cap_input: bool,
     pub cap_env: Option<String>,
@@ -65,7 +65,7 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("playback.speed", None::<Option<f64>>)?
-            .set_default("recording.cap_input", false)?
+            .set_default("session.cap_input", false)?
             .set_default("notifications.enabled", true)?
             .add_source(File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(File::with_name(&user_defaults_path()?.to_string_lossy()).required(false))
@@ -116,7 +116,7 @@ impl Config {
     }
 }
 
-impl Recording {
+impl Session {
     pub fn prefix_key(&self) -> Result<Option<Key>> {
         self.prefix_key.as_ref().map(parse_key).transpose()
     }
