@@ -33,6 +33,8 @@ pub enum Commands {
     ///
     /// Press <ctrl+d> or type 'exit' to end the recording session.
     /// Press <ctrl+\> to pause/resume capture of the session.
+    ///
+    /// During the session, the ASCIINEMA_SESSION environment variable is set to a unique session ID.
     #[clap(visible_alias = "rec", about = "Record a terminal session", long_about)]
     Record(Record),
 
@@ -42,6 +44,8 @@ pub enum Commands {
     ///
     /// Press <ctrl+d> or type 'exit' to end the streaming session.
     /// Press <ctrl+\> to pause/resume capture of the session.
+    ///
+    /// During the session, the ASCIINEMA_SESSION environment variable is set to a unique session ID.
     #[clap(about = "Stream a terminal session", long_about)]
     Stream(Stream),
 
@@ -51,6 +55,8 @@ pub enum Commands {
     ///
     /// Press <ctrl+d> or type 'exit' to end the session.
     /// Press <ctrl+\> to pause/resume capture of the session.
+    ///
+    /// During the session, the ASCIINEMA_SESSION environment variable is set to a unique session ID.
     #[clap(about = "Record and stream a terminal session", long_about)]
     Session(Session),
 
@@ -416,6 +422,9 @@ pub struct Session {
     /// Specify a custom asciinema server URL for streaming to self-hosted servers. The URL should be the base URL of the server (e.g. https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
+
+    #[arg(hide = true)]
+    pub env: Vec<String>,
 }
 
 #[derive(Debug, Args)]

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process::ExitCode;
+use std::process::{self, ExitCode};
 use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -122,7 +122,7 @@ impl cli::Session {
         }
 
         let command = &build_exec_command(command.as_ref().cloned());
-        let extra_env = &build_exec_extra_env(relay_id.as_ref());
+        let extra_env = &build_exec_extra_env(&self.env, relay_id.as_ref());
 
         let exit_status = {
             let mut tty = self.get_tty(true).await?;
@@ -486,10 +486,17 @@ fn build_exec_command(command: Option<String>) -> Vec<String> {
     vec!["/bin/sh".to_owned(), "-c".to_owned(), command]
 }
 
-fn build_exec_extra_env(relay_id: Option<&String>) -> HashMap<String, String> {
+fn build_exec_extra_env(vars: &[String], relay_id: Option<&String>) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
-    env.insert("ASCIINEMA_REC".to_owned(), "1".to_owned());
+    for var in vars {
+        if let Some((name, value)) = var.split_once('=') {
+            env.insert(name.to_owned(), value.to_owned());
+        }
+    }
+
+    let session_id = format!("{:x}", hash::fnv1a_128(process::id().to_string()));
+    env.insert("ASCIINEMA_SESSION".to_owned(), session_id);
 
     if let Some(id) = relay_id {
         env.insert("ASCIINEMA_RELAY_ID".to_owned(), id.clone());
