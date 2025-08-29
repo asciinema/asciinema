@@ -101,11 +101,14 @@ impl Config {
 
     pub fn get_install_id(&self) -> Result<String> {
         let path = install_id_path()?;
+        let legacy_path = legacy_install_id_path()?;
 
         if let Some(id) = read_install_id(&path)? {
             Ok(id)
+        } else if let Some(id) = read_install_id(&legacy_path)? {
+            Ok(id)
         } else {
-            let id = create_install_id();
+            let id = generate_install_id();
             save_install_id(&path, &id)?;
 
             Ok(id)
@@ -190,7 +193,7 @@ fn read_install_id(path: &PathBuf) -> Result<Option<String>> {
     }
 }
 
-fn create_install_id() -> String {
+fn generate_install_id() -> String {
     Uuid::new_v4().to_string()
 }
 
@@ -205,27 +208,44 @@ fn save_install_id(path: &PathBuf, id: &str) -> Result<()> {
 }
 
 pub fn user_config_path() -> Result<PathBuf> {
-    Ok(home()?.join("config.toml"))
+    Ok(config_home()?.join("config.toml"))
 }
 
 fn legacy_user_config_path() -> Result<PathBuf> {
-    Ok(home()?.join("config"))
+    Ok(config_home()?.join("config"))
 }
 
 fn user_defaults_path() -> Result<PathBuf> {
-    Ok(home()?.join("defaults.toml"))
+    Ok(config_home()?.join("defaults.toml"))
 }
 
 fn install_id_path() -> Result<PathBuf> {
-    Ok(home()?.join(INSTALL_ID_FILENAME))
+    Ok(state_home()?.join(INSTALL_ID_FILENAME))
 }
 
-fn home() -> Result<PathBuf> {
+fn legacy_install_id_path() -> Result<PathBuf> {
+    Ok(config_home()?.join(INSTALL_ID_FILENAME))
+}
+
+fn config_home() -> Result<PathBuf> {
     env::var("ASCIINEMA_CONFIG_HOME")
         .map(PathBuf::from)
         .or(env::var("XDG_CONFIG_HOME").map(|home| Path::new(&home).join("asciinema")))
         .or(env::var("HOME").map(|home| Path::new(&home).join(".config").join("asciinema")))
         .map_err(|_| anyhow!("need $HOME or $XDG_CONFIG_HOME or $ASCIINEMA_CONFIG_HOME"))
+}
+
+fn state_home() -> Result<PathBuf> {
+    env::var("ASCIINEMA_STATE_HOME")
+        .map(PathBuf::from)
+        .or(env::var("XDG_STATE_HOME").map(|home| Path::new(&home).join("asciinema")))
+        .or(env::var("HOME").map(|home| {
+            Path::new(&home)
+                .join(".local")
+                .join("state")
+                .join("asciinema")
+        }))
+        .map_err(|_| anyhow!("need $HOME or $XDG_STATE_HOME or $ASCIINEMA_STATE_HOME"))
 }
 
 fn parse_key<S: AsRef<str>>(key: S) -> Result<Key> {
