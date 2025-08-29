@@ -131,7 +131,7 @@ impl cli::Session {
                 command,
                 extra_env,
                 tty.as_mut(),
-                self.rec_input || config.recording.rec_input,
+                self.cap_input || config.recording.cap_input,
                 outputs,
                 keys,
                 notifier,
@@ -171,7 +171,7 @@ impl cli::Session {
             idle_time_limit: self.idle_time_limit.or(config.idle_time_limit),
             command: self.get_command(config),
             title: self.title.clone(),
-            env: capture_env(self.rec_env.clone(), config),
+            env: capture_env(self.cap_env.clone(), config),
         })
     }
 
@@ -458,7 +458,7 @@ fn get_key_bindings(config: &config::Recording) -> Result<KeyBindings> {
 
 fn capture_env(var_names: Option<String>, config: &config::Recording) -> HashMap<String, String> {
     let var_names = var_names
-        .or(config.rec_env.clone())
+        .or(config.cap_env.clone())
         .unwrap_or(String::from("SHELL"));
 
     let vars = var_names.split(',').collect::<HashSet<_>>();

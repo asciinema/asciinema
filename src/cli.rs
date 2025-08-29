@@ -127,24 +127,24 @@ pub struct Record {
     )]
     pub command: Option<String>,
 
-    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. Can also be set via the config file option recording.rec_input.
+    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. Can also be set via the config file option recording.cap_input.
     #[arg(
         long,
         short = 'I',
         alias = "stdin",
-        help = "Enable input (keyboard) recording",
+        help = "Enable input (keyboard) capture",
         long_help
     )]
-    pub rec_input: bool,
+    pub cap_input: bool,
 
-    /// Specify which environment variables to capture and include in the recording metadata. This helps ensure the recording context is preserved, e.g., for auditing. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. Can also be set via the config file option recording.rec_env.
+    /// Specify which environment variables to capture and include in the recording metadata. This helps ensure the recording context is preserved, e.g., for auditing. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. Can also be set via the config file option recording.cap_env.
     #[arg(
         long,
         value_name = "VARS",
         help = "Comma-separated list of environment variables to capture [default: SHELL]",
         long_help
     )]
-    pub rec_env: Option<String>,
+    pub cap_env: Option<String>,
 
     /// Append the new session to an existing recording file instead of creating a new one. This allows you to continue a previous recording session. The timing will be adjusted to maintain continuity from where the previous recording ended. Cannot be used together with --overwrite.
     #[arg(short, long, help = "Append to an existing recording file", long_help)]
@@ -266,23 +266,18 @@ pub struct Stream {
     )]
     pub command: Option<String>,
 
-    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option recording.rec_input.
-    #[arg(
-        long,
-        short = 'I',
-        help = "Enable input (keyboard) recording",
-        long_help
-    )]
-    pub rec_input: bool,
+    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option recording.cap_input.
+    #[arg(long, short = 'I', help = "Enable input (keyboard) capture", long_help)]
+    pub cap_input: bool,
 
-    /// Specify which environment variables to capture and include in the stream metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via the config file option recording.rec_env.
+    /// Specify which environment variables to capture and include in the stream metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via the config file option recording.cap_env.
     #[arg(
         long,
         value_name = "VARS",
         help = "Comma-separated list of environment variables to capture [default: SHELL]",
         long_help
     )]
-    pub rec_env: Option<String>,
+    pub cap_env: Option<String>,
 
     /// Set a descriptive title for the streaming session. This title is displayed to viewers (when doing remote streaming with --remote). For example: --title "Building a REST API". If the server has stream recording enabled then the title will be included in the recording file created on the server side.
     #[arg(short, long, help = "Title of the session", long_help)]
@@ -354,23 +349,18 @@ pub struct Session {
     )]
     pub command: Option<String>,
 
-    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option recording.rec_input.
-    #[arg(
-        long,
-        short = 'I',
-        help = "Enable input (keyboard) recording",
-        long_help
-    )]
-    pub rec_input: bool,
+    /// Enable recording of keyboard input in addition to terminal output. When enabled, both what you type and what appears on the screen will be captured. Note that sensitive input like passwords will also be recorded when this option is enabled. If the server has stream recording enabled then keyboard input will be included in the recording file created on the server side. Can also be set via the config file option recording.cap_input.
+    #[arg(long, short = 'I', help = "Enable input (keyboard) capture", long_help)]
+    pub cap_input: bool,
 
-    /// Specify which environment variables to capture and include in the session metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via config file option recording.rec_env.
+    /// Specify which environment variables to capture and include in the session metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via config file option recording.cap_env.
     #[arg(
         long,
         value_name = "VARS",
         help = "Comma-separated list of environment variables to capture [default: SHELL]",
         long_help
     )]
-    pub rec_env: Option<String>,
+    pub cap_env: Option<String>,
 
     /// Append the new session to an existing recording file instead of creating a new one. This allows you to continue a previous recording session. The timing will be adjusted to maintain continuity from where the previous recording ended. Cannot be used together with --overwrite. Only applies when --output-file is specified.
     #[arg(short, long, help = "Append to an existing recording file", long_help)]

@@ -35,8 +35,8 @@ pub struct Server {
 #[allow(unused)]
 pub struct Recording {
     pub command: Option<String>,
-    pub rec_input: bool,
-    pub rec_env: Option<String>,
+    pub cap_input: bool,
+    pub cap_env: Option<String>,
     pub idle_time_limit: Option<f64>,
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
@@ -65,7 +65,7 @@ impl Config {
         let mut config = config::Config::builder()
             .set_default("server.url", None::<Option<String>>)?
             .set_default("playback.speed", None::<Option<f64>>)?
-            .set_default("recording.rec_input", false)?
+            .set_default("recording.cap_input", false)?
             .set_default("notifications.enabled", true)?
             .add_source(File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(File::with_name(&user_defaults_path()?.to_string_lossy()).required(false))

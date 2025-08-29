@@ -43,12 +43,12 @@ fn main() -> ExitCode {
         Commands::Record(cmd) => {
             let cmd = Session {
                 output_file: Some(cmd.file),
-                rec_input: cmd.rec_input,
+                cap_input: cmd.cap_input,
                 append: cmd.append,
                 output_format: cmd.output_format,
                 overwrite: cmd.overwrite,
                 command: cmd.command,
-                rec_env: cmd.rec_env,
+                cap_env: cmd.cap_env,
                 title: cmd.title,
                 idle_time_limit: cmd.idle_time_limit,
                 headless: cmd.headless,
@@ -67,12 +67,12 @@ fn main() -> ExitCode {
         Commands::Stream(cmd) => {
             let cmd = Session {
                 output_file: None,
-                rec_input: cmd.rec_input,
+                cap_input: cmd.cap_input,
                 append: false,
                 output_format: None,
                 overwrite: false,
                 command: cmd.command,
-                rec_env: cmd.rec_env,
+                cap_env: cmd.cap_env,
                 title: cmd.title,
                 idle_time_limit: None,
                 headless: cmd.headless,
