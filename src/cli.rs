@@ -38,7 +38,7 @@ pub enum Commands {
 
     /// Stream a terminal session in real-time.
     ///
-    /// Broadcasts your terminal session live via either a local HTTP server (for local/LAN viewing) or a remote asciinema server (for public sharing). Viewers can watch your session as it happens through a web interface.
+    /// Broadcasts a terminal session live via either a local HTTP server (for local/LAN viewing) or a remote asciinema server (for public sharing). Viewers can watch the session as it happens through a web interface.
     ///
     /// Press <ctrl+d> or type 'exit' to end the streaming session.
     /// Press <ctrl+\> to pause/resume capture of the session.
