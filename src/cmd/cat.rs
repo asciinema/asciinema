@@ -5,6 +5,7 @@ use anyhow::{anyhow, Result};
 
 use crate::asciicast::{self, Asciicast, Encoder, Event, EventData, Version};
 use crate::cli;
+use crate::util;
 
 impl cli::Cat {
     pub fn run(self) -> Result<()> {
@@ -49,7 +50,13 @@ impl cli::Cat {
     }
 
     fn open_input_files(&self) -> Result<Vec<Asciicast>> {
-        self.file.iter().map(asciicast::open_from_path).collect()
+        self.file
+            .iter()
+            .map(|filename| {
+                let path = util::get_local_path(filename)?;
+                asciicast::open_from_path(&*path)
+            })
+            .collect()
     }
 
     fn get_encoder(&self, version: Version) -> Result<Box<dyn Encoder>> {
