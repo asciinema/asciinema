@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::{ArgGroup, Args, Parser, Subcommand, ValueEnum};
 
-pub const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:8080";
+pub const DEFAULT_LISTEN_ADDR: &str = "127.0.0.1:0";
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about)]
@@ -75,10 +75,10 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema stream --local
-      Stream a shell session via the local HTTP server at 127.0.0.1:8080
+      Stream a shell session via the local HTTP server listening on an ephemeral port on 127.0.0.1
 
   asciinema stream --local 0.0.0.0:8080
-      Stream via the local HTTP server, listening on all network interfaces
+      Stream via the local HTTP server listening on port 8080 on all network interfaces
 
   asciinema stream --remote
       Stream via an asciinema server for public viewing
@@ -108,7 +108,7 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema session --output-file demo.cast --stream-local
-      Record a shell session to a file and stream it via the local HTTP server at 127.0.0.1:8080
+      Record a shell session to a file and stream it via the local HTTP server listening on an ephemeral port on 127.0.0.1
 
   asciinema session -o demo.cast --stream-remote
       Record to a file and stream via an asciinema server for public viewing
@@ -364,7 +364,7 @@ pub struct Play {
 #[derive(Debug, Args)]
 #[clap(group(ArgGroup::new("mode").args(&["local", "remote"]).multiple(true).required(true)))]
 pub struct Stream {
-    /// Start the local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, defaults to 127.0.0.1:8080.
+    /// Start the local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, it listens on an automatically assigned ephemeral port on 127.0.0.1.
     #[arg(short, long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via the local HTTP server", long_help)]
     pub local: Option<SocketAddr>,
 
@@ -447,7 +447,7 @@ pub struct Session {
     )]
     pub output_format: Option<Format>,
 
-    /// Start the local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, defaults to 127.0.0.1:8080. Can be combined with remote streaming and file output.
+    /// Start the local HTTP server to stream the session in real-time. Creates a web interface accessible via browser where viewers can watch the terminal session live. Optionally specify the bind address as IP:PORT (e.g., 0.0.0.0:8080 to allow external connections). If no address is provided, it listends on an automatically assigned ephemeral port on 127.0.0.1. Can be combined with remote streaming and file output.
     #[arg(short = 'l', long, value_name = "IP:PORT", default_missing_value = DEFAULT_LISTEN_ADDR, num_args = 0..=1, help = "Stream via the local HTTP server", long_help)]
     pub stream_local: Option<SocketAddr>,
 
