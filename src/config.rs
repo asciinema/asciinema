@@ -4,7 +4,7 @@ use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
-use config::{self, Environment, File};
+use config::{self, File};
 use reqwest::Url;
 use serde::Deserialize;
 use uuid::Uuid;
@@ -69,18 +69,19 @@ impl Config {
             .set_default("notifications.enabled", true)?
             .add_source(File::with_name("/etc/asciinema/config.toml").required(false))
             .add_source(File::with_name(&user_defaults_path()?.to_string_lossy()).required(false))
-            .add_source(File::with_name(&user_config_path()?.to_string_lossy()).required(false))
-            .add_source(Environment::with_prefix("asciinema").separator("_"));
+            .add_source(File::with_name(&user_config_path()?.to_string_lossy()).required(false));
 
-        if let Some(url) = server_url {
+        // legacy env var
+        if let Ok(url) = env::var("ASCIINEMA_API_URL") {
             config = config.set_override("server.url", Some(url))?;
         }
 
-        if let (Err(_), Ok(url)) = (
-            env::var("ASCIINEMA_SERVER_URL"),
-            env::var("ASCIINEMA_API_URL"),
-        ) {
-            env::set_var("ASCIINEMA_SERVER_URL", url);
+        if let Ok(url) = env::var("ASCIINEMA_SERVER_URL") {
+            config = config.set_override("server.url", Some(url))?;
+        }
+
+        if let Some(url) = server_url {
+            config = config.set_override("server.url", Some(url))?;
         }
 
         Ok(config.build()?.try_deserialize()?)
