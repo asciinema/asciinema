@@ -13,7 +13,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
 
-    /// Suppress diagnostic messages and progress indicators. When enabled, asciinema will run silently and only display error messages if something goes wrong.
+    /// Suppress diagnostic messages and progress indicators. Only error messages will be displayed.
     #[clap(
         short,
         long,
@@ -233,7 +233,7 @@ pub struct Record {
     )]
     pub output_format: Option<Format>,
 
-    /// Specify the command to execute in the recording session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option session.command.
+    /// Specify the command to execute in the recording session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via the config file option session.command.
     #[arg(
         short,
         long,
@@ -274,11 +274,11 @@ pub struct Record {
     )]
     pub overwrite: bool,
 
-    /// Set a descriptive title for the recording that will be stored in the recording metadata. This title may be displayed by players and is useful for organizing and identifying recordings. For example: --title "Installing Podman on Ubuntu".
+    /// Set a descriptive title that will be stored in the recording metadata. This title may be displayed by players and is useful for organizing and identifying recordings. For example: --title "Installing Podman on Ubuntu".
     #[arg(short, long, help = "Title of the recording", long_help)]
     pub title: Option<String>,
 
-    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Note that this option doesn't alter the original (captured) timing information and instead embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via the config file option session.idle_time_limit.
+    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Note that this option doesn't alter the original (captured) timing information and instead, embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via the config file option session.idle_time_limit.
     #[arg(
         short,
         long,
@@ -372,7 +372,7 @@ pub struct Stream {
     #[arg(short, long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target, help = "Stream via remote asciinema server", long_help)]
     pub remote: Option<RelayTarget>,
 
-    /// Specify the command to execute in the streaming session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option session.command.
+    /// Specify the command to execute in the streaming session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via the config file option session.command.
     #[arg(
         short,
         long,
@@ -418,7 +418,7 @@ pub struct Stream {
     #[arg(long, value_name = "PATH", help = "Log file path", long_help)]
     pub log_file: Option<PathBuf>,
 
-    /// Specify a custom asciinema server URL for streaming to self-hosted servers. The URL should be the base URL of the server (e.g., https://asciinema.example.com). Can also be set via the environment variable ASCIINEMA_SERVER_URL or the config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
+    /// Specify a custom asciinema server URL for streaming to self-hosted servers. Use the base server URL (e.g., https://asciinema.example.com). Can also be set via the environment variable ASCIINEMA_SERVER_URL or the config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
 }
@@ -455,7 +455,7 @@ pub struct Session {
     #[arg(short = 'r', long, value_name = "STREAM-ID|WS-URL", default_missing_value = "", num_args = 0..=1, value_parser = validate_forward_target, help = "Stream via remote asciinema server", long_help)]
     pub stream_remote: Option<RelayTarget>,
 
-    /// Specify the command to execute in the session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via config file option session.command.
+    /// Specify the command to execute in the session. If not provided, asciinema will use your default shell from the $SHELL environment variable. This can be any command with arguments, for example: --command "python script.py" or --command "bash -l". Can also be set via the config file option session.command.
     #[arg(
         short,
         long,
@@ -468,7 +468,7 @@ pub struct Session {
     #[arg(long, short = 'I', help = "Enable input (keyboard) capture", long_help)]
     pub capture_input: bool,
 
-    /// Specify which environment variables to capture and include in the session metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via config file option session.capture_env.
+    /// Specify which environment variables to capture and include in the session metadata. Provide a comma-separated list of variable names, for example: --rec-env "USER,SHELL,TERM". If not specified, only the SHELL variable is captured by default. If the server has stream recording enabled then these environment variables will be included in the recording file created on the server side. Can also be set via the config file option session.capture_env.
     #[arg(
         long,
         value_name = "VARS",
@@ -494,7 +494,7 @@ pub struct Session {
     #[arg(short, long, help = "Title of the session", long_help)]
     pub title: Option<String>,
 
-    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Only applies when --output-file is specified. Note that this option doesn't alter the original (captured) timing information and instead it embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via config file option session.idle_time_limit.
+    /// Limit the maximum idle time recorded between terminal events to the specified number of seconds. Long pauses (such as when you step away from the terminal) will be capped at this duration in the recording, making playback more watchable. For example, --idle-time-limit 2.0 will ensure no pause longer than 2 seconds appears in the recording. Only applies when --output-file is specified. Note that this option doesn't alter the original (captured) timing information and instead, it embeds the idle time limit value in the metadata, which is interpreted by session players at playback time. This allows tweaking of the limit after recording. Can also be set via the config file option session.idle_time_limit.
     #[arg(
         short,
         long,
@@ -524,7 +524,7 @@ pub struct Session {
     #[arg(long, value_name = "PATH", help = "Log file path", long_help)]
     pub log_file: Option<PathBuf>,
 
-    /// Specify a custom asciinema server URL for streaming to self-hosted servers. The URL should be the base URL of the server (e.g. https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
+    /// Specify a custom asciinema server URL for streaming to self-hosted servers. Use the base server URL (e.g., https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
 
@@ -572,14 +572,14 @@ pub struct Upload {
     /// The path to the asciicast recording file to upload, in a supported asciicast format (v1, v2, or v3).
     pub file: String,
 
-    /// Specify a custom asciinema server URL for uploading to self-hosted servers. The URL should be the base URL of the server (e.g. https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
+    /// Specify a custom asciinema server URL for uploading to self-hosted servers. Use the base server URL (e.g., https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
 }
 
 #[derive(Debug, Args)]
 pub struct Auth {
-    /// Specify a custom asciinema server URL for authenticating with self-hosted servers. The URL should be the base URL of the server (e.g. https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
+    /// Specify a custom asciinema server URL for authenticating with self-hosted servers. Use the base server URL (e.g., https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
 }
