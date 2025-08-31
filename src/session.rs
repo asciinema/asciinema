@@ -81,9 +81,9 @@ pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
     let (events_tx, events_rx) = mpsc::channel::<Event>(1024);
     let winsize = tty.get_size();
     let pty = pty::spawn(command, winsize, extra_env)?;
-    tokio::spawn(forward_events(events_rx, outputs));
+    let forwarder = tokio::spawn(forward_events(events_rx, outputs));
 
-    let mut session = Session {
+    let session = Session {
         epoch,
         events_tx,
         input_decoder: Utf8Decoder::new(),
@@ -97,7 +97,10 @@ pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
         tty_size: winsize.into(),
     };
 
-    session.run(pty, tty).await
+    let result = session.run(pty, tty).await;
+    let _ = forwarder.await;
+
+    result
 }
 
 async fn forward_events(mut events_rx: mpsc::Receiver<Event>, outputs: Vec<Box<dyn Output>>) {
@@ -131,7 +134,7 @@ async fn forward_event(mut output: Box<dyn Output>, event: Event) -> Option<Box<
 }
 
 impl<N: Notifier> Session<N> {
-    async fn run<T: Tty + ?Sized>(&mut self, pty: Pty, tty: &mut T) -> anyhow::Result<i32> {
+    async fn run<T: Tty + ?Sized>(mut self, pty: Pty, tty: &mut T) -> anyhow::Result<i32> {
         let mut signals =
             Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP, SIGALRM, SIGCHLD])?;
         let mut output_buf = [0u8; BUF_SIZE];
