@@ -202,8 +202,16 @@ impl<N: Notifier> Session<N> {
             }
         }
 
+        while let Ok(n) = pty.read(&mut output_buf).await {
+            if n > 0 {
+                self.handle_output(&output_buf[..n]).await;
+                output.extend_from_slice(&output_buf[0..n]);
+            } else {
+                break;
+            }
+        }
+
         if !output.is_empty() {
-            self.handle_output(&output).await;
             let _ = tty.write_all(&output).await;
         }
 
