@@ -244,7 +244,7 @@ mod tests {
             version,
             header,
             events,
-        } = super::open_from_path("tests/casts/minimal.json").unwrap();
+        } = super::open_from_path("tests/casts/minimal-v1.json").unwrap();
 
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
@@ -262,7 +262,7 @@ mod tests {
             version,
             header,
             events,
-        } = super::open_from_path("tests/casts/full.json").unwrap();
+        } = super::open_from_path("tests/casts/full-v1.json").unwrap();
         let events = events.collect::<Result<Vec<Event>>>().unwrap();
 
         assert_eq!(version, 1);
