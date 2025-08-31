@@ -42,22 +42,22 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema rec demo.cast
-      Record a shell session to a file
+      Records a shell session to a file
 
   asciinema rec --command \"python script.py\" demo.cast
-      Record execution of a Python script
+      Records execution of a Python script
 
   asciinema rec --idle-time-limit 2 demo.cast
-      Record with idle time capped at 2 seconds
+      Records with idle time capped at 2 seconds
 
   asciinema rec --capture-input --title \"API Demo\" demo.cast
-      Record with keyboard input and set a title
+      Records with keyboard input and sets a title
 
   asciinema rec --append demo.cast
-      Continue recording to an existing file
+      Continues recording to an existing file
 
   asciinema rec demo.txt
-      Record as a plain-text log - output format inferred from the .txt extension"
+      Records as a plain-text log - output format inferred from the .txt extension"
     )]
     Record(Record),
 
@@ -75,22 +75,22 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema stream --local
-      Stream a shell session via the local HTTP server listening on an ephemeral port on 127.0.0.1
+      Streams a shell session via the local HTTP server listening on an ephemeral port on 127.0.0.1
 
   asciinema stream --local 0.0.0.0:8080
-      Stream via the local HTTP server listening on port 8080 on all network interfaces
+      Streams via the local HTTP server listening on port 8080 on all network interfaces
 
   asciinema stream --remote
-      Stream via an asciinema server for public viewing
+      Streams via an asciinema server for public viewing
 
   asciinema stream -l -r
-      Stream both locally and remotely simultaneously
+      Streams both locally and remotely simultaneously
 
   asciinema stream -r --command \"ping asciinema.org\"
-      Stream execution of the ping command
+      Streams execution of the ping command
 
   asciinema stream -r <ID> -t \"Live coding\"
-      Stream via a remote server, reusing the existing stream ID and setting the stream title"
+      Streams via a remote server, reusing the existing stream ID and setting the stream title"
     )]
     Stream(Stream),
 
@@ -108,22 +108,22 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema session --output-file demo.cast --stream-local
-      Record a shell session to a file and stream it via the local HTTP server listening on an ephemeral port on 127.0.0.1
+      Records a shell session to a file and streams it via the local HTTP server listening on an ephemeral port on 127.0.0.1
 
   asciinema session -o demo.cast --stream-remote
-      Record to a file and stream via an asciinema server for public viewing
+      Records to a file and streams via an asciinema server for public viewing
 
   asciinema session --stream-local --stream-remote
-      Stream both locally and remotely simultaneously, without saving to a file
+      Streams both locally and remotely simultaneously, without saving to a file
 
   asciinema session -o demo.cast -l -r -t \"Live coding\"
-      Record + stream locally + stream remotely, setting the title of the recording/stream
+      Records + streams locally + streams remotely, setting the title of the recording/stream
 
   asciinema session -o demo.cast --idle-time-limit 1.5
-      Record to a file with idle time capped at 1.5 seconds
+      Records to a file with idle time capped at 1.5 seconds
 
   asciinema session -o demo.cast -l 0.0.0.0:9000 -r <ID>
-      Record + stream locally on port 9000 + stream remotely, reusing existing stream ID"
+      Records + streams locally on port 9000 + streams remotely, reusing existing stream ID"
     )]
     Session(Session),
 
@@ -141,19 +141,19 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema play demo.cast
-      Play back a local recording file once
+      Plays back a local recording file once
 
   asciinema play --speed 2.0 --loop demo.cast
-      Play back at double speed in a loop
+      Plays back at double speed in a loop
 
   asciinema play --idle-time-limit 2 demo.cast
-      Play back with idle time capped at 2 seconds
+      Plays back with idle time capped at 2 seconds
 
   asciinema play https://asciinema.org/a/569727
-      Play back directly from a URL
+      Plays back directly from a URL
 
   asciinema play --pause-on-markers demo.cast
-      Play back, pausing automatically at every marker"
+      Plays back, pausing automatically at every marker"
     )]
     Play(Play),
 
@@ -184,10 +184,10 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema cat demo1.cast demo2.cast demo3.cast > combined.cast
-      Combine local recordings into one file
+      Combines local recordings into one file
 
   asciinema cat https://asciinema.org/a/569727 part2.cast > combined.cast
-      Combine a remote and a local recording into one file"
+      Combines a remote and a local recording into one file"
     )]
     Cat(Cat),
 
@@ -200,19 +200,19 @@ pub enum Commands {
         after_help = "\x1b[1;4mExamples\x1b[0m:
 
   asciinema convert old.cast new.cast
-      Convert a recording to the latest asciicast format (v3)
+      Converts a recording to the latest asciicast format (v3)
 
   asciinema convert demo.cast demo.txt
-      Export a recording as a plain-text log - output format inferred from the .txt extension
+      Exports a recording as a plain-text log - output format inferred from the .txt extension
 
   asciinema convert --output-format raw demo.cast demo.txt
-      Export as raw terminal output
+      Exports as raw terminal output
 
   asciinema convert -f txt demo.cast -
-      Export as plain text to stdout
+      Exports as plain text to stdout
 
   asciinema convert https://asciinema.org/a/569727 starwars.cast
-      Download a remote recording and convert it to the latest asciicast format (v3)"
+      Downloads a remote recording and converts it to the latest asciicast format (v3)"
     )]
     Convert(Convert),
 }
