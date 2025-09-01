@@ -1,11 +1,11 @@
 [package]
 name = "asciinema"
-version = "3.0.0-rc.5"
+version = "3.0.0"
 edition = "2021"
 authors = ["Marcin Kulik <m@ku1ik.com>"]
 homepage = "https://asciinema.org"
 repository = "https://github.com/asciinema/asciinema"
-description = "Terminal session recorder"
+description = "Terminal session recorder, player, and streamer"
 license = "GPL-3.0"
 
 # MSRV

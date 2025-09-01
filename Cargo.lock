@@ -84,7 +84,7 @@ checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
 name = "asciinema"
-version = "3.0.0-rc.5"
+version = "3.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
