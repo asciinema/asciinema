@@ -22,7 +22,7 @@ let
         })
       ];
 
-      buildInputs = [ pkgs.bashInteractive ];
+      packages = [ pkgs.shellcheck ];
 
       env.RUST_BACKTRACE = 1;
     };
