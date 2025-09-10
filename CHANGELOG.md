@@ -1,12 +1,104 @@
 # asciinema changelog
 
-## 3.0.0 (wip)
+## 3.0.0 (TBD)
 
-* Full rewrite in Rust
-* rec: `--append` can be used with `--raw` now
-* rec: use of `--append` and `--overwrite` together returns error now
-* rec: fixed saving of custom rec command in asciicast header
-* Improved error message when non-UTF-8 locale is detected
+This is a complete rewrite of asciinema in Rust, upgrading the recording file
+format, introducing terminal live streaming, and bringing numerous improvements
+across the board.
+
+### New features
+
+* New `stream` command for terminal live streaming, providing local mode
+  (built-in HTTP server) and remote mode (relaying via asciinema server, more
+  about it [here](https://docs.asciinema.org/manual/server/streaming/))
+* New `session` command for simultaneous recording and streaming
+* New `convert` command for format conversion between asciicast versions or
+  exporting to plain text log / raw output
+* New [asciicast v3 file
+  format](https://docs.asciinema.org/manual/asciicast/v3/) as the new default
+  output format
+* Terminal theme capture - terminal colors are now automatically captured and
+  saved in recordings
+* New output format - plain text log - use `.txt` extension for the output
+  filename or select explicitly with `--output-format txt`
+* `rec`: New `--return` option for propagating session exit status
+* `rec`: Session exit status is now saved as "x" (exit) event in asciicast v3
+  recordings
+* `rec`: Parent directories are automatically created when recording to
+  non-existing paths
+* `rec`: Terminal version (XTVERSION OSC query) is now saved in asciicast
+  header as `term.version`
+* `rec`: New `--headless` option for forcing headless mode
+* `rec`: New `--log-file` option for enabling logging, e.g. for troubleshooting
+  I/O errors
+* `play`: New `--resize` option for enabling terminal auto-resize during playback (terminal support varies)
+* New `--server-url` option for setting custom server URL (for self-hosted
+  servers), as an alternative to config file and `ASCIINEMA_SERVER` environment
+  variable
+* New system-wide configuration file `/etc/asciinema/config.toml` for setting
+  defaults for all users
+* Command name prefix matching - you can use `asciinema r` instead of
+  `asciinema rec`, `asciinema u` instead of `asciinema upload`, etc.
+* tmux status bar is now used for notifications when tmux session is detected
+  and no other desktop notification mechanism is available
+
+### Improvements
+
+* Prompt for setting up default asciinema server URL on first use, unless one
+  is configured upfront
+* Comprehensive `--help` messages (vs concise `-h`), with examples for each
+  subcommand
+* Complete set of man pages and shell auto-completion files can be generated
+  during build (see README.md)
+* `rec`: Fixed saving of custom record command (`--command`) value in asciicast
+  header
+* `rec`: `--append` option can now be used with `--format raw`
+* `upload`: Recording file is validated for correctness/formatting before upload
+* Better error message when non-UTF-8 locale is detected
+
+
+### Breaking changes
+
+* `rec`: Filename argument is now required, use explicit `upload` command for
+  publishing a local recording
+* `rec`: Default output format is now asciicast v3 instead of v2 - asciinema
+  server and player support it already, but be aware of this if you're using
+  custom tooling - use `--output-format asciicast-v2` for backward compatibility
+* `rec`: `--stdin` option has been renamed to `--capture-input` / `-I` for
+  clarity
+* `rec`: `--env` option has been renamed to `--capture-env`, short `-e` variant
+  has been removed
+* `rec`: `--cols` and `--rows` options have been replaced with single
+  `--window-size COLSxROWS` option
+* `rec`: `--raw` option has been removed, superceded by `--output-format raw`
+* `rec`: `--yes` / `-y` option has been removed since there's no upload
+  confirmation anymore
+* `rec`: Using both `--append` and `--overwrite` options together now produces
+  an immediate error instead of silently ignoring one option
+* `cat`: This command now concatenates multiple recordings instead of dumping
+  raw output - use `convert --output-format raw` for 2.x behavior
+* `play`: `--out-fmt` and `--stream` options have been removed
+* Install ID location changed from `XDG_CONFIG_HOME/asciinema/install-id`
+  (`$HOME/.config/asciinema`) to `XDG_STATE_HOME/asciinema/install-id`
+  (`$HOME/.local/state/asciinema`) - Install ID is a local state, not a
+  configuration, therefore it shouldn't be treated as a config file
+* User configuration file changed format from "ini-style" to TOML, and moved
+  from `~/.config/asciinema/config` to `~/.config/asciinema/config.toml` - check
+  [configuration docs](https://docs.asciinema.org/manual/cli/configuration/) for
+  details
+* Removed built-in support for desktop notifications via terminal-notifier in
+  favor of AppleScript on macOS
+
+### Other changes
+
+* `ASCIINEMA_REC` environment variable, which was set to `1` for sessions
+  started with `asciinema rec`, has been superceded by `ASCIINEMA_SESSION`, which
+  is set to a unique session ID by `rec`, `stream` and `session` commands - the
+  original `ASCIINEMA_REC=1` is still set by `rec` command for backward
+  compatibility
+* `ASCIINEMA_API_URL` environment variable has been superceded by
+  `ASCIINEMA_SERVER_URL` for setting custom server URL - the original
+  `ASCIINEMA_API_URL` still works but is deprecated
 
 ## 2.4.0 (2023-10-23)
 
