@@ -106,7 +106,7 @@ and the shell completion files in the `/foo/completion/` directory.
 All development happens on `develop` branch. This branch contains the current
 generation (3.x) of the asciinema CLI, written in Rust.
 
-The previous generation (2.x), written in Python, can be found in the `v2`
+The previous generation (2.x), written in Python, can be found in the `python`
 branch.
 
 If you wish to propose non-trivial code changes, please first reach out to the
