@@ -33,8 +33,8 @@ across the board.
   I/O errors
 * `play`: New `--resize` option for enabling terminal auto-resize during playback (terminal support varies)
 * New `--server-url` option for setting custom server URL (for self-hosted
-  servers), as an alternative to config file and `ASCIINEMA_SERVER` environment
-  variable
+  servers), as an alternative to config file and `ASCIINEMA_SERVER_URL`
+  environment variable
 * New system-wide configuration file `/etc/asciinema/config.toml` for setting
   defaults for all users
 * Command name prefix matching - you can use `asciinema r` instead of
@@ -81,7 +81,7 @@ across the board.
 * Install ID location changed from `XDG_CONFIG_HOME/asciinema/install-id`
   (`$HOME/.config/asciinema`) to `XDG_STATE_HOME/asciinema/install-id`
   (`$HOME/.local/state/asciinema`) - Install ID is a local state, not a
-  configuration, therefore it shouldn't be treated as a config file
+  configuration, therefore we shouldn't treat as a config file
 * User configuration file changed format from "ini-style" to TOML, and moved
   from `~/.config/asciinema/config` to `~/.config/asciinema/config.toml` - check
   [configuration docs](https://docs.asciinema.org/manual/cli/configuration/) for
