@@ -4,35 +4,39 @@
 [![license](http://img.shields.io/badge/license-GNU-blue.svg)](https://raw.githubusercontent.com/asciinema/asciinema/master/LICENSE)
 
 __asciinema__ (aka asciinema CLI or asciinema recorder) is a command-line tool
-for recording terminal sessions.
+for recording and live streaming terminal sessions.
 
 Unlike typical _screen_ recording software, which records visual output of a
-screen into a heavyweight video files (`.mp4`, `.mov`), asciinema recorder runs
+screen into a heavyweight video files (`.mp4`, `.mov`), asciinema CLI runs
 _inside a terminal_, capturing terminal session output into a lightweight
 recording files in the
-[asciicast](https://docs.asciinema.org/manual/asciicast/v2/) format (`.cast`).
+[asciicast](https://docs.asciinema.org/manual/asciicast/v3/) format (`.cast`),
+or streaming it live to viewers in real-time.
 
 The recordings can be replayed in a terminal, embedded on a web page with the
 [asciinema player](https://docs.asciinema.org/manual/player/), or published to
 an [asciinema server](https://docs.asciinema.org/manual/server/), such as
-[asciinema.org](https://asciinema.org), for further sharing.
+[asciinema.org](https://asciinema.org), for further sharing. Live streams allow
+viewers to watch terminal sessions as they happen.
+
+asciinema runs on GNU/Linux, macOS and FreeBSD.
 
 [![asciinema CLI
 demo](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH.svg)](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH?autoplay=1)
 
 Notable features:
 
-* [recording](https://docs.asciinema.org/manual/cli/usage/#asciinema-rec-filename)
-  and
-  [replaying](https://docs.asciinema.org/manual/cli/usage/#asciinema-play-filename)
-  of sessions inside a terminal,
-* live streaming of terminal sessions, via local HTTP server, and via remote asciinema server,
-* [light-weight recording
-  format](https://docs.asciinema.org/manual/asciicast/v2/), which is highly
+- recording and replaying of sessions inside a terminal,
+- local and remote [live
+  streaming](https://docs.asciinema.org/manual/cli/quick-start/#stream-a-terminal-session)
+  of terminal sessions to multiple viewers in real-time,
+- [lightweight recording
+  format](https://docs.asciinema.org/manual/asciicast/v3/), which is highly
   compressible (down to 15% of the original size e.g. with `zstd` or `gzip`),
-* integration with [asciinema
+- integration with [asciinema
   server](https://docs.asciinema.org/manual/server/), e.g.
-  [asciinema.org](https://asciinema.org), for easy recording hosting.
+  [asciinema.org](https://asciinema.org), for easy recording hosting and live
+  streaming.
 
 To record a session run this command in your shell:
 
@@ -43,13 +47,13 @@ asciinema rec demo.cast
 To stream a session via built-in HTTP server run:
 
 ```sh
-asciinema stream --local
+asciinema stream -l
 ```
 
 To stream a session via a relay (asciinema server) run:
 
 ```sh
-asciinema stream --remote
+asciinema stream -r
 ```
 
 Check out the [Getting started
@@ -64,7 +68,7 @@ manager](https://doc.rust-lang.org/cargo/). If they are not available via your
 system package manager then use [rustup](https://rustup.rs/).
 
 To download the source code, build the asciinema binary, and install it in
-`$HOME/.cargo/bin` run:
+`$HOME/.cargo/bin` in one go run:
 
 ```sh
 cargo install --locked --git https://github.com/asciinema/asciinema
@@ -81,9 +85,8 @@ cd asciinema
 cargo build --release
 ```
 
-This produces the binary in _release mode_ (`--release`) at
-`target/release/asciinema`. You can just copy the binary to a directory in your
-`$PATH`.
+This produces the binary at `target/release/asciinema`. You can just copy the
+binary to a directory in your `$PATH`.
 
 To generate man pages and shell completion files, set `ASCIINEMA_GEN_DIR` to the
 path where these artifacts should be stored. For example:
@@ -96,27 +99,26 @@ The above command will build the binary and place the man pages in `/foo/man/`,
 and the shell completion files in the `/foo/completion/` directory.
 
 > [!NOTE]
-> Windows is currently not supported. _(See [#467](https://github.com/asciinema/asciinema/issues/467))_
+> Windows is currently not supported. See [#467](https://github.com/orgs/asciinema/discussions/278).
 
 ## Development
 
-This branch contains the next generation of the asciinema CLI, written in Rust
-([about the
-rewrite](https://discourse.asciinema.org/t/rust-rewrite-of-the-asciinema-cli/777)).
-It is still in a work-in-progress stage, so if you wish to propose any code
-changes, please first reach out to the team via
-[forum](https://discourse.asciinema.org/),
+All development happens on `develop` branch. This branch contains the current
+generation (3.x) of the asciinema CLI, written in Rust.
+
+The previous generation (2.x), written in Python, can be found in the `v2`
+branch.
+
+If you wish to propose non-trivial code changes, please first reach out to the
+team via [forum](https://discourse.asciinema.org/),
 [Matrix](https://matrix.to/#/#asciinema:matrix.org) or
 [IRC](https://web.libera.chat/#asciinema).
-
-The previous generation of the asciinema CLI, written in Python, can be found in
-the `main` branch.
 
 ## Donations
 
 Sustainability of asciinema development relies on donations and sponsorships.
 
-Please help the software project you use and love. Become a
+If you like the project then consider becoming a
 [supporter](https://docs.asciinema.org/donations/#individuals) or a [corporate
 sponsor](https://docs.asciinema.org/donations/#corporate-sponsorship).
 
