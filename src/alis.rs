@@ -1,8 +1,8 @@
-// This module implements ALiS (asciinema live stream) protocol,
-// which is an application level protocol built on top of WebSocket binary messages,
-// used by asciinema CLI, asciinema player and asciinema server.
+// This module implements ALiS (asciinema live stream) protocol, which is an application level
+// protocol built on top of WebSocket binary messages, used by asciinema CLI, asciinema player and
+// asciinema server.
 
-// TODO document the protocol when it's final
+// See more at: https://docs.asciinema.org/manual/server/streaming/
 
 use std::future;
 
