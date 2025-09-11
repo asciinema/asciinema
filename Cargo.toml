@@ -1,17 +1,15 @@
 [package]
 name = "asciinema"
-version = "3.0.0-rc.5"
+version = "3.0.0"
 edition = "2021"
 authors = ["Marcin Kulik <m@ku1ik.com>"]
 homepage = "https://asciinema.org"
 repository = "https://github.com/asciinema/asciinema"
-description = "Terminal session recorder"
+description = "Terminal session recorder, streamer, and player"
 license = "GPL-3.0"
 
 # MSRV
 rust-version = "1.75.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
@@ -34,7 +32,7 @@ tokio-stream = { version = "0.1", default-features = false, features = ["sync", 
 rust-embed = "8.0"
 tower-http = { version = "0.6", features = ["trace"] }
 tracing = { version = "0.1", default-features = false }
-tracing-subscriber = { version = "0.3.19", default-features = false, features = ["fmt", "env-filter"] }
+tracing-subscriber = { version = "0.3.20", default-features = false, features = ["fmt", "env-filter"] }
 rgb = { version = "0.8", default-features = false }
 url = "2.5"
 tokio-tungstenite = { version = "0.26", default-features = false, features = ["connect", "rustls-tls-native-roots"] }

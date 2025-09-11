@@ -18,7 +18,7 @@ jobs:
         rust: [default, msrv]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v33
@@ -32,8 +32,11 @@ jobs:
       - name: Build
         run: nix develop .#${{ matrix.rust }} --command cargo build --verbose
 
-      - name: Run tests
+      - name: Run cargo tests
         run: nix develop .#${{ matrix.rust }} --command cargo test --verbose
+
+      - name: Run integration tests
+        run: nix develop .#${{ matrix.rust }} --command tests/integration.sh
 
       - name: Check formatting
         run: nix develop .#${{ matrix.rust }} --command cargo fmt --check
