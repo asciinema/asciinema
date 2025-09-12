@@ -78,10 +78,6 @@ across the board.
 * `cat`: This command now concatenates multiple recordings instead of dumping
   raw output - use `convert --output-format raw` for 2.x behavior
 * `play`: `--out-fmt` and `--stream` options have been removed
-* Install ID location changed from `XDG_CONFIG_HOME/asciinema/install-id`
-  (`$HOME/.config/asciinema`) to `XDG_STATE_HOME/asciinema/install-id`
-  (`$HOME/.local/state/asciinema`) - Install ID is a local state, not a
-  configuration, therefore we shouldn't treat as a config file
 * User configuration file changed format from "ini-style" to TOML, and moved
   from `~/.config/asciinema/config` to `~/.config/asciinema/config.toml` - check
   [configuration docs](https://docs.asciinema.org/manual/cli/configuration/) for
@@ -91,6 +87,10 @@ across the board.
 
 ### Other changes
 
+* Install ID location changed from `XDG_CONFIG_HOME/asciinema/install-id`
+  (`$HOME/.config/asciinema`) to `XDG_STATE_HOME/asciinema/install-id`
+  (`$HOME/.local/state/asciinema`) - for backward compatibility the previous
+  location is still used if the file already exists there
 * `ASCIINEMA_REC` environment variable, which was set to `1` for sessions
   started with `asciinema rec`, has been superceded by `ASCIINEMA_SESSION`, which
   is set to a unique session ID by `rec`, `stream` and `session` commands - the
