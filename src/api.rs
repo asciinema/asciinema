@@ -45,14 +45,14 @@ struct ErrorResponse {
     message: String,
 }
 
-pub fn get_auth_url(config: &Config) -> Result<Url> {
+pub fn get_auth_url(config: &mut Config) -> Result<Url> {
     let mut url = config.get_server_url()?;
     url.set_path(&format!("connect/{}", config.get_install_id()?));
 
     Ok(url)
 }
 
-pub async fn create_recording(path: &str, config: &Config) -> Result<RecordingResponse> {
+pub async fn create_recording(path: &str, config: &mut Config) -> Result<RecordingResponse> {
     let server_url = &config.get_server_url()?;
     let install_id = config.get_install_id()?;
 
@@ -92,7 +92,7 @@ async fn create_recording_request(
     Ok(add_headers(builder, &install_id))
 }
 
-pub async fn list_user_streams(prefix: &str, config: &Config) -> Result<Vec<StreamResponse>> {
+pub async fn list_user_streams(prefix: &str, config: &mut Config) -> Result<Vec<StreamResponse>> {
     let server_url = config.get_server_url()?;
     let install_id = config.get_install_id()?;
 
@@ -113,7 +113,10 @@ fn list_user_streams_request(server_url: &Url, prefix: &str, install_id: &str) -
     add_headers(client.get(url), install_id)
 }
 
-pub async fn create_stream(changeset: StreamChangeset, config: &Config) -> Result<StreamResponse> {
+pub async fn create_stream(
+    changeset: StreamChangeset,
+    config: &mut Config,
+) -> Result<StreamResponse> {
     let server_url = config.get_server_url()?;
     let install_id = config.get_install_id()?;
 
@@ -142,7 +145,7 @@ fn create_stream_request(
 pub async fn update_stream(
     stream_id: u64,
     changeset: StreamChangeset,
-    config: &Config,
+    config: &mut Config,
 ) -> Result<StreamResponse> {
     let server_url = config.get_server_url()?;
     let install_id = config.get_install_id()?;

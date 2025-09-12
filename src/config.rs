@@ -87,13 +87,14 @@ impl Config {
         Ok(config.build()?.try_deserialize()?)
     }
 
-    pub fn get_server_url(&self) -> Result<Url> {
+    pub fn get_server_url(&mut self) -> Result<Url> {
         match self.server.url.as_ref() {
             Some(url) => Ok(parse_server_url(url)?),
 
             None => {
                 let url = parse_server_url(&ask_for_server_url()?)?;
                 save_default_server_url(url.as_ref())?;
+                self.server.url = Some(url.to_string());
 
                 Ok(url)
             }

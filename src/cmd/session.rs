@@ -47,14 +47,14 @@ impl cli::Session {
     }
 
     async fn do_run(&mut self) -> Result<i32> {
-        let config = Config::new(self.server_url.clone())?;
+        let mut config = Config::new(self.server_url.clone())?;
         let command = self.get_command(&config.session);
         let keys = get_key_bindings(&config.session)?;
         let notifier = get_notifier(&config);
         let metadata = self.get_session_metadata(&config.session).await?;
         let file_writer = self.get_file_writer(&metadata, notifier.clone()).await?;
         let listener = self.get_listener().await?;
-        let relay = self.get_relay(&metadata, &config).await?;
+        let relay = self.get_relay(&metadata, &mut config).await?;
         let relay_id = relay.as_ref().map(|r| r.id());
         let parent_session_relay_id = get_parent_session_relay_id();
 
@@ -312,7 +312,7 @@ impl cli::Session {
     async fn get_relay(
         &mut self,
         metadata: &Metadata,
-        config: &config::Config,
+        config: &mut config::Config,
     ) -> Result<Option<Relay>> {
         let Some(target) = &self.stream_remote else {
             return Ok(None);
@@ -341,7 +341,7 @@ impl cli::Session {
         &self,
         id: &str,
         metadata: &Metadata,
-        config: &Config,
+        config: &mut Config,
     ) -> Result<StreamResponse> {
         let env = if metadata.env.is_empty() {
             Some(None)

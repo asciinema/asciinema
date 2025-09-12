@@ -12,9 +12,9 @@ impl cli::Upload {
     }
 
     async fn do_run(self) -> Result<()> {
-        let config = Config::new(self.server_url.clone())?;
+        let mut config = Config::new(self.server_url.clone())?;
         let _ = asciicast::open_from_path(&self.file)?;
-        let response = api::create_recording(&self.file, &config).await?;
+        let response = api::create_recording(&self.file, &mut config).await?;
         println!("{}", response.message.unwrap_or(response.url));
 
         Ok(())
