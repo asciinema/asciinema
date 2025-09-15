@@ -1,6 +1,6 @@
 # asciinema changelog
 
-## 3.0.0 (TBD)
+## 3.0.0 (2025-09-15)
 
 This is a complete rewrite of asciinema in Rust, upgrading the recording file
 format, introducing terminal live streaming, and bringing numerous improvements
