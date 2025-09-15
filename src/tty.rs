@@ -8,7 +8,7 @@ use rgb::RGB8;
 use tokio::io;
 use tokio::time::{self, Duration};
 
-const QUERY_READ_TIMEOUT: u64 = 500;
+const QUERY_READ_TIMEOUT: u64 = 1000;
 const THEME_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
 const XTVERSION_QUERY: &str = "\x1b[>0q";
 
