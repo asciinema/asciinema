@@ -5,7 +5,6 @@
   makeRustPlatform,
   version,
   libiconv,
-  darwin,
   python3,
 }:
 (makeRustPlatform {
@@ -27,7 +26,6 @@
 
     buildInputs = lib.optional stdenv.isDarwin [
       libiconv
-      darwin.apple_sdk.frameworks.Foundation
     ];
 
     nativeCheckInputs = [ python3 ];
