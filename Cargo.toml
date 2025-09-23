@@ -51,6 +51,8 @@ url = "2.5"
 
 [profile.release]
 strip = true
+lto = true
+codegen-units = 1
 
 [features]
 macos-tty = []
