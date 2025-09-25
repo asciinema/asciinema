@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v33
+        uses: nixbuild/nix-quick-install-action@v34
 
       - name: Setup Nix cache
         uses: nix-community/cache-nix-action@v6
