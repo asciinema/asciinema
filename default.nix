@@ -22,10 +22,9 @@
     };
 
     dontUseCargoParallelTests = true;
-
     cargoLock.lockFile = ./Cargo.lock;
-
     nativeBuildInputs = [ rust ];
+
     buildInputs = lib.optional stdenv.isDarwin [
       libiconv
       darwin.apple_sdk.frameworks.Foundation
