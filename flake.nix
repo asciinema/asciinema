@@ -4,48 +4,40 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    inputs@{
-      flake-parts,
+    {
+      self,
+      nixpkgs,
       rust-overlay,
-      ...
+      flake-utils,
     }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
-        "x86_64-darwin"
-      ];
-      perSystem =
-        {
-          self',
-          pkgs,
-          system,
-          ...
-        }:
-        let
-          packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
-        in
-        {
-          formatter = pkgs.nixfmt-tree;
-
-          _module.args = {
-            pkgs = import inputs.nixpkgs {
-              inherit system;
-              overlays = [ (import rust-overlay) ];
-            };
-          };
-
-          devShells = pkgs.callPackages ./shell.nix { inherit pkgs packageToml self'; };
-
-          packages.default = pkgs.callPackage ./default.nix {
-            inherit packageToml;
-            rust = pkgs.rust-bin.stable.latest.minimal;
-          };
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
         };
-    };
+
+        packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
+
+        defaultPackage = pkgs.callPackage ./default.nix {
+          inherit packageToml;
+          rust = pkgs.rust-bin.stable.latest.minimal;
+        };
+      in
+      {
+        formatter = pkgs.nixfmt-tree;
+
+        packages.default = defaultPackage;
+
+        devShells = pkgs.callPackages ./shell.nix {
+          inherit pkgs packageToml;
+          defaultPackage = defaultPackage;
+        };
+      }
+    );
 }

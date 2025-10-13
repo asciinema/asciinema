@@ -1,5 +1,5 @@
 {
-  self',
+  defaultPackage,
   pkgs,
   packageToml,
   rust-bin,
@@ -12,7 +12,7 @@ let
     rust:
     mkShell {
       inputsFrom = [
-        (self'.packages.default.override {
+        (defaultPackage.override {
           rust = rust.override {
             extensions = [
               "rust-src"
