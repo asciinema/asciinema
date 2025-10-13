@@ -23,21 +23,24 @@
         };
 
         packageToml = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package;
-
-        defaultPackage = pkgs.callPackage ./default.nix {
-          inherit packageToml;
-          rust = pkgs.rust-bin.stable.latest.minimal;
-        };
+        msrv = packageToml.rust-version;
       in
       {
-        formatter = pkgs.nixfmt-tree;
-
-        packages.default = defaultPackage;
+        packages.default = pkgs.callPackage ./default.nix {
+          version = packageToml.version;
+          rust = pkgs.rust-bin.stable.latest.minimal;
+        };
 
         devShells = pkgs.callPackages ./shell.nix {
-          inherit packageToml;
-          defaultPackage = defaultPackage;
+          package = self.packages.${system}.default;
+
+          rust = {
+            default = pkgs.rust-bin.stable.latest.minimal;
+            msrv = pkgs.rust-bin.stable.${msrv}.minimal;
+          };
         };
+
+        formatter = pkgs.nixfmt-tree;
       }
     );
 }

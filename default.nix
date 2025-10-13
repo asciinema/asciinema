@@ -3,7 +3,7 @@
   stdenv,
   rust,
   makeRustPlatform,
-  packageToml,
+  version,
   libiconv,
   darwin,
   python3,
@@ -13,12 +13,12 @@
   rustc = rust;
 }).buildRustPackage
   {
-    pname = packageToml.name;
-    inherit (packageToml) version;
+    pname = "asciinema";
+    inherit version;
 
     src = builtins.path {
       path = ./.;
-      inherit (packageToml) name;
+      name = "asciinema";
     };
 
     dontUseCargoParallelTests = true;

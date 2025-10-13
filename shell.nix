@@ -1,18 +1,15 @@
 {
-  defaultPackage,
+  package,
   shellcheck,
-  packageToml,
-  rust-bin,
   mkShell,
+  rust,
 }:
 let
-  msrv = packageToml.rust-version;
-
   mkDevShell =
     rust:
     mkShell {
       inputsFrom = [
-        (defaultPackage.override {
+        (package.override {
           rust = rust.override {
             extensions = [
               "rust-src"
@@ -28,6 +25,6 @@ let
     };
 in
 {
-  default = mkDevShell rust-bin.stable.latest.default;
-  msrv = mkDevShell rust-bin.stable.${msrv}.default;
+  default = mkDevShell rust.default;
+  msrv = mkDevShell rust.msrv;
 }
