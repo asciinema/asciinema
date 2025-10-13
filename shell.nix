@@ -1,6 +1,6 @@
 {
   defaultPackage,
-  pkgs,
+  shellcheck,
   packageToml,
   rust-bin,
   mkShell,
@@ -22,7 +22,7 @@ let
         })
       ];
 
-      packages = [ pkgs.shellcheck ];
+      packages = [ shellcheck ];
 
       env.RUST_BACKTRACE = 1;
     };
