@@ -35,7 +35,7 @@
         packages.default = defaultPackage;
 
         devShells = pkgs.callPackages ./shell.nix {
-          inherit pkgs packageToml;
+          inherit packageToml;
           defaultPackage = defaultPackage;
         };
       }
