@@ -1,5 +1,6 @@
 use std::io;
 use std::io::Write;
+use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 
@@ -12,7 +13,7 @@ impl cli::Cat {
         let mut stdout = io::stdout();
         let casts = self.open_input_files()?;
         let mut encoder = self.get_encoder(casts[0].version)?;
-        let mut time_offset: u64 = 0;
+        let mut time_offset = Duration::from_micros(0);
         let mut first = true;
         let mut cols = 0;
         let mut rows = 0;

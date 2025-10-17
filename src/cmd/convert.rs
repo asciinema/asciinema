@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::Path;
+use std::time::Duration;
 
 use anyhow::{bail, Result};
 
@@ -32,7 +33,9 @@ impl cli::Convert {
 
         match format {
             Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
-            Format::AsciicastV2 => Box::new(AsciicastV2Encoder::new(false, 0)),
+            Format::AsciicastV2 => {
+                Box::new(AsciicastV2Encoder::new(false, Duration::from_micros(0)))
+            }
             Format::Raw => Box::new(RawEncoder::new()),
             Format::Txt => Box::new(TextEncoder::new()),
         }

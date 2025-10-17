@@ -28,6 +28,8 @@ impl super::Encoder for RawEncoder {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::RawEncoder;
     use crate::asciicast::{Event, Header};
     use crate::encoder::Encoder;
@@ -45,18 +47,30 @@ mod tests {
         assert_eq!(enc.header(&header), "\x1b[8;50;100t".as_bytes());
 
         assert_eq!(
-            enc.event(Event::output(0, "he\x1b[1mllo\r\n".to_owned())),
+            enc.event(Event::output(
+                Duration::from_micros(0),
+                "he\x1b[1mllo\r\n".to_owned()
+            )),
             "he\x1b[1mllo\r\n".as_bytes()
         );
 
         assert_eq!(
-            enc.event(Event::output(1, "world\r\n".to_owned())),
+            enc.event(Event::output(
+                Duration::from_micros(1),
+                "world\r\n".to_owned()
+            )),
             "world\r\n".as_bytes()
         );
 
-        assert!(enc.event(Event::input(2, ".".to_owned())).is_empty());
-        assert!(enc.event(Event::resize(3, (80, 24))).is_empty());
-        assert!(enc.event(Event::marker(4, ".".to_owned())).is_empty());
+        assert!(enc
+            .event(Event::input(Duration::from_micros(2), ".".to_owned()))
+            .is_empty());
+        assert!(enc
+            .event(Event::resize(Duration::from_micros(3), (80, 24)))
+            .is_empty());
+        assert!(enc
+            .event(Event::marker(Duration::from_micros(4), ".".to_owned()))
+            .is_empty());
         assert!(enc.flush().is_empty());
     }
 }

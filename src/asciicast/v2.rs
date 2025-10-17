@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io;
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -40,7 +41,7 @@ struct V2Palette(Vec<RGB8>);
 #[derive(Debug, Deserialize)]
 struct V2Event {
     #[serde(deserialize_with = "util::deserialize_time")]
-    time: u64,
+    time: Duration,
     #[serde(deserialize_with = "deserialize_code")]
     code: V2EventCode,
     data: String,
@@ -164,11 +165,11 @@ where
 }
 
 pub struct V2Encoder {
-    time_offset: u64,
+    time_offset: Duration,
 }
 
 impl V2Encoder {
-    pub fn new(time_offset: u64) -> Self {
+    pub fn new(time_offset: Duration) -> Self {
         Self { time_offset }
     }
 
@@ -212,7 +213,8 @@ impl V2Encoder {
     }
 }
 
-fn format_time(time: u64) -> String {
+fn format_time(time: Duration) -> String {
+    let time = time.as_micros();
     let mut formatted_time = format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000);
     let dot_idx = formatted_time.find('.').unwrap();
 
@@ -405,11 +407,19 @@ impl From<&V2Theme> for TtyTheme {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     #[test]
     fn format_time() {
-        assert_eq!(super::format_time(0), "0.0");
-        assert_eq!(super::format_time(1000001), "1.000001");
-        assert_eq!(super::format_time(12300000), "12.3");
-        assert_eq!(super::format_time(12000003), "12.000003");
+        assert_eq!(super::format_time(Duration::from_micros(0)), "0.0");
+        assert_eq!(
+            super::format_time(Duration::from_micros(1000001)),
+            "1.000001"
+        );
+        assert_eq!(super::format_time(Duration::from_micros(12300000)), "12.3");
+        assert_eq!(
+            super::format_time(Duration::from_micros(12000003)),
+            "12.000003"
+        );
     }
 }

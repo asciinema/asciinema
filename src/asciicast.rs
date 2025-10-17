@@ -8,6 +8,7 @@ use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
+use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 
@@ -42,7 +43,7 @@ pub struct Header {
 }
 
 pub struct Event {
-    pub time: u64,
+    pub time: Duration,
     pub data: EventData,
 }
 
@@ -141,43 +142,45 @@ pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Asciicast<'a>> {
     }
 }
 
-pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<u64> {
+pub fn get_duration<S: AsRef<Path>>(path: S) -> Result<Duration> {
     let Asciicast { events, .. } = open_from_path(path)?;
-    let time = events.last().map_or(Ok(0), |e| e.map(|e| e.time))?;
+    let time = events
+        .last()
+        .map_or(Ok(Duration::from_micros(0)), |e| e.map(|e| e.time))?;
 
     Ok(time)
 }
 
 impl Event {
-    pub fn output(time: u64, text: String) -> Self {
+    pub fn output(time: Duration, text: String) -> Self {
         Event {
             time,
             data: EventData::Output(text),
         }
     }
 
-    pub fn input(time: u64, text: String) -> Self {
+    pub fn input(time: Duration, text: String) -> Self {
         Event {
             time,
             data: EventData::Input(text),
         }
     }
 
-    pub fn resize(time: u64, size: (u16, u16)) -> Self {
+    pub fn resize(time: Duration, size: (u16, u16)) -> Self {
         Event {
             time,
             data: EventData::Resize(size.0, size.1),
         }
     }
 
-    pub fn marker(time: u64, label: String) -> Self {
+    pub fn marker(time: Duration, label: String) -> Self {
         Event {
             time,
             data: EventData::Marker(label),
         }
     }
 
-    pub fn exit(time: u64, status: i32) -> Self {
+    pub fn exit(time: Duration, status: i32) -> Self {
         Event {
             time,
             data: EventData::Exit(status),
@@ -189,9 +192,9 @@ pub fn limit_idle_time(
     events: impl Iterator<Item = Result<Event>>,
     limit: f64,
 ) -> impl Iterator<Item = Result<Event>> {
-    let limit = (limit * 1_000_000.0) as u64;
-    let mut prev_time = 0;
-    let mut offset = 0;
+    let limit = Duration::from_micros((limit * 1_000_000.0) as u64);
+    let mut prev_time = Duration::from_micros(0);
+    let mut offset = Duration::from_micros(0);
 
     events.map(move |event| {
         event.map(|event| {
@@ -215,7 +218,7 @@ pub fn accelerate(
 ) -> impl Iterator<Item = Result<Event>> {
     events.map(move |event| {
         event.map(|event| {
-            let time = ((event.time as f64) / speed) as u64;
+            let time = event.time.div_f64(speed);
 
             Event { time, ..event }
         })
@@ -225,18 +228,21 @@ pub fn accelerate(
 pub fn encoder(version: Version) -> Option<Box<dyn Encoder>> {
     match version {
         Version::One => None,
-        Version::Two => Some(Box::new(V2Encoder::new(0))),
+        Version::Two => Some(Box::new(V2Encoder::new(Duration::from_micros(0)))),
         Version::Three => Some(Box::new(V3Encoder::new())),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Asciicast, Event, EventData, Header, V2Encoder};
-    use crate::tty::TtyTheme;
+    use std::collections::HashMap;
+    use std::time::Duration;
+
     use anyhow::Result;
     use rgb::RGB8;
-    use std::collections::HashMap;
+
+    use super::{Asciicast, Event, EventData, Header, V2Encoder};
+    use crate::tty::TtyTheme;
 
     #[test]
     fn open_v1_minimal() {
@@ -252,7 +258,7 @@ mod tests {
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert!(header.term_theme.is_none());
 
-        assert_eq!(events[0].time, 1230000);
+        assert_eq!(events[0].time, Duration::from_micros(1230000));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
     }
 
@@ -268,13 +274,13 @@ mod tests {
         assert_eq!(version, 1);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
 
-        assert_eq!(events[0].time, 1);
+        assert_eq!(events[0].time, Duration::from_micros(1));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
 
-        assert_eq!(events[1].time, 10000001);
+        assert_eq!(events[1].time, Duration::from_micros(10000001));
         assert!(matches!(events[1].data, EventData::Output(ref s) if s == "ółć"));
 
-        assert_eq!(events[2].time, 10500001);
+        assert_eq!(events[2].time, Duration::from_micros(10500001));
         assert!(matches!(events[2].data, EventData::Output(ref s) if s == "\r\n"));
     }
 
@@ -292,7 +298,7 @@ mod tests {
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert!(header.term_theme.is_none());
 
-        assert_eq!(events[0].time, 1230000);
+        assert_eq!(events[0].time, Duration::from_micros(1230000));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
     }
 
@@ -313,22 +319,22 @@ mod tests {
         assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
         assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
 
-        assert_eq!(events[0].time, 1);
+        assert_eq!(events[0].time, Duration::from_micros(1));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
 
-        assert_eq!(events[1].time, 1_000_000);
+        assert_eq!(events[1].time, Duration::from_micros(1_000_000));
         assert!(matches!(events[1].data, EventData::Output(ref s) if s == "ółć"));
 
-        assert_eq!(events[2].time, 2_300_000);
+        assert_eq!(events[2].time, Duration::from_micros(2_300_000));
         assert!(matches!(events[2].data, EventData::Input(ref s) if s == "\n"));
 
-        assert_eq!(events[3].time, 5_600_001);
+        assert_eq!(events[3].time, Duration::from_micros(5_600_001));
 
         assert!(
             matches!(events[3].data, EventData::Resize(ref cols, ref rows) if *cols == 80 && *rows == 40)
         );
 
-        assert_eq!(events[4].time, 10_500_000);
+        assert_eq!(events[4].time, Duration::from_micros(10_500_000));
         assert!(matches!(events[4].data, EventData::Output(ref s) if s == "\r\n"));
     }
 
@@ -346,7 +352,7 @@ mod tests {
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
         assert!(header.term_theme.is_none());
 
-        assert_eq!(events[0].time, 1230000);
+        assert_eq!(events[0].time, Duration::from_micros(1230000));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "hello"));
     }
 
@@ -367,22 +373,22 @@ mod tests {
         assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
         assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
 
-        assert_eq!(events[0].time, 1);
+        assert_eq!(events[0].time, Duration::from_micros(1));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
 
-        assert_eq!(events[1].time, 1_000_001);
+        assert_eq!(events[1].time, Duration::from_micros(1_000_001));
         assert!(matches!(events[1].data, EventData::Output(ref s) if s == "ółć"));
 
-        assert_eq!(events[2].time, 1_300_001);
+        assert_eq!(events[2].time, Duration::from_micros(1_300_001));
         assert!(matches!(events[2].data, EventData::Input(ref s) if s == "\n"));
 
-        assert_eq!(events[3].time, 2_900_002);
+        assert_eq!(events[3].time, Duration::from_micros(2_900_002));
 
         assert!(
             matches!(events[3].data, EventData::Resize(ref cols, ref rows) if *cols == 80 && *rows == 40)
         );
 
-        assert_eq!(events[4].time, 13_400_002);
+        assert_eq!(events[4].time, Duration::from_micros(13_400_002));
         assert!(matches!(events[4].data, EventData::Output(ref s) if s == "\r\n"));
     }
 
@@ -390,15 +396,27 @@ mod tests {
     fn encoder() {
         let mut data = Vec::new();
         let header = Header::default();
-        let mut enc = V2Encoder::new(0);
+        let mut enc = V2Encoder::new(Duration::from_micros(0));
         data.extend(enc.header(&header));
-        data.extend(enc.event(&Event::output(1000000, "hello\r\n".to_owned())));
+        data.extend(enc.event(&Event::output(
+            Duration::from_micros(1000000),
+            "hello\r\n".to_owned(),
+        )));
 
-        let mut enc = V2Encoder::new(1000001);
-        data.extend(enc.event(&Event::output(1000001, "world".to_owned())));
-        data.extend(enc.event(&Event::input(2000002, " ".to_owned())));
-        data.extend(enc.event(&Event::resize(3000003, (100, 40))));
-        data.extend(enc.event(&Event::output(4000004, "żółć".to_owned())));
+        let mut enc = V2Encoder::new(Duration::from_micros(1000001));
+        data.extend(enc.event(&Event::output(
+            Duration::from_micros(1000001),
+            "world".to_owned(),
+        )));
+        data.extend(enc.event(&Event::input(
+            Duration::from_micros(2000002),
+            " ".to_owned(),
+        )));
+        data.extend(enc.event(&Event::resize(Duration::from_micros(3000003), (100, 40))));
+        data.extend(enc.event(&Event::output(
+            Duration::from_micros(4000004),
+            "żółć".to_owned(),
+        )));
 
         let lines = parse(data);
 
@@ -425,7 +443,7 @@ mod tests {
 
     #[test]
     fn header_encoding() {
-        let mut enc = V2Encoder::new(0);
+        let mut enc = V2Encoder::new(Duration::from_micros(0));
         let mut env = HashMap::new();
         env.insert("SHELL".to_owned(), "/usr/bin/fish".to_owned());
         env.insert("TERM".to_owned(), "xterm256-color".to_owned());
@@ -493,14 +511,18 @@ mod tests {
 
     #[test]
     fn accelerate() {
-        let events = [(0u64, "foo"), (20, "bar"), (50, "baz")]
-            .map(|(time, output)| Ok(Event::output(time, output.to_owned())));
+        let events = [(0u64, "foo"), (20, "bar"), (50, "baz")].map(|(time, output)| {
+            Ok(Event::output(
+                Duration::from_micros(time),
+                output.to_owned(),
+            ))
+        });
 
         let output = output(super::accelerate(events.into_iter(), 2.0));
 
-        assert_eq!(output[0], (0, "foo".to_owned()));
-        assert_eq!(output[1], (10, "bar".to_owned()));
-        assert_eq!(output[2], (25, "baz".to_owned()));
+        assert_eq!(output[0], (Duration::from_micros(0), "foo".to_owned()));
+        assert_eq!(output[1], (Duration::from_micros(10), "bar".to_owned()));
+        assert_eq!(output[2], (Duration::from_micros(25), "baz".to_owned()));
     }
 
     #[test]
@@ -512,18 +534,35 @@ mod tests {
             (4_000_000, "qux"),
             (7_500_000, "quux"),
         ]
-        .map(|(time, output)| Ok(Event::output(time, output.to_owned())));
+        .map(|(time, output)| {
+            Ok(Event::output(
+                Duration::from_micros(time),
+                output.to_owned(),
+            ))
+        });
 
         let events = output(super::limit_idle_time(events.into_iter(), 2.0));
 
-        assert_eq!(events[0], (0, "foo".to_owned()));
-        assert_eq!(events[1], (1_000_000, "bar".to_owned()));
-        assert_eq!(events[2], (3_000_000, "baz".to_owned()));
-        assert_eq!(events[3], (3_500_000, "qux".to_owned()));
-        assert_eq!(events[4], (5_500_000, "quux".to_owned()));
+        assert_eq!(events[0], (Duration::from_micros(0), "foo".to_owned()));
+        assert_eq!(
+            events[1],
+            (Duration::from_micros(1_000_000), "bar".to_owned())
+        );
+        assert_eq!(
+            events[2],
+            (Duration::from_micros(3_000_000), "baz".to_owned())
+        );
+        assert_eq!(
+            events[3],
+            (Duration::from_micros(3_500_000), "qux".to_owned())
+        );
+        assert_eq!(
+            events[4],
+            (Duration::from_micros(5_500_000), "quux".to_owned())
+        );
     }
 
-    fn output(events: impl Iterator<Item = Result<Event>>) -> Vec<(u64, String)> {
+    fn output(events: impl Iterator<Item = Result<Event>>) -> Vec<(Duration, String)> {
         events
             .filter_map(|r| {
                 if let Ok(Event {

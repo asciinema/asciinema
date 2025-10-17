@@ -54,6 +54,8 @@ fn text_lines_to_bytes<S: AsRef<str>>(lines: impl Iterator<Item = S>) -> Vec<u8>
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::TextEncoder;
     use crate::asciicast::{Event, Header};
     use crate::encoder::Encoder;
@@ -71,11 +73,17 @@ mod tests {
         assert!(enc.header(&header).is_empty());
 
         assert!(enc
-            .event(Event::output(0, "he\x1b[1mllo\r\n".to_owned()))
+            .event(Event::output(
+                Duration::from_micros(0),
+                "he\x1b[1mllo\r\n".to_owned()
+            ))
             .is_empty());
 
         assert!(enc
-            .event(Event::output(1, "world\r\n".to_owned()))
+            .event(Event::output(
+                Duration::from_micros(1),
+                "world\r\n".to_owned()
+            ))
             .is_empty());
 
         assert_eq!(enc.flush(), "hello\nworld\n".as_bytes());

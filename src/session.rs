@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use async_trait::async_trait;
 use bytes::{Buf, BytesMut};
@@ -23,11 +23,11 @@ const BUF_SIZE: usize = 128 * 1024;
 
 #[derive(Clone)]
 pub enum Event {
-    Output(u64, String),
-    Input(u64, String),
-    Resize(u64, TtySize),
-    Marker(u64, String),
-    Exit(u64, i32),
+    Output(Duration, String),
+    Input(Duration, String),
+    Resize(Duration, TtySize),
+    Marker(Duration, String),
+    Exit(Duration, i32),
 }
 
 #[derive(Clone)]
@@ -55,10 +55,10 @@ struct Session<N: Notifier> {
     keys: KeyBindings,
     notifier: N,
     output_decoder: Utf8Decoder,
-    pause_time: Option<u64>,
+    pause_time: Option<Duration>,
     prefix_mode: bool,
     record_input: bool,
-    time_offset: u64,
+    time_offset: Duration,
     tty_size: TtySize,
 }
 
@@ -93,7 +93,7 @@ pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
         pause_time: None,
         prefix_mode: false,
         record_input,
-        time_offset: 0,
+        time_offset: Duration::from_micros(0),
         tty_size: winsize.into(),
     };
 
@@ -302,11 +302,11 @@ impl<N: Notifier> Session<N> {
         self.send_session_event(event).await;
     }
 
-    fn elapsed_time(&self) -> u64 {
+    fn elapsed_time(&self) -> Duration {
         if let Some(pause_time) = self.pause_time {
             pause_time
         } else {
-            self.epoch.elapsed().as_micros() as u64 - self.time_offset
+            self.epoch.elapsed() - self.time_offset
         }
     }
 

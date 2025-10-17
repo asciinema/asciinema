@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::io;
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -48,7 +49,7 @@ struct V3Palette(Vec<RGB8>);
 #[derive(Debug, Deserialize)]
 struct V3Event {
     #[serde(deserialize_with = "util::deserialize_time")]
-    time: u64,
+    time: Duration,
     #[serde(deserialize_with = "deserialize_code")]
     code: V3EventCode,
     data: String,
@@ -66,7 +67,7 @@ enum V3EventCode {
 
 pub struct Parser {
     header: V3Header,
-    prev_time: u64,
+    prev_time: Duration,
 }
 
 pub fn open(header_line: &str) -> Result<Parser> {
@@ -78,7 +79,7 @@ pub fn open(header_line: &str) -> Result<Parser> {
 
     Ok(Parser {
         header,
-        prev_time: 0,
+        prev_time: Duration::from_micros(0),
     })
 }
 
@@ -183,12 +184,14 @@ where
 }
 
 pub struct V3Encoder {
-    prev_time: u64,
+    prev_time: Duration,
 }
 
 impl V3Encoder {
     pub fn new() -> Self {
-        Self { prev_time: 0 }
+        Self {
+            prev_time: Duration::from_micros(0),
+        }
     }
 
     pub fn header(&mut self, header: &Header) -> Vec<u8> {
@@ -234,7 +237,8 @@ impl V3Encoder {
     }
 }
 
-fn format_time(time: u64) -> String {
+fn format_time(time: Duration) -> String {
+    let time = time.as_micros();
     let mut formatted_time = format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000);
     let dot_idx = formatted_time.find('.').unwrap();
 
@@ -462,11 +466,19 @@ impl From<&V3Theme> for TtyTheme {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     #[test]
     fn format_time() {
-        assert_eq!(super::format_time(0), "0.0");
-        assert_eq!(super::format_time(1000001), "1.000001");
-        assert_eq!(super::format_time(12300000), "12.3");
-        assert_eq!(super::format_time(12000003), "12.000003");
+        assert_eq!(super::format_time(Duration::from_micros(0)), "0.0");
+        assert_eq!(
+            super::format_time(Duration::from_micros(1000001)),
+            "1.000001"
+        );
+        assert_eq!(super::format_time(Duration::from_micros(12300000)), "12.3");
+        assert_eq!(
+            super::format_time(Duration::from_micros(12000003)),
+            "12.000003"
+        );
     }
 }

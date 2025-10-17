@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::asciicast::{Event, Header, V2Encoder, V3Encoder};
 
 pub struct AsciicastV2Encoder {
@@ -6,7 +8,7 @@ pub struct AsciicastV2Encoder {
 }
 
 impl AsciicastV2Encoder {
-    pub fn new(append: bool, time_offset: u64) -> Self {
+    pub fn new(append: bool, time_offset: Duration) -> Self {
         let inner = V2Encoder::new(time_offset);
 
         Self { inner, append }
@@ -17,7 +19,8 @@ impl super::Encoder for AsciicastV2Encoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
         if self.append {
             let size = (header.term_cols, header.term_rows);
-            self.inner.event(&Event::resize(0, size))
+            self.inner
+                .event(&Event::resize(Duration::from_micros(0), size))
         } else {
             self.inner.header(header)
         }
@@ -49,7 +52,8 @@ impl super::Encoder for AsciicastV3Encoder {
     fn header(&mut self, header: &Header) -> Vec<u8> {
         if self.append {
             let size = (header.term_cols, header.term_rows);
-            self.inner.event(&Event::resize(0, size))
+            self.inner
+                .event(&Event::resize(Duration::from_micros(0), size))
         } else {
             self.inner.header(header)
         }

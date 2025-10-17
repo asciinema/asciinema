@@ -27,12 +27,12 @@ struct Subscription {
 
 #[derive(Clone)]
 pub enum Event {
-    Init(u64, u64, TtySize, Option<TtyTheme>, String),
-    Output(u64, u64, String),
-    Input(u64, u64, String),
-    Resize(u64, u64, TtySize),
-    Marker(u64, u64, String),
-    Exit(u64, u64, i32),
+    Init(u64, Duration, TtySize, Option<TtyTheme>, String),
+    Output(u64, Duration, String),
+    Input(u64, Duration, String),
+    Resize(u64, Duration, TtySize),
+    Marker(u64, Duration, String),
+    Exit(u64, Duration, i32),
 }
 
 #[derive(Clone)]
@@ -77,7 +77,7 @@ async fn run(
 ) {
     let (broadcast_tx, _) = broadcast::channel(1024);
     let mut vt = build_vt(tty_size);
-    let mut stream_time = 0;
+    let mut stream_time = Duration::from_micros(0);
     let mut last_event_id = 0;
     let mut last_event_time = Instant::now();
 
@@ -127,7 +127,7 @@ async fn run(
                 match request {
                     Some(request) => {
                         let init = if last_event_id > 0 {
-                            let elapsed_time = stream_time + last_event_time.elapsed().as_micros() as u64;
+                            let elapsed_time = stream_time + last_event_time.elapsed();
 
                             Event::Init(
                                 last_event_id,

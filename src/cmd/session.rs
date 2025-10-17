@@ -266,7 +266,7 @@ impl cli::Session {
                 let time_offset = if append {
                     asciicast::get_duration(path)?
                 } else {
-                    0
+                    Duration::from_micros(0)
                 };
 
                 Ok(Box::new(AsciicastV2Encoder::new(append, time_offset)))

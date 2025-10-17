@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use serde::{Deserialize, Deserializer};
 
-pub fn deserialize_time<'de, D>(deserializer: D) -> Result<u64, D::Error>
+pub fn deserialize_time<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -25,13 +27,13 @@ where
                 .parse()
                 .map_err(Error::custom)?;
 
-            Ok(secs * 1_000_000 + micros)
+            Ok(Duration::from_micros(secs * 1_000_000 + micros))
         }
 
         [number] => {
             let secs: u64 = number.parse().map_err(Error::custom)?;
 
-            Ok(secs * 1_000_000)
+            Ok(Duration::from_micros(secs * 1_000_000))
         }
 
         _ => Err(Error::custom(format!("invalid time format: {value}"))),

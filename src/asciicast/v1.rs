@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use anyhow::{bail, Result};
 use serde::Deserialize;
@@ -20,7 +21,7 @@ struct V1 {
 #[derive(Debug, Deserialize)]
 struct V1OutputEvent {
     #[serde(deserialize_with = "deserialize_time")]
-    time: u64,
+    time: Duration,
     data: String,
 }
 
@@ -50,12 +51,15 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         env: asciicast.env.clone(),
     };
 
-    let events = Box::new(asciicast.stdout.into_iter().scan(0, |prev_time, event| {
-        let time = *prev_time + event.time;
-        *prev_time = time;
+    let events = Box::new(asciicast.stdout.into_iter().scan(
+        Duration::from_micros(0),
+        |prev_time, event| {
+            let time = *prev_time + event.time;
+            *prev_time = time;
 
-        Some(Ok(Event::output(time, event.data)))
-    }));
+            Some(Ok(Event::output(time, event.data)))
+        },
+    ));
 
     Ok(Asciicast {
         version: Version::One,

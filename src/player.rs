@@ -60,7 +60,7 @@ pub async fn play(
                 epoch = Instant::now() - Duration::from_micros(pet);
                 pause_elapsed_time = None;
             } else if keys.step.as_ref().is_some_and(|k| k == key) {
-                pause_elapsed_time = Some(*time);
+                pause_elapsed_time = Some(time.as_micros() as u64);
 
                 match data {
                     EventData::Output(data) => {
@@ -85,7 +85,7 @@ pub async fn play(
                         }
 
                         EventData::Marker(_) => {
-                            pause_elapsed_time = Some(time);
+                            pause_elapsed_time = Some(time.as_micros() as u64);
                             break;
                         }
 
@@ -99,10 +99,11 @@ pub async fn play(
             }
         } else {
             while let Some(Event { time, data }) = &next_event {
-                let delay = *time as i64 - epoch.elapsed().as_micros() as i64;
+                let delay = time.as_micros() as i64 - epoch.elapsed().as_micros() as i64;
 
                 if delay > 0 {
-                    let delay = (*time as i64 - epoch.elapsed().as_micros() as i64).max(0) as u64;
+                    let delay = (time.as_micros() as i64 - epoch.elapsed().as_micros() as i64)
+                        .max(0) as u64;
 
                     if let Ok(result) =
                         time::timeout(Duration::from_micros(delay), tty.read(&mut input)).await
@@ -135,7 +136,7 @@ pub async fn play(
 
                     EventData::Marker(_) => {
                         if pause_on_markers {
-                            pause_elapsed_time = Some(*time);
+                            pause_elapsed_time = Some(time.as_micros() as u64);
                             next_event = events.recv().await.transpose()?;
                             break;
                         }

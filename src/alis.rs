@@ -5,6 +5,7 @@
 // See more at: https://docs.asciinema.org/manual/server/streaming/
 
 use std::future;
+use std::time::Duration;
 
 use futures_util::{stream, Stream, StreamExt};
 use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
@@ -14,13 +15,14 @@ use crate::stream::Event;
 
 static MAGIC_STRING: &str = "ALiS\x01";
 
-struct EventSerializer(u64);
+#[derive(Default)]
+struct EventSerializer(Duration);
 
 pub fn stream<S: Stream<Item = Result<Event, BroadcastStreamRecvError>>>(
     stream: S,
 ) -> impl Stream<Item = Result<Vec<u8>, BroadcastStreamRecvError>> {
     let header = stream::once(future::ready(Ok(MAGIC_STRING.into())));
-    let mut serializer = EventSerializer(0);
+    let mut serializer = EventSerializer::default();
     let events = stream.map(move |event| event.map(|event| serializer.serialize_event(event)));
 
     header.chain(events)
@@ -33,7 +35,7 @@ impl EventSerializer {
         match event {
             Init(last_id, time, size, theme, init) => {
                 let last_id_bytes = leb128::encode(last_id);
-                let time_bytes = leb128::encode(time);
+                let time_bytes = leb128::encode(time.as_micros() as u64);
                 let cols_bytes = leb128::encode(size.0);
                 let rows_bytes = leb128::encode(size.1);
                 let init_len = init.len() as u32;
@@ -150,12 +152,12 @@ impl EventSerializer {
         }
     }
 
-    fn rel_time(&mut self, time: u64) -> u64 {
+    fn rel_time(&mut self, time: Duration) -> u64 {
         let time = time.max(self.0);
         let rel_time = time - self.0;
         self.0 = time;
 
-        rel_time
+        rel_time.as_micros() as u64
     }
 }
 
@@ -168,7 +170,7 @@ mod tests {
 
     #[test]
     fn test_serialize_init_with_theme_and_seed() {
-        let mut serializer = EventSerializer(0);
+        let mut serializer = EventSerializer(Duration::from_millis(0));
 
         let theme = TtyTheme {
             fg: rgb(255, 255, 255),
@@ -195,7 +197,7 @@ mod tests {
 
         let event = Event::Init(
             42,
-            1000,
+            Duration::from_micros(1000),
             TtySize(180, 24),
             Some(theme),
             "terminal seed".to_string(),
@@ -238,13 +240,21 @@ mod tests {
         expected.extend_from_slice(b"terminal seed"); // init string
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 1000);
+        assert_eq!(serializer.0.as_micros(), 1000);
     }
 
     #[test]
     fn test_serialize_init_without_theme_nor_seed() {
-        let mut serializer = EventSerializer(0);
-        let event = Event::Init(1, 500, TtySize(120, 130), None, "".to_string());
+        let mut serializer = EventSerializer::default();
+
+        let event = Event::Init(
+            1,
+            Duration::from_micros(500),
+            TtySize(120, 130),
+            None,
+            "".to_string(),
+        );
+
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -258,13 +268,13 @@ mod tests {
         ];
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 500);
+        assert_eq!(serializer.0.as_micros(), 500);
     }
 
     #[test]
     fn test_serialize_output() {
-        let mut serializer = EventSerializer(1000);
-        let event = Event::Output(5, 1200, "Hello 世界 🌍".to_string());
+        let mut serializer = EventSerializer(Duration::from_micros(1000));
+        let event = Event::Output(5, Duration::from_micros(1200), "Hello 世界 🌍".to_string());
         let bytes = serializer.serialize_event(event);
 
         let mut expected = vec![
@@ -277,13 +287,13 @@ mod tests {
         expected.extend_from_slice("Hello 世界 🌍".as_bytes()); // text bytes
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 1200); // Time updated to 1200
+        assert_eq!(serializer.0.as_micros(), 1200); // Time updated to 1200
     }
 
     #[test]
     fn test_serialize_input() {
-        let mut serializer = EventSerializer(500);
-        let event = Event::Input(1000000, 750, "x".to_string());
+        let mut serializer = EventSerializer(Duration::from_micros(500));
+        let event = Event::Input(1000000, Duration::from_micros(750), "x".to_string());
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -295,13 +305,13 @@ mod tests {
         ];
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 750);
+        assert_eq!(serializer.0.as_micros(), 750);
     }
 
     #[test]
     fn test_serialize_resize() {
-        let mut serializer = EventSerializer(2000);
-        let event = Event::Resize(15, 2100, TtySize(180, 50));
+        let mut serializer = EventSerializer(Duration::from_micros(2000));
+        let event = Event::Resize(15, Duration::from_micros(2100), TtySize(180, 50));
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -313,13 +323,13 @@ mod tests {
         ];
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 2100);
+        assert_eq!(serializer.0.as_micros(), 2100);
     }
 
     #[test]
     fn test_serialize_marker_with_label() {
-        let mut serializer = EventSerializer(3000);
-        let event = Event::Marker(20, 3500, "checkpoint".to_string());
+        let mut serializer = EventSerializer(Duration::from_micros(3000));
+        let event = Event::Marker(20, Duration::from_micros(3500), "checkpoint".to_string());
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -332,13 +342,13 @@ mod tests {
         expected.extend_from_slice(b"checkpoint"); // label bytes
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 3500);
+        assert_eq!(serializer.0.as_micros(), 3500);
     }
 
     #[test]
     fn test_serialize_marker_without_label() {
-        let mut serializer = EventSerializer(3000);
-        let event = Event::Marker(2, 3300, "".to_string());
+        let mut serializer = EventSerializer(Duration::from_micros(3000));
+        let event = Event::Marker(2, Duration::from_micros(3300), "".to_string());
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -353,8 +363,8 @@ mod tests {
 
     #[test]
     fn test_serialize_exit_positive_status() {
-        let mut serializer = EventSerializer(4000);
-        let event = Event::Exit(25, 4200, 0);
+        let mut serializer = EventSerializer(Duration::from_micros(4000));
+        let event = Event::Exit(25, Duration::from_micros(4200), 0);
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -365,13 +375,13 @@ mod tests {
         ];
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 4200);
+        assert_eq!(serializer.0.as_micros(), 4200);
     }
 
     #[test]
     fn test_serialize_exit_negative_status() {
-        let mut serializer = EventSerializer(5000);
-        let event = Event::Exit(30, 5300, -1);
+        let mut serializer = EventSerializer(Duration::from_micros(5000));
+        let event = Event::Exit(30, Duration::from_micros(5300), -1);
         let bytes = serializer.serialize_event(event);
 
         let expected = vec![
@@ -382,27 +392,27 @@ mod tests {
         ];
 
         assert_eq!(bytes, expected);
-        assert_eq!(serializer.0, 5300);
+        assert_eq!(serializer.0.as_micros(), 5300);
     }
 
     #[test]
     fn test_subsequent_event_lower_time() {
-        let mut serializer = EventSerializer(1000);
+        let mut serializer = EventSerializer(Duration::from_micros(1000));
 
         // First event at time 1000
-        let event1 = Event::Output(1, 1000, "first".to_string());
+        let event1 = Event::Output(1, Duration::from_micros(1000), "first".to_string());
         let bytes1 = serializer.serialize_event(event1);
 
         // Verify first event uses time 0 (1000 - 1000)
         assert_eq!(bytes1[2], 0x00); // relative time should be 0
-        assert_eq!(serializer.0, 1000);
+        assert_eq!(serializer.0.as_micros(), 1000);
 
         // Second event with lower timestamp (wraparound risk case)
-        let event2 = Event::Output(2, 500, "second".to_string());
+        let event2 = Event::Output(2, Duration::from_micros(500), "second".to_string());
         let bytes2 = serializer.serialize_event(event2);
 
         assert_eq!(bytes2[2], 0x00); // relative time should be 0
-        assert_eq!(serializer.0, 1000); // Time should remain 1000 (not decrease)
+        assert_eq!(serializer.0.as_micros(), 1000); // Time should remain 1000 (not decrease)
     }
 
     fn rgb(r: u8, g: u8, b: u8) -> RGB8 {
