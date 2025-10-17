@@ -102,11 +102,9 @@ pub async fn play(
                 let delay = time.as_micros() as i64 - epoch.elapsed().as_micros() as i64;
 
                 if delay > 0 {
-                    let delay = (time.as_micros() as i64 - epoch.elapsed().as_micros() as i64)
-                        .max(0) as u64;
-
                     if let Ok(result) =
-                        time::timeout(Duration::from_micros(delay), tty.read(&mut input)).await
+                        time::timeout(Duration::from_micros(delay as u64), tty.read(&mut input))
+                            .await
                     {
                         let n = result?;
                         let key = &input[..n];
