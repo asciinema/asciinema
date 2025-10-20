@@ -8,6 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use super::{util, Asciicast, Event, EventData, Header, Version};
 use crate::tty::TtyTheme;
+use crate::util::Quantizer;
 
 #[derive(Deserialize)]
 struct V3Header {
@@ -185,12 +186,14 @@ where
 
 pub struct V3Encoder {
     prev_time: Duration,
+    time_quantizer: Quantizer,
 }
 
 impl V3Encoder {
     pub fn new() -> Self {
         Self {
             prev_time: Duration::from_micros(0),
+            time_quantizer: Quantizer::new(1_000_000),
         }
     }
 
@@ -221,12 +224,13 @@ impl V3Encoder {
             Other(code, data) => (*code, self.to_json_string(data)),
         };
 
-        let time = event.time - self.prev_time;
+        let dt = event.time - self.prev_time;
         self.prev_time = event.time;
+        let dt = Duration::from_nanos(self.time_quantizer.next(dt.as_nanos()) as u64);
 
         format!(
             "[{}, {}, {}]",
-            format_time(time),
+            format_duration(dt),
             self.to_json_string(&code.to_string()),
             data,
         )
@@ -237,20 +241,12 @@ impl V3Encoder {
     }
 }
 
-fn format_time(time: Duration) -> String {
-    let time = time.as_micros();
-    let mut formatted_time = format!("{}.{:0>6}", time / 1_000_000, time % 1_000_000);
-    let dot_idx = formatted_time.find('.').unwrap();
+fn format_duration(duration: Duration) -> String {
+    let time_ms = duration.as_millis();
+    let secs = time_ms / 1_000;
+    let millis = time_ms % 1_000;
 
-    for idx in (dot_idx + 2..=formatted_time.len() - 1).rev() {
-        if formatted_time.as_bytes()[idx] != b'0' {
-            break;
-        }
-
-        formatted_time.truncate(idx);
-    }
-
-    formatted_time
+    format!("{}.{}", secs, format!("{:03}", millis))
 }
 
 impl serde::Serialize for V3Header {
@@ -466,19 +462,14 @@ impl From<&V3Theme> for TtyTheme {
 
 #[cfg(test)]
 mod tests {
+    use super::format_duration;
     use std::time::Duration;
 
     #[test]
     fn format_time() {
-        assert_eq!(super::format_time(Duration::from_micros(0)), "0.0");
-        assert_eq!(
-            super::format_time(Duration::from_micros(1000001)),
-            "1.000001"
-        );
-        assert_eq!(super::format_time(Duration::from_micros(12300000)), "12.3");
-        assert_eq!(
-            super::format_time(Duration::from_micros(12000003)),
-            "12.000003"
-        );
+        assert_eq!(format_duration(Duration::from_millis(0)), "0.000");
+        assert_eq!(format_duration(Duration::from_millis(666)), "0.666");
+        assert_eq!(format_duration(Duration::from_millis(1000)), "1.000");
+        assert_eq!(format_duration(Duration::from_millis(12345)), "12.345");
     }
 }
