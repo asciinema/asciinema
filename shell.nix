@@ -14,6 +14,7 @@ let
             extensions = [
               "rust-src"
               "rust-analyzer"
+              "clippy"
             ];
           };
         })
