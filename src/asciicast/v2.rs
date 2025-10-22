@@ -18,7 +18,7 @@ struct V2Header {
     idle_time_limit: Option<f64>,
     command: Option<String>,
     title: Option<String>,
-    env: Option<HashMap<String, String>>,
+    env: Option<HashMap<String, Option<String>>>,
     theme: Option<V2Theme>,
 }
 
@@ -70,8 +70,21 @@ pub fn open(header_line: &str) -> Result<Parser> {
 
 impl Parser {
     pub fn parse<'a, I: Iterator<Item = io::Result<String>> + 'a>(self, lines: I) -> Asciicast<'a> {
-        let term_type = self.0.env.as_ref().and_then(|env| env.get("TERM").cloned());
+        let term_type = self
+            .0
+            .env
+            .as_ref()
+            .map(|env| env.get("TERM").cloned())
+            .unwrap_or_default()
+            .unwrap_or_default();
+
         let term_theme = self.0.theme.as_ref().map(|t| t.into());
+
+        let env = self.0.env.map(|env| {
+            env.into_iter()
+                .filter_map(|(k, v)| v.map(|v| (k, v)))
+                .collect()
+        });
 
         let header = Header {
             term_cols: self.0.width,
@@ -83,7 +96,7 @@ impl Parser {
             idle_time_limit: self.0.idle_time_limit,
             command: self.0.command.clone(),
             title: self.0.title.clone(),
-            env: self.0.env.clone(),
+            env,
         };
 
         let events = Box::new(lines.filter_map(parse_line));
@@ -367,6 +380,11 @@ impl serde::Serialize for V2Palette {
 
 impl From<&Header> for V2Header {
     fn from(header: &Header) -> Self {
+        let env = header
+            .env
+            .clone()
+            .map(|env| env.into_iter().map(|(k, v)| (k, Some(v))).collect());
+
         V2Header {
             version: 2,
             width: header.term_cols,
@@ -375,7 +393,7 @@ impl From<&Header> for V2Header {
             idle_time_limit: header.idle_time_limit,
             command: header.command.clone(),
             title: header.title.clone(),
-            env: header.env.clone(),
+            env,
             theme: header.term_theme.as_ref().map(|t| t.into()),
         }
     }

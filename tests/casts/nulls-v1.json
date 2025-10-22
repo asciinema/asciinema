@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "width": 100,
+  "height": 50,
+  "env": {
+    "SHELL": "/bin/bash",
+    "TERM": null
+  },
+  "stdout": [
+    [
+      1.230000,
+      "hello"
+    ]
+  ]
+}

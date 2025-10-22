@@ -274,6 +274,11 @@ mod tests {
         assert_eq!(version, 1);
         assert_eq!((header.term_cols, header.term_rows), (100, 50));
 
+        let mut expected_env = HashMap::new();
+        expected_env.insert("SHELL".to_owned(), "/bin/bash".to_owned());
+        expected_env.insert("TERM".to_owned(), "xterm-256color".to_owned());
+        assert_eq!(header.env.unwrap(), expected_env);
+
         assert_eq!(events[0].time, Duration::from_micros(1));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
 
@@ -282,6 +287,18 @@ mod tests {
 
         assert_eq!(events[2].time, Duration::from_micros(10500001));
         assert!(matches!(events[2].data, EventData::Output(ref s) if s == "\r\n"));
+    }
+
+    #[test]
+    fn open_v1_with_nulls_in_header() {
+        let Asciicast {
+            version, header, ..
+        } = super::open_from_path("tests/casts/nulls-v1.json").unwrap();
+        assert_eq!(version, 1);
+
+        let mut expected_env = HashMap::new();
+        expected_env.insert("SHELL".to_owned(), "/bin/bash".to_owned());
+        assert_eq!(header.env.unwrap(), expected_env);
     }
 
     #[test]
@@ -319,6 +336,11 @@ mod tests {
         assert_eq!(theme.bg, RGB8::new(0xff, 0xff, 0xff));
         assert_eq!(theme.palette[0], RGB8::new(0x24, 0x1f, 0x31));
 
+        let mut expected_env = HashMap::new();
+        expected_env.insert("SHELL".to_owned(), "/bin/bash".to_owned());
+        expected_env.insert("TERM".to_owned(), "xterm-256color".to_owned());
+        assert_eq!(header.env.unwrap(), expected_env);
+
         assert_eq!(events[0].time, Duration::from_micros(1));
         assert!(matches!(events[0].data, EventData::Output(ref s) if s == "ż"));
 
@@ -336,6 +358,18 @@ mod tests {
 
         assert_eq!(events[4].time, Duration::from_micros(10_500_000));
         assert!(matches!(events[4].data, EventData::Output(ref s) if s == "\r\n"));
+    }
+
+    #[test]
+    fn open_v2_with_nulls_in_header() {
+        let Asciicast {
+            version, header, ..
+        } = super::open_from_path("tests/casts/nulls-v2.cast").unwrap();
+        assert_eq!(version, 2);
+
+        let mut expected_env = HashMap::new();
+        expected_env.insert("SHELL".to_owned(), "/bin/bash".to_owned());
+        assert_eq!(header.env.unwrap(), expected_env);
     }
 
     #[test]

@@ -14,7 +14,7 @@ struct V1 {
     height: u16,
     command: Option<String>,
     title: Option<String>,
-    env: Option<HashMap<String, String>>,
+    env: Option<HashMap<String, Option<String>>>,
     stdout: Vec<V1OutputEvent>,
 }
 
@@ -35,8 +35,16 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
     let term_type = asciicast
         .env
         .as_ref()
-        .and_then(|env| env.get("TERM"))
-        .cloned();
+        .map(|env| env.get("TERM"))
+        .unwrap_or_default()
+        .cloned()
+        .unwrap_or_default();
+
+    let env = asciicast.env.map(|env| {
+        env.into_iter()
+            .filter_map(|(k, v)| v.map(|v| (k, v)))
+            .collect()
+    });
 
     let header = Header {
         term_cols: asciicast.width,
@@ -48,7 +56,7 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         idle_time_limit: None,
         command: asciicast.command.clone(),
         title: asciicast.title.clone(),
-        env: asciicast.env.clone(),
+        env,
     };
 
     let events = Box::new(asciicast.stdout.into_iter().scan(
