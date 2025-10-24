@@ -469,6 +469,7 @@ div.ap-control-bar span.ap-playback-button {
   width: 12px;
   height: 12px;
   padding: 10px;
+  margin: 0 0 0 2px;
 }
 div.ap-control-bar span.ap-playback-button svg {
   height: 12px;
@@ -537,6 +538,7 @@ div.ap-control-bar .ap-fullscreen-button {
   width: 14px;
   height: 14px;
   padding: 9px;
+  margin: 0 2px 0 4px;
 }
 div.ap-control-bar .ap-fullscreen-button svg {
   width: 14px;
@@ -556,7 +558,7 @@ div.ap-control-bar .ap-fullscreen-button .ap-tooltip {
 div.ap-control-bar .ap-kbd-button {
   height: 14px;
   padding: 9px;
-  margin: 0 4px;
+  margin: 0 0 0 4px;
 }
 div.ap-control-bar .ap-kbd-button svg {
   width: 26px;
@@ -565,6 +567,19 @@ div.ap-control-bar .ap-kbd-button svg {
 div.ap-control-bar .ap-kbd-button .ap-tooltip {
   right: 5px;
   left: initial;
+  transform: none;
+}
+div.ap-control-bar .ap-speaker-button {
+  width: 19px;
+  padding: 6px 9px;
+  margin: 0 0 0 4px;
+  position: relative;
+}
+div.ap-control-bar .ap-speaker-button svg {
+  width: 19px;
+}
+div.ap-control-bar .ap-speaker-button .ap-tooltip {
+  left: -50%;
   transform: none;
 }
 div.ap-wrapper.ap-hud .ap-control-bar {
@@ -666,6 +681,7 @@ span.ap-marker-container:hover span.ap-marker {
 }
 .ap-player .ap-overlay-start .ap-play-button div span svg {
   height: 100%;
+  display: inline-block;
 }
 .ap-player .ap-overlay-start .ap-play-button svg {
   filter: drop-shadow(0px 0px 5px rgba(0, 0, 0, 0.4));
@@ -753,6 +769,36 @@ span.ap-marker-container:hover span.ap-marker {
 }
 .ap-player .ap-overlay-error span {
   font-size: 8em;
+}
+.ap-player .slide-enter-active {
+  transition: opacity 0.2s;
+}
+.ap-player .slide-enter-active.ap-was-playing {
+  transition: top 0.2s ease-out, opacity 0.2s;
+}
+.ap-player .slide-exit-active {
+  transition: top 0.2s ease-in, opacity 0.2s;
+}
+.ap-player .slide-enter {
+  top: -50%;
+  opacity: 0;
+}
+.ap-player .slide-enter-to {
+  top: 0%;
+}
+.ap-player .slide-enter,
+.ap-player .slide-enter-to,
+.ap-player .slide-exit,
+.ap-player .slide-exit-to {
+  bottom: auto;
+  height: 100%;
+}
+.ap-player .slide-exit {
+  top: 0%;
+}
+.ap-player .slide-exit-to {
+  top: -50%;
+  opacity: 0;
 }
 @keyframes ap-loader-rotation {
   0% {
