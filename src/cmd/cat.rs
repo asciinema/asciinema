@@ -50,7 +50,7 @@ impl cli::Cat {
         Ok(())
     }
 
-    fn open_input_files(&self) -> Result<Vec<Asciicast>> {
+    fn open_input_files(&self) -> Result<Vec<Asciicast<'_>>> {
         self.file
             .iter()
             .map(|filename| {

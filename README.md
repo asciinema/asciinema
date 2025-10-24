@@ -63,7 +63,7 @@ overview.
 ## Building
 
 Building asciinema from source requires the [Rust](https://www.rust-lang.org/)
-compiler (1.75 or later), and the [Cargo package
+compiler (1.82 or later), and the [Cargo package
 manager](https://doc.rust-lang.org/cargo/). If they are not available via your
 system package manager then use [rustup](https://rustup.rs/).
 
