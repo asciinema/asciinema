@@ -23,7 +23,7 @@ reqwest = { version = "0.12", default-features = false, features = ["blocking", 
 rustyline = { version = "17.0", default-features = false }
 config = { version = "0.15", default-features = false, features = ["toml"] }
 which = "8.0"
-tempfile = "3.0"
+tempfile = "3.23"
 avt = "0.16"
 axum = { version = "0.8", default-features = false, features = ["http1", "ws"] }
 tokio = { version = "1.40", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
