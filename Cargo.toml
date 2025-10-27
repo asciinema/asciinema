@@ -26,7 +26,7 @@ which = "8.0"
 tempfile = "3.23"
 avt = "0.16"
 axum = { version = "0.8", default-features = false, features = ["http1", "ws"] }
-tokio = { version = "1.40", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
+tokio = { version = "1.48", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 tokio-stream = { version = "0.1", default-features = false, features = ["sync", "time"] }
 rust-embed = "8.8"
