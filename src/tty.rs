@@ -1,25 +1,85 @@
-use anyhow::Result;
-use nix::{
-    errno::Errno,
-    libc, pty,
-    sys::{
-        select::{select, FdSet},
-        time::TimeVal,
-    },
-    unistd,
-};
+use std::os::fd::AsFd;
+
+use async_trait::async_trait;
+use nix::libc;
+use nix::pty::Winsize;
+use nix::sys::termios::{self, SetArg};
 use rgb::RGB8;
-use std::fs;
-use std::io;
-use std::os::fd::{AsFd, AsRawFd, BorrowedFd, FromRawFd, OwnedFd};
-use termion::raw::{IntoRawMode, RawTerminal};
+use tokio::io;
+use tokio::time::{self, Duration};
+
+const QUERY_READ_TIMEOUT: u64 = 1000;
+const THEME_QUERY: &str = "\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
+const XTVERSION_QUERY: &str = "\x1b[>0q";
+
+#[cfg(all(not(target_os = "macos"), not(feature = "macos-tty")))]
+mod default;
+
+#[cfg(any(target_os = "macos", feature = "macos-tty"))]
+mod macos;
+
+#[cfg(all(not(target_os = "macos"), not(feature = "macos-tty")))]
+pub use default::DevTty;
+
+#[cfg(any(target_os = "macos", feature = "macos-tty"))]
+pub use macos::DevTty;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TtySize(pub u16, pub u16);
 
-impl From<pty::Winsize> for TtySize {
-    fn from(winsize: pty::Winsize) -> Self {
+#[derive(Clone)]
+pub struct TtyTheme {
+    pub fg: RGB8,
+    pub bg: RGB8,
+    pub palette: Vec<RGB8>,
+}
+
+pub struct NullTty;
+
+pub struct FixedSizeTty<T> {
+    inner: T,
+    cols: Option<u16>,
+    rows: Option<u16>,
+}
+
+#[async_trait(?Send)]
+pub trait Tty {
+    fn get_size(&self) -> Winsize;
+    async fn get_theme(&mut self) -> Option<TtyTheme>;
+    async fn get_version(&mut self) -> Option<String>;
+    async fn read(&self, buf: &mut [u8]) -> io::Result<usize>;
+    async fn write(&self, buf: &[u8]) -> io::Result<usize>;
+
+    async fn write_all(&self, mut buf: &[u8]) -> io::Result<()> {
+        while !buf.is_empty() {
+            let n = self.write(buf).await?;
+            buf = &buf[n..];
+        }
+
+        Ok(())
+    }
+}
+
+impl Default for TtySize {
+    fn default() -> Self {
+        TtySize(80, 24)
+    }
+}
+
+impl From<Winsize> for TtySize {
+    fn from(winsize: Winsize) -> Self {
         TtySize(winsize.ws_col, winsize.ws_row)
+    }
+}
+
+impl From<TtySize> for Winsize {
+    fn from(tty_size: TtySize) -> Self {
+        Winsize {
+            ws_col: tty_size.0,
+            ws_row: tty_size.1,
+            ws_xpixel: 0,
+            ws_ypixel: 0,
+        }
     }
 }
 
@@ -35,34 +95,168 @@ impl From<TtySize> for (u16, u16) {
     }
 }
 
-pub trait Tty: io::Write + io::Read + AsFd {
-    fn get_size(&self) -> pty::Winsize;
-    fn get_theme(&self) -> Option<Theme>;
-}
-
-#[derive(Clone)]
-pub struct Theme {
-    pub fg: RGB8,
-    pub bg: RGB8,
-    pub palette: Vec<RGB8>,
-}
-
-pub struct DevTty {
-    file: RawTerminal<fs::File>,
-}
-
-impl DevTty {
-    pub fn open() -> Result<Self> {
-        let file = fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open("/dev/tty")?
-            .into_raw_mode()?;
-
-        crate::io::set_non_blocking(&file.as_raw_fd())?;
-
-        Ok(Self { file })
+impl<T: Tty> FixedSizeTty<T> {
+    pub fn new(inner: T, cols: Option<u16>, rows: Option<u16>) -> Self {
+        Self { inner, cols, rows }
     }
+}
+
+#[async_trait(?Send)]
+impl Tty for NullTty {
+    fn get_size(&self) -> Winsize {
+        Winsize {
+            ws_row: 24,
+            ws_col: 80,
+            ws_xpixel: 0,
+            ws_ypixel: 0,
+        }
+    }
+
+    async fn get_theme(&mut self) -> Option<TtyTheme> {
+        None
+    }
+
+    async fn get_version(&mut self) -> Option<String> {
+        None
+    }
+
+    async fn read(&self, _buf: &mut [u8]) -> io::Result<usize> {
+        std::future::pending().await
+    }
+
+    async fn write(&self, buf: &[u8]) -> io::Result<usize> {
+        Ok(buf.len())
+    }
+}
+
+#[async_trait(?Send)]
+impl<T: Tty> Tty for FixedSizeTty<T> {
+    fn get_size(&self) -> Winsize {
+        let mut winsize = self.inner.get_size();
+
+        if let Some(cols) = self.cols {
+            winsize.ws_col = cols;
+        }
+
+        if let Some(rows) = self.rows {
+            winsize.ws_row = rows;
+        }
+
+        winsize
+    }
+
+    async fn get_theme(&mut self) -> Option<TtyTheme> {
+        self.inner.get_theme().await
+    }
+
+    async fn get_version(&mut self) -> Option<String> {
+        self.inner.get_version().await
+    }
+
+    async fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
+        self.inner.read(buf).await
+    }
+
+    async fn write(&self, buf: &[u8]) -> io::Result<usize> {
+        self.inner.write(buf).await
+    }
+}
+
+fn make_raw<F: AsFd>(fd: F) -> anyhow::Result<libc::termios> {
+    let termios = termios::tcgetattr(fd.as_fd())?;
+    let mut raw_termios = termios.clone();
+    termios::cfmakeraw(&mut raw_termios);
+    termios::tcsetattr(fd.as_fd(), SetArg::TCSANOW, &raw_termios)?;
+
+    Ok(termios.into())
+}
+
+async fn get_theme<T: Tty>(tty: &T) -> Option<TtyTheme> {
+    parse_theme_response(&query(tty, THEME_QUERY).await.ok()?)
+}
+
+async fn get_version<T: Tty>(tty: &T) -> Option<String> {
+    parse_version_response(&query(tty, XTVERSION_QUERY).await.ok()?)
+}
+
+async fn query<T: Tty>(tty: &T, query: &str) -> anyhow::Result<Vec<u8>> {
+    let mut query = query.to_string().into_bytes();
+    query.extend_from_slice(b"\x1b[c");
+    let mut query = &query[..];
+    let mut response = Vec::new();
+    let mut buf = [0u8; 1024];
+
+    loop {
+        tokio::select! {
+            result = tty.read(&mut buf) => {
+                let n = result?;
+                response.extend_from_slice(&buf[..n]);
+
+                if let Some(len) = complete_da_response_len(&response) {
+                    response.truncate(len);
+                    break;
+                }
+            }
+
+            result = tty.write(query), if !query.is_empty() => {
+                let n = result?;
+                query = &query[n..];
+            }
+
+            _ = time::sleep(Duration::from_millis(QUERY_READ_TIMEOUT)) => {
+                break;
+            }
+        }
+    }
+
+    Ok(response)
+}
+
+fn complete_da_response_len(response: &[u8]) -> Option<usize> {
+    let mut reversed = response.iter().rev();
+    let mut includes_da_response = false;
+    let mut da_response_len = 0;
+
+    if let Some(b'c') = reversed.next() {
+        da_response_len += 1;
+
+        for b in reversed {
+            if *b == b'[' {
+                includes_da_response = true;
+                break;
+            }
+
+            if *b != b';' && *b != b'?' && !b.is_ascii_digit() {
+                break;
+            }
+
+            da_response_len += 1;
+        }
+    }
+
+    if includes_da_response {
+        Some(response.len() - da_response_len - 2)
+    } else {
+        None
+    }
+}
+
+fn parse_theme_response(response: &[u8]) -> Option<TtyTheme> {
+    let response = String::from_utf8_lossy(response);
+    let mut colors = response.match_indices("rgb:");
+    let (idx, _) = colors.next()?;
+    let fg = parse_color(&response[idx + 4..])?;
+    let (idx, _) = colors.next()?;
+    let bg = parse_color(&response[idx + 4..])?;
+    let mut palette = Vec::new();
+
+    for _ in 0..16 {
+        let (idx, _) = colors.next()?;
+        let color = parse_color(&response[idx + 4..])?;
+        palette.push(color);
+    }
+
+    Some(TtyTheme { fg, bg, palette })
 }
 
 fn parse_color(rgb: &str) -> Option<RGB8> {
@@ -82,227 +276,18 @@ fn parse_color(rgb: &str) -> Option<RGB8> {
     Some(RGB8::new(r, g, b))
 }
 
-static COLORS_QUERY: &[u8; 148] = b"\x1b]10;?\x07\x1b]11;?\x07\x1b]4;0;?\x07\x1b]4;1;?\x07\x1b]4;2;?\x07\x1b]4;3;?\x07\x1b]4;4;?\x07\x1b]4;5;?\x07\x1b]4;6;?\x07\x1b]4;7;?\x07\x1b]4;8;?\x07\x1b]4;9;?\x07\x1b]4;10;?\x07\x1b]4;11;?\x07\x1b]4;12;?\x07\x1b]4;13;?\x07\x1b]4;14;?\x07\x1b]4;15;?\x07";
-
-impl Tty for DevTty {
-    fn get_size(&self) -> pty::Winsize {
-        let mut winsize = pty::Winsize {
-            ws_row: 24,
-            ws_col: 80,
-            ws_xpixel: 0,
-            ws_ypixel: 0,
-        };
-
-        unsafe { libc::ioctl(self.file.as_raw_fd(), libc::TIOCGWINSZ, &mut winsize) };
-
-        winsize
-    }
-
-    fn get_theme(&self) -> Option<Theme> {
-        let mut query = &COLORS_QUERY[..];
-        let mut response = Vec::new();
-        let mut buf = [0u8; 1024];
-        let mut color_count = 0;
-        let fd = self.as_fd().as_raw_fd();
-
-        loop {
-            let mut timeout = TimeVal::new(0, 100_000);
-            let mut rfds = FdSet::new();
-            let mut wfds = FdSet::new();
-            rfds.insert(self);
-
-            if !query.is_empty() {
-                wfds.insert(self);
-            }
-
-            match select(None, &mut rfds, &mut wfds, None, &mut timeout) {
-                Ok(0) => return None,
-
-                Ok(_) => {
-                    if rfds.contains(self) {
-                        let n = unistd::read(fd, &mut buf).ok()?;
-                        response.extend_from_slice(&buf[..n]);
-
-                        color_count += &buf[..n]
-                            .iter()
-                            .filter(|b| *b == &0x07 || *b == &b'\\')
-                            .count();
-
-                        if color_count == 18 {
-                            break;
-                        }
-                    }
-
-                    if wfds.contains(self) {
-                        let n = unistd::write(fd, query).ok()?;
-                        query = &query[n..];
-                    }
-                }
-
-                Err(e) => {
-                    if e == Errno::EINTR {
-                        continue;
-                    } else {
-                        return None;
-                    }
-                }
-            }
-        }
-
-        let response = String::from_utf8_lossy(response.as_slice());
-        let mut colors = response.match_indices("rgb:");
-        let (idx, _) = colors.next()?;
-        let fg = parse_color(&response[idx + 4..])?;
-        let (idx, _) = colors.next()?;
-        let bg = parse_color(&response[idx + 4..])?;
-        let mut palette = Vec::new();
-
-        for _ in 0..16 {
-            let (idx, _) = colors.next()?;
-            let color = parse_color(&response[idx + 4..])?;
-            palette.push(color);
-        }
-
-        Some(Theme { fg, bg, palette })
-    }
-}
-
-impl io::Read for DevTty {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.file.read(buf)
-    }
-}
-
-impl io::Write for DevTty {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.file.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.file.flush()
-    }
-}
-
-impl AsFd for DevTty {
-    fn as_fd(&self) -> BorrowedFd<'_> {
-        self.file.as_fd()
-    }
-}
-
-pub struct NullTty {
-    tx: OwnedFd,
-    _rx: OwnedFd,
-}
-
-impl NullTty {
-    pub fn open() -> Result<Self> {
-        let (rx, tx) = unistd::pipe()?;
-        let rx = unsafe { OwnedFd::from_raw_fd(rx) };
-        let tx = unsafe { OwnedFd::from_raw_fd(tx) };
-
-        Ok(Self { tx, _rx: rx })
-    }
-}
-
-impl Tty for NullTty {
-    fn get_size(&self) -> pty::Winsize {
-        pty::Winsize {
-            ws_row: 24,
-            ws_col: 80,
-            ws_xpixel: 0,
-            ws_ypixel: 0,
-        }
-    }
-
-    fn get_theme(&self) -> Option<Theme> {
+fn parse_version_response(response: &[u8]) -> Option<String> {
+    if let [b'\x1b', b'P', b'>', b'|', version @ .., b'\x1b', b'\\'] = response {
+        Some(String::from_utf8_lossy(version).to_string())
+    } else {
         None
-    }
-}
-
-impl io::Read for NullTty {
-    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        panic!("read attempt from NullTty");
-    }
-}
-
-impl io::Write for NullTty {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
-impl AsFd for NullTty {
-    fn as_fd(&self) -> BorrowedFd<'_> {
-        self.tx.as_fd()
-    }
-}
-
-pub struct FixedSizeTty {
-    inner: Box<dyn Tty>,
-    cols: Option<u16>,
-    rows: Option<u16>,
-}
-
-impl FixedSizeTty {
-    pub fn new<T: Tty + 'static>(inner: T, cols: Option<u16>, rows: Option<u16>) -> Self {
-        Self {
-            inner: Box::new(inner),
-            cols,
-            rows,
-        }
-    }
-}
-
-impl Tty for FixedSizeTty {
-    fn get_size(&self) -> pty::Winsize {
-        let mut winsize = self.inner.get_size();
-
-        if let Some(cols) = self.cols {
-            winsize.ws_col = cols;
-        }
-
-        if let Some(rows) = self.rows {
-            winsize.ws_row = rows;
-        }
-
-        winsize
-    }
-
-    fn get_theme(&self) -> Option<Theme> {
-        self.inner.get_theme()
-    }
-}
-
-impl AsFd for FixedSizeTty {
-    fn as_fd(&self) -> BorrowedFd<'_> {
-        return self.inner.as_fd();
-    }
-}
-
-impl io::Read for FixedSizeTty {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner.read(buf)
-    }
-}
-
-impl io::Write for FixedSizeTty {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.inner.write(buf)
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{FixedSizeTty, Tty};
-    use crate::tty::NullTty;
+    use super::{FixedSizeTty, NullTty, Tty};
+
     use rgb::RGB8;
 
     #[test]
@@ -331,12 +316,20 @@ mod tests {
     }
 
     #[test]
-    fn fixed_size_tty() {
-        let tty = FixedSizeTty::new(NullTty::open().unwrap(), Some(100), Some(50));
-
+    fn fixed_size_tty_get_size() {
+        let tty = FixedSizeTty::new(NullTty, Some(100), Some(50));
         let winsize = tty.get_size();
-
         assert!(winsize.ws_col == 100);
         assert!(winsize.ws_row == 50);
+
+        let tty = FixedSizeTty::new(NullTty, Some(100), None);
+        let winsize = tty.get_size();
+        assert!(winsize.ws_col == 100);
+        assert!(winsize.ws_row == 24);
+
+        let tty = FixedSizeTty::new(NullTty, None, None);
+        let winsize = tty.get_size();
+        assert!(winsize.ws_col == 80);
+        assert!(winsize.ws_row == 24);
     }
 }

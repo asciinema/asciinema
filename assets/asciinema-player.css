@@ -415,6 +415,7 @@ pre.ap-terminal.ap-cursor-on .ap-line .ap-cursor.ap-inverse {
 }
 pre.ap-terminal:not(.ap-blink) .ap-line .ap-blink {
   color: transparent;
+  border-color: transparent;
 }
 pre.ap-terminal .ap-bright {
   font-weight: bold;
@@ -450,7 +451,7 @@ div.ap-player div.ap-control-bar {
   opacity: 0;
   transition: opacity 0.15s linear;
   user-select: none;
-  border-top: 2px solid color-mix(in oklab, black 33%, var(--term-color-background));
+  border-top: 2px solid color-mix(in oklab, var(--term-color-background) 80%, var(--term-color-foreground));
   z-index: 30;
 }
 div.ap-player div.ap-control-bar * {
@@ -459,13 +460,16 @@ div.ap-player div.ap-control-bar * {
 div.ap-control-bar svg.ap-icon path {
   fill: var(--term-color-foreground);
 }
-div.ap-control-bar span.ap-playback-button {
+div.ap-control-bar span.ap-button {
   display: flex;
   flex: 0 0 auto;
   cursor: pointer;
-  height: 12px;
+}
+div.ap-control-bar span.ap-playback-button {
   width: 12px;
+  height: 12px;
   padding: 10px;
+  margin: 0 0 0 2px;
 }
 div.ap-control-bar span.ap-playback-button svg {
   height: 12px;
@@ -531,13 +535,10 @@ div.ap-control-bar.ap-seekable .ap-progressbar .ap-bar {
   cursor: pointer;
 }
 div.ap-control-bar .ap-fullscreen-button {
-  display: block;
-  flex: 0 0 auto;
   width: 14px;
   height: 14px;
   padding: 9px;
-  cursor: pointer;
-  position: relative;
+  margin: 0 2px 0 4px;
 }
 div.ap-control-bar .ap-fullscreen-button svg {
   width: 14px;
@@ -552,6 +553,33 @@ div.ap-control-bar .ap-fullscreen-button svg.ap-icon-fullscreen-off {
 div.ap-control-bar .ap-fullscreen-button .ap-tooltip {
   right: 5px;
   left: initial;
+  transform: none;
+}
+div.ap-control-bar .ap-kbd-button {
+  height: 14px;
+  padding: 9px;
+  margin: 0 0 0 4px;
+}
+div.ap-control-bar .ap-kbd-button svg {
+  width: 26px;
+  height: 14px;
+}
+div.ap-control-bar .ap-kbd-button .ap-tooltip {
+  right: 5px;
+  left: initial;
+  transform: none;
+}
+div.ap-control-bar .ap-speaker-button {
+  width: 19px;
+  padding: 6px 9px;
+  margin: 0 0 0 4px;
+  position: relative;
+}
+div.ap-control-bar .ap-speaker-button svg {
+  width: 19px;
+}
+div.ap-control-bar .ap-speaker-button .ap-tooltip {
+  left: -50%;
   transform: none;
 }
 div.ap-wrapper.ap-hud .ap-control-bar {
@@ -653,6 +681,7 @@ span.ap-marker-container:hover span.ap-marker {
 }
 .ap-player .ap-overlay-start .ap-play-button div span svg {
   height: 100%;
+  display: inline-block;
 }
 .ap-player .ap-overlay-start .ap-play-button svg {
   filter: drop-shadow(0px 0px 5px rgba(0, 0, 0, 0.4));
@@ -698,8 +727,6 @@ span.ap-marker-container:hover span.ap-marker {
   max-height: 85%;
   font-size: 18px;
   color: var(--term-color-foreground);
-  background-color: var(--term-color-background);
-  border-radius: 6px;
   box-sizing: border-box;
   margin-bottom: 32px;
 }
@@ -715,6 +742,9 @@ span.ap-marker-container:hover span.ap-marker {
 .ap-player .ap-overlay-help > div div {
   padding: calc(min(4cqw, 40px));
   font-size: calc(min(1.9cqw, 18px));
+  background-color: var(--term-color-background);
+  border: 1px solid color-mix(in oklab, var(--term-color-background) 90%, var(--term-color-foreground));
+  border-radius: 6px;
 }
 .ap-player .ap-overlay-help > div div p {
   font-weight: bold;
@@ -739,6 +769,36 @@ span.ap-marker-container:hover span.ap-marker {
 }
 .ap-player .ap-overlay-error span {
   font-size: 8em;
+}
+.ap-player .slide-enter-active {
+  transition: opacity 0.2s;
+}
+.ap-player .slide-enter-active.ap-was-playing {
+  transition: top 0.2s ease-out, opacity 0.2s;
+}
+.ap-player .slide-exit-active {
+  transition: top 0.2s ease-in, opacity 0.2s;
+}
+.ap-player .slide-enter {
+  top: -50%;
+  opacity: 0;
+}
+.ap-player .slide-enter-to {
+  top: 0%;
+}
+.ap-player .slide-enter,
+.ap-player .slide-enter-to,
+.ap-player .slide-exit,
+.ap-player .slide-exit-to {
+  bottom: auto;
+  height: 100%;
+}
+.ap-player .slide-exit {
+  top: 0%;
+}
+.ap-player .slide-exit-to {
+  top: -50%;
+  opacity: 0;
 }
 @keyframes ap-loader-rotation {
   0% {
@@ -2349,4 +2409,27 @@ span.ap-marker-container:hover span.ap-marker {
   --term-color-13: #ad7fa8;
   --term-color-14: #34e2e2;
   --term-color-15: #eeeeec;
+}
+/*
+  Based on gruvbox: https://github.com/morhetz/gruvbox
+ */
+.asciinema-player-theme-gruvbox-dark {
+  --term-color-foreground: #fbf1c7;
+  --term-color-background: #282828;
+  --term-color-0: #282828;
+  --term-color-1: #cc241d;
+  --term-color-2: #98971a;
+  --term-color-3: #d79921;
+  --term-color-4: #458588;
+  --term-color-5: #b16286;
+  --term-color-6: #689d6a;
+  --term-color-7: #a89984;
+  --term-color-8: #7c6f65;
+  --term-color-9: #fb4934;
+  --term-color-10: #b8bb26;
+  --term-color-11: #fabd2f;
+  --term-color-12: #83a598;
+  --term-color-13: #d3869b;
+  --term-color-14: #8ec07c;
+  --term-color-15: #fbf1c7;
 }

@@ -1,8 +1,11 @@
-use super::{Asciicast, Event, Header};
-use crate::asciicast::util::deserialize_time;
+use std::collections::HashMap;
+use std::time::Duration;
+
 use anyhow::{bail, Result};
 use serde::Deserialize;
-use std::collections::HashMap;
+
+use super::{Asciicast, Event, Header, Version};
+use crate::asciicast::util::deserialize_time;
 
 #[derive(Debug, Deserialize)]
 struct V1 {
@@ -11,14 +14,14 @@ struct V1 {
     height: u16,
     command: Option<String>,
     title: Option<String>,
-    env: Option<HashMap<String, String>>,
+    env: Option<HashMap<String, Option<String>>>,
     stdout: Vec<V1OutputEvent>,
 }
 
 #[derive(Debug, Deserialize)]
 struct V1OutputEvent {
     #[serde(deserialize_with = "deserialize_time")]
-    time: u64,
+    time: Duration,
     data: String,
 }
 
@@ -29,24 +32,46 @@ pub fn load(json: String) -> Result<Asciicast<'static>> {
         bail!("unsupported asciicast version")
     }
 
+    let term_type = asciicast
+        .env
+        .as_ref()
+        .map(|env| env.get("TERM"))
+        .unwrap_or_default()
+        .cloned()
+        .unwrap_or_default();
+
+    let env = asciicast.env.map(|env| {
+        env.into_iter()
+            .filter_map(|(k, v)| v.map(|v| (k, v)))
+            .collect()
+    });
+
     let header = Header {
-        version: 1,
-        cols: asciicast.width,
-        rows: asciicast.height,
+        term_cols: asciicast.width,
+        term_rows: asciicast.height,
+        term_type,
+        term_version: None,
+        term_theme: None,
         timestamp: None,
         idle_time_limit: None,
         command: asciicast.command.clone(),
         title: asciicast.title.clone(),
-        env: asciicast.env.clone(),
-        theme: None,
+        env,
     };
 
-    let events = Box::new(
-        asciicast
-            .stdout
-            .into_iter()
-            .map(|e| Ok(Event::output(e.time, e.data))),
-    );
+    let events = Box::new(asciicast.stdout.into_iter().scan(
+        Duration::from_micros(0),
+        |prev_time, event| {
+            let time = *prev_time + event.time;
+            *prev_time = time;
 
-    Ok(Asciicast { header, events })
+            Some(Ok(Event::output(time, event.data)))
+        },
+    ));
+
+    Ok(Asciicast {
+        version: Version::One,
+        header,
+        events,
+    })
 }

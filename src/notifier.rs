@@ -1,14 +1,17 @@
-use anyhow::Result;
-use std::{
-    env,
-    ffi::OsStr,
-    path::PathBuf,
-    process::{Command, Stdio},
-};
+use std::env;
+use std::ffi::OsStr;
+use std::path::PathBuf;
+use std::process::Stdio;
+
+use async_trait::async_trait;
+use tokio::process::Command;
+use tokio::sync::mpsc;
+use tracing::error;
 use which::which;
 
+#[async_trait]
 pub trait Notifier: Send {
-    fn notify(&mut self, message: String) -> Result<()>;
+    async fn notify(&mut self, message: String) -> anyhow::Result<()>;
 }
 
 pub fn get_notifier(custom_command: Option<String>) -> Box<dyn Notifier> {
@@ -33,11 +36,12 @@ impl TmuxNotifier {
     }
 }
 
+#[async_trait]
 impl Notifier for TmuxNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
-        let args = ["display-message", &format!("asciinema: {}", message)];
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
+        let args = ["display-message", &format!("asciinema: {message}")];
 
-        exec(&mut Command::new(&self.0), &args)
+        exec(&mut Command::new(&self.0), &args).await
     }
 }
 
@@ -49,9 +53,10 @@ impl LibNotifyNotifier {
     }
 }
 
+#[async_trait]
 impl Notifier for LibNotifyNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
-        exec(&mut Command::new(&self.0), &["asciinema", &message])
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
+        exec(&mut Command::new(&self.0), &["asciinema", &message]).await
     }
 }
 
@@ -63,43 +68,84 @@ impl AppleScriptNotifier {
     }
 }
 
+#[async_trait]
 impl Notifier for AppleScriptNotifier {
-    fn notify(&mut self, message: String) -> Result<()> {
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
         let text = message.replace('\"', "\\\"");
         let script = format!("display notification \"{text}\" with title \"asciinema\"");
 
-        exec(&mut Command::new(&self.0), &["-e", &script])
+        exec(&mut Command::new(&self.0), &["-e", &script]).await
     }
 }
 
 pub struct CustomNotifier(String);
 
+#[async_trait]
 impl Notifier for CustomNotifier {
-    fn notify(&mut self, text: String) -> Result<()> {
+    async fn notify(&mut self, text: String) -> anyhow::Result<()> {
         exec::<&str>(
             Command::new("/bin/sh")
                 .args(["-c", &self.0])
                 .env("TEXT", text),
             &[],
         )
+        .await
     }
 }
 
 pub struct NullNotifier;
 
+#[async_trait]
 impl Notifier for NullNotifier {
-    fn notify(&mut self, _text: String) -> Result<()> {
+    async fn notify(&mut self, _text: String) -> anyhow::Result<()> {
         Ok(())
     }
 }
 
-fn exec<S: AsRef<OsStr>>(command: &mut Command, args: &[S]) -> Result<()> {
-    command
+async fn exec<S: AsRef<OsStr>>(command: &mut Command, args: &[S]) -> anyhow::Result<()> {
+    let status = command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .args(args)
-        .status()?;
+        .status()
+        .await?;
 
-    Ok(())
+    if status.success() {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "exit status: {}",
+            status.code().unwrap_or(0)
+        ))
+    }
+}
+
+#[derive(Clone)]
+pub struct BackgroundNotifier(mpsc::Sender<String>);
+
+pub fn background(mut notifier: Box<dyn Notifier>) -> BackgroundNotifier {
+    let (tx, mut rx) = mpsc::channel(16);
+
+    tokio::spawn(async move {
+        while let Some(message) = rx.recv().await {
+            if let Err(e) = notifier.notify(message).await {
+                error!("notification failed: {e}");
+                break;
+            }
+        }
+
+        while rx.recv().await.is_some() {}
+    });
+
+    BackgroundNotifier(tx)
+}
+
+#[async_trait]
+impl Notifier for BackgroundNotifier {
+    async fn notify(&mut self, message: String) -> anyhow::Result<()> {
+        self.0.send(message).await?;
+
+        Ok(())
+    }
 }

@@ -1,76 +1,69 @@
-use crate::asciicast::{Event, Header, Writer};
-use crate::tty;
-use std::collections::HashMap;
-use std::io::{self, Write};
+use std::time::Duration;
 
-pub struct AsciicastEncoder<W: Write> {
-    writer: Writer<W>,
+use crate::asciicast::{Event, Header, V2Encoder, V3Encoder};
+
+pub struct AsciicastV2Encoder {
+    inner: V2Encoder,
     append: bool,
-    metadata: Metadata,
 }
 
-pub struct Metadata {
-    pub idle_time_limit: Option<f64>,
-    pub command: Option<String>,
-    pub title: Option<String>,
-    pub env: Option<HashMap<String, String>>,
-    pub theme: Option<tty::Theme>,
-}
+impl AsciicastV2Encoder {
+    pub fn new(append: bool, time_offset: Duration) -> Self {
+        let inner = V2Encoder::new(time_offset);
 
-impl<W> AsciicastEncoder<W>
-where
-    W: Write,
-{
-    pub fn new(writer: W, append: bool, time_offset: u64, metadata: Metadata) -> Self {
-        Self {
-            writer: Writer::new(writer, time_offset),
-            append,
-            metadata,
-        }
-    }
-
-    fn build_header(&self, timestamp: Option<u64>, tty_size: &tty::TtySize) -> Header {
-        Header {
-            version: 2,
-            cols: tty_size.0,
-            rows: tty_size.1,
-            timestamp,
-            idle_time_limit: self.metadata.idle_time_limit,
-            command: self.metadata.command.clone(),
-            title: self.metadata.title.clone(),
-            env: self.metadata.env.clone(),
-            theme: self.metadata.theme.clone(),
-        }
+        Self { inner, append }
     }
 }
 
-impl<W> super::Encoder for AsciicastEncoder<W>
-where
-    W: Write,
-{
-    fn start(&mut self, timestamp: Option<u64>, tty_size: &tty::TtySize) -> io::Result<()> {
+impl super::Encoder for AsciicastV2Encoder {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
         if self.append {
-            Ok(())
+            let size = (header.term_cols, header.term_rows);
+            self.inner
+                .event(&Event::resize(Duration::from_micros(0), size))
         } else {
-            let header = self.build_header(timestamp, tty_size);
-
-            self.writer.write_header(&header)
+            self.inner.header(header)
         }
     }
 
-    fn event(&mut self, event: &Event) -> io::Result<()> {
-        self.writer.write_event(event)
+    fn event(&mut self, event: Event) -> Vec<u8> {
+        self.inner.event(&event)
+    }
+
+    fn flush(&mut self) -> Vec<u8> {
+        Vec::new()
     }
 }
 
-impl From<&Header> for Metadata {
-    fn from(header: &Header) -> Self {
-        Metadata {
-            idle_time_limit: header.idle_time_limit.as_ref().cloned(),
-            command: header.command.as_ref().cloned(),
-            title: header.title.as_ref().cloned(),
-            env: header.env.as_ref().cloned(),
-            theme: header.theme.as_ref().cloned(),
+pub struct AsciicastV3Encoder {
+    inner: V3Encoder,
+    append: bool,
+}
+
+impl AsciicastV3Encoder {
+    pub fn new(append: bool) -> Self {
+        let inner = V3Encoder::new();
+
+        Self { inner, append }
+    }
+}
+
+impl super::Encoder for AsciicastV3Encoder {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
+        if self.append {
+            let size = (header.term_cols, header.term_rows);
+            self.inner
+                .event(&Event::resize(Duration::from_micros(0), size))
+        } else {
+            self.inner.header(header)
         }
+    }
+
+    fn event(&mut self, event: Event) -> Vec<u8> {
+        self.inner.event(&event)
+    }
+
+    fn flush(&mut self) -> Vec<u8> {
+        Vec::new()
     }
 }

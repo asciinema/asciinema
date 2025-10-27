@@ -1,14 +1,20 @@
-use super::Command;
+use anyhow::Result;
+use tokio::runtime::Runtime;
+
 use crate::api;
 use crate::asciicast;
 use crate::cli;
 use crate::config::Config;
-use anyhow::Result;
 
-impl Command for cli::Upload {
-    fn run(self, config: &Config) -> Result<()> {
-        let _ = asciicast::open_from_path(&self.filename)?;
-        let response = api::upload_asciicast(&self.filename, config)?;
+impl cli::Upload {
+    pub fn run(self) -> Result<()> {
+        Runtime::new()?.block_on(self.do_run())
+    }
+
+    async fn do_run(self) -> Result<()> {
+        let mut config = Config::new(self.server_url.clone())?;
+        let _ = asciicast::open_from_path(&self.file)?;
+        let response = api::create_recording(&self.file, &mut config).await?;
         println!("{}", response.message.unwrap_or(response.url));
 
         Ok(())

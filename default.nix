@@ -3,33 +3,30 @@
   stdenv,
   rust,
   makeRustPlatform,
-  packageToml,
+  version,
   libiconv,
-  darwin,
   python3,
 }:
 (makeRustPlatform {
   cargo = rust;
   rustc = rust;
-})
-.buildRustPackage {
-  pname = packageToml.name;
-  inherit (packageToml) version;
+}).buildRustPackage
+  {
+    pname = "asciinema";
+    inherit version;
 
-  src = builtins.path {
-    path = ./.;
-    inherit (packageToml) name;
-  };
+    src = builtins.path {
+      path = ./.;
+      name = "asciinema";
+    };
 
-  dontUseCargoParallelTests = true;
+    dontUseCargoParallelTests = true;
+    cargoLock.lockFile = ./Cargo.lock;
+    nativeBuildInputs = [ rust ];
 
-  cargoLock.lockFile = ./Cargo.lock;
+    buildInputs = lib.optional stdenv.isDarwin [
+      libiconv
+    ];
 
-  nativeBuildInputs = [rust];
-  buildInputs = lib.optional stdenv.isDarwin [
-    libiconv
-    darwin.apple_sdk.frameworks.Foundation
-  ];
-
-  nativeCheckInputs = [python3];
-}
+    nativeCheckInputs = [ python3 ];
+  }

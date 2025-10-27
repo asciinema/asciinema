@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="asciinema-player.css">
   <style>
+    :root {
+      --term-color-background: black;
+    }
+
     html, body {
       height: 100%;
       margin: 0;
@@ -17,8 +21,19 @@
 
     body {
       box-sizing: border-box;
-      padding: 12pt;
-      background-color: #222;
+      padding: 40px;
+      background-color: color-mix(in oklab, var(--term-color-background) 90%, black);
+      transition: background-color 0.2s;
+    }
+
+    div.ap-wrapper:fullscreen {
+      background-color: inherit;
+    }
+
+    .ap-player {
+      margin: auto 0px;
+      opacity: 0;
+      box-shadow: color-mix(in oklab, var(--term-color-background) 50%, black) 0px 0px 60px 5px;
     }
   </style>
 </head>
@@ -56,6 +71,14 @@
     console.debug('initializing the player', { src, opts });
 
     window.player = AsciinemaPlayer.create(src, document.body, opts);
+
+    window.player.addEventListener('reset', () => {
+      const el = window.player.el.getElementsByClassName('ap-player')[0];
+      const style = window.getComputedStyle(el);
+      const color = style.getPropertyValue("--term-color-background");
+      document.documentElement.style.setProperty('--term-color-background', color);
+      el.style.opacity = 1;
+    });
   </script>
 </body>
 </html>

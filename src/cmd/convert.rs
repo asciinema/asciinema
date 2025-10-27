@@ -1,64 +1,78 @@
-use super::Command;
-use crate::asciicast::{self, Header};
-use crate::cli::{self, Format};
-use crate::config::Config;
-use crate::encoder::{self, EncoderExt};
-use crate::util;
-use anyhow::{bail, Result};
 use std::fs;
 use std::path::Path;
+use std::time::Duration;
 
-impl Command for cli::Convert {
-    fn run(self, _config: &Config) -> Result<()> {
-        let path = util::get_local_path(&self.input_filename)?;
-        let input = asciicast::open_from_path(&*path)?;
-        let mut output = self.get_output(&input.header)?;
+use anyhow::{bail, Result};
 
-        output.encode(input)
-    }
-}
+use crate::asciicast;
+use crate::cli::{self, Format};
+use crate::encoder::{
+    self, AsciicastV2Encoder, AsciicastV3Encoder, EncoderExt, RawEncoder, TextEncoder,
+};
+use crate::util;
 
 impl cli::Convert {
-    fn get_output(&self, header: &Header) -> Result<Box<dyn encoder::Encoder>> {
-        let file = self.open_file()?;
+    pub fn run(self) -> Result<()> {
+        let input_path = self.get_input_path()?;
+        let output_path = self.get_output_path();
+        let cast = asciicast::open_from_path(&*input_path)?;
+        let mut encoder = self.get_encoder();
+        let mut output_file = self.open_output_file(output_path)?;
 
-        let format = self.format.unwrap_or_else(|| {
-            if self.output_filename.to_lowercase().ends_with(".txt") {
+        encoder.encode_to_file(cast, &mut output_file)
+    }
+
+    fn get_encoder(&self) -> Box<dyn encoder::Encoder> {
+        let format = self.output_format.unwrap_or_else(|| {
+            if self.output.to_lowercase().ends_with(".txt") {
                 Format::Txt
             } else {
-                Format::Asciicast
+                Format::AsciicastV3
             }
         });
 
         match format {
-            Format::Asciicast => Ok(Box::new(encoder::AsciicastEncoder::new(
-                file,
-                false,
-                0,
-                header.into(),
-            ))),
-
-            Format::Raw => Ok(Box::new(encoder::RawEncoder::new(file, false))),
-            Format::Txt => Ok(Box::new(encoder::TextEncoder::new(file))),
+            Format::AsciicastV3 => Box::new(AsciicastV3Encoder::new(false)),
+            Format::AsciicastV2 => {
+                Box::new(AsciicastV2Encoder::new(false, Duration::from_micros(0)))
+            }
+            Format::Raw => Box::new(RawEncoder::new()),
+            Format::Txt => Box::new(TextEncoder::new()),
         }
     }
 
-    fn open_file(&self) -> Result<fs::File> {
-        let overwrite = self.get_mode()?;
+    fn get_input_path(&self) -> Result<Box<dyn AsRef<Path>>> {
+        if self.input == "-" {
+            Ok(Box::new(Path::new("/dev/stdin")))
+        } else {
+            util::get_local_path(&self.input)
+        }
+    }
+
+    fn get_output_path(&self) -> String {
+        if self.output == "-" {
+            "/dev/stdout".to_owned()
+        } else {
+            self.output.clone()
+        }
+    }
+
+    fn open_output_file(&self, path: String) -> Result<fs::File> {
+        let overwrite = self.get_mode(&path)?;
 
         let file = fs::OpenOptions::new()
             .write(true)
             .create(overwrite)
             .create_new(!overwrite)
             .truncate(overwrite)
-            .open(&self.output_filename)?;
+            .open(&path)?;
 
         Ok(file)
     }
 
-    fn get_mode(&self) -> Result<bool> {
+    fn get_mode(&self, path: &str) -> Result<bool> {
         let mut overwrite = self.overwrite;
-        let path = Path::new(&self.output_filename);
+        let path = Path::new(path);
 
         if path.exists() {
             let metadata = fs::metadata(path)?;

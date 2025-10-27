@@ -1,39 +1,98 @@
+mod alis;
 mod api;
 mod asciicast;
 mod cli;
 mod cmd;
 mod config;
 mod encoder;
-mod io;
+mod fd;
+mod file_writer;
+mod forwarder;
+mod hash;
+mod html;
+mod leb128;
 mod locale;
-mod logger;
 mod notifier;
 mod player;
 mod pty;
-mod recorder;
-mod streamer;
+mod server;
+mod session;
+mod status;
+mod stream;
 mod tty;
 mod util;
-use crate::cli::{Cli, Commands};
-use crate::config::Config;
-use clap::Parser;
-use cmd::Command;
 
-fn main() -> anyhow::Result<()> {
+use std::process::{ExitCode, Termination};
+
+use clap::Parser;
+
+use self::cli::{Cli, Commands, Session};
+
+fn main() -> ExitCode {
     let cli = Cli::parse();
-    let config = Config::new(cli.server_url.clone())?;
 
     if cli.quiet {
-        logger::disable();
+        status::disable();
     }
 
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
+    crate::config::check_legacy_config_file();
+
     match cli.command {
-        Commands::Rec(record) => record.run(&config),
-        Commands::Play(play) => play.run(&config),
-        Commands::Stream(stream) => stream.run(&config),
-        Commands::Cat(cat) => cat.run(&config),
-        Commands::Convert(convert) => convert.run(&config),
-        Commands::Upload(upload) => upload.run(&config),
-        Commands::Auth(auth) => auth.run(&config),
+        Commands::Record(cmd) => {
+            let cmd = Session {
+                output_file: Some(cmd.file),
+                capture_input: cmd.capture_input,
+                append: cmd.append,
+                output_format: cmd.output_format,
+                overwrite: cmd.overwrite,
+                command: cmd.command,
+                capture_env: cmd.capture_env,
+                title: cmd.title,
+                idle_time_limit: cmd.idle_time_limit,
+                headless: cmd.headless,
+                window_size: cmd.window_size,
+                stream_local: None,
+                stream_remote: None,
+                return_: cmd.return_,
+                log_file: cmd.log_file,
+                server_url: None,
+                env: vec!["ASCIINEMA_REC=1".to_owned()],
+            };
+
+            cmd.run().report()
+        }
+
+        Commands::Stream(cmd) => {
+            let cmd = Session {
+                output_file: None,
+                capture_input: cmd.capture_input,
+                append: false,
+                output_format: None,
+                overwrite: false,
+                command: cmd.command,
+                capture_env: cmd.capture_env,
+                title: cmd.title,
+                idle_time_limit: None,
+                headless: cmd.headless,
+                window_size: cmd.window_size,
+                stream_local: cmd.local,
+                stream_remote: cmd.remote,
+                return_: cmd.return_,
+                log_file: cmd.log_file,
+                server_url: cmd.server_url,
+                env: Vec::new(),
+            };
+
+            cmd.run().report()
+        }
+
+        Commands::Session(cmd) => cmd.run().report(),
+        Commands::Play(cmd) => cmd.run().report(),
+        Commands::Cat(cmd) => cmd.run().report(),
+        Commands::Convert(cmd) => cmd.run().report(),
+        Commands::Upload(cmd) => cmd.run().report(),
+        Commands::Auth(cmd) => cmd.run().report(),
     }
 }

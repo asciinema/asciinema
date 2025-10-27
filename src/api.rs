@@ -1,80 +1,196 @@
-use crate::config::Config;
-use anyhow::{bail, Context, Result};
-use reqwest::blocking::{multipart::Form, Client, RequestBuilder};
-use reqwest::header;
-use serde::Deserialize;
+use std::collections::HashMap;
 use std::env;
 use std::fmt::Debug;
+
+use anyhow::{bail, Context, Result};
+use reqwest::{header, Response};
+use reqwest::{multipart::Form, Client, RequestBuilder};
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::config::Config;
+
 #[derive(Debug, Deserialize)]
-pub struct UploadAsciicastResponse {
+pub struct RecordingResponse {
     pub url: String,
     pub message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct GetUserStreamResponse {
+pub struct StreamResponse {
+    pub id: u64,
     pub ws_producer_url: String,
     pub url: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct NotFoundResponse {
-    reason: String,
+#[derive(Default, Serialize)]
+pub struct StreamChangeset {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub live: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub term_type: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub term_version: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shell: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub env: Option<Option<HashMap<String, String>>>,
 }
 
-pub fn get_auth_url(config: &Config) -> Result<Url> {
+#[derive(Debug, Deserialize)]
+struct ErrorResponse {
+    message: String,
+}
+
+pub fn get_auth_url(config: &mut Config) -> Result<Url> {
     let mut url = config.get_server_url()?;
     url.set_path(&format!("connect/{}", config.get_install_id()?));
 
     Ok(url)
 }
 
-pub fn upload_asciicast(path: &str, config: &Config) -> Result<UploadAsciicastResponse> {
+pub async fn create_recording(path: &str, config: &mut Config) -> Result<RecordingResponse> {
     let server_url = &config.get_server_url()?;
     let install_id = config.get_install_id()?;
-    let response = upload_request(server_url, path, install_id)?.send()?;
+
+    let response = create_recording_request(server_url, path, install_id)
+        .await?
+        .send()
+        .await?;
 
     if response.status().as_u16() == 413 {
-        bail!("The size of the recording exceeds the server's configured limit");
+        match response.json::<ErrorResponse>().await {
+            Ok(json) => {
+                bail!("{}", json.message);
+            }
+
+            Err(_) => {
+                bail!("The recording exceeds the server-configured size limit");
+            }
+        }
+    } else {
+        response.error_for_status_ref()?;
     }
 
-    response.error_for_status_ref()?;
-
-    Ok(response.json::<UploadAsciicastResponse>()?)
+    Ok(response.json::<RecordingResponse>().await?)
 }
 
-fn upload_request(server_url: &Url, path: &str, install_id: String) -> Result<RequestBuilder> {
+async fn create_recording_request(
+    server_url: &Url,
+    path: &str,
+    install_id: String,
+) -> Result<RequestBuilder> {
     let client = Client::new();
     let mut url = server_url.clone();
-    url.set_path("api/asciicasts");
-    let form = Form::new().file("asciicast", path)?;
+    url.set_path("api/v1/recordings");
+    let form = Form::new().file("file", path).await?;
+    let builder = client.post(url).multipart(form);
 
-    Ok(client
-        .post(url)
-        .multipart(form)
-        .basic_auth(get_username(), Some(install_id))
-        .header(header::USER_AGENT, build_user_agent())
-        .header(header::ACCEPT, "application/json"))
+    Ok(add_headers(builder, &install_id))
 }
 
-pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserStreamResponse> {
+pub async fn list_user_streams(prefix: &str, config: &mut Config) -> Result<Vec<StreamResponse>> {
     let server_url = config.get_server_url()?;
-    let server_hostname = server_url.host().unwrap();
     let install_id = config.get_install_id()?;
 
-    let response = user_stream_request(&server_url, stream_id, install_id)
+    let response = list_user_streams_request(&server_url, prefix, &install_id)
         .send()
-        .context("cannot obtain stream producer endpoint")?;
+        .await
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
+
+    parse_stream_response(response, &server_url).await
+}
+
+fn list_user_streams_request(server_url: &Url, prefix: &str, install_id: &str) -> RequestBuilder {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path("api/v1/user/streams");
+    url.set_query(Some(&format!("prefix={prefix}&limit=10")));
+
+    add_headers(client.get(url), install_id)
+}
+
+pub async fn create_stream(
+    changeset: StreamChangeset,
+    config: &mut Config,
+) -> Result<StreamResponse> {
+    let server_url = config.get_server_url()?;
+    let install_id = config.get_install_id()?;
+
+    let response = create_stream_request(&server_url, &install_id, changeset)
+        .send()
+        .await
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
+
+    parse_stream_response(response, &server_url).await
+}
+
+fn create_stream_request(
+    server_url: &Url,
+    install_id: &str,
+    changeset: StreamChangeset,
+) -> RequestBuilder {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path("api/v1/streams");
+    let builder = client.post(url);
+    let builder = add_headers(builder, install_id);
+
+    builder.json(&changeset)
+}
+
+pub async fn update_stream(
+    stream_id: u64,
+    changeset: StreamChangeset,
+    config: &mut Config,
+) -> Result<StreamResponse> {
+    let server_url = config.get_server_url()?;
+    let install_id = config.get_install_id()?;
+
+    let response = update_stream_request(&server_url, &install_id, stream_id, changeset)
+        .send()
+        .await
+        .context("cannot obtain stream producer endpoint - is the server down?")?;
+
+    parse_stream_response(response, &server_url).await
+}
+
+fn update_stream_request(
+    server_url: &Url,
+    install_id: &str,
+    stream_id: u64,
+    changeset: StreamChangeset,
+) -> RequestBuilder {
+    let client = Client::new();
+    let mut url = server_url.clone();
+    url.set_path(&format!("api/v1/streams/{stream_id}"));
+    let builder = client.patch(url);
+    let builder = add_headers(builder, install_id);
+
+    builder.json(&changeset)
+}
+
+async fn parse_stream_response<T: DeserializeOwned>(
+    response: Response,
+    server_url: &Url,
+) -> Result<T> {
+    let server_hostname = server_url.host().unwrap();
 
     match response.status().as_u16() {
         401 => bail!(
-            "this CLI hasn't been authenticated with {server_hostname} - run `ascinema auth` first"
+            "this CLI hasn't been authenticated with {server_hostname} - run `asciinema auth` first"
         ),
 
-        404 => match response.json::<NotFoundResponse>() {
-            Ok(json) => bail!("{}", json.reason),
+        404 => match response.json::<ErrorResponse>().await {
+            Ok(json) => bail!("{}", json.message),
+            Err(_) => bail!("{server_hostname} doesn't support streaming"),
+        },
+
+        422 => match response.json::<ErrorResponse>().await {
+            Ok(json) => bail!("{}", json.message),
             Err(_) => bail!("{server_hostname} doesn't support streaming"),
         },
 
@@ -83,23 +199,10 @@ pub fn create_user_stream(stream_id: String, config: &Config) -> Result<GetUserS
         }
     }
 
-    response
-        .json::<GetUserStreamResponse>()
-        .map_err(|e| e.into())
+    response.json::<T>().await.map_err(|e| e.into())
 }
 
-fn user_stream_request(server_url: &Url, stream_id: String, install_id: String) -> RequestBuilder {
-    let client = Client::new();
-    let mut url = server_url.clone();
-
-    let builder = if stream_id.is_empty() {
-        url.set_path("api/streams");
-        client.post(url)
-    } else {
-        url.set_path(&format!("api/user/streams/{stream_id}"));
-        client.get(url)
-    };
-
+fn add_headers(builder: RequestBuilder, install_id: &str) -> RequestBuilder {
     builder
         .basic_auth(get_username(), Some(install_id))
         .header(header::USER_AGENT, build_user_agent())
@@ -110,7 +213,7 @@ fn get_username() -> String {
     env::var("USER").unwrap_or("".to_owned())
 }
 
-fn build_user_agent() -> String {
+pub fn build_user_agent() -> String {
     let ua = concat!(
         "asciinema/",
         env!("CARGO_PKG_VERSION"),

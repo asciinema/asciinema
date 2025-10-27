@@ -1,56 +1,58 @@
 [package]
 name = "asciinema"
-version = "3.0.0-rc.3"
+version = "3.0.1"
 edition = "2021"
 authors = ["Marcin Kulik <m@ku1ik.com>"]
 homepage = "https://asciinema.org"
 repository = "https://github.com/asciinema/asciinema"
-description = "Terminal session recorder"
-license = "GPL-3.0"
+description = "Terminal session recorder, streamer, and player"
+license = "GPL-3.0-or-later"
 
 # MSRV
-rust-version = "1.70.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+rust-version = "1.82.0"
 
 [dependencies]
-anyhow = "1.0.75"
-nix = { version = "0.27", features = [ "fs", "term", "process", "signal" ] }
-termion = "3.0.0"
-serde = { version = "1.0.189", features = ["derive"] }
-serde_json = "1.0.107"
-clap = { version = "4.4.7", features = ["derive"] }
-signal-hook = { version = "0.3.17", default-features = false }
-uuid = { version = "1.6.1", features = ["v4"] }
-reqwest = { version = "0.11.23", default-features = false, features = ["blocking", "rustls-tls", "multipart", "gzip", "json"] }
-rustyline = "13.0.0"
-config = { version = "0.14.0", default-features = false, features = ["toml", "ini"] }
-which = "6.0.0"
-tempfile = "3.9.0"
-scraper = { version = "0.19.0", default-features = false }
-avt = "0.11.0"
-axum = { version = "0.7.4", default-features = false, features = ["http1", "ws"] }
-tokio = { version = "1.35.1", features = ["full"] }
-futures-util = "0.3.30"
-tokio-stream = { version = "0.1.14", features = ["sync"] }
-rust-embed = "8.2.0"
-mime_guess = "2.0.4"
-tower-http = { version = "0.5.1", features = ["trace"] }
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-rgb = "0.8.37"
-url = "2.5.0"
-tokio-tungstenite = { version = "0.21.0", features = ["rustls-tls-webpki-roots"] }
-sha2 = "0.10.8"
-tokio-util = "0.7.10"
-chrono = "0.4.38"
-hostname = "0.4.0"
+anyhow = "1.0"
+nix = { version = "0.30", features = ["fs", "term", "process", "signal", "poll"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.0", features = ["derive", "wrap_help"] }
+signal-hook = { version = "0.3", default-features = false }
+uuid = { version = "1.6", features = ["v4"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots", "multipart", "gzip", "json", "stream"] }
+rustyline = { version = "17.0", default-features = false }
+config = { version = "0.15", default-features = false, features = ["toml"] }
+which = "8.0"
+tempfile = "3.23"
+avt = "0.16"
+axum = { version = "0.8", default-features = false, features = ["http1", "ws"] }
+tokio = { version = "1.40", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
+tokio-stream = { version = "0.1", default-features = false, features = ["sync", "time"] }
+rust-embed = "8.8"
+tower-http = { version = "0.6", features = ["trace"] }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3.20", default-features = false, features = ["fmt", "env-filter"] }
+rgb = { version = "0.8", default-features = false }
+url = "2.5"
+tokio-tungstenite = { version = "0.28", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+rand = "0.9"
+async-trait = "0.1"
+signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
+bytes = "1.0"
 
 [build-dependencies]
-clap = { version = "4.4.7", features = ["derive"] }
-clap_complete = "4.4.10"
-clap_mangen = "0.2.19"
-url = "2.5.0"
+clap = { version = "4.0", features = ["derive", "wrap_help"] }
+clap_complete = "4.0"
+clap_mangen = "0.2"
+url = "2.5"
 
 [profile.release]
 strip = true
+lto = true
+codegen-units = 1
+
+[features]
+macos-tty = []

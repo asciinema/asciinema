@@ -1,30 +1,31 @@
 {
-  self',
-  packageToml,
-  rust-bin,
+  package,
+  shellcheck,
   mkShell,
+  rust,
 }:
 let
-  msrv = packageToml.rust-version;
-
   mkDevShell =
     rust:
     mkShell {
       inputsFrom = [
-        (self'.packages.default.override {
+        (package.override {
           rust = rust.override {
             extensions = [
               "rust-src"
               "rust-analyzer"
+              "clippy"
             ];
           };
         })
       ];
 
+      packages = [ shellcheck ];
+
       env.RUST_BACKTRACE = 1;
     };
 in
 {
-  default = mkDevShell rust-bin.stable.latest.default;
-  msrv = mkDevShell rust-bin.stable.${msrv}.default;
+  default = mkDevShell rust.default;
+  msrv = mkDevShell rust.msrv;
 }

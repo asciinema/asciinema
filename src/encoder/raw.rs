@@ -1,58 +1,76 @@
-use crate::asciicast::{Event, EventData};
-use crate::tty;
-use std::io::{self, Write};
+use crate::asciicast::{Event, EventData, Header};
 
-pub struct RawEncoder<W> {
-    writer: W,
-    append: bool,
-}
+pub struct RawEncoder;
 
-impl<W> RawEncoder<W> {
-    pub fn new(writer: W, append: bool) -> Self {
-        RawEncoder { writer, append }
+impl RawEncoder {
+    pub fn new() -> Self {
+        RawEncoder
     }
 }
 
-impl<W: Write> super::Encoder for RawEncoder<W> {
-    fn start(&mut self, _timestamp: Option<u64>, tty_size: &tty::TtySize) -> io::Result<()> {
-        if self.append {
-            Ok(())
+impl super::Encoder for RawEncoder {
+    fn header(&mut self, header: &Header) -> Vec<u8> {
+        format!("\x1b[8;{};{}t", header.term_rows, header.term_cols).into_bytes()
+    }
+
+    fn event(&mut self, event: Event) -> Vec<u8> {
+        if let EventData::Output(data) = event.data {
+            data.into_bytes()
         } else {
-            write!(self.writer, "\x1b[8;{};{}t", tty_size.1, tty_size.0)
+            Vec::new()
         }
     }
 
-    fn event(&mut self, event: &Event) -> io::Result<()> {
-        if let EventData::Output(data) = &event.data {
-            self.writer.write_all(data.as_bytes())
-        } else {
-            Ok(())
-        }
+    fn flush(&mut self) -> Vec<u8> {
+        Vec::new()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::RawEncoder;
-    use crate::asciicast::Event;
+    use crate::asciicast::{Event, Header};
     use crate::encoder::Encoder;
-    use crate::tty::TtySize;
 
     #[test]
-    fn encoder_impl() -> anyhow::Result<()> {
-        let mut out: Vec<u8> = Vec::new();
-        let mut enc = RawEncoder::new(&mut out, false);
+    fn encoder() {
+        let mut enc = RawEncoder::new();
 
-        enc.start(None, &TtySize(100, 50))?;
-        enc.event(&Event::output(0, "he\x1b[1mllo\r\n".to_owned()))?;
-        enc.event(&Event::output(1, "world\r\n".to_owned()))?;
-        enc.event(&Event::input(2, ".".to_owned()))?;
-        enc.event(&Event::resize(3, (80, 24)))?;
-        enc.event(&Event::marker(4, ".".to_owned()))?;
-        enc.finish()?;
+        let header = Header {
+            term_cols: 100,
+            term_rows: 50,
+            ..Default::default()
+        };
 
-        assert_eq!(out, b"\x1b[8;50;100the\x1b[1mllo\r\nworld\r\n");
+        assert_eq!(enc.header(&header), "\x1b[8;50;100t".as_bytes());
 
-        Ok(())
+        assert_eq!(
+            enc.event(Event::output(
+                Duration::from_micros(0),
+                "he\x1b[1mllo\r\n".to_owned()
+            )),
+            "he\x1b[1mllo\r\n".as_bytes()
+        );
+
+        assert_eq!(
+            enc.event(Event::output(
+                Duration::from_micros(1),
+                "world\r\n".to_owned()
+            )),
+            "world\r\n".as_bytes()
+        );
+
+        assert!(enc
+            .event(Event::input(Duration::from_micros(2), ".".to_owned()))
+            .is_empty());
+        assert!(enc
+            .event(Event::resize(Duration::from_micros(3), (80, 24)))
+            .is_empty());
+        assert!(enc
+            .event(Event::marker(Duration::from_micros(4), ".".to_owned()))
+            .is_empty());
+        assert!(enc.flush().is_empty());
     }
 }
