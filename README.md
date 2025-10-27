@@ -100,6 +100,7 @@ and the shell completion files in the `/foo/completion/` directory.
 
 > [!NOTE]
 > Windows is currently not supported. See [#467](https://github.com/orgs/asciinema/discussions/278).
+> You can try [PowerSession](https://github.com/Watfaq/PowerSession-rs) instead.
 
 ## Development
 
