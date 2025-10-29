@@ -5,6 +5,11 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    groups:
+      rust-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "docker"
     directory: "/"
