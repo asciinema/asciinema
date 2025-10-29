@@ -1,5 +1,14 @@
 # asciinema changelog
 
+## 3.0.1 (2025-10-24)
+
+* Fixed reading of asciicasts v1 and v2 having null env values in header
+* Fixed the license identifier in cargo package
+* Fixed Dockerfile
+* Upgraded embedded player to the latest version
+* Enabled Link-Time Optimization (LTO) and codegen-units=1 for release build - smaller binary size
+* Cleaned up nix flake
+
 ## 3.0.0 (2025-09-15)
 
 This is a complete rewrite of asciinema in Rust, upgrading the recording file
