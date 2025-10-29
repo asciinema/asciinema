@@ -25,14 +25,17 @@ struct Subscription {
     events_rx: broadcast::Receiver<Event>,
 }
 
+#[derive(Clone, Copy)]
+pub struct EventId(u64);
+
 #[derive(Clone)]
 pub enum Event {
-    Init(u64, Duration, TtySize, Option<TtyTheme>, String),
-    Output(u64, Duration, String),
-    Input(u64, Duration, String),
-    Resize(u64, Duration, TtySize),
-    Marker(u64, Duration, String),
-    Exit(u64, Duration, i32),
+    Init(EventId, Duration, TtySize, Option<TtyTheme>, String),
+    Output(EventId, Duration, String),
+    Input(EventId, Duration, String),
+    Resize(EventId, Duration, TtySize),
+    Marker(EventId, Duration, String),
+    Exit(EventId, Duration, i32),
 }
 
 #[derive(Clone)]
@@ -78,7 +81,7 @@ async fn run(
     let (broadcast_tx, _) = broadcast::channel(1024);
     let mut vt = build_vt(tty_size);
     let mut stream_time = Duration::from_micros(0);
-    let mut last_event_id = 0;
+    let mut last_event_id = EventId::new(0);
     let mut last_event_time = Instant::now();
 
     loop {
@@ -87,7 +90,7 @@ async fn run(
                 match event {
                     Some(event) => {
                         last_event_time = Instant::now();
-                        last_event_id += 1;
+                        last_event_id = last_event_id.next();
 
                         match event {
                             session::Event::Output(time, text) => {
@@ -126,7 +129,7 @@ async fn run(
             request = request_rx.recv() => {
                 match request {
                     Some(request) => {
-                        let init = if last_event_id > 0 {
+                        let init = if last_event_id.as_u64() > 0 {
                             let elapsed_time = stream_time + last_event_time.elapsed();
 
                             Event::Init(
@@ -155,6 +158,32 @@ async fn run(
                 }
             }
         }
+    }
+}
+
+impl EventId {
+    fn new(id: u64) -> Self {
+        EventId(id)
+    }
+
+    fn next(&self) -> Self {
+        EventId(self.0 + 1)
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        self.0
+    }
+}
+
+impl From<EventId> for u64 {
+    fn from(id: EventId) -> Self {
+        id.0
+    }
+}
+
+impl From<u64> for EventId {
+    fn from(id: u64) -> Self {
+        EventId(id)
     }
 }
 
