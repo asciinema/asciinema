@@ -24,7 +24,7 @@ rustyline = { version = "17.0", default-features = false }
 config = { version = "0.15", default-features = false, features = ["toml"] }
 which = "8.0"
 tempfile = "3.23"
-avt = "0.16"
+avt = "0.17"
 axum = { version = "0.8", default-features = false, features = ["http1", "ws"] }
 tokio = { version = "1.40", features = ["rt-multi-thread", "net", "sync", "time", "fs", "process"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
