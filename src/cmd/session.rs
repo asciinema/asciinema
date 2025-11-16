@@ -273,7 +273,7 @@ impl cli::Session {
             }
 
             Format::Raw => Ok(Box::new(RawEncoder::new())),
-            Format::Txt => Ok(Box::new(TextEncoder::new())),
+            Format::Txt => Ok(Box::new(TextEncoder::new(false))),
         }
     }
 

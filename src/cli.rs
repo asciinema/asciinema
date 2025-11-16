@@ -565,6 +565,10 @@ pub struct Convert {
         long_help
     )]
     pub overwrite: bool,
+
+    /// Prepend a rough timestamp (seconds) to each output line in txt mode
+    #[clap(long)]
+    pub timestamp: bool,
 }
 
 #[derive(Debug, Args)]

@@ -37,7 +37,8 @@ impl cli::Convert {
                 Box::new(AsciicastV2Encoder::new(false, Duration::from_micros(0)))
             }
             Format::Raw => Box::new(RawEncoder::new()),
-            Format::Txt => Box::new(TextEncoder::new()),
+            // pass the CLI flag into the TextEncoder
+            Format::Txt => Box::new(TextEncoder::new(self.timestamp)),
         }
     }
 
