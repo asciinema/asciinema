@@ -21,8 +21,7 @@ viewers to watch terminal sessions as they happen.
 
 asciinema runs on GNU/Linux, macOS and FreeBSD.
 
-[![asciinema CLI
-demo](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH.svg)](https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH?autoplay=1)
+<a href="https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH?autoplay=1"><img src="https://asciinema.org/a/85R4jTtjKVRIYXTcKCNq0vzYH.svg" alt="asciinema CLI demo" width="100%" /></a>
 
 Notable features:
 
