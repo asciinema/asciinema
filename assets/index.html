@@ -72,7 +72,7 @@
 
     window.player = AsciinemaPlayer.create(src, document.body, opts);
 
-    window.player.addEventListener('reset', () => {
+    window.player.addEventListener('metadata', () => {
       const el = window.player.el.getElementsByClassName('ap-player')[0];
       const style = window.getComputedStyle(el);
       const color = style.getPropertyValue("--term-color-background");
