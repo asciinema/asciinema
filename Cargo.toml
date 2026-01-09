@@ -30,7 +30,7 @@ tokio = { version = "1.40", features = ["rt-multi-thread", "net", "sync", "time"
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 tokio-stream = { version = "0.1", default-features = false, features = ["sync", "time"] }
 rust-embed = "8.8"
-tower-http = { version = "0.6", features = ["trace"] }
+tower-http = { version = "0.6", features = ["trace", "compression-gzip"] }
 tracing = { version = "0.1", default-features = false }
 tracing-subscriber = { version = "0.3.20", default-features = false, features = ["fmt", "env-filter"] }
 rgb = { version = "0.8", default-features = false }
