@@ -1,5 +1,13 @@
 # asciinema changelog
 
+## 3.1.0 (2026-01-14)
+
+* Implemented caching and compression for static assets served by the built-in
+  HTTP server in the local streaming mode (`asciinema stream -l`)
+* Enabled Nerd Font symbols in the embedded player when streaming locally
+* Upgraded the embedded player to the latest version
+* Upgraded the virtual terminal (avt) to the latest version
+
 ## 3.0.1 (2025-10-24)
 
 * Fixed reading of asciicasts v1 and v2 having null env values in header
