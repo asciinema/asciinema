@@ -440,12 +440,25 @@ async fn probe_tty(
     let selection = TtySelection { cols, rows, kind };
 
     let term_info = match kind {
-        TtyKind::DevTty => TermInfo {
-            type_: env::var("TERM").ok(),
-            version: tty::query_version(tty.as_ref()).await,
-            size: tty.get_size().into(),
-            theme: tty::query_theme(tty.as_ref()).await,
-        },
+        TtyKind::DevTty => {
+            let term = env::var("TERM").ok();
+
+            let (version, theme) = if let Some("dumb" | "linux") = term.as_deref() {
+                (None, None)
+            } else {
+                (
+                    tty::query_version(tty.as_ref()).await,
+                    tty::query_theme(tty.as_ref()).await,
+                )
+            };
+
+            TermInfo {
+                type_: term,
+                version,
+                size: tty.get_size().into(),
+                theme,
+            }
+        }
 
         TtyKind::NullTty => TermInfo {
             type_: None,
