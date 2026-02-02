@@ -224,18 +224,89 @@ fn complete_da_response_len(response: &[u8]) -> Option<usize> {
 }
 
 fn parse_theme_response(response: &[u8]) -> Option<TtyTheme> {
+    let mut fg = None;
+    let mut bg = None;
+    let mut palette: [Option<RGB8>; 16] = [None; 16];
     let response = String::from_utf8_lossy(response);
-    let mut colors = response.match_indices("rgb:");
-    let (idx, _) = colors.next()?;
-    let fg = parse_color(&response[idx + 4..])?;
-    let (idx, _) = colors.next()?;
-    let bg = parse_color(&response[idx + 4..])?;
-    let mut palette = Vec::new();
+    let mut rest = &response[..];
 
-    for _ in 0..16 {
-        let (idx, _) = colors.next()?;
-        let color = parse_color(&response[idx + 4..])?;
-        palette.push(color);
+    loop {
+        let Some(seq_start) = rest.find("\x1b]") else {
+            break;
+        };
+
+        let rest_after_start = &rest[seq_start + 2..];
+        let bel_end = rest_after_start.find("\x07");
+        let st_end = rest_after_start.find("\x1b\\");
+
+        let Some(seq_end) = (match (bel_end, st_end) {
+            (Some(bel), Some(st)) => Some(bel.min(st)),
+            (Some(bel), None) => Some(bel),
+            (None, Some(st)) => Some(st),
+            (None, None) => None,
+        }) else {
+            break;
+        };
+
+        let reply = &rest_after_start[..seq_end];
+
+        if rest_after_start[seq_end..].starts_with("\x07") {
+            rest = &rest_after_start[seq_end + 1..];
+        } else {
+            rest = &rest_after_start[seq_end + 2..];
+        };
+
+        let mut params = reply.split(';');
+
+        let Some(p1) = params.next() else {
+            continue;
+        };
+
+        let Some(p2) = params.next() else {
+            continue;
+        };
+
+        match p1 {
+            "10" => {
+                if let Some(c) = p2.strip_prefix("rgb:") {
+                    fg = parse_color(c);
+                }
+            }
+
+            "11" => {
+                if let Some(c) = p2.strip_prefix("rgb:") {
+                    bg = parse_color(c);
+                }
+            }
+
+            "4" => {
+                let Some(i) = p2.parse::<u8>().ok() else {
+                    continue;
+                };
+
+                let Some(p3) = params.next() else {
+                    continue;
+                };
+
+                if i < 16 {
+                    if let Some(c) = p3.strip_prefix("rgb:") {
+                        palette[i as usize] = parse_color(c);
+                    }
+                }
+            }
+
+            _ => {
+                continue;
+            }
+        }
+    }
+
+    let fg = fg?;
+    let bg = bg?;
+    let palette = palette.into_iter().flatten().collect::<Vec<_>>();
+
+    if palette.len() < 16 {
+        return None;
     }
 
     Some(TtyTheme { fg, bg, palette })
@@ -318,24 +389,24 @@ mod tests {
     #[test]
     fn parse_theme_response_ok() {
         let response = concat!(
-            "\x1b]10;rgb:1122/3344/5566\x07",
-            "\x1b]11;rgb:7788/99aa/bbcc\x07",
-            "\x1b]4;0;rgb:0000/1111/2222\x07",
             "\x1b]4;1;rgb:3333/4444/5555\x07",
-            "\x1b]4;2;rgb:6666/7777/8888\x07",
+            "\x1b]11;rgb:7788/99aa/bbcc\x07",
             "\x1b]4;3;rgb:9999/aaaa/bbbb\x07",
+            "\x1b]4;2;rgb:6666/7777/8888\x1b\\",
             "\x1b]4;4;rgb:cccc/dddd/eeee\x07",
-            "\x1b]4;5;rgb:ffff/0000/1111\x07",
+            "\x1b]4;0;rgb:0000/1111/2222\x07",
             "\x1b]4;6;rgb:2222/3333/4444\x07",
+            "\x1b]4;5;rgb:ffff/0000/1111\x07",
             "\x1b]4;7;rgb:5555/6666/7777\x07",
+            "\x1b]4;10;rgb:eeee/ffff/0000\x07",
             "\x1b]4;8;rgb:8888/9999/aaaa\x07",
             "\x1b]4;9;rgb:bbbb/cccc/dddd\x07",
-            "\x1b]4;10;rgb:eeee/ffff/0000\x07",
             "\x1b]4;11;rgb:1111/2222/3333\x07",
-            "\x1b]4;12;rgb:4444/5555/6666\x07",
-            "\x1b]4;13;rgb:7777/8888/9999\x07",
             "\x1b]4;14;rgb:aaaa/bbbb/cccc\x07",
+            "\x1b]4;13;rgb:7777/8888/9999\x07",
+            "\x1b]10;rgb:1122/3344/5566\x1b\\",
             "\x1b]4;15;rgb:dddd/eeee/ffff\x07",
+            "\x1b]4;12;rgb:4444/5555/6666\x07",
         )
         .as_bytes();
 
