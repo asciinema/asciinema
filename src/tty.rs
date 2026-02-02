@@ -314,4 +314,55 @@ mod tests {
         assert!(winsize.ws_col == 80);
         assert!(winsize.ws_row == 24);
     }
+
+    #[test]
+    fn parse_theme_response_ok() {
+        let response = concat!(
+            "\x1b]10;rgb:1122/3344/5566\x07",
+            "\x1b]11;rgb:7788/99aa/bbcc\x07",
+            "\x1b]4;0;rgb:0000/1111/2222\x07",
+            "\x1b]4;1;rgb:3333/4444/5555\x07",
+            "\x1b]4;2;rgb:6666/7777/8888\x07",
+            "\x1b]4;3;rgb:9999/aaaa/bbbb\x07",
+            "\x1b]4;4;rgb:cccc/dddd/eeee\x07",
+            "\x1b]4;5;rgb:ffff/0000/1111\x07",
+            "\x1b]4;6;rgb:2222/3333/4444\x07",
+            "\x1b]4;7;rgb:5555/6666/7777\x07",
+            "\x1b]4;8;rgb:8888/9999/aaaa\x07",
+            "\x1b]4;9;rgb:bbbb/cccc/dddd\x07",
+            "\x1b]4;10;rgb:eeee/ffff/0000\x07",
+            "\x1b]4;11;rgb:1111/2222/3333\x07",
+            "\x1b]4;12;rgb:4444/5555/6666\x07",
+            "\x1b]4;13;rgb:7777/8888/9999\x07",
+            "\x1b]4;14;rgb:aaaa/bbbb/cccc\x07",
+            "\x1b]4;15;rgb:dddd/eeee/ffff\x07",
+        )
+        .as_bytes();
+
+        let theme = super::parse_theme_response(response).expect("theme");
+        assert_eq!(theme.fg, RGB8::new(0x11, 0x33, 0x55));
+        assert_eq!(theme.bg, RGB8::new(0x77, 0x99, 0xbb));
+        assert_eq!(theme.palette.len(), 16);
+        assert_eq!(theme.palette[0], RGB8::new(0x00, 0x11, 0x22));
+        assert_eq!(theme.palette[15], RGB8::new(0xdd, 0xee, 0xff));
+    }
+
+    #[test]
+    fn parse_theme_response_missing_colors() {
+        let response = b"\x1b]10;rgb:1122/3344/5566\x07";
+        assert!(super::parse_theme_response(response).is_none());
+    }
+
+    #[test]
+    fn parse_version_response_ok() {
+        let response = b"\x1bP>|xterm-395\x1b\\";
+        let version = super::parse_version_response(response).expect("version");
+        assert_eq!(version, "xterm-395");
+    }
+
+    #[test]
+    fn parse_version_response_invalid() {
+        let response = b"\x1bP>|xterm-395\x07";
+        assert!(super::parse_version_response(response).is_none());
+    }
 }
