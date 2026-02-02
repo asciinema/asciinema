@@ -28,7 +28,7 @@ use crate::server;
 use crate::session::{self, KeyBindings, Metadata, TermInfo};
 use crate::status;
 use crate::stream::Stream;
-use crate::tty::{DevTty, FixedSizeTty, NullTty, Tty};
+use crate::tty::{self, DevTty, FixedSizeTty, NullTty, RawTty};
 
 impl cli::Session {
     pub fn run(mut self) -> Result<ExitCode> {
@@ -51,7 +51,8 @@ impl cli::Session {
         let command = self.get_command(&config.session);
         let keys = get_key_bindings(&config.session)?;
         let notifier = get_notifier(&config);
-        let metadata = self.get_session_metadata(&config.session).await?;
+        let (tty, term_info) = probe_tty(self.headless, self.window_size).await?;
+        let metadata = self.get_session_metadata(&config.session, term_info)?;
         let file_writer = self.get_file_writer(&metadata, notifier.clone()).await?;
         let listener = self.get_listener().await?;
         let relay = self.get_relay(&metadata, &mut config).await?;
@@ -125,12 +126,12 @@ impl cli::Session {
         let extra_env = &build_exec_extra_env(&self.env, relay_id.as_ref());
 
         let exit_status = {
-            let mut tty = self.get_tty(true).await?;
+            let mut raw_tty = tty.open_raw().await?;
 
             session::run(
                 command,
                 extra_env,
-                tty.as_mut(),
+                raw_tty.as_mut(),
                 self.capture_input || config.session.capture_input,
                 outputs,
                 keys,
@@ -164,25 +165,14 @@ impl cli::Session {
         self.command.as_ref().cloned().or(config.command.clone())
     }
 
-    async fn get_session_metadata(&self, config: &config::Session) -> Result<Metadata> {
+    fn get_session_metadata(&self, config: &config::Session, term: TermInfo) -> Result<Metadata> {
         Ok(Metadata {
             time: SystemTime::now(),
-            term: self.get_term_info().await?,
+            term,
             idle_time_limit: self.idle_time_limit.or(config.idle_time_limit),
             command: self.get_command(config),
             title: self.title.clone(),
             env: capture_env(self.capture_env.clone(), config),
-        })
-    }
-
-    async fn get_term_info(&self) -> Result<TermInfo> {
-        let mut tty = self.get_tty(false).await?;
-
-        Ok(TermInfo {
-            type_: env::var("TERM").ok(),
-            version: tty.get_version().await,
-            size: tty.get_size().into(),
-            theme: tty.get_theme().await,
         })
     }
 
@@ -381,22 +371,6 @@ impl cli::Session {
         }
     }
 
-    async fn get_tty(&self, quiet: bool) -> Result<Box<dyn Tty>> {
-        let (cols, rows) = self.window_size.unwrap_or((None, None));
-
-        if self.headless {
-            Ok(Box::new(FixedSizeTty::new(NullTty, cols, rows)))
-        } else if let Ok(dev_tty) = DevTty::open().await {
-            Ok(Box::new(FixedSizeTty::new(dev_tty, cols, rows)))
-        } else {
-            if !quiet {
-                status::info!("TTY not available, recording in headless mode");
-            }
-
-            Ok(Box::new(FixedSizeTty::new(NullTty, cols, rows)))
-        }
-    }
-
     fn init_logging(&self) -> Result<()> {
         let Some(path) = &self.log_file else {
             return Ok(());
@@ -423,6 +397,77 @@ impl cli::Session {
             .append(true)
             .open(path)
             .map_err(|e| anyhow!("cannot open log file {}: {}", path.to_string_lossy(), e))
+    }
+}
+
+#[derive(Copy, Clone)]
+enum TtyKind {
+    DevTty,
+    NullTty,
+}
+
+struct TtySelection {
+    cols: Option<u16>,
+    rows: Option<u16>,
+    kind: TtyKind,
+}
+
+async fn probe_tty(
+    headless: bool,
+    window_size: Option<(Option<u16>, Option<u16>)>,
+) -> Result<(TtySelection, TermInfo)> {
+    let (cols, rows) = window_size.unwrap_or((None, None));
+
+    let (tty, kind) = if headless {
+        (
+            Box::new(FixedSizeTty::new(NullTty, cols, rows)) as Box<dyn RawTty>,
+            TtyKind::NullTty,
+        )
+    } else if let Ok(dev_tty) = DevTty::open().await {
+        (
+            Box::new(FixedSizeTty::new(dev_tty, cols, rows)) as Box<dyn RawTty>,
+            TtyKind::DevTty,
+        )
+    } else {
+        status::info!("TTY not available, recording in headless mode");
+
+        (
+            Box::new(FixedSizeTty::new(NullTty, cols, rows)) as Box<dyn RawTty>,
+            TtyKind::NullTty,
+        )
+    };
+
+    let selection = TtySelection { cols, rows, kind };
+
+    let term_info = match kind {
+        TtyKind::DevTty => TermInfo {
+            type_: env::var("TERM").ok(),
+            version: tty::query_version(tty.as_ref()).await,
+            size: tty.get_size().into(),
+            theme: tty::query_theme(tty.as_ref()).await,
+        },
+
+        TtyKind::NullTty => TermInfo {
+            type_: None,
+            version: None,
+            size: tty.get_size().into(),
+            theme: None,
+        },
+    };
+
+    Ok((selection, term_info))
+}
+
+impl TtySelection {
+    async fn open_raw(&self) -> Result<Box<dyn RawTty>> {
+        Ok(match self.kind {
+            TtyKind::DevTty => {
+                let tty = DevTty::open().await?;
+                Box::new(FixedSizeTty::new(tty, self.cols, self.rows))
+            }
+
+            TtyKind::NullTty => Box::new(FixedSizeTty::new(NullTty, self.cols, self.rows)),
+        })
     }
 }
 

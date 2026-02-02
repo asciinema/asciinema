@@ -16,7 +16,7 @@ use tracing::error;
 use crate::config::Key;
 use crate::notifier::Notifier;
 use crate::pty::{self, Pty};
-use crate::tty::{Tty, TtySize, TtyTheme};
+use crate::tty::{RawTty, TtySize, TtyTheme};
 use crate::util::Utf8Decoder;
 
 const BUF_SIZE: usize = 128 * 1024;
@@ -68,7 +68,7 @@ pub trait Output: Send {
     async fn flush(&mut self) -> io::Result<()>;
 }
 
-pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
+pub async fn run<S: AsRef<str>, T: RawTty + ?Sized, N: Notifier>(
     command: &[S],
     extra_env: &HashMap<String, String>,
     tty: &mut T,
@@ -134,7 +134,7 @@ async fn forward_event(mut output: Box<dyn Output>, event: Event) -> Option<Box<
 }
 
 impl<N: Notifier> Session<N> {
-    async fn run<T: Tty + ?Sized>(mut self, pty: Pty, tty: &mut T) -> anyhow::Result<i32> {
+    async fn run<T: RawTty + ?Sized>(mut self, pty: Pty, tty: &mut T) -> anyhow::Result<i32> {
         let mut signals =
             Signals::new([SIGWINCH, SIGINT, SIGTERM, SIGQUIT, SIGHUP, SIGALRM, SIGCHLD])?;
         let mut output_buf = [0u8; BUF_SIZE];

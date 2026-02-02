@@ -10,7 +10,7 @@ use nix::sys::termios::{self, SetArg, Termios};
 use tokio::io::unix::AsyncFd;
 use tokio::io::{self, Interest};
 
-use super::{Tty, TtySize, TtyTheme};
+use super::{RawTty, TtySize};
 
 pub struct DevTty {
     file: AsyncFd<File>,
@@ -47,7 +47,7 @@ impl Drop for DevTty {
 }
 
 #[async_trait(?Send)]
-impl Tty for DevTty {
+impl RawTty for DevTty {
     fn get_size(&self) -> Winsize {
         let mut winsize = Winsize {
             ws_row: 24,
@@ -59,14 +59,6 @@ impl Tty for DevTty {
         unsafe { libc::ioctl(self.file.as_raw_fd(), libc::TIOCGWINSZ, &mut winsize) };
 
         winsize
-    }
-
-    async fn get_theme(&mut self) -> Option<TtyTheme> {
-        super::get_theme(self).await
-    }
-
-    async fn get_version(&mut self) -> Option<String> {
-        super::get_version(self).await
     }
 
     async fn read(&self, buf: &mut [u8]) -> io::Result<usize> {

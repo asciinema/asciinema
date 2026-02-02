@@ -4,7 +4,7 @@ use tokio::time::{self, Duration, Instant};
 
 use crate::asciicast::{self, Event, EventData};
 use crate::config::Key;
-use crate::tty::{DevTty, Tty};
+use crate::tty::{DevTty, RawTty};
 
 pub struct KeyBindings {
     pub quit: Key,

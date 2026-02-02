@@ -43,10 +43,8 @@ pub struct FixedSizeTty<T> {
 }
 
 #[async_trait(?Send)]
-pub trait Tty {
+pub trait RawTty {
     fn get_size(&self) -> Winsize;
-    async fn get_theme(&mut self) -> Option<TtyTheme>;
-    async fn get_version(&mut self) -> Option<String>;
     async fn read(&self, buf: &mut [u8]) -> io::Result<usize>;
     async fn write(&self, buf: &[u8]) -> io::Result<usize>;
 
@@ -95,14 +93,14 @@ impl From<TtySize> for (u16, u16) {
     }
 }
 
-impl<T: Tty> FixedSizeTty<T> {
+impl<T: RawTty> FixedSizeTty<T> {
     pub fn new(inner: T, cols: Option<u16>, rows: Option<u16>) -> Self {
         Self { inner, cols, rows }
     }
 }
 
 #[async_trait(?Send)]
-impl Tty for NullTty {
+impl RawTty for NullTty {
     fn get_size(&self) -> Winsize {
         Winsize {
             ws_row: 24,
@@ -110,14 +108,6 @@ impl Tty for NullTty {
             ws_xpixel: 0,
             ws_ypixel: 0,
         }
-    }
-
-    async fn get_theme(&mut self) -> Option<TtyTheme> {
-        None
-    }
-
-    async fn get_version(&mut self) -> Option<String> {
-        None
     }
 
     async fn read(&self, _buf: &mut [u8]) -> io::Result<usize> {
@@ -130,7 +120,7 @@ impl Tty for NullTty {
 }
 
 #[async_trait(?Send)]
-impl<T: Tty> Tty for FixedSizeTty<T> {
+impl<T: RawTty> RawTty for FixedSizeTty<T> {
     fn get_size(&self) -> Winsize {
         let mut winsize = self.inner.get_size();
 
@@ -143,14 +133,6 @@ impl<T: Tty> Tty for FixedSizeTty<T> {
         }
 
         winsize
-    }
-
-    async fn get_theme(&mut self) -> Option<TtyTheme> {
-        self.inner.get_theme().await
-    }
-
-    async fn get_version(&mut self) -> Option<String> {
-        self.inner.get_version().await
     }
 
     async fn read(&self, buf: &mut [u8]) -> io::Result<usize> {
@@ -171,15 +153,15 @@ fn make_raw<F: AsFd>(fd: F) -> anyhow::Result<libc::termios> {
     Ok(termios.into())
 }
 
-async fn get_theme<T: Tty>(tty: &T) -> Option<TtyTheme> {
+pub(crate) async fn query_theme<T: RawTty + ?Sized>(tty: &T) -> Option<TtyTheme> {
     parse_theme_response(&query(tty, THEME_QUERY).await.ok()?)
 }
 
-async fn get_version<T: Tty>(tty: &T) -> Option<String> {
+pub(crate) async fn query_version<T: RawTty + ?Sized>(tty: &T) -> Option<String> {
     parse_version_response(&query(tty, XTVERSION_QUERY).await.ok()?)
 }
 
-async fn query<T: Tty>(tty: &T, query: &str) -> anyhow::Result<Vec<u8>> {
+async fn query<T: RawTty + ?Sized>(tty: &T, query: &str) -> anyhow::Result<Vec<u8>> {
     let mut query = query.to_string().into_bytes();
     query.extend_from_slice(b"\x1b[c");
     let mut query = &query[..];
@@ -286,7 +268,7 @@ fn parse_version_response(response: &[u8]) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{FixedSizeTty, NullTty, Tty};
+    use super::{FixedSizeTty, NullTty, RawTty};
 
     use rgb::RGB8;
 
