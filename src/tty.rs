@@ -280,18 +280,24 @@ fn parse_theme_response(response: &[u8]) -> Option<TtyTheme> {
             }
 
             "4" => {
-                let Some(i) = p2.parse::<u8>().ok() else {
-                    continue;
-                };
+                let mut next = Some(p2);
 
-                let Some(p3) = params.next() else {
-                    continue;
-                };
+                while let Some(i_str) = next {
+                    let Ok(i) = i_str.parse::<u8>() else {
+                        break;
+                    };
 
-                if i < 16 {
-                    if let Some(c) = p3.strip_prefix("rgb:") {
-                        palette[i as usize] = parse_color(c);
+                    let Some(p3) = params.next() else {
+                        break;
+                    };
+
+                    if i < 16 {
+                        if let Some(c) = p3.strip_prefix("rgb:") {
+                            palette[i as usize] = parse_color(c);
+                        }
                     }
+
+                    next = params.next();
                 }
             }
 
@@ -407,6 +413,27 @@ mod tests {
             "\x1b]10;rgb:1122/3344/5566\x1b\\",
             "\x1b]4;15;rgb:dddd/eeee/ffff\x07",
             "\x1b]4;12;rgb:4444/5555/6666\x07",
+        )
+        .as_bytes();
+
+        let theme = super::parse_theme_response(response).expect("theme");
+        assert_eq!(theme.fg, RGB8::new(0x11, 0x33, 0x55));
+        assert_eq!(theme.bg, RGB8::new(0x77, 0x99, 0xbb));
+        assert_eq!(theme.palette.len(), 16);
+        assert_eq!(theme.palette[0], RGB8::new(0x00, 0x11, 0x22));
+        assert_eq!(theme.palette[15], RGB8::new(0xdd, 0xee, 0xff));
+    }
+
+    #[test]
+    fn parse_theme_response_osc4_packed() {
+        let response = concat!(
+            "\x1b]10;rgb:1122/3344/5566\x07",
+            "\x1b]11;rgb:7788/99aa/bbcc\x07",
+            "\x1b]4;0;rgb:0000/1111/2222;1;rgb:3333/4444/5555;2;rgb:6666/7777/8888\x07",
+            "\x1b]4;3;rgb:9999/aaaa/bbbb;4;rgb:cccc/dddd/eeee;5;rgb:ffff/0000/1111\x07",
+            "\x1b]4;6;rgb:2222/3333/4444;7;rgb:5555/6666/7777;8;rgb:8888/9999/aaaa\x07",
+            "\x1b]4;9;rgb:bbbb/cccc/dddd;10;rgb:eeee/ffff/0000;11;rgb:1111/2222/3333\x07",
+            "\x1b]4;12;rgb:4444/5555/6666;13;rgb:7777/8888/9999;14;rgb:aaaa/bbbb/cccc;15;rgb:dddd/eeee/ffff\x07",
         )
         .as_bytes();
 
