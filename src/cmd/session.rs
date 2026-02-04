@@ -442,14 +442,23 @@ async fn probe_tty(
     let term_info = match kind {
         TtyKind::DevTty => {
             let term = env::var("TERM").ok();
+            let mut inspect = true;
 
-            let (version, theme) = if let Some("dumb" | "linux") = term.as_deref() {
-                (None, None)
+            if let Some("dumb" | "linux") = term.as_deref() {
+                // these don't support OSC / XTVERSION
+                inspect = false;
+            }
+
+            if env::var("STY").is_ok() {
+                // screen doesn't support OSC 4 / XTVERSION either, and doesn't preserve
+                // query/reply order
+                inspect = false;
+            }
+
+            let (version, theme) = if inspect {
+                tty::inspect(tty.as_ref()).await
             } else {
-                (
-                    tty::query_version(tty.as_ref()).await,
-                    tty::query_theme(tty.as_ref()).await,
-                )
+                (None, None)
             };
 
             TermInfo {
