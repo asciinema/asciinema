@@ -12,7 +12,11 @@ impl cli::Play {
         let config = Config::new(None)?;
         let speed = self.speed.or(config.playback.speed).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(config.playback.idle_time_limit);
-        let path = util::get_local_path(&self.file)?;
+        let path: Box<dyn AsRef<std::path::Path>> = if self.file == "-" {
+            Box::new(std::path::Path::new("/dev/stdin"))
+        } else {
+            util::get_local_path(&self.file)?
+        };
         let keys = get_key_bindings(&config.playback)?;
         let runtime = Runtime::new()?;
 
