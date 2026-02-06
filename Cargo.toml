@@ -41,7 +41,7 @@ tokio-util = { version = "0.7", features = ["rt"] }
 rand = "0.9"
 async-trait = "0.1"
 signal-hook-tokio = { version = "0.3", features = ["futures-v0_3"] }
-bytes = "1.0"
+bytes = "1.11"
 
 [build-dependencies]
 clap = { version = "4.0", features = ["derive", "wrap_help"] }
