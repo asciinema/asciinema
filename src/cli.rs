@@ -320,7 +320,7 @@ pub struct Record {
 
 #[derive(Debug, Args)]
 pub struct Play {
-    /// The path to an asciicast file or HTTP(S) URL to play back. HTTP(S) URLs allow playing recordings directly from the web without need for manual downloading. Supported formats include asciicast v1, v2, and v3.
+    /// The path to an asciicast file or HTTP(S) URL to play back. Can be a local file path, HTTP(S) URL for remote files, or '-' to read from standard input. Remote URLs allow playing recordings directly from the web without need for manual downloading. Supported formats include asciicast v1, v2, and v3.
     pub file: String,
 
     /// Control the playback speed as a multiplier of the original timing. Values greater than 1.0 make playback faster, while values less than 1.0 make it slower. For example, --speed 2.0 plays at double speed, while --speed 0.5 plays at half speed. The default is 1.0 (original speed). Can also be set via the config file option playback.speed.
