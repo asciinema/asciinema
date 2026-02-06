@@ -132,12 +132,12 @@ setup() {
     TMP_DATA_DIR="$(mktemp -d 2>/dev/null || mktemp -d -t asciinema-data-dir)"
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     FIXTURES="$SCRIPT_DIR/casts"
-    ASCIINEMA_BIN="$SCRIPT_DIR/../target/release/asciinema"
+    ASCIINEMA_BIN="$SCRIPT_DIR/../target/integration-test/asciinema"
 
     trap 'cleanup' EXIT
 
     log_info "Building release binary..."
-    cargo build --release --locked
+    cargo build --profile=integration-test --locked
 
     # disable notifications
     printf "[notifications]\nenabled = false\n" >> "${ASCIINEMA_CONFIG_HOME}/config.toml"

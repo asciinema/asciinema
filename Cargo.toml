@@ -54,5 +54,15 @@ strip = true
 lto = true
 codegen-units = 1
 
+[profile.integration-test]
+inherits = "release"
+opt-level = 0
+lto = false
+codegen-units = 256
+strip = "none"
+incremental = true
+debug-assertions = false
+overflow-checks = false
+
 [features]
 macos-tty = []
