@@ -58,6 +58,8 @@ fn main() -> ExitCode {
                 return_: cmd.return_,
                 log_file: cmd.log_file,
                 server_url: None,
+                attach_pty: cmd.attach_pty,
+                attach_pid: cmd.attach_pid,
                 env: vec!["ASCIINEMA_REC=1".to_owned()],
             };
 
@@ -82,6 +84,8 @@ fn main() -> ExitCode {
                 return_: cmd.return_,
                 log_file: cmd.log_file,
                 server_url: cmd.server_url,
+                attach_pty: cmd.attach_pty,
+                attach_pid: cmd.attach_pid,
                 env: Vec::new(),
             };
 

@@ -24,6 +24,7 @@ use crate::forwarder;
 use crate::hash;
 use crate::locale;
 use crate::notifier::{self, BackgroundNotifier, Notifier, NullNotifier};
+use crate::pty;
 use crate::server;
 use crate::session::{self, KeyBindings, Metadata, TermInfo};
 use crate::status;
@@ -58,6 +59,9 @@ impl cli::Session {
         let relay_id = relay.as_ref().map(|r| r.id());
         let parent_session_relay_id = get_parent_session_relay_id();
 
+        // Resolve attach_pty from --pty or --pid option
+        let attach_pty = self.resolve_attach_pty()?;
+
         if relay_id.is_some()
             && parent_session_relay_id.is_some()
             && relay_id == parent_session_relay_id
@@ -70,6 +74,11 @@ impl cli::Session {
         }
 
         status::info!("asciinema session started");
+
+        if attach_pty.is_some() {
+            status::info!("Attached to existing PTY - recording output only");
+            status::info!("Press <ctrl+c> to stop recording (shell will continue)");
+        }
 
         if let Some(path) = self.output_file.as_ref() {
             status::info!("Recording to {}", path);
@@ -86,7 +95,7 @@ impl cli::Session {
             status::info!("Live streaming at {}", url);
         }
 
-        if command.is_none() {
+        if command.is_none() && attach_pty.is_none() {
             status::info!("Press <ctrl+d> or type 'exit' to end");
         }
 
@@ -128,6 +137,7 @@ impl cli::Session {
             let mut tty = self.get_tty(true).await?;
 
             session::run(
+                attach_pty.as_deref(),
                 command,
                 extra_env,
                 tty.as_mut(),
@@ -394,6 +404,19 @@ impl cli::Session {
             }
 
             Ok(Box::new(FixedSizeTty::new(NullTty, cols, rows)))
+        }
+    }
+
+    /// Resolve the PTY path to attach to from --pty or --pid option
+    fn resolve_attach_pty(&self) -> Result<Option<String>> {
+        if let Some(ref pty_path) = self.attach_pty {
+            Ok(Some(pty_path.clone()))
+        } else if let Some(pid) = self.attach_pid {
+            let pty_path = pty::resolve_pty_from_pid(pid)?;
+            status::info!("Resolved PID {} to PTY {}", pid, pty_path);
+            Ok(Some(pty_path))
+        } else {
+            Ok(None)
         }
     }
 

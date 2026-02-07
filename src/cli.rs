@@ -308,6 +308,32 @@ pub struct Record {
     #[arg(long, value_name = "PATH", help = "Log file path", long_help)]
     pub log_file: Option<PathBuf>,
 
+    /// Attach to an existing PTY device instead of spawning a new shell. Specify the path to the
+    /// PTY device (e.g., /dev/pts/5 on Linux or /dev/ttys005 on macOS). Use the `tty` command in
+    /// the target shell to find its PTY path. This allows recording an already-running shell session.
+    /// Cannot be used together with --command or --pid.
+    #[arg(
+        long = "pty",
+        value_name = "PATH",
+        conflicts_with_all = ["command", "attach_pid"],
+        help = "Attach to existing PTY device",
+        long_help
+    )]
+    pub attach_pty: Option<String>,
+
+    /// Attach to the PTY of an existing process by its PID. Asciinema will look up the process's
+    /// controlling terminal and attach to it for recording. This is a convenience alternative to
+    /// --pty when you know the process ID but not its PTY path. Cannot be used together with
+    /// --command or --pty.
+    #[arg(
+        long = "pid",
+        value_name = "PID",
+        conflicts_with_all = ["command", "attach_pty"],
+        help = "Attach to PTY of process with given PID",
+        long_help
+    )]
+    pub attach_pid: Option<i32>,
+
     #[arg(long, hide = true)]
     pub cols: Option<u16>,
 
@@ -421,6 +447,32 @@ pub struct Stream {
     /// Specify a custom asciinema server URL for streaming to self-hosted servers. Use the base server URL (e.g., https://asciinema.example.com). Can also be set via the environment variable ASCIINEMA_SERVER_URL or the config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
+
+    /// Attach to an existing PTY device instead of spawning a new shell. Specify the path to the
+    /// PTY device (e.g., /dev/pts/5 on Linux or /dev/ttys005 on macOS). Use the `tty` command in
+    /// the target shell to find its PTY path. This allows streaming an already-running shell session.
+    /// Cannot be used together with --command or --pid.
+    #[arg(
+        long = "pty",
+        value_name = "PATH",
+        conflicts_with_all = ["command", "attach_pid"],
+        help = "Attach to existing PTY device",
+        long_help
+    )]
+    pub attach_pty: Option<String>,
+
+    /// Attach to the PTY of an existing process by its PID. Asciinema will look up the process's
+    /// controlling terminal and attach to it for streaming. This is a convenience alternative to
+    /// --pty when you know the process ID but not its PTY path. Cannot be used together with
+    /// --command or --pty.
+    #[arg(
+        long = "pid",
+        value_name = "PID",
+        conflicts_with_all = ["command", "attach_pty"],
+        help = "Attach to PTY of process with given PID",
+        long_help
+    )]
+    pub attach_pid: Option<i32>,
 }
 
 #[derive(Debug, Args)]
@@ -527,6 +579,31 @@ pub struct Session {
     /// Specify a custom asciinema server URL for streaming to self-hosted servers. Use the base server URL (e.g., https://asciinema.example.com). Can also be set via environment variable ASCIINEMA_SERVER_URL or config file option server.url. If no server URL is configured via this option, environment variable, or config file, you will be prompted to choose one (defaulting to asciinema.org), which will be saved as a default.
     #[arg(long, value_name = "URL", help = "asciinema server URL", long_help)]
     pub server_url: Option<String>,
+
+    /// Attach to an existing PTY device instead of spawning a new shell. Specify the path to the
+    /// PTY device (e.g., /dev/pts/5 on Linux or /dev/ttys005 on macOS). Use the `tty` command in
+    /// the target shell to find its PTY path. This allows recording/streaming an already-running
+    /// shell session. Cannot be used together with --command or --pid.
+    #[arg(
+        long = "pty",
+        value_name = "PATH",
+        conflicts_with_all = ["command", "attach_pid"],
+        help = "Attach to existing PTY device",
+        long_help
+    )]
+    pub attach_pty: Option<String>,
+
+    /// Attach to the PTY of an existing process by its PID. Asciinema will look up the process's
+    /// controlling terminal and attach to it. This is a convenience alternative to --pty when you
+    /// know the process ID but not its PTY path. Cannot be used together with --command or --pty.
+    #[arg(
+        long = "pid",
+        value_name = "PID",
+        conflicts_with_all = ["command", "attach_pty"],
+        help = "Attach to PTY of process with given PID",
+        long_help
+    )]
+    pub attach_pid: Option<i32>,
 
     #[arg(hide = true)]
     pub env: Vec<String>,

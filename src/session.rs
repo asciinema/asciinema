@@ -69,6 +69,7 @@ pub trait Output: Send {
 }
 
 pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
+    attach_pty: Option<&str>,
     command: &[S],
     extra_env: &HashMap<String, String>,
     tty: &mut T,
@@ -80,7 +81,13 @@ pub async fn run<S: AsRef<str>, T: Tty + ?Sized, N: Notifier>(
     let epoch = Instant::now();
     let (events_tx, events_rx) = mpsc::channel::<Event>(1024);
     let winsize = tty.get_size();
-    let pty = pty::spawn(command, winsize, extra_env)?;
+
+    let pty = if let Some(pty_path) = attach_pty {
+        pty::attach(pty_path, winsize)?
+    } else {
+        pty::spawn(command, winsize, extra_env)?
+    };
+
     let forwarder = tokio::spawn(forward_events(events_rx, outputs));
 
     let session = Session {
@@ -142,6 +149,7 @@ impl<N: Notifier> Session<N> {
         let mut input = BytesMut::with_capacity(BUF_SIZE);
         let mut output = BytesMut::with_capacity(BUF_SIZE);
         let mut wait_status = None;
+        let is_attached = pty.is_attached();
 
         loop {
             tokio::select! {
@@ -156,12 +164,14 @@ impl<N: Notifier> Session<N> {
                     }
                 }
 
-                result = pty.write(&input), if !input.is_empty() => {
+                result = pty.write(&input), if !input.is_empty() && !is_attached => {
+                    // In attached mode, we don't write to the PTY - we're just observing
                     let n = result?;
                     input.advance(n);
                 }
 
-                result = tty.read(&mut input_buf) => {
+                result = tty.read(&mut input_buf), if !is_attached => {
+                    // In attached mode, we don't read terminal input
                     let n = result?;
 
                     if n > 0 {
@@ -173,7 +183,8 @@ impl<N: Notifier> Session<N> {
                     }
                 }
 
-                result = tty.write(&output), if !output.is_empty() => {
+                result = tty.write(&output), if !output.is_empty() && !is_attached => {
+                    // In attached mode, we don't write to the terminal - output goes to original shell
                     let n = result?;
                     output.advance(n);
                 }
@@ -187,14 +198,21 @@ impl<N: Notifier> Session<N> {
                         }
 
                         SIGINT | SIGTERM | SIGQUIT | SIGHUP => {
-                            pty.kill();
+                            if is_attached {
+                                // In attached mode, just stop recording, don't kill the shell
+                                break;
+                            } else {
+                                pty.kill();
+                            }
                         }
 
                         SIGCHLD => {
-                            if let Ok(status) = pty.wait(Some(WaitPidFlag::WNOHANG)).await {
-                                if status != WaitStatus::StillAlive {
-                                    wait_status = Some(status);
-                                    break;
+                            if !is_attached {
+                                if let Ok(status) = pty.wait(Some(WaitPidFlag::WNOHANG)).await {
+                                    if status != WaitStatus::StillAlive {
+                                        wait_status = Some(status);
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -205,28 +223,35 @@ impl<N: Notifier> Session<N> {
             }
         }
 
-        while let Ok(n) = pty.read(&mut output_buf).await {
-            if n > 0 {
-                self.handle_output(&output_buf[..n]).await;
-                output.extend_from_slice(&output_buf[0..n]);
-            } else {
-                break;
+        if !is_attached {
+            while let Ok(n) = pty.read(&mut output_buf).await {
+                if n > 0 {
+                    self.handle_output(&output_buf[..n]).await;
+                    output.extend_from_slice(&output_buf[0..n]);
+                } else {
+                    break;
+                }
+            }
+
+            if !output.is_empty() {
+                let _ = tty.write_all(&output).await;
             }
         }
 
-        if !output.is_empty() {
-            let _ = tty.write_all(&output).await;
-        }
+        let status = if is_attached {
+            // In attached mode, we exit with 0 (recording stopped, shell continues)
+            0
+        } else {
+            let wait_status = match wait_status {
+                Some(ws) => ws,
+                None => pty.wait(None).await?,
+            };
 
-        let wait_status = match wait_status {
-            Some(ws) => ws,
-            None => pty.wait(None).await?,
-        };
-
-        let status = match wait_status {
-            WaitStatus::Exited(_pid, status) => status,
-            WaitStatus::Signaled(_pid, signal, ..) => 128 + signal as i32,
-            _ => 1,
+            match wait_status {
+                WaitStatus::Exited(_pid, status) => status,
+                WaitStatus::Signaled(_pid, signal, ..) => 128 + signal as i32,
+                _ => 1,
+            }
         };
 
         self.handle_exit(status).await;
