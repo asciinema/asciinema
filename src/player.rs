@@ -162,13 +162,11 @@ fn emit_session_events(
 
     let events = asciicast::limit_idle_time(recording.events, idle_time_limit);
     let events = asciicast::accelerate(events, speed);
-    // TODO avoid collect, support playback from stdin
-    let events: Vec<_> = events.collect();
     let (tx, rx) = mpsc::channel::<Result<Event>>(1024);
 
-    tokio::spawn(async move {
+    tokio::task::spawn_blocking(move || {
         for event in events {
-            if tx.send(event).await.is_err() {
+            if tx.blocking_send(event).is_err() {
                 break;
             }
         }

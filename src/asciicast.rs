@@ -19,7 +19,7 @@ pub use v3::V3Encoder;
 pub struct Asciicast<'a> {
     pub version: Version,
     pub header: Header,
-    pub events: Box<dyn Iterator<Item = Result<Event>> + 'a>,
+    pub events: Box<dyn Iterator<Item = Result<Event>> + Send + 'a>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -125,7 +125,7 @@ pub fn open_from_path<S: AsRef<Path>>(path: S) -> Result<Asciicast<'static>> {
         .map_err(|e| anyhow!("can't open {}: {}", path.as_ref().to_string_lossy(), e))
 }
 
-pub fn open<'a, R: BufRead + 'a>(reader: R) -> Result<Asciicast<'a>> {
+pub fn open<'a, R: BufRead + Send + 'a>(reader: R) -> Result<Asciicast<'a>> {
     let mut lines = reader.lines();
     let first_line = lines.next().ok_or(anyhow!("empty file"))??;
 
@@ -189,9 +189,9 @@ impl Event {
 }
 
 pub fn limit_idle_time(
-    events: impl Iterator<Item = Result<Event>>,
+    events: impl Iterator<Item = Result<Event>> + Send,
     limit: f64,
-) -> impl Iterator<Item = Result<Event>> {
+) -> impl Iterator<Item = Result<Event>> + Send {
     let limit = Duration::from_micros((limit * 1_000_000.0) as u64);
     let mut prev_time = Duration::from_micros(0);
     let mut offset = Duration::from_micros(0);
@@ -213,9 +213,9 @@ pub fn limit_idle_time(
 }
 
 pub fn accelerate(
-    events: impl Iterator<Item = Result<Event>>,
+    events: impl Iterator<Item = Result<Event>> + Send,
     speed: f64,
-) -> impl Iterator<Item = Result<Event>> {
+) -> impl Iterator<Item = Result<Event>> + Send {
     events.map(move |event| {
         event.map(|event| {
             let time = event.time.div_f64(speed);
