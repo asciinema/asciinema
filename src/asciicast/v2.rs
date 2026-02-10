@@ -69,7 +69,10 @@ pub fn open(header_line: &str) -> Result<Parser> {
 }
 
 impl Parser {
-    pub fn parse<'a, I: Iterator<Item = io::Result<String>> + Send + 'a>(self, lines: I) -> Asciicast<'a> {
+    pub fn parse<'a, I: Iterator<Item = io::Result<String>> + Send + 'a>(
+        self,
+        lines: I,
+    ) -> Asciicast<'a> {
         let term_type = self
             .0
             .env
