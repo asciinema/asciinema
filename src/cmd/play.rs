@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use tokio::runtime::Runtime;
 
 use crate::asciicast;
@@ -12,11 +14,7 @@ impl cli::Play {
         let config = Config::new(None)?;
         let speed = self.speed.or(config.playback.speed).unwrap_or(1.0);
         let idle_time_limit = self.idle_time_limit.or(config.playback.idle_time_limit);
-        let path: Box<dyn AsRef<std::path::Path>> = if self.file == "-" {
-            Box::new(std::path::Path::new("/dev/stdin"))
-        } else {
-            util::get_local_path(&self.file)?
-        };
+        let path = self.get_path()?;
         let keys = get_key_bindings(&config.playback)?;
         let runtime = Runtime::new()?;
 
@@ -46,6 +44,14 @@ impl cli::Play {
         }
 
         Ok(())
+    }
+
+    fn get_path(&self) -> anyhow::Result<Box<dyn AsRef<Path>>> {
+        if self.file == "-" {
+            Ok(Box::new(std::path::Path::new("/dev/stdin")))
+        } else {
+            util::get_local_path(&self.file)
+        }
     }
 }
 
