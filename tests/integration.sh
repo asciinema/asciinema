@@ -268,6 +268,30 @@ test_record() {
     assert_file_not_empty "$file8" "record idle time limit"
 }
 
+test_play() {
+    log_info "Testing play command..."
+    local fixture="$FIXTURES/minimal-v2.cast"
+
+    # Playback requires a controlling terminal and access to /dev/tty.
+    if ! tty -s || [[ ! -r /dev/tty ]] || [[ ! -w /dev/tty ]]; then
+        log_warning "Skipping play tests: controlling terminal is not available"
+        return
+    fi
+
+    # Test playback from regular file path
+    local output rc
+    if output=$(timeout --foreground 10s "$ASCIINEMA_BIN" play --speed 1000 "$fixture" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "play from file"
+    assert_output_contains "Replaying session from $fixture" "$output" "play file start message"
+    assert_output_contains "Playback ended" "$output" "play file end message"
+
+    # Test playback from stdin ("-")
+    if output=$(timeout --foreground 10s "$ASCIINEMA_BIN" play --speed 1000 - < "$fixture" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "play from stdin"
+    assert_output_contains "Replaying session from -" "$output" "play stdin start message"
+    assert_output_contains "Playback ended" "$output" "play stdin end message"
+}
+
 test_stream() {
     log_info "Testing stream command..."
     
@@ -429,6 +453,7 @@ run_test "help" test_help
 run_test "version" test_version
 run_test "auth" test_auth
 run_test "record" test_record
+run_test "play" test_play
 run_test "stream" test_stream
 run_test "session" test_session
 run_test "cat" test_cat
