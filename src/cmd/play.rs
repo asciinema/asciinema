@@ -66,6 +66,10 @@ fn get_key_bindings(config: &config::Playback) -> anyhow::Result<KeyBindings> {
         keys.step = key;
     }
 
+    if let Some(key) = config.step_back_key()? {
+        keys.step_back = key;
+    }
+
     if let Some(key) = config.next_marker_key()? {
         keys.next_marker = key;
     }

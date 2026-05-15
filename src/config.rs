@@ -50,6 +50,7 @@ pub struct Playback {
     pub idle_time_limit: Option<f64>,
     pub pause_key: Option<String>,
     pub step_key: Option<String>,
+    pub step_back_key: Option<String>,
     pub next_marker_key: Option<String>,
 }
 
@@ -139,6 +140,10 @@ impl Playback {
 
     pub fn step_key(&self) -> Result<Option<Key>> {
         self.step_key.as_ref().map(parse_key).transpose()
+    }
+
+    pub fn step_back_key(&self) -> Result<Option<Key>> {
+        self.step_back_key.as_ref().map(parse_key).transpose()
     }
 
     pub fn next_marker_key(&self) -> Result<Option<Key>> {

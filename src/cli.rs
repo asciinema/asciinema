@@ -133,7 +133,8 @@ pub enum Commands {
     ///
     /// Press <ctrl+c> to interrupt the playback.
     /// Press <space> to pause/resume.
-    /// Press '.' to step forward (while paused).
+    /// Press <left>/<right> to seek backward/forward 5 seconds, or <up>/<down> to seek 1 minute.
+    /// Press '.' / ',' to step forward/backward (while paused).
     /// Press ']' to skip to the next marker (while paused).
     #[clap(
         about = "Play back a terminal session",
@@ -347,7 +348,7 @@ pub struct Play {
     )]
     pub idle_time_limit: Option<f64>,
 
-    /// Automatically pause playback when encountering marker events. Markers are special events that can be added during recording to mark important points in a session. When this option is enabled, playback will pause at each marker, allowing you to control the flow of the demonstration. Use <space> to resume, '.' to step through events, or ']' to skip to the next marker.
+    /// Automatically pause playback when encountering marker events. Markers are special events that can be added during recording to mark important points in a session. When this option is enabled, playback will pause at each marker, allowing you to control the flow of the demonstration. Use <space> to resume, '.' / ',' to step through events, or ']' to skip to the next marker.
     #[arg(short = 'm', long, help = "Automatically pause on markers", long_help)]
     pub pause_on_markers: bool,
 
