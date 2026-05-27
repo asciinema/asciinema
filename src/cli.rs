@@ -316,6 +316,19 @@ pub struct Record {
 
     #[arg(long, hide = true)]
     pub raw: bool,
+
+    /// Coalesce consecutive terminal output events within the given time window (milliseconds).
+    /// Programs like Claude Code emit hundreds of tiny writes per second for spinner animations;
+    /// this merges them into single events, dramatically reducing .cast file size without losing
+    /// any content. For example, --output-coalesce 50 merges all output writes that arrive
+    /// within 50ms of each other into a single event. Recommended value: 30-100ms.
+    #[arg(
+        long,
+        value_name = "MS",
+        help = "Merge consecutive output events within N milliseconds [reduces file size for animated CLIs]",
+        long_help
+    )]
+    pub output_coalesce: Option<u64>,
 }
 
 #[derive(Debug, Args)]
@@ -580,6 +593,20 @@ pub struct Session {
 
     #[arg(hide = true)]
     pub env: Vec<String>,
+
+    /// Coalesce consecutive terminal output events within the given time window (milliseconds).
+    /// Programs like Claude Code emit hundreds of tiny writes per second for spinner animations;
+    /// this merges them into single events, dramatically reducing .cast file size without losing
+    /// any content. For example, --output-coalesce 50 merges all output writes that arrive
+    /// within 50ms of each other into a single event. Only applies when --output-file is specified.
+    /// Recommended value: 30-100ms.
+    #[arg(
+        long,
+        value_name = "MS",
+        help = "Merge consecutive output events within N milliseconds [reduces file size for animated CLIs]",
+        long_help
+    )]
+    pub output_coalesce: Option<u64>,
 }
 
 #[derive(Debug, Args)]

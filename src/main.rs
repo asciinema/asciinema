@@ -62,6 +62,7 @@ fn main() -> ExitCode {
                 description: None,
                 visibility: None,
                 env: vec!["ASCIINEMA_REC=1".to_owned()],
+                output_coalesce: cmd.output_coalesce,
             };
 
             cmd.run().report()
@@ -89,6 +90,7 @@ fn main() -> ExitCode {
                 description: cmd.description,
                 visibility: cmd.visibility,
                 env: Vec::new(),
+                output_coalesce: None,
             };
 
             cmd.run().report()
