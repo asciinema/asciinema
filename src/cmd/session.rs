@@ -97,7 +97,13 @@ impl cli::Session {
 
         if let Some(writer) = file_writer {
             let output = writer.start().await?;
-            outputs.push(Box::new(output));
+            // Wrap in CoalescingOutput if --output-coalesce was specified
+            let output: Box<dyn session::Output> = if let Some(ms) = self.output_coalesce {
+                Box::new(session::CoalescingOutput::new(Box::new(output), ms))
+            } else {
+                Box::new(output)
+            };
+            outputs.push(output);
         }
 
         let server = listener.map(|listener| {

@@ -340,3 +340,75 @@ impl Default for KeyBindings {
         }
     }
 }
+
+/// Wraps any `Output` and coalesces consecutive `Event::Output` events that arrive within
+/// `window` of each other into a single event. This dramatically reduces .cast file size
+/// for programs (like Claude Code) that emit many small writes for spinner animations.
+/// Non-output events (Resize, Input, Marker, Exit) always flush the buffer immediately.
+pub struct CoalescingOutput {
+    inner: Box<dyn Output>,
+    window: Duration,
+    buf: Option<(Duration, String)>,
+    last_output_at: Option<tokio::time::Instant>,
+}
+
+impl CoalescingOutput {
+    pub fn new(inner: Box<dyn Output>, window_ms: u64) -> Self {
+        Self {
+            inner,
+            window: Duration::from_millis(window_ms),
+            buf: None,
+            last_output_at: None,
+        }
+    }
+
+    async fn flush_buf(&mut self) -> io::Result<()> {
+        if let Some((time, text)) = self.buf.take() {
+            self.inner.event(Event::Output(time, text)).await?;
+        }
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl Output for CoalescingOutput {
+    async fn event(&mut self, event: Event) -> io::Result<()> {
+        match event {
+            Event::Output(time, text) => {
+                let now = tokio::time::Instant::now();
+                let within_window = self
+                    .last_output_at
+                    .map(|t| now.duration_since(t) < self.window)
+                    .unwrap_or(false);
+
+                if within_window {
+                    // Merge into existing buffer
+                    if let Some((_, ref mut buf_text)) = self.buf {
+                        buf_text.push_str(&text);
+                    } else {
+                        self.buf = Some((time, text));
+                    }
+                } else {
+                    // Window expired — flush previous buffer, start new one
+                    self.flush_buf().await?;
+                    self.buf = Some((time, text));
+                }
+
+                self.last_output_at = Some(now);
+                Ok(())
+            }
+
+            // Non-output events flush the buffer immediately to preserve ordering
+            other => {
+                self.flush_buf().await?;
+                self.last_output_at = None;
+                self.inner.event(other).await
+            }
+        }
+    }
+
+    async fn flush(&mut self) -> io::Result<()> {
+        self.flush_buf().await?;
+        self.inner.flush().await
+    }
+}
