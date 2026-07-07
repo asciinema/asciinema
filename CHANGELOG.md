@@ -1,5 +1,10 @@
 # asciinema changelog
 
+## Unreleased
+
+* Added `ls-frames` command for listing the rendered frames of a recording, with timing and screen-change stats
+* Added `cat-frames` command for printing full screen contents of a recording at given frames or times
+
 ## 3.2.1 (2026-06-16)
 
 * Improved error reporting for server API failures - server-provided error messages are now surfaced, with actionable guidance (e.g. running `asciinema auth`)
