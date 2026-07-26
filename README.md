@@ -134,10 +134,8 @@ generation (3.x) of the asciinema CLI, written in Rust.
 The previous generation (2.x), written in Python, can be found in the `python`
 branch.
 
-If you wish to propose non-trivial code changes, please first reach out to the
-team via [forum](https://discourse.asciinema.org/),
-[Matrix](https://matrix.to/#/#asciinema:matrix.org) or
-[IRC](https://web.libera.chat/#asciinema).
+If you'd like to propose or submit any changes, please read the
+[contribution guidelines](CONTRIBUTING.md) first.
 
 ## Donations
 
