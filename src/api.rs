@@ -103,7 +103,10 @@ pub async fn create_recording(
     let legacy_fallback = (response.status().as_u16() == 413)
         .then(|| "The recording exceeds the server-configured size limit".to_owned());
 
-    let server_hostname = server_url.host().unwrap().to_string();
+    let server_hostname = server_url
+        .host()
+        .expect("host presence is checked in parse_server_url")
+        .to_string();
     let response = handle_response_status(response, &server_hostname, legacy_fallback).await?;
 
     Ok(response.json::<RecordingResponse>().await?)
@@ -236,7 +239,10 @@ async fn parse_stream_response<T: DeserializeOwned>(
     response: Response,
     server_url: &Url,
 ) -> Result<T> {
-    let server_hostname = server_url.host().unwrap().to_string();
+    let server_hostname = server_url
+        .host()
+        .expect("host presence is checked in parse_server_url")
+        .to_string();
 
     let legacy_fallback = match response.status().as_u16() {
         404 | 422 => Some(format!("{server_hostname} doesn't support streaming")),

@@ -200,7 +200,11 @@ async fn send_command(
 }
 
 fn make_header(metadata: &Metadata) -> asciicast::Header {
-    let timestamp = metadata.time.duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let timestamp = metadata
+        .time
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|d| d.as_secs());
 
     asciicast::Header {
         term_cols: metadata.term.size.0,
@@ -208,7 +212,7 @@ fn make_header(metadata: &Metadata) -> asciicast::Header {
         term_type: metadata.term.type_.clone(),
         term_version: metadata.term.version.clone(),
         term_theme: metadata.term.theme.clone(),
-        timestamp: Some(timestamp),
+        timestamp,
         idle_time_limit: metadata.idle_time_limit,
         command: metadata.command.clone(),
         title: metadata.title.clone(),
