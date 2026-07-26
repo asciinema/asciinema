@@ -272,11 +272,9 @@ fn parse_key<S: AsRef<str>>(key: S) -> Result<Key> {
             }
         }
 
-        3 => {
-            if chars[0].eq_ignore_ascii_case(&'C') && ['+', '-'].contains(&chars[1]) {
-                if let Some(key) = parse_control_key(chars[2]) {
-                    return Ok(Some(vec![key]));
-                }
+        3 if chars[0].eq_ignore_ascii_case(&'C') && ['+', '-'].contains(&chars[1]) => {
+            if let Some(key) = parse_control_key(chars[2]) {
+                return Ok(Some(vec![key]));
             }
         }
 

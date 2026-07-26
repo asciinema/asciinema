@@ -132,12 +132,10 @@ pub async fn play(
                         tty.resize((*cols as usize, *rows as usize).into()).await?;
                     }
 
-                    EventData::Marker(_) => {
-                        if pause_on_markers {
-                            pause_elapsed_time = Some(time.as_micros() as u64);
-                            next_event = events.recv().await.transpose()?;
-                            break;
-                        }
+                    EventData::Marker(_) if pause_on_markers => {
+                        pause_elapsed_time = Some(time.as_micros() as u64);
+                        next_event = events.recv().await.transpose()?;
+                        break;
                     }
 
                     _ => (),

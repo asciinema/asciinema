@@ -23,7 +23,7 @@ pub fn check_utf8_locale() -> anyhow::Result<()> {
 
 pub fn initialize_from_env() {
     unsafe {
-        libc::setlocale(LC_ALL, b"\0".as_ptr() as *const libc::c_char);
+        libc::setlocale(LC_ALL, c"".as_ptr());
     };
 }
 

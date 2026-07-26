@@ -246,7 +246,7 @@ fn format_duration(duration: Duration) -> String {
     let secs = time_ms / 1_000;
     let millis = time_ms % 1_000;
 
-    format!("{}.{}", secs, format!("{:03}", millis))
+    format!("{secs}.{millis:03}")
 }
 
 impl serde::Serialize for V3Header {
