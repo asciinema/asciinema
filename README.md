@@ -134,6 +134,15 @@ generation (3.x) of the asciinema CLI, written in Rust.
 The previous generation (2.x), written in Python, can be found in the `python`
 branch.
 
+The recommended way to work on asciinema is the Nix dev shell, which provides
+the complete toolchain and just works:
+
+```sh
+nix develop
+```
+
+If you don't use Nix, you need the Rust toolchain (1.82 or later) with Cargo.
+
 If you'd like to propose or submit any changes, please read the
 [contribution guidelines](CONTRIBUTING.md) first.
 
