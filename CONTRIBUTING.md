@@ -93,8 +93,12 @@ What we look for in a PR:
 - Match the style and conventions of the surrounding code, and run the
   repository's formatter before submitting.
 - Make sure the test suite passes, and add tests covering new behavior.
-- Write the description yourself, in your own words: what the change does,
-  why, and how you tested it.
+- Understand every change you submit. You should be able to explain what it
+  does, how it interacts with the rest of the project, and answer review
+  questions yourself.
+- Write the description yourself, in your own words: what the change does, why,
+  and how you tested it. The same goes for discussion threads and review
+  replies.
 
 We care about the long-term shape of the codebase, so reviews can be picky
 about naming, structure and consistency, even when a change already works.
@@ -110,20 +114,13 @@ patience is appreciated.
 
 ## AI-assisted contributions
 
-It's fine to use AI coding tools when working on a contribution. A few
-expectations keep this working well for everyone:
+If you use AI coding tools, note that in your PR description: which tool, and
+to what extent (e.g. "wrote the first draft, which I then reviewed and
+reworked").
 
-- **Disclose AI use in your PR description**: which tool, and to what extent
-  (e.g. "wrote the first draft, which I then reviewed and reworked").
-- **You must fully understand your changes.** You should be able to explain
-  what the code does, how it interacts with the rest of the project, and
-  answer review questions yourself.
-- **Write in your own voice.** PR descriptions, discussion threads and review
-  replies should be written by you, not generated.
-
-Reviewing a change is often more work than writing it. These expectations keep
-maintainer review time going where it matters: changes that a human has
-already understood, tested and stands behind.
+The expectations above apply no matter how a change was produced. Reviewing a
+change is often more work than writing it, and you are the one who needs to
+understand, test and stand behind what you submit.
 
 ## Community
 
