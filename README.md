@@ -86,10 +86,16 @@ overview.
 
 ## Building
 
-Building asciinema from source requires the [Rust](https://www.rust-lang.org/)
-compiler (1.82 or later), and the [Cargo package
-manager](https://doc.rust-lang.org/cargo/). If they are not available via your
-system package manager then use [rustup](https://rustup.rs/).
+A native build of asciinema requires the Rust toolchain (1.82 or later) with
+Cargo. In a local checkout the recommended way to get it is the Nix dev shell,
+which provides the complete toolchain and just works:
+
+```sh
+nix develop
+```
+
+If you don't use Nix, install Rust with Cargo via your system package manager
+or [rustup](https://rustup.rs/).
 
 To download the source code, build the asciinema binary, and install it in
 `$HOME/.cargo/bin` in one go run:
@@ -134,14 +140,7 @@ generation (3.x) of the asciinema CLI, written in Rust.
 The previous generation (2.x), written in Python, can be found in the `python`
 branch.
 
-The recommended way to work on asciinema is the Nix dev shell, which provides
-the complete toolchain and just works:
-
-```sh
-nix develop
-```
-
-If you don't use Nix, you need the Rust toolchain (1.82 or later) with Cargo.
+For toolchain setup and build instructions, see [Building](#building).
 
 If you'd like to propose or submit any changes, please read the
 [contribution guidelines](CONTRIBUTING.md) first.
