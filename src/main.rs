@@ -8,6 +8,7 @@ mod encoder;
 mod fd;
 mod file_output;
 mod forwarder;
+mod frames;
 mod hash;
 mod html;
 mod leb128;
@@ -99,6 +100,8 @@ fn main() -> ExitCode {
         Commands::Play(cmd) => cmd.run().report(),
         Commands::Cat(cmd) => cmd.run().report(),
         Commands::Convert(cmd) => cmd.run().report(),
+        Commands::LsFrames(cmd) => cmd.run().report(),
+        Commands::CatFrames(cmd) => cmd.run().report(),
         Commands::Upload(cmd) => cmd.run().report(),
         Commands::Auth(cmd) => cmd.run().report(),
     }
