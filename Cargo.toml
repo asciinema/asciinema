@@ -47,7 +47,7 @@ zstd = "0.13.3"
 [build-dependencies]
 clap = { version = "4.0", features = ["derive", "wrap_help"] }
 clap_complete = "4.0"
-clap_mangen = "0.2"
+clap_mangen = "0.3"
 url = "2.5"
 
 [profile.release]
