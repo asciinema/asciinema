@@ -1,7 +1,6 @@
 use std::io::{self, Write};
 use std::sync::mpsc;
 use std::thread;
-use std::time::UNIX_EPOCH;
 
 use async_trait::async_trait;
 use tokio::sync::oneshot;
@@ -46,7 +45,7 @@ impl FileOutput {
     }
 
     pub async fn start(self) -> io::Result<LiveFileOutput> {
-        let header = make_header(&self.metadata);
+        let header = asciicast::Header::from(&self.metadata);
         let (commands_tx, commands_rx) = mpsc::channel();
         let (started_tx, started_rx) = oneshot::channel();
 
@@ -199,43 +198,8 @@ async fn send_command(
     result_rx.await.unwrap_or_else(|_| Err(worker_failed()))
 }
 
-fn make_header(metadata: &Metadata) -> asciicast::Header {
-    let timestamp = metadata
-        .time
-        .duration_since(UNIX_EPOCH)
-        .ok()
-        .map(|d| d.as_secs());
-
-    asciicast::Header {
-        term_cols: metadata.term.size.0,
-        term_rows: metadata.term.size.1,
-        term_type: metadata.term.type_.clone(),
-        term_version: metadata.term.version.clone(),
-        term_theme: metadata.term.theme.clone(),
-        timestamp,
-        idle_time_limit: metadata.idle_time_limit,
-        command: metadata.command.clone(),
-        title: metadata.title.clone(),
-        env: Some(metadata.env.clone()),
-    }
-}
-
 fn worker_failed() -> io::Error {
     io::Error::other("file output worker failed")
-}
-
-impl From<session::Event> for asciicast::Event {
-    fn from(event: session::Event) -> Self {
-        match event {
-            session::Event::Output(time, text) => asciicast::Event::output(time, text),
-            session::Event::Input(time, text) => asciicast::Event::input(time, text),
-            session::Event::Resize(time, tty_size) => {
-                asciicast::Event::resize(time, tty_size.into())
-            }
-            session::Event::Marker(time, label) => asciicast::Event::marker(time, label),
-            session::Event::Exit(time, status) => asciicast::Event::exit(time, status),
-        }
-    }
 }
 
 #[cfg(test)]

@@ -8,10 +8,11 @@ use std::fmt::Display;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path::Path;
-use std::time::Duration;
+use std::time::{Duration, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
 
+use crate::session;
 use crate::tty::TtyTheme;
 pub use v2::V2Encoder;
 pub use v3::V3Encoder;
@@ -248,6 +249,39 @@ pub fn encoder(version: Version) -> Option<Box<dyn Encoder>> {
         Version::One => None,
         Version::Two => Some(Box::new(V2Encoder::new(Duration::from_micros(0)))),
         Version::Three => Some(Box::new(V3Encoder::new())),
+    }
+}
+
+impl From<&session::Metadata> for Header {
+    fn from(metadata: &session::Metadata) -> Self {
+        Header {
+            term_cols: metadata.term.size.0,
+            term_rows: metadata.term.size.1,
+            term_type: metadata.term.type_.clone(),
+            term_version: metadata.term.version.clone(),
+            term_theme: metadata.term.theme.clone(),
+            timestamp: metadata
+                .time
+                .duration_since(UNIX_EPOCH)
+                .ok()
+                .map(|d| d.as_secs()),
+            idle_time_limit: metadata.idle_time_limit,
+            command: metadata.command.clone(),
+            title: metadata.title.clone(),
+            env: Some(metadata.env.clone()),
+        }
+    }
+}
+
+impl From<session::Event> for Event {
+    fn from(event: session::Event) -> Self {
+        match event {
+            session::Event::Output(time, text) => Event::output(time, text),
+            session::Event::Input(time, text) => Event::input(time, text),
+            session::Event::Resize(time, size) => Event::resize(time, size.into()),
+            session::Event::Marker(time, label) => Event::marker(time, label),
+            session::Event::Exit(time, status) => Event::exit(time, status),
+        }
     }
 }
 

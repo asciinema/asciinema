@@ -9,6 +9,7 @@ use reqwest::Url;
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::hook::Hook;
 use crate::status;
 
 const DEFAULT_SERVER_URL: &str = "https://asciinema.org";
@@ -41,6 +42,8 @@ pub struct Session {
     pub prefix_key: Option<String>,
     pub pause_key: Option<String>,
     pub add_marker_key: Option<String>,
+    #[serde(default)]
+    pub hooks: Vec<Hook>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -85,6 +88,12 @@ impl Config {
         }
 
         Ok(config.build()?.try_deserialize()?)
+    }
+
+    /// The configured server URL, if any. Unlike [`Config::get_server_url`],
+    /// this never asks the user to pick.
+    pub fn server_url(&self) -> Option<&str> {
+        self.server.url.as_deref()
     }
 
     pub fn get_server_url(&mut self) -> Result<Url> {
@@ -326,7 +335,53 @@ pub fn check_legacy_config_file() {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_key;
+    use super::*;
+
+    /// Deserializes a config from the given TOML, with the same defaults
+    /// [`Config::new`] applies.
+    fn config_from(toml: &str) -> Result<Config> {
+        Ok(config::Config::builder()
+            .set_default("server.url", None::<Option<String>>)?
+            .set_default("playback.speed", None::<Option<f64>>)?
+            .set_default("session.capture_input", false)?
+            .set_default("notifications.enabled", true)?
+            .add_source(File::from_str(toml, config::FileFormat::Toml))
+            .build()?
+            .try_deserialize()?)
+    }
+
+    #[test]
+    fn parses_hooks_from_the_config_file() {
+        let config = config_from(
+            r#"
+            [session]
+            capture_input = true
+            hooks = ["agg - demo.gif", "tee copy.cast"]
+            "#,
+        )
+        .unwrap();
+
+        let commands: Vec<&str> = config
+            .session
+            .hooks
+            .iter()
+            .map(|hook| hook.0.as_str())
+            .collect();
+
+        assert_eq!(commands, ["agg - demo.gif", "tee copy.cast"]);
+        assert!(config.session.capture_input);
+    }
+
+    #[test]
+    fn rejects_a_non_string_hook() {
+        assert!(config_from(
+            r#"
+            [session]
+            hooks = [{ command = "agg - demo.gif" }]
+            "#,
+        )
+        .is_err());
+    }
 
     #[test]
     fn parse_key_accepts_ctrl_letters() {

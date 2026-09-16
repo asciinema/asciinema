@@ -68,6 +68,26 @@ To record a session run this command in your shell:
 asciinema rec demo.cast
 ```
 
+### Hooks
+
+Hooks feed the live stream session to a command you get to choose, as it's being recorded!
+
+```sh
+asciinema rec demo.cast --command 'printf "ship-it\n"' --hook 'agg - demo.gif'
+```
+
+That there hook receives the very same asciicast stream that ends up producing the recording,
+through stdin. asciicinema waits for it to finish, leaving you with both a finished recording,
+and a finished command output! Spawned separately so it should be very robust.
+The hook is told which session it accompanies through the `ASCIINEMA_SESSION` id, plus `ASCIINEMA_OUTPUT_FILE` and
+`ASCIINEMA_SERVER_URL` when they apply. Hooks can also be configured in the
+config file:
+
+```toml
+[session]
+hooks = ["agg - demo.gif"]
+```
+
 To stream a session via built-in HTTP server run:
 
 ```sh

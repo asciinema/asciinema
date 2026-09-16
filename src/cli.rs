@@ -56,6 +56,9 @@ pub enum Commands {
   asciinema rec --append demo.cast
       Continues recording to an existing file
 
+  asciinema rec --hook 'agg - demo.gif' demo.cast
+      Records while feeding the live session stream to a renderer
+
   asciinema rec demo.txt
       Records as a plain-text log - output format inferred from the .txt extension"
     )]
@@ -90,7 +93,10 @@ pub enum Commands {
       Streams execution of the ping command
 
   asciinema stream -r <ID> -t \"Live coding\"
-      Streams via a remote server, reusing the existing stream ID and setting the stream title"
+      Streams via a remote server, reusing the existing stream ID and setting the stream title
+
+  asciinema stream -l --hook 'tee session.cast > /dev/null'
+      Streams locally while feeding the live session stream to a hook"
     )]
     Stream(Stream),
 
@@ -123,7 +129,10 @@ pub enum Commands {
       Records to a file with idle time capped at 1.5 seconds
 
   asciinema session -o demo.cast -l 0.0.0.0:9000 -r <ID>
-      Records + streams locally on port 9000 + streams remotely, reusing existing stream ID"
+      Records + streams locally on port 9000 + streams remotely, reusing existing stream ID
+
+  asciinema session --hook 'agg - demo.gif' -o demo.cast
+      Records to a file while feeding the live session stream to a hook"
     )]
     Session(Session),
 
@@ -217,6 +226,19 @@ pub enum Commands {
     Convert(Convert),
 }
 
+/// Commands fed with the live session stream, shared by the session commands.
+#[derive(Debug, Args)]
+pub struct Hooks {
+    /// Run a command fed with the live asciicast v3 stream of the session on its standard input. The hook is started before the session, receives the asciicast header followed by the session events, and gets end-of-file right after the final exit event. asciinema waits for the hook to finish, and reports an error when it exits with a non-zero status. The hook's standard output is discarded - a hook is expected to write its result to a file or a service - while its standard error is logged with --log-file, and its last line is included in the error message. The hook is given the ASCIINEMA_SESSION environment variable, plus ASCIINEMA_OUTPUT_FILE when the session is saved to a file and ASCIINEMA_SERVER_URL when a server is configured. The stream fed to the hook is exactly what ends up in the recording: keyboard input is included if (and only if) input capture is enabled with --capture-input. Can be given multiple times. Can also be set via the config file option session.hooks.
+    #[arg(
+        long,
+        value_name = "COMMAND",
+        help = "Run a command fed with the live session stream",
+        long_help
+    )]
+    pub hook: Vec<String>,
+}
+
 #[derive(Debug, Args)]
 pub struct Record {
     /// Output file path. A .zst suffix enables zstd compression.
@@ -260,6 +282,9 @@ pub struct Record {
         long_help
     )]
     pub capture_env: Option<String>,
+
+    #[command(flatten)]
+    pub hooks: Hooks,
 
     /// Append the new session to an existing recording file instead of creating a new one. This allows you to continue a previous recording session. The timing will be adjusted to maintain continuity from where the previous recording ended. Cannot be used together with --overwrite.
     #[arg(short, long, help = "Append to an existing recording file", long_help)]
@@ -394,6 +419,9 @@ pub struct Stream {
     )]
     pub capture_env: Option<String>,
 
+    #[command(flatten)]
+    pub hooks: Hooks,
+
     /// Set a descriptive title for the streaming session. This title is displayed to viewers (when doing remote streaming with --remote). For example: --title "Building a REST API". If the server has stream recording enabled then the title will be included in the recording file created on the server side.
     #[arg(short, long, help = "Title of the session", long_help)]
     pub title: Option<String>,
@@ -453,7 +481,7 @@ pub enum Visibility {
 }
 
 #[derive(Debug, Args)]
-#[clap(group(ArgGroup::new("mode").args(&["output_file", "stream_local", "stream_remote"]).multiple(true).required(true)))]
+#[clap(group(ArgGroup::new("mode").args(&["output_file", "hook", "stream_local", "stream_remote"]).multiple(true).required(true)))]
 pub struct Session {
     /// Save the session to a file at the specified path. A .zst suffix enables zstd compression. Can be combined with local and remote streaming.
     #[arg(
@@ -505,6 +533,9 @@ pub struct Session {
         long_help
     )]
     pub capture_env: Option<String>,
+
+    #[command(flatten)]
+    pub hooks: Hooks,
 
     /// Append the new session to an existing recording file instead of creating a new one. This allows you to continue a previous recording session. The timing will be adjusted to maintain continuity from where the previous recording ended. Cannot be used together with --overwrite. Only applies when --output-file is specified.
     #[arg(short, long, help = "Append to an existing recording file", long_help)]

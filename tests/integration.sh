@@ -100,12 +100,50 @@ assert_file_contains() {
     local expected=$1
     local file=$2
     local test_name=$3
-    
+
     ((TESTS_RUN++))
     if grep -q "$expected" "$file"; then
         log_success "$test_name - file contains: $expected"
     else
         log_error "$test_name - file missing: $expected"
+        return 1
+    fi
+}
+
+# A recording is ***only*** trustworthy if asciinema can parse it back: round-trip
+# it through the CLI, then check the shape of the first and last lines.
+assert_valid_cast() {
+    local file=$1
+    local test_name=$2
+
+    ((TESTS_RUN++))
+    if ! "$ASCIINEMA_BIN" convert "$file" - > /dev/null 2>&1; then
+        log_error "$test_name - asciinema cannot parse: $file"
+        return 1
+    fi
+
+    local header last
+    header=$(head -n 1 "$file")
+    last=$(grep -v '^$' "$file" | tail -n 1)
+
+    if [[ "$header" != *'"version":3'* ]] || [[ "$last" != *'"x"'* ]]; then
+        log_error "$test_name - not a complete v3 recording: $file"
+        return 1
+    fi
+
+    log_success "$test_name - valid v3 recording: $file"
+}
+
+assert_files_identical() {
+    local a=$1
+    local b=$2
+    local test_name=$3
+
+    ((TESTS_RUN++))
+    if cmp -s "$a" "$b"; then
+        log_success "$test_name - identical: $a, $b"
+    else
+        log_error "$test_name - differ: $a, $b"
         return 1
     fi
 }
@@ -220,7 +258,7 @@ test_record() {
     local rc
     if "$ASCIINEMA_BIN" record --headless --command 'echo "hello world"' --return "$file1"; then rc=0; else rc=$?; fi
     assert_exit_code 0 "$rc" "record basic"
-    assert_file_contains '"o",' "$file1" "record output event"
+    assert_valid_cast "$file1" "record basic"
     assert_file_contains 'hello world' "$file1" "record output content"
     
     # Test different formats
@@ -233,7 +271,55 @@ test_record() {
     if "$ASCIINEMA_BIN" record --headless --command 'echo "test v3"' --output-format asciicast-v3 --return "$file3"; then rc=0; else rc=$?; fi
     assert_exit_code 0 "$rc" "record v3 format"
     assert_file_not_empty "$file3" "record v3 format"
-    
+
+    # Test hooks
+    local hook_file="$TMP_DATA_DIR/record_hook.cast"
+    local hook_source="$TMP_DATA_DIR/record_hook_source.cast"
+    if "$ASCIINEMA_BIN" record --headless --command 'echo "hook test"' --hook "cat > $hook_file" --return "$hook_source"; then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "record hook"
+    assert_valid_cast "$hook_source" "record hook recording"
+    assert_valid_cast "$hook_file" "record hook stream"
+    assert_files_identical "$hook_file" "$hook_source" "record hook stream matches the recording"
+    assert_file_contains 'hook test' "$hook_file" "record hook output event"
+
+    # Test multiple hooks
+    local hook_file_a="$TMP_DATA_DIR/record_hook_a.cast"
+    local hook_file_b="$TMP_DATA_DIR/record_hook_b.cast"
+    local multi_source="$TMP_DATA_DIR/record_multi_hook_source.cast"
+    if "$ASCIINEMA_BIN" record --headless --command 'echo "two hooks"' --hook "cat > $hook_file_a" --hook "cat > $hook_file_b" --return "$multi_source"; then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "record multiple hooks"
+    assert_files_identical "$hook_file_a" "$hook_file_b" "record hooks receive identical streams"
+    assert_file_contains 'two hooks' "$hook_file_a" "record first hook output event"
+    assert_file_contains 'two hooks' "$hook_file_b" "record second hook output event"
+
+    # Test hook environment
+    local hook_env="$TMP_DATA_DIR/record_hook_env"
+    local env_source="$TMP_DATA_DIR/record_hook_env_source.cast"
+    if "$ASCIINEMA_BIN" record --headless --command 'true' --hook "cat > /dev/null; printf '%s %s %s' \"\$ASCIINEMA_SESSION\" \"\$ASCIINEMA_OUTPUT_FILE\" \"\$ASCIINEMA_SERVER_URL\" > $hook_env" --return "$env_source"; then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "record hook environment"
+    assert_file_contains "$env_source" "$hook_env" "record hook output file variable"
+    assert_file_not_empty "$hook_env" "record hook session variable present"
+    assert_file_contains 'https://asciinema.example.com' "$hook_env" "record hook server url variable"
+
+    # Test that a failing hook fails the session, without losing the recording,
+    # and that its status and last stderr line are reported
+    local failed_hook_source="$TMP_DATA_DIR/record_failed_hook_source.cast"
+    local failed_hook_output
+    if failed_hook_output=$("$ASCIINEMA_BIN" record --headless --command 'echo "kept"' --hook 'echo boom >&2; exit 7' --return "$failed_hook_source" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 1 "$rc" "record failing hook"
+    assert_output_contains "exit status: 7" "$failed_hook_output" "record failing hook status reported"
+    assert_output_contains "boom" "$failed_hook_output" "record failing hook stderr included"
+    assert_file_contains 'kept' "$failed_hook_source" "record kept despite failing hook"
+
+    # Test that a hook which never reads the stream is failed rather than
+    # allowed to stall the session, without losing the recording
+    local stuck_hook_source="$TMP_DATA_DIR/record_stuck_hook_source.cast"
+    local stuck_hook_output
+    if stuck_hook_output=$(timeout 60 "$ASCIINEMA_BIN" record --headless --command 'dd if=/dev/zero bs=1024 count=20480 2>/dev/null' --hook 'exec sleep 60' --return "$stuck_hook_source" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 1 "$rc" "record hook which never reads"
+    assert_output_contains "not reading" "$stuck_hook_output" "record stuck hook reason reported"
+    assert_file_not_empty "$stuck_hook_source" "record kept despite stuck hook"
+
     # Test raw format
     local file4="$TMP_DATA_DIR/record_raw.raw"
     if "$ASCIINEMA_BIN" record --headless --command 'echo "test raw"' --output-format raw --return "$file4"; then rc=0; else rc=$?; fi
@@ -311,6 +397,13 @@ test_stream() {
     # Clean up
     kill $stream_pid 2>/dev/null || true
     wait $stream_pid 2>/dev/null || true
+
+    # Test a hook fed with the live stream
+    local stream_hook_file="$TMP_DATA_DIR/stream_hook.cast"
+    if "$ASCIINEMA_BIN" stream --headless --local 127.0.0.1:8082 --command 'echo "stream hook test"' --hook "cat > $stream_hook_file" --return; then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "stream hook"
+    assert_valid_cast "$stream_hook_file" "stream hook stream"
+    assert_file_contains 'stream hook test' "$stream_hook_file" "stream hook output event"
 }
 
 test_session() {
@@ -321,12 +414,29 @@ test_session() {
     local rc
     if "$ASCIINEMA_BIN" session --headless --output-file "$file1" --command 'echo "session test"' --return; then rc=0; else rc=$?; fi
     assert_exit_code 0 "$rc" "session basic"
+    assert_valid_cast "$file1" "session basic"
     assert_file_contains 'session test' "$file1" "session output content"
-    
+
+    # Test a hook as the only session output
+    local hook_file="$TMP_DATA_DIR/session_hook.cast"
+    if "$ASCIINEMA_BIN" session --headless --hook "cat > $hook_file" --command 'echo "session hook test"' --return; then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "session hook"
+    assert_valid_cast "$hook_file" "session hook stream"
+    assert_file_contains 'session hook test' "$hook_file" "session hook output event"
+
+    # Test that a failing hook fails the session, and that its status and
+    # last stderr line are reported
+    local failed_hook_output
+    if failed_hook_output=$("$ASCIINEMA_BIN" session --headless --command 'true' --hook 'echo session-boom >&2; exit 7' --return 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 1 "$rc" "session failing hook"
+    assert_output_contains "exit status: 7" "$failed_hook_output" "session failing hook status reported"
+    assert_output_contains "session-boom" "$failed_hook_output" "session failing hook stderr included"
+
     # Test session with return flag failure
     local file2="$TMP_DATA_DIR/session_fail.cast"
     if "$ASCIINEMA_BIN" session --headless --output-file "$file2" --command 'exit 13' --return; then rc=0; else rc=$?; fi
     assert_exit_code 13 "$rc" "session return flag with failure"
+    assert_valid_cast "$file2" "session return flag with failure"
     assert_file_contains '"x", "13"' "$file2" "session exit event"
     
     # Test session with local streaming + file output
@@ -436,6 +546,32 @@ test_convert() {
     assert_file_contains '"version":3' "$file5" "convert overwrite content"
 }
 
+test_config() {
+    log_info "Testing config file hooks..."
+
+    # The config file was set up with a notifications section only
+    local rc
+    cat >> "${ASCIINEMA_CONFIG_HOME}/config.toml" <<EOF
+
+[session]
+hooks = ["cat > $TMP_DATA_DIR/config_hook.cast"]
+EOF
+
+    local file="$TMP_DATA_DIR/config_session.cast"
+    if "$ASCIINEMA_BIN" session --headless --output-file "$file" --command 'echo "config hook test"' --return; then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "session with configured hook"
+    assert_valid_cast "$TMP_DATA_DIR/config_hook.cast" "configured hook stream"
+    assert_file_contains 'config hook test' "$TMP_DATA_DIR/config_hook.cast" "configured hook ran"
+
+    # A malformed hook entry is an error, not a silently skipped hook
+    local bad_home="$TMP_DATA_DIR/bad-config-home"
+    mkdir -p "$bad_home"
+    printf '[notifications]\nenabled = false\n\n[session]\nhooks = [{ command = "true" }]\n' > "$bad_home/config.toml"
+
+    if ASCIINEMA_CONFIG_HOME="$bad_home" "$ASCIINEMA_BIN" session --headless --output-file "$file" --command 'true' --return; then rc=0; else rc=$?; fi
+    assert_exit_code 1 "$rc" "invalid configured hook rejected"
+}
+
 # MAIN EXECUTION
 
 # Setup always runs
@@ -458,6 +594,7 @@ run_test "stream" test_stream
 run_test "session" test_session
 run_test "cat" test_cat
 run_test "convert" test_convert
+run_test "config" test_config
 
 # Final summary
 echo
