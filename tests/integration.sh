@@ -222,6 +222,28 @@ test_record() {
     assert_exit_code 0 "$rc" "record basic"
     assert_file_contains '"o",' "$file1" "record output event"
     assert_file_contains 'hello world' "$file1" "record output content"
+
+    # Test recording to stdout (synthetic command only)
+    local stdout_file="$TMP_DATA_DIR/record_stdout.cast"
+    local stdout_rc
+    if (cd "$TMP_DATA_DIR" && "$ASCIINEMA_BIN" record --headless --command 'printf stdout-proof' --return - > "$stdout_file" 2> "$TMP_DATA_DIR/record_stdout.stderr"); then stdout_rc=0; else stdout_rc=$?; fi
+    assert_exit_code 0 "$stdout_rc" "record to stdout"
+    assert_file_contains '"version":3' "$stdout_file" "record stdout header"
+    assert_file_contains 'stdout-proof' "$stdout_file" "record stdout content"
+    ((TESTS_RUN++))
+    if [[ "$(head -n 1 "$stdout_file")" == '{"version":3,'* ]]; then
+        log_success "record stdout contains no status text"
+    else
+        log_error "record stdout is prefixed by status text"
+        return 1
+    fi
+    ((TESTS_RUN++))
+    if [[ ! -e "$TMP_DATA_DIR/-" ]]; then
+        log_success "record stdout does not create a '-' file"
+    else
+        log_error "record stdout unexpectedly created a '-' file"
+        return 1
+    fi
     
     # Test different formats
     local file2="$TMP_DATA_DIR/record_v2.cast"
