@@ -13,6 +13,16 @@ pub fn new(file: File, compressed: bool) -> io::Result<Box<dyn OutputWriter>> {
     }
 }
 
+pub fn stdout() -> Box<dyn OutputWriter> {
+    Box::new(io::stdout())
+}
+
+impl OutputWriter for io::Stdout {
+    fn finish(mut self: Box<Self>) -> io::Result<()> {
+        self.flush()
+    }
+}
+
 impl OutputWriter for File {
     fn finish(mut self: Box<Self>) -> io::Result<()> {
         self.flush()
