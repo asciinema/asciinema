@@ -9,6 +9,7 @@ mod fd;
 mod file_output;
 mod forwarder;
 mod hash;
+mod hook;
 mod html;
 mod leb128;
 mod locale;
@@ -18,6 +19,7 @@ mod player;
 mod pty;
 mod server;
 mod session;
+mod spawn;
 mod status;
 mod stream;
 mod tty;
@@ -50,6 +52,7 @@ fn main() -> ExitCode {
                 overwrite: cmd.overwrite,
                 command: cmd.command,
                 capture_env: cmd.capture_env,
+                hooks: cmd.hooks,
                 title: cmd.title,
                 idle_time_limit: cmd.idle_time_limit,
                 headless: cmd.headless,
@@ -77,6 +80,7 @@ fn main() -> ExitCode {
                 overwrite: false,
                 command: cmd.command,
                 capture_env: cmd.capture_env,
+                hooks: cmd.hooks,
                 title: cmd.title,
                 idle_time_limit: None,
                 headless: cmd.headless,

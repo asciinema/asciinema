@@ -22,11 +22,13 @@ use crate::encoder::{AsciicastV2Encoder, AsciicastV3Encoder, Encoder, RawEncoder
 use crate::file_output::FileOutput;
 use crate::forwarder;
 use crate::hash;
+use crate::hook::Hook;
 use crate::locale;
 use crate::notifier::{self, BackgroundNotifier, Notifier, NullNotifier};
 use crate::output_writer;
 use crate::server;
-use crate::session::{self, KeyBindings, Metadata, TermInfo};
+use crate::session::{self, KeyBindings, Metadata, Sink, TermInfo};
+use crate::spawn;
 use crate::status;
 use crate::stream::Stream;
 use crate::tty::{self, DevTty, FixedSizeTty, NullTty, RawTty};
@@ -52,9 +54,12 @@ impl cli::Session {
         let command = self.get_command(&config.session);
         let keys = get_key_bindings(&config.session)?;
         let notifier = get_notifier(&config);
+        let capture_input = self.capture_input || config.session.capture_input;
+        let session_id = build_session_id();
         let (tty, term_info) = probe_tty(self.headless, self.window_size).await?;
         let metadata = self.get_session_metadata(&config.session, term_info)?;
         let file_output = self.get_file_output(&metadata, notifier.clone())?;
+        let hooks = self.get_hooks(&config.session);
         let listener = self.get_listener().await?;
         let relay = self.get_relay(&metadata, &mut config).await?;
         let relay_id = relay.as_ref().map(|r| r.id());
@@ -94,11 +99,20 @@ impl cli::Session {
 
         let stream = Stream::new();
         let shutdown_token = CancellationToken::new();
-        let mut outputs: Vec<Box<dyn session::Output>> = Vec::new();
+        let mut sinks: Vec<Sink> = Vec::new();
 
         if let Some(file_output) = file_output {
-            let output = file_output.start().await?;
-            outputs.push(Box::new(output));
+            sinks.push(Sink::new(file_output.start().await?));
+        }
+
+        let context = spawn::Context {
+            session_id: &session_id,
+            output_file: self.output_file.as_deref(),
+            server_url: config.server_url(),
+        };
+
+        for hook in &hooks {
+            sinks.push(hook.start(&metadata, &context, Box::new(notifier.clone()))?);
         }
 
         let server = listener.map(|listener| {
@@ -119,26 +133,25 @@ impl cli::Session {
         });
 
         if server.is_some() || forwarder.is_some() {
-            let output = stream.start(&metadata).await;
-            outputs.push(Box::new(output));
+            sinks.push(Sink::new(stream.start(&metadata).await));
         }
 
         let command = &build_exec_command(command.as_ref().cloned());
-        let extra_env = &build_exec_extra_env(&self.env, relay_id.as_ref());
+        let extra_env = &build_exec_extra_env(&self.env, &session_id, relay_id.as_ref());
 
-        let exit_status = {
+        let session_result = {
             let mut raw_tty = tty.open_raw().await?;
 
             session::run(
                 command,
                 extra_env,
                 raw_tty.as_mut(),
-                self.capture_input || config.session.capture_input,
-                outputs,
+                capture_input,
+                sinks,
                 keys,
                 notifier,
             )
-            .await?
+            .await
         };
 
         status::info!("asciinema session ended");
@@ -159,7 +172,9 @@ impl cli::Session {
             let _ = time::timeout(Duration::from_secs(5), task).await;
         }
 
-        Ok(exit_status)
+        // The session is OVER and recording complete
+        // Any subtle failure then is only recorded after everything is saved
+        session_result
     }
 
     fn get_command(&self, config: &config::Session) -> Option<String> {
@@ -206,6 +221,17 @@ impl cli::Session {
             notifier,
             metadata.clone(),
         )))
+    }
+
+    /// Collects all of the hooks to run, from config file first and command
+    /// line second.
+    fn get_hooks(&self, config: &config::Session) -> Vec<Hook> {
+        config
+            .hooks
+            .iter()
+            .cloned()
+            .chain(self.hooks.hook.iter().map(|command| Hook(command.clone())))
+            .collect()
     }
 
     fn get_file_mode(&self, path: &Path) -> Result<(bool, bool)> {
@@ -588,7 +614,15 @@ fn build_exec_command(command: Option<String>) -> Vec<String> {
     vec!["/bin/sh".to_owned(), "-c".to_owned(), command]
 }
 
-fn build_exec_extra_env(vars: &[String], relay_id: Option<&String>) -> HashMap<String, String> {
+fn build_session_id() -> String {
+    format!("{:x}", hash::fnv1a_128(process::id().to_string()))
+}
+
+fn build_exec_extra_env(
+    vars: &[String],
+    session_id: &str,
+    relay_id: Option<&String>,
+) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
     for var in vars {
@@ -597,8 +631,7 @@ fn build_exec_extra_env(vars: &[String], relay_id: Option<&String>) -> HashMap<S
         }
     }
 
-    let session_id = format!("{:x}", hash::fnv1a_128(process::id().to_string()));
-    env.insert("ASCIINEMA_SESSION".to_owned(), session_id);
+    env.insert("ASCIINEMA_SESSION".to_owned(), session_id.to_owned());
 
     if let Some(id) = relay_id {
         env.insert("ASCIINEMA_RELAY_ID".to_owned(), id.clone());
