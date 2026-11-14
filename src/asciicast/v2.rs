@@ -19,6 +19,7 @@ struct V2Header {
     command: Option<String>,
     title: Option<String>,
     env: Option<HashMap<String, Option<String>>>,
+    #[serde(default, deserialize_with = "deserialize_theme")]
     theme: Option<V2Theme>,
 }
 
@@ -313,6 +314,18 @@ impl serde::Serialize for V2Header {
     }
 }
 
+fn deserialize_theme<'de, D>(deserializer: D) -> Result<Option<V2Theme>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Option::<serde_json::Value>::deserialize(deserializer)?;
+
+    value
+        .filter(|value| !value.as_object().is_some_and(|object| object.is_empty()))
+        .map(|value| V2Theme::deserialize(&value).map_err(serde::de::Error::custom))
+        .transpose()
+}
+
 fn deserialize_color<'de, D>(deserializer: D) -> Result<RGB8, D::Error>
 where
     D: Deserializer<'de>,
@@ -429,6 +442,26 @@ impl From<&V2Theme> for TtyTheme {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
+
+    #[test]
+    fn empty_theme_is_absent_but_incomplete_themes_are_invalid() {
+        for theme in ["null", "{}"] {
+            let header = format!(r#"{{"version":2,"width":80,"height":24,"theme":{theme}}}"#);
+            let cast = super::open(&header).unwrap().parse(std::iter::empty());
+
+            assert!(cast.header.term_theme.is_none());
+        }
+
+        for theme in [
+            r##"{"fg":"#ffffff"}"##,
+            "[]",
+            r#"{"fg":null,"bg":null,"palette":null}"#,
+        ] {
+            let header = format!(r#"{{"version":2,"width":80,"height":24,"theme":{theme}}}"#);
+
+            assert!(super::open(&header).is_err());
+        }
+    }
 
     #[test]
     fn format_time() {
