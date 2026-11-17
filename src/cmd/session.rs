@@ -71,6 +71,10 @@ impl cli::Session {
             }
         }
 
+        if self.output_file.as_deref() == Some("-") {
+            status::disable();
+        }
+
         status::info!("asciinema session started");
 
         if let Some(path) = self.output_file.as_ref() {
@@ -187,8 +191,13 @@ impl cli::Session {
         };
 
         let path = Path::new(path);
-        let (overwrite, append) = self.get_file_mode(path)?;
-        let compressed = is_zstd_path(path);
+        let stdout = path == Path::new("-");
+        let (overwrite, append) = if stdout {
+            (false, false)
+        } else {
+            self.get_file_mode(path)?
+        };
+        let compressed = !stdout && is_zstd_path(path);
 
         if append {
             validate_append_compression(path, compressed)?;
@@ -196,8 +205,12 @@ impl cli::Session {
 
         let format = self.get_file_format(path, append)?;
         let encoder = self.get_encoder(format, path, append)?;
-        let file = self.open_output_file(path, overwrite, append)?;
-        let writer = output_writer::new(file, compressed)?;
+        let writer = if stdout {
+            output_writer::stdout()
+        } else {
+            let file = self.open_output_file(path, overwrite, append)?;
+            output_writer::new(file, compressed)?
+        };
         let notifier = Box::new(notifier);
 
         Ok(Some(FileOutput::new(

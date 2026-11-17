@@ -219,7 +219,7 @@ pub enum Commands {
 
 #[derive(Debug, Args)]
 pub struct Record {
-    /// Output file path. A .zst suffix enables zstd compression.
+    /// Output file path, or '-' to write to standard output. A .zst suffix enables zstd compression.
     pub file: String,
 
     /// Specify the format for the output file. The default is asciicast-v3. If the file path ends with .txt, the txt format will be selected automatically unless --output-format is explicitly specified.
@@ -455,7 +455,7 @@ pub enum Visibility {
 #[derive(Debug, Args)]
 #[clap(group(ArgGroup::new("mode").args(&["output_file", "stream_local", "stream_remote"]).multiple(true).required(true)))]
 pub struct Session {
-    /// Save the session to a file at the specified path. A .zst suffix enables zstd compression. Can be combined with local and remote streaming.
+    /// Save the session to a file at the specified path, or '-' to write to standard output. A .zst suffix enables zstd compression. Can be combined with local and remote streaming.
     #[arg(
         short,
         long,
