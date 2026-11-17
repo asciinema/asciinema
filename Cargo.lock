@@ -147,9 +147,9 @@ dependencies = [
 
 [[package]]
 name = "avt"
-version = "0.20.0"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19416eacf92afe8bdb0bf473b6c81dc9b4b2b833a6144fe18c739c4ef8a10671"
+checksum = "5388f4bc60842cc41e641528a61f70bf7c5c01ac5b9665704d87c1d495a6eedc"
 dependencies = [
  "unicode-width",
 ]
