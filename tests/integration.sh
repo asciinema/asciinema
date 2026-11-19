@@ -87,7 +87,7 @@ assert_output_contains() {
     local test_name=$3
     
     ((TESTS_RUN++))
-    if echo "$output" | grep -q "$expected"; then
+    if echo "$output" | grep -qF -- "$expected"; then
         log_success "$test_name - output contains: $expected"
     else
         log_error "$test_name - output missing: $expected"
@@ -102,7 +102,7 @@ assert_file_contains() {
     local test_name=$3
     
     ((TESTS_RUN++))
-    if grep -q "$expected" "$file"; then
+    if grep -qF -- "$expected" "$file"; then
         log_success "$test_name - file contains: $expected"
     else
         log_error "$test_name - file missing: $expected"
@@ -436,6 +436,108 @@ test_convert() {
     assert_file_contains '"version":3' "$file5" "convert overwrite content"
 }
 
+test_ls_frames() {
+    log_info "Testing ls-frames command..."
+
+    local output
+    local rc
+
+    # Test table format (default)
+    if output=$("$ASCIINEMA_BIN" ls-frames "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "ls-frames table"
+    assert_output_contains 'DELTA-CELLS' "$output" "ls-frames table header"
+    assert_output_contains 'marker  step 1' "$output" "ls-frames table marker"
+    assert_output_contains 'resize  8x3' "$output" "ls-frames table resize"
+
+    # Test csv format
+    if output=$("$ASCIINEMA_BIN" ls-frames --format csv "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "ls-frames csv"
+    assert_output_contains 'frame,time,delta_time,delta_cells,type,detail' "$output" "ls-frames csv header"
+    assert_output_contains '1,0.500000,0.500000,3,output,' "$output" "ls-frames csv row"
+
+    # Test json format
+    if output=$("$ASCIINEMA_BIN" ls-frames --format json "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "ls-frames json"
+    assert_output_contains '"delta_cells"' "$output" "ls-frames json fields"
+    assert_output_contains '"label":"step 1"' "$output" "ls-frames json marker label"
+
+    # Test with a v2 recording
+    if output=$("$ASCIINEMA_BIN" ls-frames "$FIXTURES/minimal-v2.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "ls-frames v2 input"
+
+    # A recording with degenerate terminal dimensions must not crash
+    local zero_dim="$TMP_DATA_DIR/ls_frames_zero_dim.cast"
+    printf '%s\n' '{"version":3,"term":{"cols":0,"rows":0}}' '[0.1,"o","hi"]' > "$zero_dim"
+    if output=$("$ASCIINEMA_BIN" ls-frames "$zero_dim" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "ls-frames zero dimensions"
+
+    # A malicious marker label must not inject escape sequences into the table
+    local evil="$TMP_DATA_DIR/ls_frames_evil.cast"
+    printf '%s\n' '{"version":3,"term":{"cols":20,"rows":3}}' '[0.1,"o","hi"]' '[0.2,"m","\u001b]0;x\u0007evil"]' > "$evil"
+    if output=$("$ASCIINEMA_BIN" ls-frames "$evil" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "ls-frames escaped marker"
+    assert_output_contains 'u{1b}]0;x' "$output" "ls-frames marker label escaped"
+}
+
+test_cat_frames() {
+    log_info "Testing cat-frames command..."
+
+    local output
+    local rc
+
+    # Test frame number selection
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame 1 "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames frame"
+    assert_output_contains '--- frame 1 @ 0.500000 ---' "$output" "cat-frames frame header"
+
+    # Test frame range selection with plain text output
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame 1,4-5 --no-escapes "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames frame range"
+    assert_output_contains 'red text' "$output" "cat-frames frame range content"
+    assert_output_contains '(resize: 8x3)' "$output" "cat-frames resize annotation"
+
+    # Test time selection
+    if output=$("$ASCIINEMA_BIN" cat-frames --time 2.5 --no-escapes "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames time"
+    assert_output_contains '--- frame 3 @ 2.000000 (marker: step 1) ---' "$output" "cat-frames time header"
+
+    # Test time range selection with json output
+    if output=$("$ASCIINEMA_BIN" cat-frames --time 0.7-2.5 --format json "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames time range json"
+    assert_output_contains '"text":["red text","","",""]' "$output" "cat-frames json text"
+    assert_output_contains '"seq":' "$output" "cat-frames json seq"
+
+    # Test the spec's equals-sign argument form
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame=1,4-5 --no-escapes "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames equals-form frame"
+    assert_output_contains '--- frame 4 @ 3.000000 (resize: 8x3) ---' "$output" "cat-frames equals-form header"
+
+    # Test v1 input
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame 1 --no-escapes "$FIXTURES/minimal-v1.json" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames v1 input"
+
+    # Test that a selection is required
+    if output=$("$ASCIINEMA_BIN" cat-frames "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 2 "$rc" "cat-frames missing selection"
+
+    # A selection that matches no frames warns instead of silently succeeding
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame 999 "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames unmatched selection"
+    assert_output_contains 'no frames matched' "$output" "cat-frames unmatched selection warning"
+
+    # --no-escapes is a no-op with --format json and says so
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame 1 --no-escapes --format json "$FIXTURES/frames-v3.cast" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames no-escapes json"
+    assert_output_contains 'no effect with --format json' "$output" "cat-frames no-escapes json warning"
+
+    # A malicious marker label must not inject escape sequences into the header
+    local evil="$TMP_DATA_DIR/cat_frames_evil.cast"
+    printf '%s\n' '{"version":3,"term":{"cols":20,"rows":3}}' '[0.1,"o","hi"]' '[0.2,"m","\u001b]0;x\u0007evil"]' > "$evil"
+    if output=$("$ASCIINEMA_BIN" cat-frames --frame 2 --no-escapes "$evil" 2>&1); then rc=0; else rc=$?; fi
+    assert_exit_code 0 "$rc" "cat-frames escaped marker"
+    assert_output_contains 'marker: \u{1b}]0;x' "$output" "cat-frames marker label escaped"
+}
+
 # MAIN EXECUTION
 
 # Setup always runs
@@ -458,6 +560,8 @@ run_test "stream" test_stream
 run_test "session" test_session
 run_test "cat" test_cat
 run_test "convert" test_convert
+run_test "ls-frames" test_ls_frames
+run_test "cat-frames" test_cat_frames
 
 # Final summary
 echo

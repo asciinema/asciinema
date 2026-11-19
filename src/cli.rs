@@ -215,6 +215,55 @@ pub enum Commands {
       Downloads a remote recording and converts it to the latest asciicast format (v3)"
     )]
     Convert(Convert),
+
+    /// List the frames of a recording.
+    ///
+    /// Replays an asciicast file through a virtual terminal and prints one line per frame. A frame is any event that affects the rendered screen: terminal output ("o" events), terminal resizes ("r" events), and markers ("m" events - listed for orientation even though they don't alter the screen). Input and other event types are not frames and are skipped.
+    ///
+    /// For each frame the following is shown: the frame number (starting at 1), the event time in seconds, the time elapsed since the previous frame, the number of screen cells whose rendered contents (character or attributes) changed with this frame, the frame type, and a detail column showing the new terminal size for resize frames and the label for marker frames.
+    ///
+    /// Frame numbers shown by this command can be passed to the cat-frames command.
+    #[clap(
+        about = "List the frames of a recording",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema ls-frames demo.cast
+      Lists frames as a table
+
+  asciinema ls-frames --format csv demo.cast
+      Lists frames in CSV format
+
+  asciinema ls-frames -f json demo.cast
+      Lists frames as a JSON array"
+    )]
+    LsFrames(LsFrames),
+
+    /// Print rendered frames of a recording.
+    ///
+    /// Replays an asciicast file through a virtual terminal and prints the full screen contents of the selected frames. Frames are selected by frame number (--frame), as shown by the ls-frames command, or by time in seconds (--time). Both options can be repeated and combined - the union of all selections is printed in frame order.
+    ///
+    /// A single time selects the frame displayed at that moment, i.e. the last frame rendered at or before the given time. A time range A-B selects all frames rendered within it, extended inclusively at both ends: the frame displayed at time A (rendered at or before A) and the first frame rendered at or after B are included as well.
+    ///
+    /// The terminal output format prints each frame as a screen snapshot preceded by a header line, with colors and text attributes reproduced using ANSI escape sequences, unless --no-escapes is used. The json output format produces an array of frame objects, each including both a plain-text rendering ("text") and an escape-sequence-based rendering ("seq") of the screen lines.
+    #[clap(
+        about = "Print rendered frames of a recording",
+        long_about,
+        after_help = "\x1b[1;4mExamples\x1b[0m:
+
+  asciinema cat-frames --frame 42 demo.cast
+      Prints the screen as rendered by frame 42
+
+  asciinema cat-frames --frame 1,40-45 --no-escapes demo.cast
+      Prints frames 1 and 40 through 45 as plain text
+
+  asciinema cat-frames --time 4.2 demo.cast
+      Prints the screen displayed at time 4.2s
+
+  asciinema cat-frames --time 1.5-3 --format json demo.cast
+      Prints all frames displayed between 1.5s and 3s as JSON"
+    )]
+    CatFrames(CatFrames),
 }
 
 #[derive(Debug, Args)]
@@ -618,6 +667,71 @@ pub struct Convert {
 }
 
 #[derive(Debug, Args)]
+pub struct LsFrames {
+    /// The path to an asciicast file or HTTP(S) URL to list frames of. Can be a local file path, HTTP(S) URL for remote files, or '-' to read from standard input. Supported formats include asciicast v1, v2, and v3, optionally compressed with zstd.
+    pub file: String,
+
+    /// Specify the output format. The table format is meant for humans, while csv and json are meant for further processing. In the json format resize frames carry the new terminal size in the "cols" and "rows" fields, and marker frames carry their label in the "label" field.
+    #[arg(
+        short,
+        long,
+        value_enum,
+        value_name = "FORMAT",
+        default_value_t = ListFormat::Table,
+        help = "Output format",
+        long_help
+    )]
+    pub format: ListFormat,
+}
+
+#[derive(Debug, Args)]
+#[clap(group(ArgGroup::new("selection").args(&["frame", "time"]).multiple(true).required(true)))]
+pub struct CatFrames {
+    /// The path to an asciicast file or HTTP(S) URL to print frames of. Can be a local file path, HTTP(S) URL for remote files, or '-' to read from standard input. Supported formats include asciicast v1, v2, and v3, optionally compressed with zstd.
+    pub file: String,
+
+    /// Select frames by frame number, as shown by the ls-frames command (numbering starts at 1). Accepts a comma-separated list of frame numbers and inclusive ranges, for example: --frame 1 or --frame 1,4-7. Can be repeated and combined with --time.
+    #[arg(
+        long,
+        value_name = "FRAMES",
+        value_parser = parse_frame_spec,
+        help = "Frames to print, e.g. \"1\" or \"1,4-7\"",
+        long_help
+    )]
+    pub frame: Vec<FrameSpec>,
+
+    /// Select frames by time in seconds. Accepts a comma-separated list of times and time ranges, for example: --time 4.2 or --time 0.5-0.9. A single time selects the frame displayed at that moment - the last frame rendered at or before the given time. A time range selects all frames rendered within it, plus the frame displayed at the start of the range and the first frame rendered at or after its end. Can be repeated and combined with --frame.
+    #[arg(
+        long,
+        value_name = "TIMES",
+        value_parser = parse_time_spec,
+        help = "Times of frames to print, e.g. \"4.2\" or \"0.5-0.9\"",
+        long_help
+    )]
+    pub time: Vec<TimeSpec>,
+
+    /// Specify the output format. The terminal format prints each frame as a screen snapshot preceded by a header line. The json format produces an array of frame objects, each including both a plain-text rendering ("text") and an escape-sequence-based rendering ("seq") of the screen lines.
+    #[arg(
+        short,
+        long,
+        value_enum,
+        value_name = "FORMAT",
+        default_value_t = CatFramesFormat::Terminal,
+        help = "Output format",
+        long_help
+    )]
+    pub format: CatFramesFormat,
+
+    /// Render frames as plain text, without ANSI escape sequences for colors and text attributes. Applies to the terminal output format only - the json format always includes both renderings.
+    #[arg(
+        long,
+        help = "Render frames as plain text, without escape sequences",
+        long_help
+    )]
+    pub no_escapes: bool,
+}
+
+#[derive(Debug, Args)]
 pub struct Upload {
     /// The path to the asciicast recording file to upload, in a supported asciicast format (v1, v2, or v3), optionally compressed with zstd.
     pub file: String,
@@ -671,11 +785,115 @@ pub enum Format {
     Txt,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
+pub enum ListFormat {
+    /// Human-readable table with aligned columns
+    Table,
+    /// Comma-separated values, with a header row
+    Csv,
+    /// JSON array of frame objects
+    Json,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, ValueEnum)]
+pub enum CatFramesFormat {
+    /// Screen snapshots, each preceded by a header line
+    Terminal,
+    /// JSON array of frame objects
+    Json,
+}
+
+/// A list of inclusive frame number ranges, e.g. "1,4-7".
+#[derive(Debug, Clone)]
+pub struct FrameSpec(#[allow(dead_code)] pub Vec<(usize, usize)>);
+
+/// A list of time points and time ranges, e.g. "4.2" or "0.5-0.9".
+#[derive(Debug, Clone)]
+pub struct TimeSpec(#[allow(dead_code)] pub Vec<TimeSelector>);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TimeSelector {
+    Point(f64),
+    Range(f64, f64),
+}
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum RelayTarget {
     StreamId(String),
     WsProducerUrl(url::Url),
+}
+
+fn parse_frame_spec(s: &str) -> Result<FrameSpec, String> {
+    let mut ranges = Vec::new();
+
+    for part in s.split(',') {
+        let part = part.trim();
+
+        let (start, end) = match part.split_once('-') {
+            Some((start, end)) => (start, end),
+            None => (part, part),
+        };
+
+        let start: usize = start
+            .trim()
+            .parse()
+            .map_err(|_| format!("invalid frame number: {part}"))?;
+
+        let end: usize = end
+            .trim()
+            .parse()
+            .map_err(|_| format!("invalid frame number: {part}"))?;
+
+        if start == 0 || end == 0 {
+            return Err("frame numbers start at 1".to_owned());
+        }
+
+        if end < start {
+            return Err(format!("invalid frame range: {part}"));
+        }
+
+        ranges.push((start, end));
+    }
+
+    Ok(FrameSpec(ranges))
+}
+
+fn parse_time_spec(s: &str) -> Result<TimeSpec, String> {
+    let mut selectors = Vec::new();
+
+    for part in s.split(',') {
+        let part = part.trim();
+
+        match part.split_once('-') {
+            Some((start, end)) => {
+                let start = parse_seconds(start)?;
+                let end = parse_seconds(end)?;
+
+                if end < start {
+                    return Err(format!("invalid time range: {part}"));
+                }
+
+                selectors.push(TimeSelector::Range(start, end));
+            }
+
+            None => {
+                selectors.push(TimeSelector::Point(parse_seconds(part)?));
+            }
+        }
+    }
+
+    Ok(TimeSpec(selectors))
+}
+
+fn parse_seconds(s: &str) -> Result<f64, String> {
+    let time: f64 = s.trim().parse().map_err(|_| format!("invalid time: {s}"))?;
+
+    if !time.is_finite() || time < 0.0 {
+        return Err(format!("invalid time: {s}"));
+    }
+
+    Ok(time)
 }
 
 fn parse_window_size(s: &str) -> Result<(Option<u16>, Option<u16>), String> {
@@ -719,5 +937,51 @@ fn validate_forward_target(s: &str) -> Result<RelayTarget, String> {
 
         Err(url::ParseError::RelativeUrlWithoutBase) => Ok(RelayTarget::StreamId(s.to_owned())),
         Err(e) => Err(e.to_string()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_frame_spec, parse_time_spec, TimeSelector};
+
+    #[test]
+    fn frame_spec() {
+        assert_eq!(parse_frame_spec("1").unwrap().0, vec![(1, 1)]);
+        assert_eq!(parse_frame_spec("4-7").unwrap().0, vec![(4, 7)]);
+
+        assert_eq!(
+            parse_frame_spec("1,4-7,9").unwrap().0,
+            vec![(1, 1), (4, 7), (9, 9)]
+        );
+
+        assert!(parse_frame_spec("").is_err());
+        assert!(parse_frame_spec("0").is_err());
+        assert!(parse_frame_spec("7-4").is_err());
+        assert!(parse_frame_spec("1,x").is_err());
+        assert!(parse_frame_spec("1-2-3").is_err());
+    }
+
+    #[test]
+    fn time_spec() {
+        assert_eq!(
+            parse_time_spec("4.2").unwrap().0,
+            vec![TimeSelector::Point(4.2)]
+        );
+
+        assert_eq!(
+            parse_time_spec("0.5-0.9").unwrap().0,
+            vec![TimeSelector::Range(0.5, 0.9)]
+        );
+
+        assert_eq!(
+            parse_time_spec("1,2-3").unwrap().0,
+            vec![TimeSelector::Point(1.0), TimeSelector::Range(2.0, 3.0)]
+        );
+
+        assert!(parse_time_spec("").is_err());
+        assert!(parse_time_spec("x").is_err());
+        assert!(parse_time_spec("3-2").is_err());
+        assert!(parse_time_spec("-1").is_err());
+        assert!(parse_time_spec("nan").is_err());
     }
 }

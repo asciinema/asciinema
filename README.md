@@ -46,6 +46,9 @@ Notable features:
   or plain text,
 - concatenation of multiple recordings into one, with timing adjusted
   automatically,
+- frame-by-frame inspection of recordings: listing of rendered frames with
+  timing and screen-change stats, and extraction of full screen snapshots at
+  given frames or times, as plain text, with colors, or as JSON,
 - mid-session controls: pause/resume capture and add markers on the fly via
   [customizable key bindings](https://docs.asciinema.org/manual/cli/configuration/),
 - session metadata capture, including terminal size, terminal theme, command,
